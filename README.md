@@ -20,7 +20,7 @@ logging) but the purpose, roles, and pipeline are new.
   vibes. Accepts (`gallery/`) or rejects (`rejected/`, with a concrete,
   actionable critique) via `curate_piece`.
 
-Same model both roles (`qwen3.8-27b-obliterated`) — role comes entirely
+Same model both roles (`qwen3.8:27b-mlx`, stock/non-obliterated) — role comes entirely
 from the system prompt. Model diversity wasn't the point here the way it
 was in antfarm2; instruction-following and taste were the scarce resource,
 so the strongest local model runs both seats.
