@@ -24,22 +24,22 @@ log() {
 }
 
 is_harness_running() {
-    pgrep -f "agentscii/harness\.py" > /dev/null 2>&1
+    pgrep -f "$DIR/harness\.py" > /dev/null 2>&1
 }
 
 harness_pid_count() {
-    pgrep -f "agentscii/harness\.py" | wc -l | tr -d ' '
+    pgrep -f "$DIR/harness\.py" | wc -l | tr -d ' '
 }
 
 start_harness() {
     local count
     count=$(harness_pid_count)
     if [ "$count" -gt 0 ]; then
-        log "refusing to start: $count harness.py process(es) already running (pgrep: $(pgrep -f 'agentscii/harness\.py' | tr '\n' ' '))"
+        log "refusing to start: $count harness.py process(es) already running (pgrep: $(pgrep -f "$DIR/harness\.py" | tr '\n' ' '))"
         return
     fi
     log "starting harness.py"
-    ( python3 harness.py 2>&1 | tee -a "$LOG" ) &
+    ( python3 "$DIR/harness.py" 2>&1 | tee -a "$LOG" ) &
 }
 
 log "watchdog started (checking every ${CHECK_INTERVAL}s)"

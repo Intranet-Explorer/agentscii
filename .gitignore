@@ -8,3 +8,4 @@ harness.log.corrupted*
 watchdog.log
 watchdog.launchd.log
 .DS_Store
+workspace/README.md
