@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 """
 AGENTSCII harness.
-Two local LLM agents, fixed asymmetric roles, one shared workspace, one
-explicit purpose: produce real ANSI/ACiD-style textmode art worth keeping.
+Two local LLM agents, one shared workspace, one explicit purpose: produce
+real ANSI/ACiD-style textmode art (the 90s BBS artscene aesthetic) worth
+keeping — as a collaborative body of work, not two agents working in
+parallel past each other.
 
 Forked from ~/antfarm2-standalone/harness.py (shift loop, loop-guard,
-cross-shift memory, tool-calling dispatch, SQLite event log are proven and
-reused near-verbatim). Everything else is new: fixed Artist/Curator roles
-(not symmetric peers), a gallery/submissions/rejected pipeline instead of a
-free-for-all shared directory, structured submit_piece/curate_piece tools
-that log real curation decisions instead of relying on grepping folder
-diffs, and a human inbox so you can inject direction mid-run via the
-dashboard without ever interrupting a live shift.
+cross-shift memory, tool-calling dispatch, SQLite event log reused
+near-verbatim — solid substrate, unrelated to that project's philosophy).
 
-Directed and quality-focused, on purpose — the opposite philosophy from
-antfarm2, which is why this is a separate project rather than a mode of it.
+Two fixed seats gate the pipeline (artist submits, curator decides), but
+that's the only hard boundary. Everything upstream of it is shared: both
+agents work in scratch/ freely, can extend or remix a piece the other
+started, and real joint pieces (multiple contributors, credited together —
+the actual dominant tradition in real ANSI packs) are the encouraged norm,
+not an edge case. A self-chosen handle gives each agent an identity beyond
+its functional seat. A house style doc (workspace/STYLE.md) gives the
+curator real criteria instead of taste alone. Accepted pieces land in
+gallery/unpacked/ until the curator ships a numbered pack release with a
+real FILE_ID.DIZ — the actual unit of "we made this," not a flat accept bin.
 """
 import json
 import re
@@ -24,16 +29,19 @@ import sqlite3
 import time
 import sys
 import urllib.request
+from datetime import date
 from pathlib import Path
 
 HOME = Path.home()
 PROJECT_DIR = HOME / "agentscii"
 WORKSPACE = PROJECT_DIR / "workspace"
 GALLERY = WORKSPACE / "gallery"
+GALLERY_UNPACKED = GALLERY / "unpacked"
 SUBMISSIONS = WORKSPACE / "submissions"
 SCRATCH = WORKSPACE / "scratch"
 REJECTED = WORKSPACE / "rejected"
 REFERENCES = WORKSPACE / "references"
+STYLE_DOC = WORKSPACE / "STYLE.md"
 DB_PATH = PROJECT_DIR / "state.db"
 STOP_FLAG = PROJECT_DIR / "STOP"
 OLLAMA_URL = "http://localhost:11434/v1/chat/completions"
@@ -51,9 +59,8 @@ def stop_requested():
     return _stop_requested or STOP_FLAG.exists()
 
 
-MODEL = "qwen3.8-27b-obliterated"  # same model both roles — taste and
-# instruction-following are the scarce resource here, not model diversity.
-# Role comes entirely from the system prompt, not from swapping models.
+MODEL = "qwen3.8-27b-obliterated"  # same model both seats — taste and
+# instruction-following are the scarce resource, not model diversity.
 
 REFERENCE_NOTE = (
     "Real reference archives are reachable via bash/curl: "
@@ -62,28 +69,88 @@ REFERENCE_NOTE = (
     "https://16colo.rs/pack/<name>/raw/<FILE>.ANS — that URL pattern returns "
     "the actual CP437/ANSI bytes, not an HTML page) and "
     "https://www.textfiles.com/artscene/ (older, simpler to fetch). "
-    "chafa and jp2a are installed — they convert an existing PNG/JPG straight "
+    "chafa and jp2a are installed for converting an existing PNG/JPG straight "
     "into real 16-color ANSI/block-character art ('chafa --colors=16 file.png' "
-    "or 'jp2a --colors file.png'), a genuinely different and often faster path "
-    "than building a piece character-by-character. There's a short written "
-    "primer on the style at references/what_is_ansi_art.txt."
+    "or 'jp2a --colors file.png') — a genuinely different, often faster path "
+    "than building a piece character-by-character. They only work on real "
+    "images, not on .ans/.asc files, which are already-rendered ANSI text — "
+    "view/study those directly (cat, or read_file) rather than trying to "
+    "convert them again. There's a short primer on the style at "
+    "references/what_is_ansi_art.txt, and the house style spec is at "
+    "STYLE.md — read that before your first piece."
 )
 
 WORKSPACE_NOTE = (
-    "The shared workspace at ~/agentscii/workspace/ has a fixed structure, "
-    "not a free-for-all directory: "
-    "scratch/ is yours for WIP, drafts, experiments, half-finished pieces — "
-    "no quality bar, work there freely. "
-    "submissions/ is where a finished piece waits for curator review — never "
-    "put unfinished work there. "
-    "gallery/ is curated, accepted, finished pieces only — you do not write "
-    "here directly regardless of role; only a curate_piece(accept) call moves "
-    "a piece there. "
-    "rejected/ holds pieces a curator sent back, each with a critique sidecar "
-    "explaining why — nothing here is deleted, it's yours to revise and "
-    "resubmit if the critique gives you something to act on. "
-    "references/ holds real ACiD/ANSI pieces and study material, both what's "
-    "already there and anything you fetch yourself."
+    "The shared workspace at ~/agentscii/workspace/ has a fixed structure: "
+    "scratch/ is shared, unrestricted WIP space — yours AND your "
+    "collaborator's. Read what's there before starting something new; if a "
+    "piece is promising but unfinished, extend it, add a pass (border, "
+    "color, a logo), remix it — you don't need permission and you don't "
+    "need to have started it yourself. Real ANSI packs are full of pieces "
+    "credited 'Joint' for exactly this reason; that's the norm here, not a "
+    "special case. "
+    "submissions/ is where a finished piece waits for the curator's review "
+    "— only the artist seat moves things there, via submit_piece, and only "
+    "for work that's actually finished. "
+    "gallery/unpacked/ holds pieces the curator has accepted but that "
+    "haven't shipped in a numbered pack release yet — that's the curator's "
+    "call, via release_pack, and it's a real moment worth doing deliberately "
+    "(a handful of good pieces with real credits) rather than constantly. "
+    "gallery/packNN/ holds shipped releases, each with a FILE_ID.DIZ "
+    "crediting every contributor and summarizing the pack — that's the "
+    "actual unit of finished work here, not any single piece in isolation. "
+    "rejected/ holds pieces sent back with a .critique.txt sidecar — nothing "
+    "is deleted; it's yours to revise and resubmit. "
+    "references/ holds real ACiD/ANSI study material."
+)
+
+STYLE_DOC_CONTENT = """# AGENTSCII house style
+
+A working spec, not a cage — real scene groups had house conventions and
+still produced wildly different pieces within them. This exists so accepted
+work reads as one coherent body of output, and so the curator has real
+criteria beyond taste.
+
+## Canvas
+- 80 columns wide, standard BBS/terminal width. Height is free — a tall
+  piece is fine, a piece that never uses the horizontal space isn't.
+- CP437 extended character set: block/shade elements (█ ▓ ▒ ░), box-drawing
+  (╔ ╗ ╚ ╝ ║ ═ ╠ ╣ ╦ ╩ ╬), plus standard printable ASCII for text.
+
+## Color
+- 16-color ANSI (8 base colors × normal/bold-bright). Use combinations of
+  fg/bg pairing with different block-density characters (dithering) for
+  shading and gradients — a piece that's just flat single-color fills
+  hasn't used the medium, it's colored ASCII.
+
+## Composition
+Draw from the real traditions: group logo/wordmark, character portrait,
+landscape, abstract/geometric pattern work. A recurring AGENTSCII
+wordmark/tag, developed and reused across pieces (not redesigned from
+scratch every time), is worth having — check gallery/ for whether one
+already exists before inventing a new one.
+
+## Signature block
+Every finished piece gets a small credit block (bottom-right or bottom),
+listing: contributor handle(s), the AGENTSCII tag, piece title, date. Joint
+pieces list every contributing handle, separated by "&" or "/" — the real
+scene convention for shared credit.
+
+## File naming
+lowercase-handle-slug, e.g. `raze-neon-skyline.ans`. Joint pieces can use
+either contributor's handle or both, artist's call.
+
+## Packs
+Individual pieces aren't the release unit — a pack is. gallery/packNN/
+bundles a batch of accepted work with a FILE_ID.DIZ crediting everyone
+involved. Ship a pack when there's a real handful of good work in
+gallery/unpacked/, not on a fixed schedule and not for one piece alone.
+"""
+
+STYLE_DOC_NOTE = (
+    "There's a house style spec at STYLE.md (canvas size, palette "
+    "conventions, signature-block format, pack conventions) — read it if "
+    "you haven't. "
 )
 
 AGENTS = {
@@ -91,42 +158,33 @@ AGENTS = {
         "model": MODEL,
         "role": "artist",
         "soul": (
-            "You are the Artist half of AGENTSCII, a two-agent project with one "
-            "explicit purpose: produce real ANSI/ACiD-style textmode art (the "
-            "90s BBS artscene aesthetic — CP437 block/line-drawing characters, "
-            "16-color ANSI, group-logo and landscape/portrait/abstract "
-            "traditions) that could plausibly sit in a real 16colo.rs pack. "
-            "This is directed, quality-focused work, not open-ended exploration "
-            "for its own sake — a human (Tyler) is directing this project and "
-            "can leave you direction via your inbox; a peer agent, the Curator, "
-            "reviews everything you finish before it's accepted. "
-            "There is no ambiguity about your job: make pieces, iterate on "
-            "critique, get things into gallery/. Idle equilibrium is not a "
-            "legitimate outcome here the way it might be in an unrelated "
-            "open-ended experiment — if you have nothing in flight, start "
-            "something, revise a rejected piece, or study a reference. "
-            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " "
+            "You're one of two agents in AGENTSCII, a project with one explicit "
+            "purpose: produce real ANSI/ACiD-style textmode art (the 90s BBS "
+            "artscene aesthetic) worth keeping, as a real body of work — not "
+            "two agents quietly working past each other. "
+            "Your functional seat is 'artist': you're the one who calls "
+            "submit_piece when something is ready for review. That's the only "
+            "hard boundary between you and your collaborator — everything else "
+            "upstream is shared. "
+            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE +
+            "A human (Tyler) directs this project overall and can leave either "
+            "of you direction via your inbox. "
+            "This is directed, quality-focused work — idle equilibrium isn't a "
+            "legitimate outcome the way it might be in an unrelated open-ended "
+            "experiment. If nothing's in flight, look at what your collaborator "
+            "left in scratch/, revise a rejected piece, study a reference, or "
+            "start something new. "
             "You have real creative tools: Python's PIL/Pillow and numpy are "
             "installed for procedural generation you can then convert with "
             "chafa/jp2a; pip install --user anything else you need. For "
             "anything beyond a couple lines, write a real .py file rather than "
             "a one-liner. "
-            "When a piece is actually finished (not a sketch — something "
-            "you'd stand behind), call submit_piece with its path in "
-            "scratch/ and a short note on intent/technique; the harness moves "
-            "it into submissions/ for the Curator. Don't submit unfinished "
-            "work to pad activity — the Curator's time and the gallery's bar "
-            "both matter. "
-            "You'll see any pending message from the Curator or from Tyler "
-            "(the human) at the start of your shift, and a note on what you "
-            "yourself were doing at the end of your last shift — real memory, "
-            "not something to rediscover from scratch. If a piece was rejected "
-            "with critique, that critique is specific feedback to act on, not "
-            "just a record. "
-            "Speak in the first person, always — you are not narrating "
-            "someone else's actions. The 'user'-labeled messages you receive "
-            "are automated harness pings and inbox deliveries, not a person "
-            "waiting on you in real time. "
+            "Don't submit unfinished work to pad activity — the curator's time "
+            "and the gallery's bar both matter. If a piece was rejected with "
+            "critique, that's specific feedback to act on, not just a record. "
+            "Speak in the first person, always. The 'user'-labeled messages "
+            "you receive are automated harness pings and inbox deliveries, not "
+            "a person waiting on you in real time. "
             "When you're done acting for this shift, call end_shift."
         ),
     },
@@ -134,41 +192,44 @@ AGENTS = {
         "model": MODEL,
         "role": "curator",
         "soul": (
-            "You are the Curator half of AGENTSCII, a two-agent project with "
-            "one explicit purpose: produce real ANSI/ACiD-style textmode art "
-            "(90s BBS artscene aesthetic — CP437 block/line-drawing characters, "
-            "16-color ANSI, group-logo and landscape/portrait/abstract "
-            "traditions) worth keeping. A peer agent, the Artist, makes "
-            "pieces and submits finished work for your review; your job is to "
-            "hold a real quality bar against real reference pieces, not to "
-            "rubber-stamp activity. A human (Tyler) directs this project and "
-            "can leave either of you direction via your inbox. "
+            "You're one of two agents in AGENTSCII, a project with one explicit "
+            "purpose: produce real ANSI/ACiD-style textmode art (the 90s BBS "
+            "artscene aesthetic) worth keeping, as a real body of work — not "
+            "two agents quietly working past each other. "
+            "Your functional seat is 'curator': you're the one who decides on "
+            "submissions (curate_piece) and ships pack releases (release_pack). "
+            "That's the only hard boundary between you and your collaborator — "
+            "everything upstream is shared, and you're a full contributor "
+            "there too, not just an outside judge. Jump into scratch/ and add "
+            "a pass to something your collaborator started whenever you want. "
+            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE +
+            "A human (Tyler) directs this project overall and can leave either "
+            "of you direction via your inbox. "
             "Ground every judgment in something real: fetch and actually look "
             "at reference pieces from 16colo.rs or textfiles.com/artscene "
             "before you accept or reject, don't judge from memory or vibes "
-            "alone. " + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " "
+            "alone, and check submissions against STYLE.md. "
             "When you review something in submissions/, use curate_piece: "
-            "accept it (it moves to gallery/ with your note attached) or "
-            "reject it (it moves to rejected/ with your critique attached, "
-            "specific enough that the Artist can actually act on it — not "
-            "just 'needs work', name what's actually wrong: color choices, "
-            "proportion, character choice, composition, whatever the real "
-            "issue is, compared to what real pieces in the tradition do). "
-            "A rejection is not a failure state for this project — a gallery/ "
-            "that only ever contains everything ever submitted isn't curated "
-            "at all. But don't reject reflexively either; if something is "
-            "genuinely good, accept it and say specifically why. "
-            "If submissions/ is empty, that's a legitimate state to report, "
-            "not something to force — go study references instead, or leave "
-            "the Artist a specific, concrete idea via message_agent rather "
-            "than a vague nudge. "
-            "You'll see any pending message from the Artist or from Tyler "
-            "(the human) at the start of your shift, and a note on what you "
-            "yourself were doing at the end of your last shift. "
-            "Speak in the first person, always — you are not narrating "
-            "someone else's actions. The 'user'-labeled messages you receive "
-            "are automated harness pings and inbox deliveries, not a person "
-            "waiting on you in real time. "
+            "accept moves it to gallery/unpacked/ pending the next pack "
+            "release; reject moves it to rejected/ with your critique "
+            "attached, specific enough to act on — name what's actually "
+            "wrong (color choices, proportion, character choice, composition) "
+            "compared to what real pieces in the tradition do, not just "
+            "'needs work'. A rejection isn't a failure state for this project "
+            "— a gallery that contains everything ever submitted isn't "
+            "curated at all. But don't reject reflexively either. "
+            "Use release_pack when gallery/unpacked/ has a real handful of "
+            "good work — it bundles everything there into a numbered pack "
+            "with a FILE_ID.DIZ crediting every contributor. That's the "
+            "actual shipped unit here, and it's your call when it's ready, "
+            "not a fixed schedule. "
+            "If submissions/ is empty, that's legitimate to report, not "
+            "something to force — go study references, work in scratch/, or "
+            "leave your collaborator a specific, concrete idea via "
+            "message_agent rather than a vague nudge. "
+            "Speak in the first person, always. The 'user'-labeled messages "
+            "you receive are automated harness pings and inbox deliveries, not "
+            "a person waiting on you in real time. "
             "When you're done acting for this shift, call end_shift."
         ),
     },
@@ -221,7 +282,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "message_agent",
-            "description": "Send a direct message to your peer (Artist<->Curator). They will see it at the start of their next shift.",
+            "description": "Send a direct message to your collaborator. They will see it at the start of their next shift.",
             "parameters": {
                 "type": "object",
                 "properties": {"text": {"type": "string"}},
@@ -232,17 +293,34 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "set_handle",
+            "description": (
+                "Choose (or change) your artist handle — a real name distinct from your "
+                "functional seat, the way every real BBS/ACiD artist had one. Shows up in "
+                "the dashboard and in signature blocks/credits from now on."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {"handle": {"type": "string"}},
+                "required": ["handle"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "submit_piece",
             "description": (
-                "Artist only. Submit a finished piece from scratch/ for curator review. "
+                "Artist seat only. Submit a finished piece from scratch/ for curator review. "
                 "The harness moves the file from scratch/ into submissions/ and logs the "
-                "submission. Only call this for work you consider actually finished."
+                "submission. Only call this for work that's actually finished."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Path to the finished piece, relative to workspace/ (normally under scratch/)."},
                     "note": {"type": "string", "description": "Intent, technique, references drawn on, anything the curator should know."},
+                    "contributors": {"type": "string", "description": "Comma-separated handle(s) of everyone who worked on this piece, including yourself. Required if this was a joint piece."},
                 },
                 "required": ["path", "note"],
             },
@@ -253,8 +331,8 @@ TOOLS = [
         "function": {
             "name": "curate_piece",
             "description": (
-                "Curator only. Decide on a piece currently in submissions/. "
-                "accept moves it to gallery/ (optionally renamed via gallery_name); "
+                "Curator seat only. Decide on a piece currently in submissions/. "
+                "accept moves it to gallery/unpacked/, pending the next pack release; "
                 "reject moves it to rejected/ with your critique saved alongside it as "
                 "a .critique.txt sidecar."
             ),
@@ -264,7 +342,6 @@ TOOLS = [
                     "path": {"type": "string", "description": "Path to the piece in submissions/, relative to workspace/."},
                     "decision": {"type": "string", "enum": ["accept", "reject"]},
                     "critique": {"type": "string", "description": "Specific, concrete critique — required either way: praise specifics on accept, actionable issues on reject."},
-                    "gallery_name": {"type": "string", "description": "Optional filename to use in gallery/ on accept (defaults to the original filename)."},
                 },
                 "required": ["path", "decision", "critique"],
             },
@@ -273,19 +350,39 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "release_pack",
+            "description": (
+                "Curator seat only. Bundle everything currently in gallery/unpacked/ into "
+                "the next numbered gallery/packNN/ release, with a generated FILE_ID.DIZ "
+                "crediting every contributor. Fails if unpacked/ is empty. This is the real "
+                "ship moment — use it when there's a genuine handful of good work waiting, "
+                "not on autopilot."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pack_note": {"type": "string", "description": "A short note on this release — what it is, what it represents, anything worth saying about the batch as a whole."},
+                },
+                "required": ["pack_note"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "end_shift",
-            "description": "End your shift and hand off to your peer. Call this when you're done acting for now.",
+            "description": "End your shift and hand off to your collaborator. Call this when you're done acting for now.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "note": {"type": "string", "description": "Short note on what you did this shift."},
                     "had_pending_peer_message": {
                         "type": "boolean",
-                        "description": "True if your peer had left you a message at the start of this shift.",
+                        "description": "True if your collaborator had left you a message at the start of this shift.",
                     },
                     "replied_to_peer": {
                         "type": "boolean",
-                        "description": "True if you replied/responded to your peer's message this shift. False if you saw it and chose not to. If had_pending_peer_message is false, set this false too.",
+                        "description": "True if you replied/responded to your collaborator's message this shift. False if you saw it and chose not to. If had_pending_peer_message is false, set this false too.",
                     },
                     "continue_same_agent": {
                         "type": "boolean",
@@ -331,9 +428,6 @@ def init_db():
         timestamp REAL NOT NULL,
         delivered INTEGER DEFAULT 0
     )""")
-    # Human inbox: same delivered-at-shift-start pattern as agent_messages,
-    # proven in antfarm2 — never tries to interrupt live inference. to_agent
-    # is 'artist', 'curator', or 'both'.
     conn.execute("""CREATE TABLE IF NOT EXISTS human_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         to_agent TEXT NOT NULL,
@@ -341,8 +435,6 @@ def init_db():
         timestamp REAL NOT NULL,
         delivered INTEGER DEFAULT 0
     )""")
-    # Curation history: a real accept/reject log the dashboard can read
-    # directly, instead of diffing folders.
     conn.execute("""CREATE TABLE IF NOT EXISTS curation_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         shift_id INTEGER NOT NULL,
@@ -350,6 +442,11 @@ def init_db():
         path TEXT NOT NULL,
         dest_path TEXT,
         note TEXT,
+        timestamp REAL NOT NULL
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS agent_identity (
+        seat TEXT PRIMARY KEY,
+        handle TEXT NOT NULL,
         timestamp REAL NOT NULL
     )""")
     conn.commit()
@@ -362,6 +459,11 @@ def log_event(conn, agent, shift_id, role, content=None, reasoning=None, tool_na
         (agent, shift_id, role, content, reasoning, tool_name, tool_args, tool_call_id, time.time()),
     )
     conn.commit()
+
+
+def get_handle(conn, seat):
+    row = conn.execute("SELECT handle FROM agent_identity WHERE seat=?", (seat,)).fetchone()
+    return row[0] if row else None
 
 
 def call_ollama(model, messages, tools):
@@ -397,6 +499,31 @@ def _resolve_workspace_path(raw_path):
     return p
 
 
+def _sidecar_paths(piece_path):
+    return (
+        piece_path.with_suffix(piece_path.suffix + ".note.txt"),
+        piece_path.with_suffix(piece_path.suffix + ".critique.txt"),
+        piece_path.with_suffix(piece_path.suffix + ".credits.txt"),
+    )
+
+
+def _move_with_sidecars(src, dest_dir, new_critique=None):
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / src.name
+    src.rename(dest)
+    note_src, critique_src, credits_src = _sidecar_paths(src)
+    note_dest, critique_dest, credits_dest = _sidecar_paths(dest)
+    if note_src.exists():
+        note_src.rename(note_dest)
+    if credits_src.exists():
+        credits_src.rename(credits_dest)
+    if new_critique is not None:
+        critique_dest.write_text(new_critique)
+    elif critique_src.exists():
+        critique_src.rename(critique_dest)
+    return dest
+
+
 def run_tool(name, args, agent):
     if name == "bash":
         try:
@@ -430,9 +557,12 @@ def run_tool(name, args, agent):
     if name == "message_agent":
         return "(handled by harness)"
 
+    if name == "set_handle":
+        return "(handled by harness)"
+
     if name == "submit_piece":
         if agent != "artist":
-            return "(error: only the artist can submit_piece)"
+            return "(error: only the artist seat can submit_piece)"
         try:
             src = _resolve_workspace_path(args["path"])
             if not src.exists():
@@ -440,50 +570,92 @@ def run_tool(name, args, agent):
             SUBMISSIONS.mkdir(parents=True, exist_ok=True)
             dest = SUBMISSIONS / src.name
             src.rename(dest)
-            note_path = dest.with_suffix(dest.suffix + ".note.txt")
-            note_path.write_text(args.get("note", ""))
+            dest.with_suffix(dest.suffix + ".note.txt").write_text(args.get("note", ""))
+            contributors = args.get("contributors")
+            if contributors:
+                dest.with_suffix(dest.suffix + ".credits.txt").write_text(contributors)
             return f"submitted: moved {src.relative_to(WORKSPACE)} -> {dest.relative_to(WORKSPACE)}"
         except Exception as e:
             return f"(error: {e})"
 
     if name == "curate_piece":
         if agent != "curator":
-            return "(error: only the curator can curate_piece)"
+            return "(error: only the curator seat can curate_piece)", None
         try:
             src = _resolve_workspace_path(args["path"])
             if not src.exists() or SUBMISSIONS not in src.parents:
-                return f"(error: {args['path']} is not a file currently in submissions/)"
+                return f"(error: {args['path']} is not a file currently in submissions/)", None
             decision = args.get("decision")
             critique = args.get("critique", "")
             if decision == "accept":
-                GALLERY.mkdir(parents=True, exist_ok=True)
-                dest_name = args.get("gallery_name") or src.name
-                dest = GALLERY / dest_name
-                src.rename(dest)
-                (dest.with_suffix(dest.suffix + ".critique.txt")).write_text(critique)
-                # carry the artist's submission note along, if present
-                src_note = src.with_suffix(src.suffix + ".note.txt")
-                if src_note.exists():
-                    src_note.rename(dest.with_suffix(dest.suffix + ".note.txt"))
-                return f"accepted: moved to gallery/{dest.name}", dest
+                dest = _move_with_sidecars(src, GALLERY_UNPACKED, new_critique=critique)
+                return f"accepted: moved to gallery/unpacked/{dest.name}, pending next pack release", dest
             elif decision == "reject":
-                REJECTED.mkdir(parents=True, exist_ok=True)
-                dest = REJECTED / src.name
-                src.rename(dest)
-                (dest.with_suffix(dest.suffix + ".critique.txt")).write_text(critique)
-                src_note = src.with_suffix(src.suffix + ".note.txt")
-                if src_note.exists():
-                    src_note.rename(dest.with_suffix(dest.suffix + ".note.txt"))
+                dest = _move_with_sidecars(src, REJECTED, new_critique=critique)
                 return f"rejected: moved to rejected/{dest.name} with critique attached", dest
             else:
                 return f"(error: decision must be 'accept' or 'reject', got {decision!r})", None
         except Exception as e:
             return f"(error: {e})", None
 
+    if name == "release_pack":
+        return "(handled by harness)"
+
     if name == "end_shift":
         return "(handled by harness)"
 
     return f"(unknown tool: {name})"
+
+
+def do_release_pack(pack_note):
+    """Bundle everything in gallery/unpacked/ into the next gallery/packNN/,
+    with a generated FILE_ID.DIZ crediting every contributor. Returns
+    (result_str, pack_dir_or_None)."""
+    GALLERY_UNPACKED.mkdir(parents=True, exist_ok=True)
+    pieces = [
+        f for f in sorted(GALLERY_UNPACKED.iterdir())
+        if f.is_file() and not f.name.endswith((".note.txt", ".critique.txt", ".credits.txt"))
+    ]
+    if not pieces:
+        return "(error: gallery/unpacked/ is empty, nothing to release)", None
+
+    existing = [d for d in GALLERY.glob("pack*") if d.is_dir()]
+    nums = []
+    for d in existing:
+        m = re.match(r"pack(\d+)$", d.name)
+        if m:
+            nums.append(int(m.group(1)))
+    next_num = (max(nums) + 1) if nums else 1
+    pack_dir = GALLERY / f"pack{next_num:02d}"
+    pack_dir.mkdir(parents=True, exist_ok=False)
+
+    lines = [
+        f"AGENTSCII pack{next_num:02d}",
+        f"released {date.today().isoformat()}",
+        "",
+        pack_note.strip(),
+        "",
+        "--- contents ---",
+        "",
+    ]
+    for piece in pieces:
+        note_src, critique_src, credits_src = _sidecar_paths(piece)
+        moved = piece.rename(pack_dir / piece.name)
+        entry = [f"* {piece.name}"]
+        if credits_src.exists():
+            entry.append(f"  credits: {credits_src.read_text().strip()}")
+            credits_src.rename(pack_dir / credits_src.name)
+        if note_src.exists():
+            entry.append(f"  artist note: {note_src.read_text().strip()}")
+            note_src.rename(pack_dir / note_src.name)
+        if critique_src.exists():
+            entry.append(f"  curator note: {critique_src.read_text().strip()}")
+            critique_src.rename(pack_dir / critique_src.name)
+        lines.extend(entry)
+        lines.append("")
+
+    (pack_dir / "FILE_ID.DIZ").write_text("\n".join(lines))
+    return f"released pack{next_num:02d} with {len(pieces)} piece(s)", pack_dir
 
 
 def get_pending_agent_messages(conn, agent, mark_delivered=True):
@@ -498,7 +670,6 @@ def get_pending_agent_messages(conn, agent, mark_delivered=True):
 
 
 def get_pending_human_messages(conn, agent, mark_delivered=True):
-    """to_agent is 'artist', 'curator', or 'both'."""
     rows = conn.execute(
         "SELECT id, text, timestamp FROM human_messages WHERE (to_agent=? OR to_agent='both') AND delivered=0 ORDER BY id",
         (agent,),
@@ -526,9 +697,24 @@ def run_shift(conn, agent):
     pending_peer = get_pending_agent_messages(conn, agent, mark_delivered=False)
     pending_human = get_pending_human_messages(conn, agent, mark_delivered=False)
 
+    peer_seat = "curator" if agent == "artist" else "artist"
+    own_handle = get_handle(conn, agent)
+    peer_handle = get_handle(conn, peer_seat)
+
     msg_note = ""
+    if own_handle:
+        msg_note += f"\n\nYour handle: {own_handle}."
+    else:
+        msg_note += (
+            "\n\nYou haven't chosen a handle yet. Real BBS/ACiD-style artists "
+            "went by a handle, not a generic role label — pick one for "
+            "yourself with set_handle before anything else this shift. It's "
+            "yours; make it fit the scene."
+        )
+    msg_note += f" Your collaborator goes by {peer_handle}." if peer_handle else " Your collaborator hasn't chosen a handle yet either."
+
     if pending_peer:
-        msg_note += "\n\nMessages from your peer since your last shift:\n" + "\n".join(
+        msg_note += "\n\nMessages from your collaborator since your last shift:\n" + "\n".join(
             f"- {m[2]}" for m in pending_peer
         )
     if pending_human:
@@ -555,7 +741,7 @@ def run_shift(conn, agent):
             time.sleep(backoff)
             backoff = min(backoff * 2, 60)
     else:
-        return  # stop requested while waiting — nothing marked delivered yet, safe to retry next time
+        return
 
     if pending_peer:
         conn.execute("UPDATE agent_messages SET delivered=1 WHERE to_agent=? AND delivered=0", (agent,))
@@ -627,7 +813,8 @@ def run_shift(conn, agent):
 
             raw_arg = str(
                 fargs.get("command") or fargs.get("path") or fargs.get("text")
-                or fargs.get("note") or fargs.get("critique") or ""
+                or fargs.get("note") or fargs.get("critique") or fargs.get("handle")
+                or fargs.get("pack_note") or ""
             )
             normalized_arg = re.sub(r"\d+", "#", raw_arg)[:120]
             fuzzy_sig = (name, normalized_arg)
@@ -652,6 +839,18 @@ def run_shift(conn, agent):
                 )
                 conn.commit()
                 result = f"message sent to {other}"
+            elif name == "set_handle":
+                handle = (fargs.get("handle") or "").strip()
+                if not handle:
+                    result = "(error: handle cannot be empty)"
+                else:
+                    conn.execute(
+                        "INSERT INTO agent_identity (seat, handle, timestamp) VALUES (?,?,?) "
+                        "ON CONFLICT(seat) DO UPDATE SET handle=excluded.handle, timestamp=excluded.timestamp",
+                        (agent, handle, time.time()),
+                    )
+                    conn.commit()
+                    result = f"handle set: you're now known as '{handle}'"
             elif name == "submit_piece":
                 result = run_tool(name, fargs, agent)
                 if isinstance(result, str) and result.startswith("submitted:"):
@@ -669,13 +868,24 @@ def run_shift(conn, agent):
                         (shift_id, fargs.get("decision", ""), fargs.get("path", ""), str(dest.relative_to(WORKSPACE)), fargs.get("critique", ""), time.time()),
                     )
                     conn.commit()
+            elif name == "release_pack":
+                if agent != "curator":
+                    result = "(error: only the curator seat can release_pack)"
+                else:
+                    result, pack_dir = do_release_pack(fargs.get("pack_note", ""))
+                    if pack_dir is not None:
+                        conn.execute(
+                            "INSERT INTO curation_events (shift_id, action, path, dest_path, note, timestamp) VALUES (?,?,?,?,?,?)",
+                            (shift_id, "release_pack", str(pack_dir.relative_to(WORKSPACE)), None, fargs.get("pack_note", ""), time.time()),
+                        )
+                        conn.commit()
             elif name == "end_shift":
                 note = fargs.get("note", "")
                 had_pending = fargs.get("had_pending_peer_message")
                 replied = fargs.get("replied_to_peer")
                 if had_pending and not replied:
                     result = (
-                        "end_shift rejected: you indicated a peer message was pending "
+                        "end_shift rejected: you indicated a collaborator message was pending "
                         "but replied_to_peer=false. Either use message_agent to reply, "
                         "or call end_shift again with a note explaining why you're "
                         "deliberately not responding."
@@ -711,17 +921,21 @@ def run_shift(conn, agent):
 
 def main():
     conn = init_db()
-    for d in (WORKSPACE, GALLERY, SUBMISSIONS, SCRATCH, REJECTED, REFERENCES):
+    for d in (WORKSPACE, GALLERY, GALLERY_UNPACKED, SUBMISSIONS, SCRATCH, REJECTED, REFERENCES):
         d.mkdir(parents=True, exist_ok=True)
     if not (WORKSPACE / "README.md").exists():
         (WORKSPACE / "README.md").write_text(
             "AGENTSCII shared workspace.\n\n"
-            "scratch/     free WIP, no quality bar\n"
-            "submissions/ artist's finished work awaiting curator review\n"
-            "gallery/     curated, accepted pieces\n"
-            "rejected/    sent back with a .critique.txt sidecar; not deleted\n"
-            "references/  real ACiD/ANSI study material\n"
+            "scratch/            shared WIP, no quality bar, no ownership\n"
+            "submissions/        artist seat's finished work awaiting curator review\n"
+            "gallery/unpacked/   accepted, pending the next pack release\n"
+            "gallery/packNN/     shipped releases with FILE_ID.DIZ credits\n"
+            "rejected/           sent back with a .critique.txt sidecar; not deleted\n"
+            "references/         real ACiD/ANSI study material\n"
+            "STYLE.md            house style spec\n"
         )
+    if not STYLE_DOC.exists():
+        STYLE_DOC.write_text(STYLE_DOC_CONTENT)
     ref_note = REFERENCES / "what_is_ansi_art.txt"
     if not ref_note.exists():
         src = HOME / "antfarm2" / "references" / "what_is_ansi_art.txt"
@@ -741,7 +955,7 @@ def main():
         while not stop_requested():
             if consecutive == 0:
                 other_model = AGENTS["curator" if current == "artist" else "artist"]["model"]
-                if other_model != MODEL:  # only unload if roles ever diverge in model
+                if other_model != MODEL:
                     unload_model(other_model)
             wants_continue = run_shift(conn, current)
             consecutive += 1
