@@ -59,8 +59,20 @@ def stop_requested():
     return _stop_requested or STOP_FLAG.exists()
 
 
-MODEL = "qwen3.8-27b-obliterated"  # same model both seats — taste and
-# instruction-following are the scarce resource, not model diversity.
+MODEL = "qwen3.8:27b-mlx"  # stock (non-obliterated) Qwen3.8-27B, MLX-quantized build.
+# We don't need uncensored output for ANSI art, and the obliterated variant's own
+# model card documents temperature=0 (greedy) + no system prompt as the settings
+# that keep its abliteration from getting reintroduced — both conflict with this
+# harness's design (a real system prompt defining role/tools, sampled output
+# across many shifts rather than one-shot greedy). Stock qwen3.8:27b-mlx has no
+# such constraint; using its own documented non-thinking/instruct-mode sampling
+# settings below instead: temperature=0.7, top_p=0.80, presence_penalty=1.5 to
+# suppress repetition. top_k=20, repeat_penalty=1.0, min_p=0.0 are left as the
+# model's own Modelfile defaults (verified via `ollama show --modelfile`) since
+# they already match the documented instruct-mode values and Ollama's OpenAI-
+# compatible endpoint doesn't accept top_k/repeat_penalty/min_p as request
+# fields — any unset field falls through to the Modelfile's PARAMETER value.
+SAMPLING = {"temperature": 0.7, "top_p": 0.80, "presence_penalty": 1.5}
 
 REFERENCE_NOTE = (
     "Real reference archives are reachable via bash/curl. Don't guess at "
@@ -480,7 +492,7 @@ def call_ollama(model, messages, tools):
         "model": model,
         "messages": messages,
         "tools": tools,
-        "temperature": 0.7,
+        **SAMPLING,
     }).encode()
     req = urllib.request.Request(
         OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"}, method="POST"
