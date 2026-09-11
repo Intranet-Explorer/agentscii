@@ -21,6 +21,8 @@ curator real criteria instead of taste alone. Accepted pieces land in
 gallery/unpacked/ until the curator ships a numbered pack release with a
 real FILE_ID.DIZ — the actual unit of "we made this," not a flat accept bin.
 """
+import base64
+import io
 import json
 import re
 import signal
@@ -374,6 +376,26 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "preview_piece",
+            "description": (
+                "Render an .ans/.asc file as an actual image and see it — real colors, "
+                "real block/box-drawing glyphs, real composition — instead of inferring "
+                "them from raw SGR escape codes in text. Use this on your own WIP before "
+                "deciding it's finished, and on anything you're reviewing as curator. "
+                "Long pieces are rendered up to the first 120 rows."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to the .ans/.asc file, relative to workspace/."},
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "release_pack",
             "description": (
                 "Curator seat only. Bundle everything currently in gallery/unpacked/ into "
@@ -514,6 +536,121 @@ def unload_model(model):
         urllib.request.urlopen(req, timeout=30).read()
     except Exception as e:
         print(f"[warn] failed to unload {model}: {e}")
+
+
+# ---- ANSI -> PNG rendering ----------------------------------------------
+# Lets both agents actually SEE their own work through the model's real
+# vision capability (qwen3.8:27b-mlx supports vision), instead of only
+# inferring color/composition by reading raw SGR escape codes as text.
+# Same 16-color BBS palette and SGR parsing logic as agentscii-dashboard's
+# renderer, but rasterized to a real image instead of HTML.
+
+_ANSI_PALETTE = [
+    "#000000", "#aa0000", "#00aa00", "#aa5500",
+    "#0000aa", "#aa00aa", "#00aaaa", "#aaaaaa",
+    "#555555", "#ff5555", "#55ff55", "#ffff55",
+    "#5555ff", "#ff55ff", "#55ffff", "#ffffff",
+]
+_SGR_RE = re.compile(r"\x1b\[([0-9;]*)m")
+_FONT_PATH = "/System/Library/Fonts/Menlo.ttc"
+_CELL_W, _CELL_H = 9, 18  # pixel size per character cell at the render font size
+_FONT_SIZE = 16
+
+
+def _decode_ans_bytes(raw):
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("cp437", errors="replace")
+
+
+def render_ans_to_png_b64(path, max_rows=120):
+    """Render an .ans/.asc file to a PNG, base64-encoded, for vision input.
+    Caps at max_rows to keep image size and model context sane on very
+    long/scrolling pieces — full content is still readable via read_file."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        return None, "(error: Pillow not installed — pip install Pillow)"
+
+    try:
+        raw = Path(path).read_bytes()
+    except Exception as e:
+        return None, f"(error reading file: {e})"
+
+    text = _decode_ans_bytes(raw).replace("\r\n", "\n").replace("\r", "\n")
+    lines = text.split("\n")
+    truncated = len(lines) > max_rows
+    lines = lines[:max_rows]
+
+    # Parse each line into (char, fg_idx, bg_idx) cells.
+    rows = []
+    max_width = 1
+    for line in lines:
+        cells = []
+        base_fg, bright_fg, base_bg = 7, False, 0
+        pos = 0
+        for m in _SGR_RE.finditer(line):
+            chunk = line[pos:m.start()]
+            for ch in chunk:
+                fg_idx = (base_fg + 8) if bright_fg else base_fg
+                cells.append((ch, fg_idx % 16, base_bg % 16))
+            pos = m.end()
+            params = [int(c) for c in m.group(1).split(";") if c != ""] or [0]
+            for p in params:
+                if p == 0:
+                    base_fg, bright_fg, base_bg = 7, False, 0
+                elif p == 1:
+                    bright_fg = True
+                elif p == 22:
+                    bright_fg = False
+                elif p == 39:
+                    base_fg, bright_fg = 7, False
+                elif p == 49:
+                    base_bg = 0
+                elif 30 <= p <= 37:
+                    base_fg = p - 30
+                elif 90 <= p <= 97:
+                    base_fg, bright_fg = p - 90, True
+                elif 40 <= p <= 47:
+                    base_bg = p - 40
+                elif 100 <= p <= 107:
+                    base_bg = p - 100 + 8
+        tail = line[pos:]
+        for ch in tail:
+            fg_idx = (base_fg + 8) if bright_fg else base_fg
+            cells.append((ch, fg_idx % 16, base_bg % 16))
+        rows.append(cells)
+        max_width = max(max_width, len(cells))
+
+    if not rows:
+        return None, "(error: file has no content to render)"
+
+    img_w = max_width * _CELL_W
+    img_h = len(rows) * _CELL_H
+    img = Image.new("RGB", (img_w, img_h), _ANSI_PALETTE[0])
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype(_FONT_PATH, _FONT_SIZE)
+    except Exception:
+        font = ImageFont.load_default()
+
+    for row_idx, cells in enumerate(rows):
+        y = row_idx * _CELL_H
+        for col_idx, (ch, fg_idx, bg_idx) in enumerate(cells):
+            x = col_idx * _CELL_W
+            bg = _ANSI_PALETTE[bg_idx]
+            if bg_idx != 0:
+                draw.rectangle([x, y, x + _CELL_W, y + _CELL_H], fill=bg)
+            if ch not in (" ", ""):
+                fg = _ANSI_PALETTE[fg_idx]
+                draw.text((x, y - 2), ch, font=font, fill=fg)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode()
+    note = f" (truncated to first {max_rows} rows of {len(lines)}+)" if truncated else ""
+    return b64, note
 
 
 def _resolve_workspace_path(raw_path):
@@ -892,6 +1029,29 @@ def run_shift(conn, agent):
                         (shift_id, fargs.get("decision", ""), fargs.get("path", ""), str(dest.relative_to(WORKSPACE)), fargs.get("critique", ""), time.time()),
                     )
                     conn.commit()
+            elif name == "preview_piece":
+                try:
+                    p = _resolve_workspace_path(fargs.get("path", ""))
+                    if not p.exists():
+                        result = f"(error: {p} does not exist)"
+                    else:
+                        b64, note_or_err = render_ans_to_png_b64(p)
+                        if b64 is None:
+                            result = note_or_err
+                        else:
+                            result = f"rendered {p.name}{note_or_err} — see image."
+                            log_event(conn, agent, shift_id, "tool", result, tool_name=name, tool_call_id=tc.get("id"))
+                            messages.append({
+                                "role": "tool",
+                                "tool_call_id": tc.get("id"),
+                                "content": [
+                                    {"type": "text", "text": result},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                                ],
+                            })
+                            continue
+                except Exception as e:
+                    result = f"(error rendering preview: {e})"
             elif name == "release_pack":
                 if agent != "curator":
                     result = "(error: only the curator seat can release_pack)"
