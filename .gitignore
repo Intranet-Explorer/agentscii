@@ -1,0 +1,10 @@
+harness.log
+state.db
+state.db-*
+STOP
+__pycache__/
+*.pyc
+harness.log.corrupted*
+watchdog.log
+watchdog.launchd.log
+.DS_Store
