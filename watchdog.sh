@@ -44,6 +44,11 @@ start_harness() {
 
 log "watchdog started (checking every ${CHECK_INTERVAL}s)"
 
+if [ -f "$STOP_FLAG" ]; then
+    log "STOP flag present at startup - not starting harness.py, exiting"
+    exit 0
+fi
+
 if ! is_harness_running; then
     start_harness
 fi
