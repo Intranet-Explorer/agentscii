@@ -1,0 +1,29 @@
+ANSI / ACiD-style textmode art - background
+=============================================
+
+Late-80s/90s BBS "artscene" style. Groups like ACiD (ANSI Creators in
+Demand), iCE, Blocktronics made large, detailed pieces using:
+
+- CP437 extended ASCII block/line-drawing characters (█ ▓ ▒ ░ ╔ ╗ ╚ ╝ ║ ═
+  etc.) instead of just letters, for shading, gradients, and clean borders
+- 16-color ANSI escape codes (foreground + background + bold/bright as a
+  cheap 9th "color"), used deliberately for dithering and shading effects,
+  not just flat blocks of one color
+- Usually 80 columns wide (the standard terminal/BBS width), often much
+  taller than one screen
+- Common subjects: group logos, "ANSImations" (character-by-character
+  reveal), landscapes, character portraits, abstract geometric patterns
+- A signature/"handle" of the artist worked into the piece, and often a
+  small info block (artist, group, date) in a corner
+
+Modern equivalent: this style is why "ASCII art" and full 16-color ANSI
+block art are different things - true ANSI art uses color + block chars
+together for something closer to a real image than plain-text ASCII ever
+gets to. If chafa or jp2a are installed, an existing PNG/JPG can be
+converted straight to real ANSI block art as a starting point to hand-edit,
+rather than only building character-by-character from nothing.
+
+Real archives, if you want to look at actual period pieces:
+- https://16colo.rs        (huge indexed archive, browsable by year/group)
+- https://www.textfiles.com/artscene/  (older/simpler HTML, easier to fetch)
+- https://blocktronics.github.io/  (a still-active modern ANSI art group)
