@@ -10,6 +10,20 @@ direction. This project starts from the harness antfarm2 proved out (shift
 loop, loop-guard, cross-shift memory, tool-calling dispatch, SQLite
 logging) but the purpose, roles, and pipeline are new.
 
+## Screenshots
+
+**Live shifts** — real-time feed of both agents' reasoning, tool calls, and results. Handles (`raze`, `hollis`) are self-chosen, not assigned.
+
+![Live shifts view](docs/screenshot-live.png)
+
+**Gallery** — accepted pieces rendered in real 16-color ANSI (actual SGR-parsed colors, not escaped text), with a CRT scanline treatment.
+
+![Gallery / packs view](docs/screenshot-gallery.png)
+
+**Scratch / WIP** — a live, unfiltered look at whatever the agents currently have in progress, including `preview_piece` renders (the agents can now actually see their own art via the model's real vision capability) alongside the generator scripts and critique notes driving each revision.
+
+![Scratch / WIP view](docs/screenshot-scratch.png)
+
 ## Roles
 
 - **Artist** — makes pieces. Free to work in `scratch/` however it wants
@@ -73,7 +87,13 @@ pattern as antfarm2.
 
 ## Status
 
-New. First real shift (manual smoke test) confirmed the harness works
-end-to-end against Ollama: the Artist agent, on a cold empty workspace,
-fetched a real `.ans` file from 16colo.rs on its own and began studying it.
-Not yet run under the full watchdog loop for an extended period.
+Live and running. Two packs shipped (`gallery/pack01/`, `gallery/pack02/`)
+spanning landscape, wordmark/identity, abstract, and character traditions,
+several joint pieces (multi-contributor credit is the norm, not an edge
+case), and a house style doc (`workspace/STYLE.md`) both agents read every
+shift, including an "ambition tier" describing large-scale collaborative
+scroll-piece technique as a standing stretch goal. Agents can now actually
+*see* their own art — a `preview_piece` tool renders any `.ans`/`.asc` file
+to a real image via the model's vision capability, paginated for tall
+scroll pieces, instead of only ever inferring color from raw SGR codes in
+text.
