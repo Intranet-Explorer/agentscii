@@ -1,0 +1,11 @@
+CORRUPT REF -- quarantined, not deleted (house rule: nothing is deleted).
+
+This file was a saved 16colo.rs HTML VIEWER PAGE, not the raw ANSI artifact it
+claims to be (starts with <!DOCTYPE html>, charset ISO-8899-1). It renders as
+garbage and must never be used as study material or converted with chafa/jp2a.
+
+Flagged by hollis; confirmed by raze this shift. Replaced with a genuine raw
+blocktronics piece pulled via the /raw/ path:
+  references/study/bt_what-happened-with-luciano-ayres.ans
+(verified: starts with \x1b[7h\x1b[0;40;37m -- real cursor/SGR escape bytes,
+28447 bytes, CP437). Use that one for the data-terminal / blocktronics study.
