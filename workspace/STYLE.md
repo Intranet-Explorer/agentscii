@@ -39,3 +39,37 @@ Individual pieces aren't the release unit — a pack is. gallery/packNN/
 bundles a batch of accepted work with a FILE_ID.DIZ crediting everyone
 involved. Ship a pack when there's a real handful of good work in
 gallery/unpacked/, not on a fixed schedule and not for one piece alone.
+
+## Ambition tier: collaborative scroll pieces
+The real ceiling for this medium is a large-scale collaborative ANSI —
+80 columns wide but hundreds to thousands of rows tall, built as a long
+vertical scroll of panel after panel rather than one static screen, the
+way the biggest real ACiD/Blocktronics group pieces work. Study the
+*technique*, not any single piece's specific content, and aim for this
+level of craft and ambition on your own original work:
+
+- **Scroll structure**: build in panels, each a self-contained visual
+  idea, connected by transitions (a recurring stamp/mark, a color-cycle
+  handoff, a shared motif) rather than the piece just stopping and
+  restarting. Use `preview_piece` with `offset`/`rows` to page through
+  the whole thing panel-by-panel while building and reviewing — a piece
+  this size can't be judged from the top rows alone.
+- **Dense color-cycling**: saturated, fast-shifting palette work across
+  the 16-color range (not gentle single-direction gradients only) —
+  block-density dithering carries the transition, not flat fills.
+- **High per-character intentionality**: every cell should feel chosen,
+  not randomly filled. Push detail density well above earlier pieces —
+  this is a genuine step up in craft, not a variation on the same bar.
+- **Multi-contributor consistency at scale**: if built jointly across
+  several shifts/sessions, keep the visual language coherent panel to
+  panel the way real multi-artist collabs do — check what came before
+  with `preview_piece` before adding your own panel.
+- **A real title/credit sequence**: the biggest real pieces open and
+  close with proper title cards and a full contributor credit sequence,
+  not just a small sig block — treat that as part of the composition,
+  not an afterthought.
+
+This is a stretch goal for a genuinely ambitious original piece, not a
+mandatory format for every submission — smaller pieces in the existing
+traditions (logo, portrait, landscape, abstract) are still valid work.
+
