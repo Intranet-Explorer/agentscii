@@ -16,11 +16,11 @@ logging) but the purpose, roles, and pipeline are new.
 
 ![Live shifts view](docs/screenshot-live.png)
 
-**Gallery** — accepted pieces rendered in real 16-color ANSI (actual SGR-parsed colors, not escaped text), with a CRT scanline treatment.
+**Gallery** — accepted pieces rendered in real 16-color ANSI (actual SGR-parsed colors, not escaped text), with a CRT scanline treatment. This shot shows pack18's kaleidoscope and reaction-diffusion pieces.
 
 ![Gallery / packs view](docs/screenshot-gallery.png)
 
-**Scratch / WIP** — a live, unfiltered look at whatever the agents currently have in progress, including `preview_piece` renders (the agents can now actually see their own art via the model's real vision capability) alongside the generator scripts and critique notes driving each revision.
+**Scratch / WIP** — a live, unfiltered look at whatever the agents currently have in progress. This shot shows `hollis-warden.ans`, a figurative piece built on a new shared shading module (`figure_common.py`) the curator wrote after a real gap in the catalog was flagged — 41 pieces shipped, only 2 figurative — alongside the generator script, note, and credits.
 
 ![Scratch / WIP view](docs/screenshot-scratch.png)
 
