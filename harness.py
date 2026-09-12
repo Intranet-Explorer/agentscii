@@ -376,6 +376,30 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "inspect_piece",
+            "description": (
+                "Run a full structural diagnostic on an .ans/.asc file in one call: "
+                "encoding check, control-byte hygiene, SGR token validity, row-width "
+                "check, standalone-reset check, and dead/blank-region detection (3+ "
+                "consecutive empty rows — the signature of a real rendering bug like "
+                "a panel that silently rendered black). Use this instead of writing "
+                "a fresh bash+Python diagnostic script each time — it's the same "
+                "checks every piece needs, already built. Pair with preview_piece: "
+                "inspect_piece tells you WHERE a structural problem is, preview_piece "
+                "lets you SEE it."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to the .ans/.asc file, relative to workspace/."},
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "preview_piece",
             "description": (
                 "Render an .ans/.asc file as an actual image and see it — real colors, "
@@ -692,6 +716,135 @@ def _move_with_sidecars(src, dest_dir, new_critique=None):
 
 
 def run_tool(name, args, agent):
+    if name == "inspect_piece":
+        try:
+            p = _resolve_workspace_path(args["path"])
+            if not p.exists():
+                return f"(error: {p} does not exist)"
+            raw = p.read_bytes()
+            try:
+                text = raw.decode("utf-8")
+                encoding = "utf-8"
+            except UnicodeDecodeError:
+                text = raw.decode("cp437", errors="replace")
+                encoding = "cp437"
+
+            lines = text.split("\n")
+            sgr_re = re.compile(r"\x1b\[([0-9;]*)m")
+            other_ctrl_re = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1a\x1c-\x1f]")
+
+            width_issues = []
+            blank_rows = []
+            sparse_rows = []
+            internal_gap_rows = []
+            sgr_params = set()
+            invalid_sgr = set()
+            valid_sgr = {0,1,2,3,4,7,8,9,21,22,27,29,30,31,32,33,34,35,36,37,38,39,
+                         40,41,42,43,44,45,46,47,48,49,90,91,92,93,94,95,96,97,98,99,
+                         100,101,102,103,104,105,106,107}
+            bad_control_bytes = False
+
+            for i, line in enumerate(lines):
+                if other_ctrl_re.search(line):
+                    bad_control_bytes = True
+                visible = sgr_re.sub("", line)
+                for m in sgr_re.finditer(line):
+                    for part in m.group(1).split(";"):
+                        if part:
+                            n = int(part)
+                            sgr_params.add(n)
+                            if n not in valid_sgr:
+                                invalid_sgr.add(n)
+                is_last = (i == len(lines) - 1)
+                if len(visible) == 0:
+                    if not is_last:
+                        blank_rows.append(i)
+                    continue
+                if len(visible.strip()) < 8:
+                    sparse_rows.append(i)
+                # internal gap: a long run of space characters bordered by real
+                # content on both sides, anywhere in the row (not just the right
+                # margin) — the exact signature of a wordmark/panel-fill loop
+                # that silently stopped painting partway across, leaving a black
+                # hole in the middle of an otherwise-painted row. Plain trailing-
+                # whitespace checks miss this because the gap isn't at the end.
+                stripped = visible.rstrip()
+                trailing_gap = len(visible) - len(stripped)
+                if len(stripped) >= 6 and trailing_gap >= 15:
+                    internal_gap_rows.append((i, len(stripped), trailing_gap))
+                else:
+                    core = visible.strip()
+                    if core:
+                        longest_run = 0
+                        current = 0
+                        for ch in core:
+                            if ch == " ":
+                                current += 1
+                                longest_run = max(longest_run, current)
+                            else:
+                                current = 0
+                        if longest_run >= 30:
+                            internal_gap_rows.append((i, len(core), longest_run))
+                if len(visible) != 80 and not is_last:
+                    width_issues.append((i, len(visible)))
+
+            # collapse blank_rows into ranges so a 30-row dead void reads as
+            # one finding, not thirty
+            blank_ranges = []
+            for r in blank_rows:
+                if blank_ranges and r == blank_ranges[-1][1] + 1:
+                    blank_ranges[-1] = (blank_ranges[-1][0], r)
+                else:
+                    blank_ranges.append((r, r))
+            long_blank_ranges = [(a, b) for a, b in blank_ranges if b - a >= 3]
+
+            gap_ranges = []
+            for (r, content_len, gap_len) in internal_gap_rows:
+                if gap_ranges and r == gap_ranges[-1][1] + 1:
+                    gap_ranges[-1] = (gap_ranges[-1][0], r)
+                else:
+                    gap_ranges.append((r, r))
+            long_gap_ranges = [(a, b) for a, b in gap_ranges]
+
+            ends_with_reset = raw.rstrip(b"\n").endswith(b"\x1b[0m")
+
+            out = []
+            out.append(f"path: {p.name}")
+            out.append(f"encoding: {encoding} | {len(lines)} lines | control bytes clean: {not bad_control_bytes}")
+            out.append(f"ends on standalone reset: {ends_with_reset}")
+            out.append(f"SGR params used: {sorted(sgr_params)}")
+            out.append(f"invalid/out-of-range SGR params: {sorted(invalid_sgr) or 'none'}")
+            if width_issues:
+                out.append(f"non-80-width content rows: {len(width_issues)} (first 8: {width_issues[:8]})")
+            else:
+                out.append("all content rows exactly 80 display-columns wide")
+            if long_blank_ranges:
+                out.append(
+                    f"DEAD/BLANK REGIONS (3+ consecutive empty rows — likely a real "
+                    f"rendering bug, not intentional spacing): {long_blank_ranges}"
+                )
+            else:
+                out.append("no suspiciously long blank regions")
+            if long_gap_ranges:
+                out.append(
+                    f"POSSIBLE INTERNAL GAPS (rows with a long unexplained blank "
+                    f"run flanked by real content — can indicate a fill/paint loop "
+                    f"that silently stopped partway across a row, but can also be "
+                    f"legitimate sparse/framed composition — VERIFY with "
+                    f"preview_piece before treating as a bug): row ranges "
+                    f"{long_gap_ranges}."
+                )
+            else:
+                out.append("no mid-row rendering gaps detected")
+            if sparse_rows and len(sparse_rows) > len(lines) * 0.15:
+                out.append(
+                    f"WARNING: {len(sparse_rows)}/{len(lines)} rows are sparse "
+                    f"(<8 visible chars) — piece may be mostly empty space"
+                )
+            return "\n".join(out)
+        except Exception as e:
+            return f"(error inspecting piece: {e})"
+
     if name == "bash":
         try:
             r = subprocess.run(
@@ -984,12 +1137,12 @@ def run_shift(conn, agent):
                 or fargs.get("pack_note") or ""
             )
             normalized_arg = re.sub(r"\d+", "#", raw_arg)[:120]
-            # preview_piece is meant to be called repeatedly on the same file as
-            # part of a normal edit-check-edit-check loop (verifying each fix
-            # actually landed) — that's real iteration, not a stall, so give it
-            # its own identity per call rather than fuzzy-matching just the path,
-            # and a higher repeat tolerance before the loop-guard kicks in.
-            if name == "preview_piece":
+            # preview_piece and inspect_piece are meant to be called repeatedly on
+            # the same file as part of a normal edit-check-edit-check loop (verifying
+            # each fix actually landed) — that's real iteration, not a stall, so give
+            # them their own identity per call rather than fuzzy-matching just the
+            # path, and a higher repeat tolerance before the loop-guard kicks in.
+            if name in ("preview_piece", "inspect_piece"):
                 fuzzy_sig = (name, raw_arg, fargs.get("offset"), i)
                 loop_threshold = 8
             else:
