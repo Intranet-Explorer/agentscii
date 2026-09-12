@@ -579,9 +579,12 @@ _ANSI_PALETTE = [
     "#5555ff", "#ff55ff", "#55ffff", "#ffffff",
 ]
 _SGR_RE = re.compile(r"\x1b\[([0-9;]*)m")
+_CSI_RE = re.compile(r"\x1b\[([0-9;]*)([A-Za-z])")
 _FONT_PATH = "/System/Library/Fonts/Menlo.ttc"
 _CELL_W, _CELL_H = 9, 18  # pixel size per character cell at the render font size
 _FONT_SIZE = 16
+_TERMINAL_WIDTH = 80  # standard classic-scene ANSI canvas width; long logical
+                      # lines auto-wrap here just like a real terminal/BBS client
 
 
 def _decode_ans_bytes(raw):
@@ -608,50 +611,77 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120):
 
     text = _decode_ans_bytes(raw).replace("\r\n", "\n").replace("\r", "\n")
     all_lines = text.split("\n")
-    total_lines = len(all_lines)
-    offset = max(0, min(offset, total_lines))
-    lines = all_lines[offset:offset + max_rows]
-    truncated = offset + len(lines) < total_lines
 
-    # Parse each line into (char, fg_idx, bg_idx) cells.
-    rows = []
-    max_width = 1
-    for line in lines:
+    # Parse each logical line into (char, fg_idx, bg_idx) cells, then wrap at
+    # _TERMINAL_WIDTH exactly like a real terminal/BBS client would — many
+    # classic-scene .ANS files (e.g. 16colo.rs packs) author one giant
+    # logical line per "row" of the piece and rely on terminal auto-wrap
+    # rather than an explicit newline per display row. offset/max_rows below
+    # apply to these final WRAPPED display rows, not raw logical lines, so
+    # paging lines up with what the piece actually looks like rendered.
+    all_rows = []
+    for line in all_lines:
         cells = []
         base_fg, bright_fg, base_bg = 7, False, 0
         pos = 0
-        for m in _SGR_RE.finditer(line):
+        for m in _CSI_RE.finditer(line):
             chunk = line[pos:m.start()]
             for ch in chunk:
                 fg_idx = (base_fg + 8) if bright_fg else base_fg
                 cells.append((ch, fg_idx % 16, base_bg % 16))
             pos = m.end()
-            params = [int(c) for c in m.group(1).split(";") if c != ""] or [0]
-            for p in params:
-                if p == 0:
-                    base_fg, bright_fg, base_bg = 7, False, 0
-                elif p == 1:
-                    bright_fg = True
-                elif p == 22:
-                    bright_fg = False
-                elif p == 39:
-                    base_fg, bright_fg = 7, False
-                elif p == 49:
-                    base_bg = 0
-                elif 30 <= p <= 37:
-                    base_fg = p - 30
-                elif 90 <= p <= 97:
-                    base_fg, bright_fg = p - 90, True
-                elif 40 <= p <= 47:
-                    base_bg = p - 40
-                elif 100 <= p <= 107:
-                    base_bg = p - 100 + 8
+            param_str, code = m.group(1), m.group(2)
+            params = [int(c) for c in param_str.split(";") if c != ""]
+            if code == "m":
+                for p in (params or [0]):
+                    if p == 0:
+                        base_fg, bright_fg, base_bg = 7, False, 0
+                    elif p == 1:
+                        bright_fg = True
+                    elif p == 22:
+                        bright_fg = False
+                    elif p == 39:
+                        base_fg, bright_fg = 7, False
+                    elif p == 49:
+                        base_bg = 0
+                    elif 30 <= p <= 37:
+                        base_fg = p - 30
+                    elif 90 <= p <= 97:
+                        base_fg, bright_fg = p - 90, True
+                    elif 40 <= p <= 47:
+                        base_bg = p - 40
+                    elif 100 <= p <= 107:
+                        base_bg = p - 100 + 8
+            elif code == "C":
+                # cursor forward N cols — advance without drawing, i.e. pad
+                # with blank cells at the current bg so column alignment
+                # after the jump matches a real terminal, instead of the
+                # raw "[NC" text leaking into the render as literal glyphs.
+                n = params[0] if params else 1
+                for _ in range(max(0, n)):
+                    cells.append((" ", 7, base_bg % 16))
+            elif code == "D":
+                n = params[0] if params else 1
+                del cells[max(0, len(cells) - n):]
+            # any other CSI final byte (H, f, K, J, etc.) is consumed and
+            # ignored rather than left as literal text — this renderer only
+            # needs a flat left-to-right approximation, not full cursor
+            # addressing.
         tail = line[pos:]
         for ch in tail:
             fg_idx = (base_fg + 8) if bright_fg else base_fg
             cells.append((ch, fg_idx % 16, base_bg % 16))
-        rows.append(cells)
-        max_width = max(max_width, len(cells))
+        if len(cells) > _TERMINAL_WIDTH:
+            for i in range(0, len(cells), _TERMINAL_WIDTH):
+                all_rows.append(cells[i:i + _TERMINAL_WIDTH])
+        else:
+            all_rows.append(cells)
+
+    total_lines = len(all_rows)
+    offset = max(0, min(offset, total_lines))
+    rows = all_rows[offset:offset + max_rows]
+    truncated = offset + len(rows) < total_lines
+    max_width = max((len(r) for r in rows), default=1)
 
     if not rows:
         return None, "(error: file has no content to render)"
@@ -679,7 +709,7 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120):
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     b64 = base64.b64encode(buf.getvalue()).decode()
-    note = f" (truncated to first {max_rows} rows of {len(lines)}+)" if truncated else ""
+    note = f" (truncated to first {max_rows} rows of {total_lines}+)" if truncated else ""
     return b64, note
 
 
