@@ -382,12 +382,15 @@ TOOLS = [
                 "real block/box-drawing glyphs, real composition — instead of inferring "
                 "them from raw SGR escape codes in text. Use this on your own WIP before "
                 "deciding it's finished, and on anything you're reviewing as curator. "
-                "Long pieces are rendered up to the first 120 rows."
+                "For long/scrolling pieces, use offset+rows to page through the whole "
+                "thing panel by panel — don't just look at the top."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Path to the .ans/.asc file, relative to workspace/."},
+                    "offset": {"type": "integer", "description": "Row to start rendering from (0-indexed). Use this to page through pieces taller than one preview."},
+                    "rows": {"type": "integer", "description": "How many rows to render, starting at offset. Default 120, max 200 (larger images cost more to process)."},
                 },
                 "required": ["path"],
             },
@@ -564,10 +567,11 @@ def _decode_ans_bytes(raw):
         return raw.decode("cp437", errors="replace")
 
 
-def render_ans_to_png_b64(path, max_rows=120):
+def render_ans_to_png_b64(path, offset=0, max_rows=120):
     """Render an .ans/.asc file to a PNG, base64-encoded, for vision input.
-    Caps at max_rows to keep image size and model context sane on very
-    long/scrolling pieces — full content is still readable via read_file."""
+    offset/max_rows let a long/scrolling piece be paged through panel by
+    panel instead of only ever seeing the top — full content is always
+    readable via read_file regardless."""
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError:
@@ -579,9 +583,11 @@ def render_ans_to_png_b64(path, max_rows=120):
         return None, f"(error reading file: {e})"
 
     text = _decode_ans_bytes(raw).replace("\r\n", "\n").replace("\r", "\n")
-    lines = text.split("\n")
-    truncated = len(lines) > max_rows
-    lines = lines[:max_rows]
+    all_lines = text.split("\n")
+    total_lines = len(all_lines)
+    offset = max(0, min(offset, total_lines))
+    lines = all_lines[offset:offset + max_rows]
+    truncated = offset + len(lines) < total_lines
 
     # Parse each line into (char, fg_idx, bg_idx) cells.
     rows = []
@@ -978,11 +984,21 @@ def run_shift(conn, agent):
                 or fargs.get("pack_note") or ""
             )
             normalized_arg = re.sub(r"\d+", "#", raw_arg)[:120]
-            fuzzy_sig = (name, normalized_arg)
+            # preview_piece is meant to be called repeatedly on the same file as
+            # part of a normal edit-check-edit-check loop (verifying each fix
+            # actually landed) — that's real iteration, not a stall, so give it
+            # its own identity per call rather than fuzzy-matching just the path,
+            # and a higher repeat tolerance before the loop-guard kicks in.
+            if name == "preview_piece":
+                fuzzy_sig = (name, raw_arg, fargs.get("offset"), i)
+                loop_threshold = 8
+            else:
+                fuzzy_sig = (name, normalized_arg)
+                loop_threshold = 3
             recent_calls.append(fuzzy_sig)
             recent_calls = recent_calls[-6:]
-            if recent_calls.count(fuzzy_sig) >= 3:
-                note = f"(loop detected: '{name}' called near-identically 3x in a row, forced end)"
+            if recent_calls.count(fuzzy_sig) >= loop_threshold:
+                note = f"(loop detected: '{name}' called near-identically {loop_threshold}x in a row, forced end)"
                 log_event(conn, agent, shift_id, "tool", "[harness: loop detected, ending shift]",
                           tool_name=name, tool_call_id=tc.get("id"))
                 ended = True
@@ -1035,11 +1051,14 @@ def run_shift(conn, agent):
                     if not p.exists():
                         result = f"(error: {p} does not exist)"
                     else:
-                        b64, note_or_err = render_ans_to_png_b64(p)
+                        offset = max(0, int(fargs.get("offset", 0) or 0))
+                        rows = fargs.get("rows", 120) or 120
+                        rows = max(1, min(int(rows), 200))
+                        b64, note_or_err = render_ans_to_png_b64(p, offset=offset, max_rows=rows)
                         if b64 is None:
                             result = note_or_err
                         else:
-                            result = f"rendered {p.name}{note_or_err} — see image."
+                            result = f"rendered {p.name} rows {offset}-{offset+rows}{note_or_err} — see image."
                             log_event(conn, agent, shift_id, "tool", result, tool_name=name, tool_call_id=tc.get("id"))
                             messages.append({
                                 "role": "tool",
