@@ -24,6 +24,7 @@ real FILE_ID.DIZ — the actual unit of "we made this," not a flat accept bin.
 import base64
 import io
 import json
+import random
 import re
 import signal
 import subprocess
@@ -262,6 +263,12 @@ AGENTS = {
 }
 
 MAX_TOOL_CALLS_PER_SHIFT = 40
+# Creation genuinely needs more headroom than review: of the shifts that hit
+# the cap, 7/10 were the artist seat vs 3/10 curator (checked against real
+# shift data, not a guess). Give the artist real extra room rather than
+# raising the cap uniformly and diluting the loop-guard's effectiveness for
+# the curator, whose job is comparatively bounded (read, judge, decide).
+MAX_TOOL_CALLS_BY_ROLE = {"artist": 60, "curator": 40}
 BASH_TIMEOUT = 60
 
 TOOLS = [
@@ -371,6 +378,26 @@ TOOLS = [
                 },
                 "required": ["path", "decision", "critique"],
             },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "random_direction",
+            "description": (
+                "Roll a random creative prompt: a subject/theme, a technique "
+                "constraint (a specific canvas.py/figure_common.py/curve_common.py "
+                "primitive or approach to build around), and a palette lean. Use "
+                "this when you want a real, chance-driven starting point instead "
+                "of defaulting to whatever idiom is cheapest to produce (the "
+                "catalog has leaned heavily procedural/abstract — this exists to "
+                "break that gravity with genuine variety, including figurative/"
+                "character/scene prompts). You are NOT required to take the roll "
+                "literally — accept it, remix it, or reject it and explain why in "
+                "your own reasoning. It's a seed for randomness in what the house "
+                "works on together, not a mandate. Call it with no arguments."
+            ),
+            "parameters": {"type": "object", "properties": {}},
         },
     },
     {
@@ -746,6 +773,48 @@ def _move_with_sidecars(src, dest_dir, new_critique=None):
 
 
 def run_tool(name, args, agent):
+    if name == "random_direction":
+        # Weighted toward the tradition the catalog is thinnest in (figurative/
+        # character/scene work — 2 of 41 pieces at last count) so the randomness
+        # actively counters the gravity toward whatever's cheapest to produce,
+        # rather than just reinforcing it. Still genuinely random, still fully
+        # optional to act on.
+        subjects = (
+            ["a masked figure or guardian bust", "a creature/demon face", "a robot or cyborg head",
+             "two figures in conversation or confrontation", "a crowd or group scene",
+             "a hooded traveler", "an eye embedded in something inhuman", "a hand reaching through something",
+             "a full-body figure in motion", "a face mid-transformation"] * 3
+            + ["a night skyline or cityscape", "a rail yard or industrial scene", "a wharf or coastline",
+               "a desert or wasteland", "an interior (a room, a cockpit, a control room)"] * 2
+            + ["an abstract/geometric field", "a fractal or mathematical form", "a flowing/organic pattern",
+               "a wordmark or group logo treatment", "a circuit/hardware-substrate field"]
+        )
+        techniques = [
+            "build it with canvas.py's ellipse()+gradient_fill() for the core shape and shading",
+            "use canvas.py's mirror() for bilateral symmetry — a face, a creature, a mandala",
+            "use canvas.py's flood_fill() to define large background/negative-space regions",
+            "use canvas.py's line()+copy_region()/paste_block() to hand-place repeated motifs",
+            "use figure_common.py's light_field()+shade_region() for anatomical/directional shading",
+            "use curve_common.py's phosphor_render() for a traced-curve or scope aesthetic",
+            "build it as a scroll_lib.py panel sequence — multiple linked panels, not one static screen",
+            "hand-place every character with no shared library — pure from-scratch composition",
+        ]
+        palettes = [
+            "monochrome + one accent color only", "full saturated 16-color cycling",
+            "cool tones (blues/cyans/greens) dominant", "warm tones (reds/yellows/magentas) dominant",
+            "high contrast — mostly black with bright accents", "muted/dim, low-saturation throughout",
+        ]
+        subject = random.choice(subjects)
+        technique = random.choice(techniques)
+        palette = random.choice(palettes)
+        return (
+            f"ROLL: subject = \"{subject}\" | technique constraint = \"{technique}\" | "
+            f"palette lean = \"{palette}\".\n\n"
+            "This is a seed, not a mandate — take it straight, remix it, or reject it "
+            "and say why. If you build on it, note in your submission that it came "
+            "from a random_direction roll so the provenance is honest."
+        )
+
     if name == "inspect_piece":
         try:
             p = _resolve_workspace_path(args["path"])
@@ -1113,7 +1182,8 @@ def run_shift(conn, agent):
     wants_continue = False
     empty_turns = 0
     recent_calls = []
-    for i in range(MAX_TOOL_CALLS_PER_SHIFT):
+    max_calls_this_shift = MAX_TOOL_CALLS_BY_ROLE.get(agent, MAX_TOOL_CALLS_PER_SHIFT)
+    for i in range(max_calls_this_shift):
         if stop_requested():
             note = "(stopped by harness shutdown request, mid-shift)"
             print(f"[{agent}] stop requested mid-shift, wrapping up now")

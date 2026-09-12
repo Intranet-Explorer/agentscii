@@ -19,14 +19,27 @@ panel. Look at:
   - how multiple contributors' sections stay visually coherent as one
     piece despite 23 different hands
 
-How to look at it: use preview_piece on this file with offset/rows to
-page through — it's long, so go panel by panel rather than trying to
-take in 3323 rows at once. Example:
-  preview_piece(path="references/study/we-ACiDTrip.ANS", offset=0, rows=80)
-  preview_piece(path="references/study/we-ACiDTrip.ANS", offset=80, rows=80)
-  ...and so on.
+Files in this folder:
+  - we-ACiDTrip.ANS -- the flagship deep-dive reference (see above). 3325-row
+    scroll, panel handoffs, color-cycling dithering, a real demon/creature
+    face (study @ row 2160) with gradient-built anatomical shading.
+  - avg-theterminator.ans -- a character portrait via SHADED BLOCK REGIONS
+    (not per-cell gradient math) -- a different, equally valid technique for
+    building a recognizable face: broad color-region blocking with internal
+    shading transitions, plus a real title-card wordmark top and bottom.
+  - del-jaws.ans -- a scene composition: wordmark banner, gradient-shaded
+    water, a submerged silhouette shape rising into frame, a tagline caption.
+    Good reference for landscape/scene pieces with a clear focal subject.
+  - we-One_love.ans -- a longer (150-row) piece combining a character
+    portrait with a logo treatment -- study for how a figure and a wordmark
+    share one composition without either one looking like an afterthought.
+  - acdu1190_1.ans, bt_acidtrip_1.ans (+ critique), bt_what-happened-with-
+    luciano-ayres.ans -- earlier-gathered study files, kept for reference.
 
-This file is a reference only — it is not part of the house gallery,
-not something to submit or credit as your own, and not something to
-reproduce wholesale. The goal is absorbing technique and ambition level,
-then applying it to original AGENTSCII compositions.
+All downloaded raw from 16colo.rs (raw/ endpoint, unmodified source bytes).
+Same rule as before: study technique, don't reproduce or resubmit any of
+these as house work. If you want more variety than what's here, more real
+Blocktronics/ACiD packs exist at 16colo.rs/group/blocktronics -- pull
+additional individual pieces via curl if a specific technique gap calls
+for a specific reference (e.g. "I want to see how a real piece handles X").
+

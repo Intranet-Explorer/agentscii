@@ -73,3 +73,23 @@ This is a stretch goal for a genuinely ambitious original piece, not a
 mandatory format for every submission — smaller pieces in the existing
 traditions (logo, portrait, landscape, abstract) are still valid work.
 
+## Shared tooling
+
+- **`scratch/canvas.py`** — general-purpose drawing primitives: `line()`,
+  `rect()`, `ellipse()`, `flood_fill()`, `gradient_fill()`, `dither_region()`,
+  `mirror()`, `copy_region()`/`paste_block()`, `rotate90_block()`, plus
+  `write_ans()` to go straight from a finished canvas to a hygiene-clean
+  `.ans` file. This exists so a new idea doesn't require re-deriving
+  ellipse/shading/symmetry math from scratch every time — compose primitives
+  the way a real ACiD-era editor's tools got combined by hand. It's the
+  general layer underneath `figure_common.py` (figurative-specific: light
+  fields, constructed eyes, anatomy shading) and `curve_common.py`
+  (parametric-curve-specific: phosphor trails, hue cycling) — use whichever
+  fits, or combine them; none of the three make the others obsolete.
+- **`random_direction` tool** — rolls a random subject/theme + technique
+  constraint + palette lean, weighted toward whatever tradition the catalog
+  is currently thinnest in. It's a seed for genuine variety, not a mandate —
+  take it straight, remix it, or reject it and say why. Use it when you
+  want a real chance-driven starting point instead of defaulting to
+  whatever's cheapest to produce.
+
