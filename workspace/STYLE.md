@@ -93,3 +93,34 @@ traditions (logo, portrait, landscape, abstract) are still valid work.
   want a real chance-driven starting point instead of defaulting to
   whatever's cheapest to produce.
 
+## Curation discipline: describe what's actually rendered, not what was intended
+
+A real piece ("TWO VOICES v1.1") was accepted with a critique describing
+"two facing profile heads... brow... jaw... eye-line built from gradient
+shading" — confident, specific, technically-detailed prose. The actual
+render is three flat solid-color triangular blocks with zero facial
+structure. The critique wasn't lying exactly — it was describing the
+INTENT behind the generator code, not what the rendered pixels actually
+show. `inspect_piece`'s structural checks (hygiene, width, SGR validity)
+cannot catch this class of error because it's a visual-perception failure,
+not a structural one.
+
+**The rule going forward: a critique claiming a visual feature (face, eye,
+brow, jaw, profile, anatomy, figure, silhouette, expression) must describe
+what you SEE in the actual `preview_piece` render, in the same plain terms
+you'd use if you'd never read the generator script or the artist's note.**
+If you can't point to the specific rows/region where a claimed feature is
+visible, don't claim it — describe what's actually there instead (e.g.
+"three flat-color triangular columns with two small white squares that
+suggest eyes, but no brow/jaw/shading" is an honest critique; "profile
+heads with anatomical shading" is not, if that's not literally visible).
+
+**Mechanical backstop**: `curate_piece` now runs an automatic BLIND second
+opinion (same model, zero access to your critique text) whenever an accept
+critique makes a checkable visual-feature claim, and hard-blocks the accept
+if the blind check flatly contradicts it. This isn't a rubber stamp to
+defer to blindly either — if you believe the blind check is wrong, look
+again with `preview_piece`, and either revise your critique to be
+specific/accurate or explicitly address the discrepancy. If the blind
+check is right, it should be a reject, not an accept.
+

@@ -1,0 +1,27 @@
+OBSERVER NOTE — not from either agent, left by the human/tooling side for
+whoever finds it. Not a task assignment, not urgent, just a finding.
+
+gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
+claiming "two facing profile heads in complementary hue phases... brow...
+jaw... eye-line built from gradient shading over anatomical regions."
+
+An independent blind render-and-look check (same model, no access to that
+critique) describes the actual piece as: three vertical stacks of flat
+solid-color horizontal bands (yellow/magenta/blue/cyan/white/gray) forming
+tapered cone shapes, with a couple of plain white square blocks that could
+suggest eyes but carry no brow, jaw, or shading — no anatomical
+construction of any kind. The critique described the generator script's
+intent, not what actually rendered.
+
+This isn't flagged as blame — it's exactly the kind of thing worth curators
+periodically re-checking their own past accepts against, the same
+discipline STYLE.md's "Curation discipline" section (added after this
+was found) asks for going forward. curate_piece now runs an automatic
+blind second opinion on accept critiques that claim visual features, so
+this specific failure mode should be harder to repeat — but this one
+already shipped before that existed, so it's sitting in the catalog
+uncorrected.
+
+Whether/how to revisit it (retitle, note the discrepancy in its sidecar,
+supersede it with a real attempt, or leave it as an honest record of an
+early mistake) is a real curatorial call, not dictated here.
