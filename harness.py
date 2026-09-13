@@ -940,6 +940,36 @@ def run_tool(name, args, agent):
                     f"WARNING: {len(sparse_rows)}/{len(lines)} rows are sparse "
                     f"(<8 visible chars) — piece may be mostly empty space"
                 )
+
+            # --- scope-family relabeling check ---------------------------------
+            # curve_common.py's phosphor_render() uses one specific 8-hue wheel
+            # (95,91,93,92,96,94,107,103) plus white-hot (97) and nothing else —
+            # a very distinctive SGR fingerprint. Real figurative/anatomical
+            # pieces (figure_common.py, canvas.py) use a much broader/different
+            # palette because they build shaded regions, not a hue-cycled trace.
+            # If a piece's SGR params are ENTIRELY inside that fingerprint set
+            # AND its filename reads as figurative (face/eye/watcher/sentinel/
+            # cyborg/scan/mind/portrait/figure), flag it for a by-eye check —
+            # this catches the "scopes-family math relabeled as a character
+            # piece" pattern mechanically instead of relying on the curator's
+            # judgment alone every time.
+            scope_fingerprint = {95, 91, 93, 92, 96, 94, 107, 103, 97, 0, 40, 104, 105}
+            figurative_words = ("face", "eye", "watch", "sentinel", "cyborg", "scan",
+                                "mind", "portrait", "figure", "warden", "vigil",
+                                "traveler", "procession", "ember")
+            name_lower = p.stem.lower()
+            reads_figurative = any(w in name_lower for w in figurative_words)
+            if sgr_params and sgr_params.issubset(scope_fingerprint) and reads_figurative:
+                out.append(
+                    "POSSIBLE MISLABEL: this piece's SGR palette exactly matches "
+                    "curve_common.py's phosphor/scope-family fingerprint (the "
+                    "8-hue wheel + white-hot, nothing else), but its name reads "
+                    "as figurative/character work. Verify by eye whether this is "
+                    "genuine anatomical/figure construction or relabeled "
+                    "parametric-curve math wearing a figurative title before "
+                    "counting it toward the figurative tradition."
+                )
+
             return "\n".join(out)
         except Exception as e:
             return f"(error inspecting piece: {e})"
@@ -1026,10 +1056,47 @@ def run_tool(name, args, agent):
     return f"(unknown tool: {name})"
 
 
+def _shipped_catalog_index():
+    """MD5 + core-slug index of every piece already shipped in gallery/packNN/,
+    excluding quarantine dirs (_held-*). Used to hard-block a real duplicate
+    from re-shipping at release time instead of relying on agents remembering
+    to run a separate dedup script (the pack17 nebula-dup incident happened
+    exactly because that step was optional and got skipped)."""
+    import hashlib
+    version_re = re.compile(r"(?:\.[vV]|-v|_v)(\d+)$")
+
+    def core_slug(name_noext):
+        s = name_noext
+        while True:
+            m = version_re.search(s)
+            if not m:
+                return s
+            s = s[: m.start()]
+
+    by_md5, by_slug = {}, {}
+    for pack_dir in GALLERY.glob("pack*"):
+        if not pack_dir.is_dir() or pack_dir.name.startswith("_held"):
+            continue
+        for f in pack_dir.glob("*.ans"):
+            h = hashlib.md5(f.read_bytes()).hexdigest()
+            by_md5.setdefault(h, []).append(str(f.relative_to(GALLERY)))
+            slug = core_slug(f.stem)
+            by_slug.setdefault(slug, []).append(str(f.relative_to(GALLERY)))
+        for f in pack_dir.glob("*.asc"):
+            h = hashlib.md5(f.read_bytes()).hexdigest()
+            by_md5.setdefault(h, []).append(str(f.relative_to(GALLERY)))
+    return by_md5, by_slug
+
+
 def do_release_pack(pack_note):
     """Bundle everything in gallery/unpacked/ into the next gallery/packNN/,
     with a generated FILE_ID.DIZ crediting every contributor. Returns
-    (result_str, pack_dir_or_None)."""
+    (result_str, pack_dir_or_None).
+
+    HARD dedup gate runs first: any piece byte-identical to something already
+    shipped blocks the WHOLE release (not just that piece) so the problem
+    gets surfaced and fixed deliberately, not silently skipped. This replaces
+    relying on agents remembering to run pre_release_dedup_guard.py by hand."""
     GALLERY_UNPACKED.mkdir(parents=True, exist_ok=True)
     pieces = [
         f for f in sorted(GALLERY_UNPACKED.iterdir())
@@ -1037,6 +1104,22 @@ def do_release_pack(pack_note):
     ]
     if not pieces:
         return "(error: gallery/unpacked/ is empty, nothing to release)", None
+
+    import hashlib
+    by_md5, by_slug = _shipped_catalog_index()
+    dup_hits = []
+    for piece in pieces:
+        h = hashlib.md5(piece.read_bytes()).hexdigest()
+        if h in by_md5:
+            dup_hits.append(f"{piece.name} is byte-identical to already-shipped {by_md5[h][0]}")
+    if dup_hits:
+        return (
+            "(error: release BLOCKED — one or more pieces in unpacked/ are exact "
+            "duplicates of already-shipped work: " + "; ".join(dup_hits) + ". "
+            "Move the duplicate(s) out of unpacked/ — e.g. into a "
+            "gallery/_held-already-shipped/ audit dir with a short note — then "
+            "retry release_pack with the remaining genuinely-new pieces.)"
+        ), None
 
     existing = [d for d in GALLERY.glob("pack*") if d.is_dir()]
     nums = []
@@ -1242,9 +1325,24 @@ def run_shift(conn, agent):
             # each fix actually landed) — that's real iteration, not a stall, so give
             # them their own identity per call rather than fuzzy-matching just the
             # path, and a higher repeat tolerance before the loop-guard kicks in.
+            #
+            # bash read-only paging commands (sed -n 'A,Bp', head -N, tail -N) hit
+            # the exact same problem for a different reason: digit-normalization
+            # collapses `sed -n '195,260p' file.py` and `sed -n '63,180p' file.py`
+            # into the identical signature `sed -n '#,#p' file.py`, even though
+            # they're genuinely different, progressive reads of a growing file —
+            # real diagnostic work, not a stall. Use the RAW (non-normalized)
+            # argument for these so different ranges don't collide, while a truly
+            # identical repeated command still gets caught at the same threshold.
+            is_readonly_paging = bool(name == "bash" and re.search(
+                r"\b(sed\s+-n|head\s+-|tail\s+-|awk\b|grep\s+-n)\b", raw_arg
+            ))
             if name in ("preview_piece", "inspect_piece"):
                 fuzzy_sig = (name, raw_arg, fargs.get("offset"), i)
                 loop_threshold = 8
+            elif is_readonly_paging:
+                fuzzy_sig = (name, raw_arg[:200])
+                loop_threshold = 3
             else:
                 fuzzy_sig = (name, normalized_arg)
                 loop_threshold = 3
