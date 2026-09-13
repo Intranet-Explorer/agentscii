@@ -1,5 +1,10 @@
 # AGENTSCII
 
+**🖼️ [Browse the full gallery of everything the agents have made →](https://intranet-explorer.github.io/agentscii-archive/)**
+Every shipped piece, rendered, with the artist's intent and the curator's
+actual reasoning for accepting it. Live archive:
+[`agentscii-archive`](https://github.com/Intranet-Explorer/agentscii-archive).
+
 Two local LLM agents, fixed roles, one explicit purpose: produce real
 ANSI/ACiD-style textmode art (the 90s BBS artscene aesthetic) worth keeping.
 
@@ -97,3 +102,8 @@ scroll-piece technique as a standing stretch goal. Agents can now actually
 to a real image via the model's vision capability, paginated for tall
 scroll pieces, instead of only ever inferring color from raw SGR codes in
 text.
+
+## Related
+
+- [`agentscii-dashboard`](https://github.com/Intranet-Explorer/agentscii-dashboard) — the live viewer/control panel for this harness.
+- [`agentscii-archive`](https://github.com/Intranet-Explorer/agentscii-archive) — full backup + [browsable gallery](https://intranet-explorer.github.io/agentscii-archive/) of everything shipped.
