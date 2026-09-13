@@ -367,7 +367,15 @@ TOOLS = [
                 "Curator seat only. Decide on a piece currently in submissions/. "
                 "accept moves it to gallery/unpacked/, pending the next pack release; "
                 "reject moves it to rejected/ with your critique saved alongside it as "
-                "a .critique.txt sidecar."
+                "a .critique.txt sidecar. IMPORTANT: if your critique claims a visual "
+                "feature (face, eye, brow, jaw, profile, anatomy, figure, silhouette, "
+                "expression), describe what you actually SEE in the preview_piece "
+                "render, not what the generator code intended — an automatic blind "
+                "second opinion (same model, no access to your critique) runs on any "
+                "such claim and hard-blocks the accept if it flatly contradicts you. "
+                "This caught a real prior mistake: a piece critiqued as 'two facing "
+                "profile heads with brow/jaw shading' that was actually three flat "
+                "solid-color blocks with no facial structure at all."
             ),
             "parameters": {
                 "type": "object",
@@ -1037,6 +1045,63 @@ def run_tool(name, args, agent):
             decision = args.get("decision")
             critique = args.get("critique", "")
             if decision == "accept":
+                # Adversarial verification: if the critique makes a checkable
+                # visual-feature claim (face/eye/brow/jaw/anatomy/figure/
+                # portrait/silhouette), get a BLIND second opinion from the
+                # same model with zero access to this critique's text, and
+                # hard-block the accept if it flatly contradicts the claim.
+                # This exists because a real accepted piece ("TWO VOICES
+                # v1.1") shipped with a critique describing "two facing
+                # profile heads... brow... jaw... eye-line" when the actual
+                # render is three flat solid-color triangular blocks with no
+                # facial structure at all -- inspect_piece's structural
+                # checks cannot catch this, it's a perception failure, not a
+                # hygiene one. This is a real check, not a rubber stamp: the
+                # curator can still accept after re-examining, revising the
+                # critique to match reality, or overriding with an explicit
+                # note explaining the disagreement — it isn't a silent veto.
+                critique_lower = critique.lower()
+                claimed_words = [w for w in _VISUAL_CLAIM_WORDS if w in critique_lower]
+                if claimed_words:
+                    blind = _blind_visual_check(src)
+                    blind_lower = blind.lower()
+                    # Robust-ish, not brittle keyword matching: look for a clear
+                    # denial signal ANYWHERE in the first ~200 chars (covers
+                    # "No.", "No genuinely...", "not built from...", etc — real
+                    # model phrasing varies) AND at least one concrete grounding
+                    # phrase describing flat/geometric shapes rather than
+                    # constructed anatomy, anywhere in the full response.
+                    denial_signal = bool(re.search(
+                        r"\bno\b[^.]{0,80}\b(constructed|discernible|clearly)\b"
+                        r"|\bnot\b[^.]{0,40}\bconstructed\b"
+                        r"|\bno\.\s",
+                        blind_lower[:220],
+                    ))
+                    grounding_signal = bool(re.search(
+                        r"flat|solid-color|solid color|no gradient|no shading"
+                        r"|no anatomical|geometric shapes|no such feature"
+                        r"|no face|no eye|no brow",
+                        blind_lower,
+                    ))
+                    contradicts = (
+                        not blind_lower.startswith("(blind check")
+                        and denial_signal and grounding_signal
+                    )
+                    if contradicts:
+                        return (
+                            "(error: accept BLOCKED — your critique claims "
+                            + ", ".join(claimed_words) + f", but an independent "
+                            "blind visual check (same model, no access to your "
+                            "critique) describes it differently:\n\n"
+                            f'"{blind}"\n\n'
+                            "If your critique is right and the blind check is "
+                            "wrong, re-examine with preview_piece and either "
+                            "revise your critique to be more specific/accurate, "
+                            "or re-submit the accept with a critique that "
+                            "explicitly addresses this discrepancy. If the "
+                            "blind check is right, this should be a reject, "
+                            "not an accept.)"
+                        ), None
                 dest = _move_with_sidecars(src, GALLERY_UNPACKED, new_critique=critique)
                 return f"accepted: moved to gallery/unpacked/{dest.name}, pending next pack release", dest
             elif decision == "reject":
@@ -1086,6 +1151,62 @@ def _shipped_catalog_index():
             h = hashlib.md5(f.read_bytes()).hexdigest()
             by_md5.setdefault(h, []).append(str(f.relative_to(GALLERY)))
     return by_md5, by_slug
+
+
+def _blind_visual_check(path):
+    """Adversarial verification: render the piece and ask the SAME model to
+    describe it with ZERO access to any curator/artist claim about what it
+    is supposed to show. This exists because the curator's own preview-based
+    critiques have been caught fabricating detail that isn't actually in the
+    render (e.g. "TWO VOICES v1.1" was accepted with a critique describing
+    "two facing profile heads... brow... jaw... eye-line" when the actual
+    piece is three flat solid-color triangular blocks with no facial
+    structure at all — confirmed by rendering and looking at it directly).
+    inspect_piece's structural checks can't catch this class of error because
+    it's a visual-perception failure, not a hygiene one. Returns the blind
+    model's plain-text description, or an error string if rendering/the
+    model call failed — callers should treat a failure as "couldn't verify"
+    and say so, not as silent success.
+    """
+    b64, note = render_ans_to_png_b64(path, offset=0, max_rows=140)
+    if b64 is None:
+        return f"(blind check could not render: {note})"
+    prompt = (
+        "Look at this image ONLY. You have no other context about what it is "
+        "supposed to be — do not assume artistic intent. Answer plainly and "
+        "skeptically:\n"
+        "1. Does the image show clearly discernible constructed features "
+        "(a face, eye, brow, jaw, profile, recognizable figure/anatomy) built "
+        "from real shading or gradient structure — or is it flat solid-color "
+        "geometric shapes (blocks, bars, triangles, stripes) with no such "
+        "features?\n"
+        "2. Describe literally what shapes and colors you see, in one or two "
+        "plain sentences, with no assumption of artistic intent.\n"
+        "Be skeptical — if it looks like flat colored shapes stacked together "
+        "rather than a constructed feature, say so plainly, even if a label "
+        "or title in the image suggests otherwise."
+    )
+    messages = [
+        {"role": "user", "content": [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+        ]},
+    ]
+    try:
+        resp = call_ollama(MODEL, messages, [])
+        return resp.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+    except Exception as e:
+        return f"(blind check model call failed: {e})"
+
+
+# Keywords that make a critique's claim CHECKABLE by the blind visual pass —
+# only fires the extra model call when the curator actually asserted a
+# visual-feature claim worth adversarially verifying, not on every accept
+# (most accepts are abstract/procedural work with no such claim to check).
+_VISUAL_CLAIM_WORDS = (
+    "face", "eye", "brow", "jaw", "profile", "anatomy", "anatomical",
+    "figure", "figurative", "portrait", "silhouette", "expression",
+)
 
 
 def do_release_pack(pack_note):
