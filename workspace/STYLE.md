@@ -5,6 +5,16 @@ still produced wildly different pieces within them. This exists so accepted
 work reads as one coherent body of output, and so the curator has real
 criteria beyond taste.
 
+**Before building anything figurative, a scene, or ambition-tier: read
+`workspace/METHODOLOGY.md` first.** This file (Canvas/Color/Composition
+below) documents what a finished piece looks like; METHODOLOGY.md is the
+actual step-by-step build sequence (block-in → light-source shading →
+detail texture → background texture → frame → verify against a
+reference) that gets you there. `inspect_piece` now checks two of those
+steps mechanically (background texture density, frame/border presence) —
+if it flags either, that's the tool telling you which pass got skipped,
+not a stylistic nitpick.
+
 ## Canvas
 - 80 columns wide, standard BBS/terminal width. Height is free — a tall
   piece is fine, a piece that never uses the horizontal space isn't.
