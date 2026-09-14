@@ -230,6 +230,53 @@ def texture_fill(cv, region_fn, fg, bg=0, ramp=RAMP, density=0.35, seed=None):
             cv.set(x, y, ramp[idx], fg, bg)
 
 
+def strand_shade(cv, region_fn, direction_fn, fg_list, n_strands=40, length=6,
+                  jitter=1, ch=RAMP[0], seed=None):
+    """Directional strand/stroke shading -- for fur, hair, muscle striation,
+    grain, or any surface where real ACiD work builds texture from many
+    SHORT DIRECTIONAL STROKES following the form, not a uniform gradient
+    wash. Studied from references/study/somms-the_powergrid.ANS (fur/mane)
+    and ghengis-shades_of_a_shade.ANS (dense stippled fields): individual
+    strokes read as distinct marks, angled consistently with the surface
+    they're on, in 2-4 alternating hues (not one flat color) so the strokes
+    separate from each other visually instead of blurring into a solid mass.
+
+    region_fn(x,y) -> bool: where strokes are allowed to start.
+    direction_fn(x,y) -> (dx,dy): the stroke direction AT that origin point
+      (e.g. radiating from a center, or a fixed diagonal for combed fur) --
+      this is what makes strokes follow the form instead of pointing randomly.
+    fg_list: strokes cycle through these colors so adjacent strokes don't
+      blend into one flat mass (2-4 related hues works well, e.g.
+      [light_highlight, mid_tone, mid_tone, shadow]).
+    n_strands: how many strokes to place.
+    length: stroke length in cells.
+    jitter: +/- random perpendicular offset per stroke so they don't look
+      like a mechanical grid (1-2 is usually enough).
+    seed: deterministic output across passes if set.
+
+    This is a texture pass -- run it AFTER your base shape/color blocking,
+    so strokes lay on top of already-placed color instead of the reverse."""
+    import random
+    rng = random.Random(seed)
+    candidates = [(x, y) for y in range(cv.h) for x in range(cv.w) if region_fn(x, y)]
+    if not candidates:
+        return
+    for i in range(n_strands):
+        x0, y0 = rng.choice(candidates)
+        dx, dy = direction_fn(x0, y0)
+        mag = (dx * dx + dy * dy) ** 0.5 or 1.0
+        dx, dy = dx / mag, dy / mag
+        # perpendicular jitter so strokes don't sit in a mechanical line
+        px, py = -dy, dx
+        off = rng.uniform(-jitter, jitter)
+        fg = fg_list[i % len(fg_list)]
+        for s in range(length):
+            x = int(round(x0 + dx * s + px * off))
+            y = int(round(y0 + dy * s + py * off))
+            if 0 <= x < cv.w and 0 <= y < cv.h:
+                cv.set(x, y, ch, fg)
+
+
 def cycle_hue(phase, wheel=HOUSE_HUE):
     """House color-cycling helper: map a float phase to a wheel index. Use
     this instead of hand-rolling `int(phase) % len(HUE)` in every piece."""

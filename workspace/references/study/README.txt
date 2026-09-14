@@ -53,6 +53,20 @@ Files in this folder:
     developed) and for background texture density around a figure (compare
     against how flat/empty the house's own figurative pieces leave their
     negative space).
+  - ghengis-shades_of_a_shade.ANS -- "Shades of a Shade" by Ghengis, ACiD
+    Productions 1996. Study for DENSE STIPPLED BACKGROUND FIELDS: even the
+    areas that read as "empty" at a glance are covered in scattered
+    grayscale dot/block marks at varying density, never truly flat black --
+    this is the single biggest technique gap between house work and real
+    ACiD pieces. Also a strong reference for saturated color blocking with
+    hard-edged color transitions (not always gradient blends).
+  - somms-the_powergrid.ANS -- "The PowerGrid" by Somms, ACiD Productions
+    1995. Study for DIRECTIONAL STRAND SHADING: fur/mane/hair texture isn't
+    a flat-shaded region, it's built from many short strokes that follow
+    the surface's contour, alternating between 2-4 related hues per area
+    so individual strands stay visually distinct instead of blurring into
+    one flat mass. See canvas.py's strand_shade() for a reusable version
+    of this technique.
   - avg-theterminator.ans -- a character portrait via SHADED BLOCK REGIONS
     (not per-cell gradient math) -- a different, equally valid technique for
     building a recognizable face: broad color-region blocking with internal

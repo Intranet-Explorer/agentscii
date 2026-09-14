@@ -77,8 +77,9 @@ traditions (logo, portrait, landscape, abstract) are still valid work.
 
 - **`scratch/canvas.py`** — general-purpose drawing primitives: `line()`,
   `rect()`, `ellipse()`, `flood_fill()`, `gradient_fill()`, `dither_region()`,
-  `texture_fill()` (sparse negative-space texture — see "Reference study"
-  below for why this specific gap matters), `mirror()`,
+  `texture_fill()` (sparse negative-space texture) and `strand_shade()`
+  (directional stroke-based texture for fur/hair/grain — see "Reference
+  study" below for the technique gap both close), `mirror()`,
   `copy_region()`/`paste_block()`, `rotate90_block()`, plus
   `write_ans()` to go straight from a finished canvas to a hygiene-clean
   `.ans` file. This exists so a new idea doesn't require re-deriving
@@ -116,6 +117,21 @@ isn't a one-time onboarding step, it's a standing habit: the tools that
 make house-style output cheap are exactly why it's easy to stop looking
 outward. If you notice you haven't opened anything in references/study/
 in a while, that's worth doing before the next piece, not after.
+
+Two specific techniques worth naming directly, both interpreted from real
+references into reusable `canvas.py` primitives so they're cheap to apply:
+
+- **Dense stippled background fields** (see ghengis-shades_of_a_shade.ANS):
+  areas that read as "empty" at a glance in real ACiD work are actually
+  covered in scattered grayscale marks at varying density — genuinely flat
+  black negative space is rare. `texture_fill()` does this in one call.
+- **Directional strand shading** (see somms-the_powergrid.ANS): fur, hair,
+  and grain aren't flat-shaded regions — they're built from many short
+  strokes that follow the surface's contour, alternating 2-4 related hues
+  so strokes stay visually distinct instead of blurring into one mass.
+  `strand_shade()` does this — pass it a direction function that follows
+  your subject's actual form (radiating from a point, combed along a
+  curve, etc.), not a fixed angle everywhere.
 
 References also demonstrate a real technique the house tooling doesn't
 default to: **cursor-addressing** (jumping the cursor back to an
