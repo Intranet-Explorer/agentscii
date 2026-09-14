@@ -415,13 +415,16 @@ TOOLS = [
             "description": (
                 "Run a full structural diagnostic on an .ans/.asc file in one call: "
                 "encoding check, control-byte hygiene, SGR token validity, row-width "
-                "check, standalone-reset check, and dead/blank-region detection (3+ "
+                "check, standalone-reset check, dead/blank-region detection (3+ "
                 "consecutive empty rows — the signature of a real rendering bug like "
-                "a panel that silently rendered black). Use this instead of writing "
-                "a fresh bash+Python diagnostic script each time — it's the same "
-                "checks every piece needs, already built. Pair with preview_piece: "
-                "inspect_piece tells you WHERE a structural problem is, preview_piece "
-                "lets you SEE it."
+                "a panel that silently rendered black), BACKGROUND TEXTURE DENSITY "
+                "(flags a piece whose negative space reads mostly flat/unvaried — "
+                "Methodology Pass 5, see workspace/METHODOLOGY.md), and FRAME/BORDER "
+                "PRESENCE (flags a piece with no border/title-card treatment at all — "
+                "Methodology Pass 6). Use this instead of writing a fresh bash+Python "
+                "diagnostic script each time — it's the same checks every piece needs, "
+                "already built. Pair with preview_piece: inspect_piece tells you WHERE "
+                "a structural problem is, preview_piece lets you SEE it."
             ),
             "parameters": {
                 "type": "object",
@@ -663,25 +666,46 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120):
     base_fg, bright_fg, base_bg = 7, False, 0
     pos = 0
     n = len(text)
+    pending_wrap = False  # deferred-wrap flag, like a real terminal: filling
+                          # the last column doesn't advance the row until
+                          # the NEXT character actually needs to be drawn.
+                          # Without this, a line that's exactly 80 chars
+                          # wide (very common — full-width house rows) gets
+                          # double-advanced: once by the internal wrap in
+                          # put(), again by the explicit \n that follows —
+                          # producing a spurious blank row after every
+                          # full-width line and roughly doubling row count.
 
     def put(ch):
-        nonlocal col, row, max_row_seen
+        nonlocal col, row, max_row_seen, pending_wrap
+        if pending_wrap:
+            row += 1
+            col = 0
+            pending_wrap = False
+            if row > max_row_seen:
+                max_row_seen = row
         fg_idx = (base_fg + 8) if bright_fg else base_fg
         grid[(row, col)] = (ch, fg_idx % 16, base_bg % 16)
         col += 1
         if col >= _TERMINAL_WIDTH:
-            col = 0
-            row += 1
-            if row > max_row_seen:
-                max_row_seen = row
+            # at the last column — defer the actual wrap (see above)
+            col = _TERMINAL_WIDTH - 1
+            pending_wrap = True
 
     while pos < n:
         ch = text[pos]
         if ch == "\n":
-            row += 1
-            col = 0
-            if row > max_row_seen:
-                max_row_seen = row
+            if pending_wrap:
+                # a line that filled exactly to the last column, then
+                # ended: this newline IS that line's own terminator, not
+                # an extra one — consume the pending wrap without a second
+                # row advance.
+                pending_wrap = False
+            else:
+                row += 1
+                col = 0
+                if row > max_row_seen:
+                    max_row_seen = row
             pos += 1
             continue
         m = _CSI_RE.match(text, pos)
@@ -710,12 +734,16 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120):
                         base_bg = p - 100 + 8
             elif code == "C":
                 col = min(_TERMINAL_WIDTH - 1, col + (params[0] if params else 1))
+                pending_wrap = False
             elif code == "D":
                 col = max(0, col - (params[0] if params else 1))
+                pending_wrap = False
             elif code == "A":
                 row = max(0, row - (params[0] if params else 1))
+                pending_wrap = False
             elif code == "B":
                 row = row + (params[0] if params else 1)
+                pending_wrap = False
                 if row > max_row_seen:
                     max_row_seen = row
             elif code in ("H", "f"):
@@ -723,6 +751,7 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120):
                 r = params[0] - 1 if len(params) >= 1 and params[0] else 0
                 c = params[1] - 1 if len(params) >= 2 and params[1] else 0
                 row, col = max(0, r), max(0, min(_TERMINAL_WIDTH - 1, c))
+                pending_wrap = False
                 if row > max_row_seen:
                     max_row_seen = row
             # any other CSI final byte (K, J, etc.) is consumed and ignored.
@@ -980,6 +1009,88 @@ def run_tool(name, args, agent):
                     f"(<8 visible chars) — piece may be mostly empty space"
                 )
 
+            # --- background density check -------------------------------------
+            # Methodology Pass 5 (see workspace/METHODOLOGY.md) requires real
+            # texture in whatever ISN'T the subject -- the single most common
+            # gap between house figurative work and the real references
+            # (compare STRIDE/MANTIS's flat black to ghengis-shades_of_a_
+            # shade.ANS's dense stippled field). Approximate "background" as
+            # any row-run of default/near-black bg (SGR bg 0/40 or unset) with
+            # low visible-glyph density -- can't know the TRUE subject
+            # silhouette without vision, but a piece that never varies its bg
+            # color/density across long stretches is a real, checkable signal
+            # of an un-textured negative space, regardless of what the actual
+            # subject shape is.
+            bg_re = re.compile(r"\x1b\[[0-9;]*m")
+            near_black_bg_rows = 0
+            textured_bg_rows = 0
+            content_rows = 0
+            for line in lines:
+                visible = bg_re.sub("", line)
+                if not visible.strip():
+                    continue
+                content_rows += 1
+                # crude density proxy: fraction of visible chars that are a
+                # real glyph (not space) vs the row width
+                non_space = sum(1 for ch in visible if ch != " ")
+                density = non_space / max(1, len(visible))
+                has_bg_change = "\x1b[4" in line or "\x1b[10" in line  # any bg SGR set
+                if not has_bg_change and density < 0.35:
+                    near_black_bg_rows += 1
+                elif density < 0.6:
+                    textured_bg_rows += 1
+            if content_rows >= 10:
+                flat_frac = near_black_bg_rows / content_rows
+                if flat_frac > 0.4:
+                    out.append(
+                        f"LOW BACKGROUND TEXTURE: {near_black_bg_rows}/{content_rows} "
+                        f"content rows ({flat_frac*100:.0f}%) read as mostly-empty/"
+                        f"unvaried background -- Pass 5 (negative-space texture) "
+                        f"may have been skipped. Real ACiD reference work rarely "
+                        f"leaves this much genuinely flat space; verify by eye with "
+                        f"preview_piece whether this is a deliberate minimal "
+                        f"composition or a missing texture_fill() pass."
+                    )
+                else:
+                    out.append(f"background texture: {near_black_bg_rows}/{content_rows} rows read flat ({flat_frac*100:.0f}%) -- reasonable")
+
+            # --- border/frame presence check ------------------------------------
+            # Methodology Pass 6 -- real ACiD packs are framed far more often
+            # than not (box-drawing border, repeated block motif, or a title
+            # card top/bottom). Cheap, approximate check: does the FIRST or
+            # LAST non-blank content row look like a deliberate horizontal
+            # rule/border (long run of a single repeated glyph, box-drawing
+            # chars, or a title-card pattern), or is the piece just... over,
+            # with no frame treatment at all.
+            box_chars = set("═║╔╗╚╝╠╣╦╩╬─│┌┐└┘├┤┬┴┼█▓▒░")
+            def looks_framed(line):
+                visible = bg_re.sub("", line).strip()
+                if len(visible) < 20:
+                    return False
+                box_frac = sum(1 for ch in visible if ch in box_chars) / len(visible)
+                # a long run of ANY single repeated char also reads as a rule
+                longest_run, cur, last = 0, 0, None
+                for ch in visible:
+                    if ch == last and ch != " ":
+                        cur += 1
+                    else:
+                        cur = 1
+                    longest_run = max(longest_run, cur)
+                    last = ch
+                return box_frac > 0.5 or longest_run >= 20
+            content_line_idxs = [i for i, l in enumerate(lines) if bg_re.sub("", l).strip()]
+            has_top_frame = bool(content_line_idxs) and looks_framed(lines[content_line_idxs[0]])
+            has_bottom_frame = bool(content_line_idxs) and looks_framed(lines[content_line_idxs[-1]])
+            if content_line_idxs and len(content_line_idxs) >= 6 and not (has_top_frame or has_bottom_frame):
+                out.append(
+                    "NO FRAME/BORDER DETECTED: neither the first nor last content "
+                    "row reads as a border/rule/title-card treatment. Real ACiD "
+                    "packs are framed more often than not (Methodology Pass 6) -- "
+                    "verify by eye whether this piece deliberately goes unframed "
+                    "or whether that pass just got skipped."
+                )
+            elif has_top_frame or has_bottom_frame:
+                out.append(f"frame/border: detected ({'top' if has_top_frame else ''}{' + ' if has_top_frame and has_bottom_frame else ''}{'bottom' if has_bottom_frame else ''})")
             # --- scope-family relabeling check ---------------------------------
             # curve_common.py's phosphor_render() uses one specific 8-hue wheel
             # (95,91,93,92,96,94,107,103) plus white-hot (97) and nothing else —
