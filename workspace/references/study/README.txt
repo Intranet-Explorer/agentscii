@@ -23,6 +23,36 @@ Files in this folder:
   - we-ACiDTrip.ANS -- the flagship deep-dive reference (see above). 3325-row
     scroll, panel handoffs, color-cycling dithering, a real demon/creature
     face (study @ row 2160) with gradient-built anatomical shading.
+  - somms-neo_tokyo.ANS -- "Neo Tokyo" by Somms, ACiD Productions 1994. A
+    muscular figure built entirely from shaded block regions -- study for
+    how much anatomical structure (shoulder, chest, arm definition) a
+    disciplined light-source + density-ramp pass can carry with NO gradient
+    math, just careful hand-placed block-density choices per region. Uses
+    real cursor-addressing (ESC[A, cursor-forward jumps) to layer shading
+    onto rows already drawn -- this is THE technique gap the house has been
+    missing: real ACiD work is rarely drawn top-to-bottom once, it's built
+    in passes that go back and add detail.
+  - ghengis_ragnarok-ides_of_march.ANS -- "Ides of March" by Ghengis &
+    Ragnarok, ACiD Productions 1995. A two-artist joint character portrait
+    (chick drawn by Ghengis, rest by Ragnarok per the piece's own credits)
+    with genuinely dense per-feature shading: individually shaded strands
+    of hair, jewelry with metallic highlight/shadow pairs, a fully
+    constructed face with brow/cheek/jaw as separate lit surfaces. Also
+    relies heavily on cursor-up layering -- study how the piece interleaves
+    base color blocks with later highlight passes.
+  - asphyx-acid_logo.ANS -- "ACiD" by Asphyx, ACiD Productions 2003. A
+    wordmark/logo piece with a face built INTO the negative space of the
+    lettering -- study for how a logo piece can carry real figurative
+    content instead of being flat typography, and for dense background
+    texture (this piece has almost no unshaded negative space anywhere).
+  - nokturnal_emissions-millenium_edition.ANS -- "Millenium Edition" by
+    Nokturnal Emissions, ACiD Productions 2003. A genie/creature face with
+    a fully rendered horned head, individually shaded beard/mustache
+    strands, and a dense patterned border framing a credits panel below --
+    study for panel structure (art zone + separate text zone, both fully
+    developed) and for background texture density around a figure (compare
+    against how flat/empty the house's own figurative pieces leave their
+    negative space).
   - avg-theterminator.ans -- a character portrait via SHADED BLOCK REGIONS
     (not per-cell gradient math) -- a different, equally valid technique for
     building a recognizable face: broad color-region blocking with internal
@@ -35,6 +65,17 @@ Files in this folder:
     share one composition without either one looking like an afterthought.
   - acdu1190_1.ans, bt_acidtrip_1.ans (+ critique), bt_what-happened-with-
     luciano-ayres.ans -- earlier-gathered study files, kept for reference.
+
+NOTE on cursor-addressing (ESC[A / ESC[B / ESC[row;colH): several of the
+newer references above use this real classic-scene technique -- draw a base
+layer, then move the cursor back to an already-drawn row to add highlights,
+shadows, or fine detail on top, rather than getting every cell right in one
+top-to-bottom pass. preview_piece's renderer (harness.py) was fixed to
+actually support this (a real row/col cursor model, not a flat per-line
+parser) -- before the fix, any piece using this technique rendered as
+diagonal garbage. If a preview ever looks like torn/streaked static instead
+of a coherent image, that's a real render bug worth flagging, not a broken
+reference file.
 
 All downloaded raw from 16colo.rs (raw/ endpoint, unmodified source bytes).
 Same rule as before: study technique, don't reproduce or resubmit any of

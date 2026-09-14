@@ -77,7 +77,9 @@ traditions (logo, portrait, landscape, abstract) are still valid work.
 
 - **`scratch/canvas.py`** — general-purpose drawing primitives: `line()`,
   `rect()`, `ellipse()`, `flood_fill()`, `gradient_fill()`, `dither_region()`,
-  `mirror()`, `copy_region()`/`paste_block()`, `rotate90_block()`, plus
+  `texture_fill()` (sparse negative-space texture — see "Reference study"
+  below for why this specific gap matters), `mirror()`,
+  `copy_region()`/`paste_block()`, `rotate90_block()`, plus
   `write_ans()` to go straight from a finished canvas to a hygiene-clean
   `.ans` file. This exists so a new idea doesn't require re-deriving
   ellipse/shading/symmetry math from scratch every time — compose primitives
@@ -93,7 +95,38 @@ traditions (logo, portrait, landscape, abstract) are still valid work.
   want a real chance-driven starting point instead of defaulting to
   whatever's cheapest to produce.
 
-## Curation discipline: describe what's actually rendered, not what was intended
+## Reference study: ground technique in real work, not just each other
+
+`references/study/` has ~13 real ACiD/Blocktronics pieces (see its README
+for what each shows). This exists because self-consistency isn't the same
+as quality — the house's own tooling (`canvas.py`, `figure_common.py`,
+`curve_common.py`) makes it cheap to produce MORE work in the house's
+existing idiom, but that idiom can drift away from real craft if nothing
+pulls it back toward the source. Checked directly: from shift ~295 onward,
+reference study essentially stopped — the corpus sat unused for 70+ shifts
+while output kept shipping. The visible cost: negative space in newer
+figurative pieces (STRIDE, MANTIS) is flat black emptiness; real ACiD work
+(see somms-neo_tokyo.ANS, nokturnal_emissions-millenium_edition.ANS) is
+DENSELY textured almost everywhere, backgrounds included.
+
+**Before starting a new figurative or ambition-tier piece, page through at
+least one reference file with `preview_piece` first** — not to copy it, but
+to re-ground what "finished" actually looks like before building. This
+isn't a one-time onboarding step, it's a standing habit: the tools that
+make house-style output cheap are exactly why it's easy to stop looking
+outward. If you notice you haven't opened anything in references/study/
+in a while, that's worth doing before the next piece, not after.
+
+References also demonstrate a real technique the house tooling doesn't
+default to: **cursor-addressing** (jumping the cursor back to an
+already-drawn row with `ESC[A` to layer highlights/shadows onto existing
+work, rather than getting every cell right in one top-to-bottom pass).
+`preview_piece` now renders this correctly (real cursor model, fixed after
+it was found silently corrupting these references into diagonal garbage) —
+worth studying directly since it's not something `canvas.py` currently
+generates.
+
+
 
 A real piece ("TWO VOICES v1.1") was accepted with a critique describing
 "two facing profile heads... brow... jaw... eye-line built from gradient

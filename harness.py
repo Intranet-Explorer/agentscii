@@ -645,26 +645,47 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120):
         return None, f"(error reading file: {e})"
 
     text = _decode_ans_bytes(raw).replace("\r\n", "\n").replace("\r", "\n")
-    all_lines = text.split("\n")
 
-    # Parse each logical line into (char, fg_idx, bg_idx) cells, then wrap at
-    # _TERMINAL_WIDTH exactly like a real terminal/BBS client would — many
-    # classic-scene .ANS files (e.g. 16colo.rs packs) author one giant
-    # logical line per "row" of the piece and rely on terminal auto-wrap
-    # rather than an explicit newline per display row. offset/max_rows below
-    # apply to these final WRAPPED display rows, not raw logical lines, so
-    # paging lines up with what the piece actually looks like rendered.
-    all_rows = []
-    for line in all_lines:
-        cells = []
-        base_fg, bright_fg, base_bg = 7, False, 0
-        pos = 0
-        for m in _CSI_RE.finditer(line):
-            chunk = line[pos:m.start()]
-            for ch in chunk:
-                fg_idx = (base_fg + 8) if bright_fg else base_fg
-                cells.append((ch, fg_idx % 16, base_bg % 16))
-            pos = m.end()
+    # Real cursor-addressable grid, not a flat per-line cell list. Classic
+    # ACiD/Blocktronics-scene .ANS files routinely draw a base layer left to
+    # right, then jump the cursor BACK UP with ESC[A to lay highlights/
+    # shadows/detail onto rows already drawn (real artists worked this way
+    # in TheDraw/ACiDDraw) — a flat "each source line is independent" model
+    # (the old approach here) silently corrupts any piece using this, since
+    # a cursor-up followed by new characters looks like a brand new row
+    # instead of an edit to an existing one. Grid model: a dict of
+    # (row, col) -> (char, fg_idx, bg_idx), with a real (row, col) cursor
+    # that ESC[A/B/C/D/H/f all move, and later writes at the same cell
+    # simply overwrite earlier ones — exactly what a real terminal does.
+    grid = {}
+    row, col = 0, 0
+    max_row_seen = 0
+    base_fg, bright_fg, base_bg = 7, False, 0
+    pos = 0
+    n = len(text)
+
+    def put(ch):
+        nonlocal col, row, max_row_seen
+        fg_idx = (base_fg + 8) if bright_fg else base_fg
+        grid[(row, col)] = (ch, fg_idx % 16, base_bg % 16)
+        col += 1
+        if col >= _TERMINAL_WIDTH:
+            col = 0
+            row += 1
+            if row > max_row_seen:
+                max_row_seen = row
+
+    while pos < n:
+        ch = text[pos]
+        if ch == "\n":
+            row += 1
+            col = 0
+            if row > max_row_seen:
+                max_row_seen = row
+            pos += 1
+            continue
+        m = _CSI_RE.match(text, pos)
+        if m:
             param_str, code = m.group(1), m.group(2)
             params = [int(c) for c in param_str.split(";") if c != ""]
             if code == "m":
@@ -688,34 +709,44 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120):
                     elif 100 <= p <= 107:
                         base_bg = p - 100 + 8
             elif code == "C":
-                # cursor forward N cols — advance without drawing, i.e. pad
-                # with blank cells at the current bg so column alignment
-                # after the jump matches a real terminal, instead of the
-                # raw "[NC" text leaking into the render as literal glyphs.
-                n = params[0] if params else 1
-                for _ in range(max(0, n)):
-                    cells.append((" ", 7, base_bg % 16))
+                col = min(_TERMINAL_WIDTH - 1, col + (params[0] if params else 1))
             elif code == "D":
-                n = params[0] if params else 1
-                del cells[max(0, len(cells) - n):]
-            # any other CSI final byte (H, f, K, J, etc.) is consumed and
-            # ignored rather than left as literal text — this renderer only
-            # needs a flat left-to-right approximation, not full cursor
-            # addressing.
-        tail = line[pos:]
-        for ch in tail:
-            fg_idx = (base_fg + 8) if bright_fg else base_fg
-            cells.append((ch, fg_idx % 16, base_bg % 16))
-        if len(cells) > _TERMINAL_WIDTH:
-            for i in range(0, len(cells), _TERMINAL_WIDTH):
-                all_rows.append(cells[i:i + _TERMINAL_WIDTH])
-        else:
-            all_rows.append(cells)
+                col = max(0, col - (params[0] if params else 1))
+            elif code == "A":
+                row = max(0, row - (params[0] if params else 1))
+            elif code == "B":
+                row = row + (params[0] if params else 1)
+                if row > max_row_seen:
+                    max_row_seen = row
+            elif code in ("H", "f"):
+                # ESC[row;colH — 1-indexed absolute position
+                r = params[0] - 1 if len(params) >= 1 and params[0] else 0
+                c = params[1] - 1 if len(params) >= 2 and params[1] else 0
+                row, col = max(0, r), max(0, min(_TERMINAL_WIDTH - 1, c))
+                if row > max_row_seen:
+                    max_row_seen = row
+            # any other CSI final byte (K, J, etc.) is consumed and ignored.
+            pos = m.end()
+            continue
+        put(ch)
+        pos += 1
 
-    total_lines = len(all_rows)
+    total_lines = max_row_seen + 1
     offset = max(0, min(offset, total_lines))
-    rows = all_rows[offset:offset + max_rows]
-    truncated = offset + len(rows) < total_lines
+    end_row = min(total_lines, offset + max_rows)
+    truncated = end_row < total_lines
+
+    rows = []
+    for r in range(offset, end_row):
+        line_cells = []
+        for c in range(_TERMINAL_WIDTH):
+            cell = grid.get((r, c))
+            line_cells.append(cell if cell is not None else (" ", 7, 0))
+        # trim fully-blank trailing columns (default fg/bg, space char) so a
+        # mostly-empty row doesn't force every row to full width
+        while line_cells and line_cells[-1] == (" ", 7, 0):
+            line_cells.pop()
+        rows.append(line_cells)
     max_width = max((len(r) for r in rows), default=1)
 
     if not rows:

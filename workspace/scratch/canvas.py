@@ -205,6 +205,31 @@ def dither_region(cv, region_fn, density_fn, fg, bg=0, ramp=RAMP):
             cv.set(x, y, ramp[idx], fg, bg)
 
 
+def texture_fill(cv, region_fn, fg, bg=0, ramp=RAMP, density=0.35, seed=None):
+    """Scatter sparse background texture over region_fn(x,y) cells -- for
+    negative space, NOT the subject. Real ACiD/Blocktronics work almost
+    never leaves flat unshaded black behind a figure/subject (see
+    references/study/somms-neo_tokyo.ANS, nokturnal_emissions-
+    millenium_edition.ANS); a lot of house figurative work does (compare
+    STRIDE/MANTIS's pure-black backgrounds). This is the fast way to close
+    that specific gap: call it on whatever's NOT your subject before you
+    finish, with a low density (0.15-0.4) so it reads as atmosphere, not
+    noise competing with the subject. density is the fraction of cells
+    that get ANY mark; among those, ramp index is randomized so the
+    texture isn't uniform. Deterministic with a seed if you want reproducible
+    output across passes."""
+    import random
+    rng = random.Random(seed)
+    for y in range(cv.h):
+        for x in range(cv.w):
+            if not region_fn(x, y):
+                continue
+            if rng.random() > density:
+                continue
+            idx = rng.randint(len(ramp) // 2, len(ramp) - 1)  # bias toward light/sparse marks
+            cv.set(x, y, ramp[idx], fg, bg)
+
+
 def cycle_hue(phase, wheel=HOUSE_HUE):
     """House color-cycling helper: map a float phase to a wheel index. Use
     this instead of hand-rolling `int(phase) % len(HUE)` in every piece."""
