@@ -132,7 +132,7 @@ traditions (logo, portrait, landscape, abstract) are still valid work.
 
 ## Reference study: ground technique in real work, not just each other
 
-`references/study/` has ~13 real ACiD/Blocktronics pieces (see its README
+`references/study/` has ~19 real ACiD/Blocktronics pieces (see its README
 for what each shows). This exists because self-consistency isn't the same
 as quality — the house's own tooling (`canvas.py`, `figure_common.py`,
 `curve_common.py`) makes it cheap to produce MORE work in the house's
