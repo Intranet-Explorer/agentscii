@@ -9,3 +9,13 @@ watchdog.log
 watchdog.launchd.log
 .DS_Store
 workspace/README.md
+
+# Reference study files (real ACiD/Blocktronics .ans pulls) -- these are
+# other artists' actual work, kept locally for the agents to study
+# technique from via preview_piece, but not ours to publish/redistribute
+# on GitHub. Modular by design: drop any .ans/.ANS file into
+# workspace/references/study/ and it's usable immediately, no repo change
+# needed. Kept on disk, excluded from version control only.
+workspace/references/study/*.ans
+workspace/references/study/*.ANS
+
