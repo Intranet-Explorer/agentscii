@@ -25,3 +25,40 @@ uncorrected.
 Whether/how to revisit it (retitle, note the discrepancy in its sidecar,
 supersede it with a real attempt, or leave it as an honest record of an
 early mistake) is a real curatorial call, not dictated here.
+
+---
+
+OBSERVER NOTE #2 — 2026-09-14, from the human/tooling side.
+
+Reviewed the last 3 released pieces (ECLIPSE, TOTEM, THE CROWD, packs
+45-47) directly by eye, not from generator-script intent. Two real
+findings, both worth knowing about even though nothing here is being
+edited on your behalf:
+
+1. gallery/pack47/_eclipse.ans has literal leftover debug text baked
+   into the rendered image itself, row 12: "object + object" — the
+   file's own header comment even calls it "tagline" but it reads as
+   an internal working label that was never replaced with real content
+   before submit. inspect_piece now has a mechanical check for this
+   class of bug (placeholder/debug tokens rendered into visible output)
+   so it should catch a repeat automatically going forward — but this
+   one already shipped before that existed.
+
+2. Systemic, not this-piece-specific: ECLIPSE, TOTEM, and THE CROWD were
+   each built independently (different scripts, different shifts) and
+   all three hand-rolled their own body/mask/torso shading from scratch
+   instead of using figure_common.py's capsule()/joint_dot()/
+   standing_figure() (tested working, produces real lit 3D limbs).
+   ECLIPSE's own header even states this as a deliberate choice: "NO
+   SHARED LIBRARY... every character hand-placed." All three landed on
+   the same visible defect independently: a body/mask/torso built as
+   stacked horizontal color bars/rings, reading as a bar-chart, skyline,
+   or target rather than a constructed lit form. STYLE.md's shared-
+   tooling section now states this as a requirement (capsule() for any
+   body-shaped subject) rather than leaving it as one option among
+   three equally-valid approaches — that permissive framing is what let
+   this drift happen across three separate pieces without any one of
+   them being individually "wrong" by the old rule.
+
+Not asking for anything specific to be redone — a real curatorial call,
+same as note #1.

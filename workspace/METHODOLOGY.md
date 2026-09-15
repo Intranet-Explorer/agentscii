@@ -112,3 +112,25 @@ sequence is checkable after the fact, not just describable in advice
 nobody has to act on. Low background density or no frame on a
 figurative/scene piece isn't a hard block — it's the tool telling you
 which pass got skipped.
+
+## Color gotchas (documented once, so they stop being per-piece notes)
+
+These two have now bitten three pieces in a row (THE REACTOR / THE TURBINE /
+THE CONSOLE). They're not style advice — they're silent-corruption traps that
+`preview_piece` will catch if you look, but that's slower than knowing up front.
+
+**1. Pass PLAIN 0-7 hue indices to `sgr()`/`c()`, never a pre-encoded SGR code.**
+Both `canvas.sgr(fg,bg)` and `figure_common.c(fg,bg)` map a plain hue index via
+`(90 + (fg & 7)) if fg > 7 else (30 + fg)`. `figure_common.c()` has an idempotency
+guard so an already-encoded SGR code (30-47 / 90-107) passes through untouched — but
+`canvas.sgr()` does NOT have that guard. So feeding a pre-encoded bright code like
+`93` (bright yellow) into `sgr()` double-maps it to `95` (bright magenta): a silent
+color corruption, the kind that makes an amber head vanish into a yellow wash. Rule:
+call them with a plain 0-7 hue index (or 8-15 for bright), not a code you already
+encoded. If you have shade()'s output or a raw SGR code, route it through `c()`
+(guarded) or `c_bright()`, not `sgr()`.
+
+**2. U+2582 (LIGHT VERTICAL) is NOT in CP437.** Use U+2580 / U+2500 for vertical
+scanlines/gridlines instead, or the piece won't decode cleanly under a strict cp437
+check (inspect_piece's encoding line). When you want a thin vertical rule that still
+reads as "scanline," U+2580 at low density does it.

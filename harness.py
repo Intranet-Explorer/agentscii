@@ -1157,6 +1157,27 @@ def run_tool(name, args, agent):
                     "counting it toward the figurative tradition."
                 )
 
+            # --- placeholder/debug text check ------------------------------------
+            # Found directly 2026-09-14: ECLIPSE v3 shipped to a released pack with
+            # a literal debug tagline baked into the rendered image -- the author
+            # comment even names it as a working label ("PROVENANCE... 'object +
+            # object'") that was never replaced with real content before submit.
+            # Cheap, reliable, zero-false-positive-risk check: scan visible text
+            # for common placeholder/debug tokens.
+            disp_all = bg_re.sub("", "\n".join(lines))
+            placeholder_re = re.compile(
+                r"\b(?:TODO|FIXME|PLACEHOLDER|XXX|TBD|object \+ object|"
+                r"DEBUG|WIP-TEXT|lorem ipsum|REPLACE ?ME|CHANGE ?ME)\b",
+                re.IGNORECASE,
+            )
+            hits = sorted(set(m.group(0) for m in placeholder_re.finditer(disp_all)))
+            if hits:
+                out.append(
+                    f"PLACEHOLDER/DEBUG TEXT DETECTED IN RENDERED OUTPUT: {hits} -- "
+                    f"this reads as leftover debug/placeholder text baked into the "
+                    f"actual image, not real content. Fix before submitting."
+                )
+
             return "\n".join(out)
         except Exception as e:
             return f"(error inspecting piece: {e})"

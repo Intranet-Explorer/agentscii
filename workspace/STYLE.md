@@ -97,8 +97,32 @@ traditions (logo, portrait, landscape, abstract) are still valid work.
   the way a real ACiD-era editor's tools got combined by hand. It's the
   general layer underneath `figure_common.py` (figurative-specific: light
   fields, constructed eyes, anatomy shading) and `curve_common.py`
-  (parametric-curve-specific: phosphor trails, hue cycling) — use whichever
-  fits, or combine them; none of the three make the others obsolete.
+  (parametric-curve-specific: phosphor trails, hue cycling).
+
+  **REQUIRED for any body/creature/figure-shaped subject (a person, a
+  face, a mask, a crowd, anything with a head/torso/limb structure):
+  use `figure_common.py`'s `capsule()` (limb/torso as a lit rounded
+  tube) + `joint_dot()` (elbow/shoulder/knee so limbs read as one
+  continuous form through a bend) + `standing_figure()` (a full posed
+  figure built from both) + `eye()`/`teeth()`/`brow_ridge()` for
+  constructed features — not a hand-rolled loop of stacked horizontal
+  half-width bars.** Found directly in the catalog (2026-09-14, ECLIPSE/
+  TOTEM/CROWD all reviewed by eye): three separately-authored pieces each
+  independently reinvented body/mask/torso shading from scratch instead of
+  reusing this, and all three produced the exact same visible defect —
+  a form built as stacked horizontal color bands (a torso as `for i in
+  range(body_h): draw a horizontal strip`) reads as a bar chart or
+  skyline, not a body, no matter how good the per-cell shading math is.
+  `capsule()` is the fix: it's a *rounded surface* (the Minkowski sum of
+  a line segment and a disk), lit by `Lfn` across its actual curvature,
+  not a stack of independent rows — that's what makes a limb or torso
+  read as one continuous lit 3D form instead of a ladder of bars. If
+  `figure_common.py`'s primitives genuinely don't fit a specific shape,
+  say so explicitly in the piece's note — silently hand-rolling
+  equivalent math instead is exactly the pattern that produced this.
+  `canvas.py`'s primitives (ellipse, capsule-free shading, texture)
+  remain the right choice for anything that ISN'T body-shaped —
+  landscapes, objects, abstract/geometric, logos.
 - **`random_direction` tool** — rolls a random subject/theme + technique
   constraint + palette lean, weighted toward whatever tradition the catalog
   is currently thinnest in. It's a seed for genuine variety, not a mandate —
