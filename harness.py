@@ -180,6 +180,43 @@ STYLE_DOC_NOTE = (
     "you haven't. "
 )
 
+# Inlined directly into every shift's system prompt (not a file you have to
+# remember to open) — the real reason: checked 8 shifts after METHODOLOGY.md
+# and references/study/ existed, zero mentioned either, zero called
+# texture_fill()/strand_shade(). The docs and tools were real, just not
+# ambient — an agent had to think to go fetch them before they helped.
+# This doesn't remove any freedom over WHAT to build or WHEN — that's still
+# entirely yours (random_direction, your own ideas, extending scratch/,
+# whatever). It's the concrete HOW, always present, so building well isn't
+# something you have to remember to go look up.
+TECHNIQUE_NOTE = (
+    "CONCRETE BUILD METHOD (read workspace/METHODOLOGY.md for the full "
+    "version — this is the always-present summary): real ANSI art is built "
+    "in PASSES, not one generative shot. For any figurative/scene/ambition-"
+    "tier piece: (1) block in flat silhouette shapes first, verify the "
+    "composition reads correctly with preview_piece BEFORE any shading; "
+    "(2) shade from ONE light source — figure_common.light_field(x,y,lx,ly) "
+    "feeding shade()/shade_region(), the SAME (lx,ly) everywhere in the "
+    "piece, density ramp '█▓▒░' carrying the falloff, not flat color-to-"
+    "color cutoffs; (3) add individual directional detail on top — "
+    "canvas.strand_shade(region_fn, direction_fn, fg_list) for fur/hair/"
+    "grain (short strokes following the surface, alternating hues, not a "
+    "flat wash), figure_common.eye()/teeth()/brow_ridge() for constructed "
+    "anatomy; (4) cover whatever ISN'T the subject with "
+    "canvas.texture_fill(region_fn, fg, density=0.15-0.4) — genuinely flat "
+    "black negative space is the single most common gap between house work "
+    "and real ACiD pieces, checked directly against the references; "
+    "(5) add a border/frame/title-card as its own pass — real packs are "
+    "framed more often than not. inspect_piece now flags LOW BACKGROUND "
+    "TEXTURE and NO FRAME/BORDER DETECTED specifically to catch a skipped "
+    "pass — treat those as 'which step needs another round,' not a "
+    "nitpick. Before finishing a piece in this register, page through one "
+    "file in references/study/ with preview_piece and compare density "
+    "honestly — same tool works on your own WIP mid-build, not just at the "
+    "end."
+)
+
+
 AGENTS = {
     "artist": {
         "model": MODEL,
@@ -193,7 +230,7 @@ AGENTS = {
             "submit_piece when something is ready for review. That's the only "
             "hard boundary between you and your collaborator — everything else "
             "upstream is shared. "
-            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE +
+            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + TECHNIQUE_NOTE +
             "A human (Tyler) directs this project overall and can leave either "
             "of you direction via your inbox. "
             "This is directed, quality-focused work — idle equilibrium isn't a "
@@ -229,7 +266,7 @@ AGENTS = {
             "everything upstream is shared, and you're a full contributor "
             "there too, not just an outside judge. Jump into scratch/ and add "
             "a pass to something your collaborator started whenever you want. "
-            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE +
+            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + TECHNIQUE_NOTE +
             "A human (Tyler) directs this project overall and can leave either "
             "of you direction via your inbox. "
             "Ground every judgment in something real: fetch and actually look "
@@ -1203,7 +1240,58 @@ def run_tool(name, args, agent):
                 # critique to match reality, or overriding with an explicit
                 # note explaining the disagreement — it isn't a silent veto.
                 critique_lower = critique.lower()
-                claimed_words = [w for w in _VISUAL_CLAIM_WORDS if w in critique_lower]
+                # Negation-aware: only count a visual-claim word as an actual
+                # POSITIVE claim (curator asserting the feature is present),
+                # not when the curator is denying/negating it themselves
+                # ("NOT anatomy", "no face", "isn't a figure", "without eyes").
+                # Bug found 2026-09-14: the naive version triggered on ANY
+                # occurrence of the word, so a curator correctly writing "this
+                # is abstract, no anatomy, no face" got hard-blocked by this
+                # gate even when the blind check agreed with them — 4 straight
+                # curator shifts (397/399/401/403) loop-guard-killed on this
+                # exact false positive, stuck re-wording an already-correct
+                # critique because the gate couldn't tell affirmation from
+                # denial.
+                _NEGATORS = (
+                    r"\b(?:no|not|n't|without|zero|none of|isn'?t|aren'?t|lacks?|"
+                    r"absence of|disclaims?|rather than|pretending (?:to be|at)|"
+                    r"instead of|supposed to be)\b"
+                )
+                claimed_words = []
+                for w in _VISUAL_CLAIM_WORDS:
+                    # word-boundary match only (substring "eye" inside "eyed"
+                    # or, critically, the idiom "verified by eye" is not a
+                    # claim that a real eye is present — that idiom is used
+                    # constantly in real critiques and was itself producing
+                    # false triggers before this fix)
+                    for m in re.finditer(r"\b" + re.escape(w) + r"\b", critique_lower):
+                        post = critique_lower[m.end():m.end() + 8]
+                        if w == "eye" and post.startswith(" against"):
+                            continue  # "by eye against ref" == verified visually
+                        pre_tail = critique_lower[max(0, m.start() - 8):m.start()]
+                        if w == "eye" and pre_tail.rstrip().endswith("by"):
+                            continue  # "by eye" == verified visually, not a claim
+                        # Negation can govern a whole comma-separated list
+                        # ("no anatomy, face, eye, brow, jaw") — so look back
+                        # to the start of the CLAUSE (last sentence-ending
+                        # punctuation), not just a fixed few words, and check
+                        # the negator appears anywhere in that clause with no
+                        # intervening clause break ("but"/"however"/";").
+                        clause_start = max(
+                            critique_lower.rfind(".", 0, m.start()),
+                            critique_lower.rfind("!", 0, m.start()),
+                            critique_lower.rfind("?", 0, m.start()),
+                        ) + 1
+                        clause = critique_lower[clause_start:m.start()]
+                        break_pos = max(
+                            (clause.rfind(b) for b in (" but ", " however ", "; ")),
+                            default=-1,
+                        )
+                        governing = clause[break_pos + 1:] if break_pos >= 0 else clause
+                        if re.search(_NEGATORS, governing):
+                            continue  # negated (directly or via governing clause) — not a claim
+                        claimed_words.append(w)
+                        break
                 if claimed_words:
                     blind = _blind_visual_check(src)
                     blind_lower = blind.lower()
