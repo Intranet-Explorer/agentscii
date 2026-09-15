@@ -89,18 +89,36 @@ traditions (logo, portrait, landscape, abstract) are still valid work.
   `rect()`, `ellipse()`, `flood_fill()`, `gradient_fill()`, `dither_region()`,
   `texture_fill()` (sparse negative-space texture), `strand_shade()`
   (directional stroke-based texture for fur/hair/grain), `streak_field()`
-  (dense vertical noise-streak/flame texture — see "Reference study"
-  below), `drip()`/`drip_edge()` (paint-drip/run marks hanging off an
-  edge), `mirror()` (single-axis) and `mirror_quad()` (4-way kaleidoscope/
-  mandala mirror), `copy_region()`/`paste_block()`, `rotate90_block()`,
-  plus `write_ans()` to go straight from a finished canvas to a
-  hygiene-clean `.ans` file. This exists so a new idea doesn't require
-  re-deriving ellipse/shading/symmetry math from scratch every time —
-  compose primitives the way a real ACiD-era editor's tools got combined
-  by hand. It's the general layer underneath `figure_common.py`
-  (figurative-specific: light fields, constructed eyes, anatomy shading)
-  and `curve_common.py` (parametric-curve-specific: phosphor trails, hue
-  cycling).
+  (dense vertical noise-streak/flame texture), `drip()`/`drip_edge()`
+  (paint-drip/run marks hanging off an edge), `mirror()` (single-axis) and
+  `mirror_quad()` (4-way kaleidoscope/mandala mirror), `block_letters()`
+  (shared 5x7 block-letter wordmark font — see below), `bevel_text()`
+  (chrome/3D beveled lettering), `drop_shadow_text()` (raised-lettering
+  drop-shadow title effect), `copy_region()`/`paste_block()`,
+  `rotate90_block()`, plus `write_ans()` to go straight from a finished
+  canvas to a hygiene-clean `.ans` file — see "Reference study" below for
+  which reference each texture/text technique came from. This exists so a
+  new idea doesn't require re-deriving ellipse/shading/symmetry/lettering
+  math from scratch every time — compose primitives the way a real
+  ACiD-era editor's tools got combined by hand. It's the general layer
+  underneath `figure_common.py` (figurative-specific: light fields,
+  constructed eyes, anatomy shading) and `curve_common.py`
+  (parametric-curve-specific: phosphor trails, hue cycling).
+
+  **Wordmark/title text: use `block_letters()`/`bevel_text()`/
+  `drop_shadow_text()`, not a hand-rolled `GLYPHS` dict.** Found directly
+  2026-09-15: 9 separate scratch files each independently hand-authored
+  their own block-letter font from scratch — the same duplication problem
+  `capsule()` fixed for bodies. One shared 44-glyph font (full A-Z, 0-9,
+  space, common title punctuation) now lives in `canvas.py`, seeded from
+  the original house letters in `make_logo.py`. Practical notes found
+  while building/testing this: use `scale=2` or higher for legible text
+  (scale=1 is correct data but renders soft in the PNG preview pipeline —
+  verified the underlying .ans is fine at scale=1, it's specifically the
+  synthetic preview that needs more pixels per letter); keep
+  `text_width(...)` under 80 (the house canvas width — wider silently
+  clips in the preview). Check `text_width()` before committing to a
+  size/word combination.
 
   **REQUIRED for any body/creature/figure-shaped subject (a person, a
   face, a mask, a crowd, anything with a head/torso/limb structure):
@@ -192,6 +210,18 @@ engineer by eye:
   mirroring it both axes at once, not `canvas.py`'s existing single-axis
   `mirror()`. `mirror_quad()` mirrors an upper-left quadrant into all
   four, turning 1/4 authored detail into a full symmetric rosette.
+
+Two more, same date, from references that had text/title techniques not
+covered by the shared font at all until now:
+
+- **Beveled/chrome 3D lettering** (see asphyx-acid_logo.ANS): a lit top
+  edge, mid-tone body, and dark underside PER LETTER is what makes a
+  wordmark read as lit metal instead of a flat-color silhouette.
+  `bevel_text()` does the 3-band split in one call.
+- **Raised-lettering drop shadow** (see avg-theterminator.ans): a solid
+  offset dark copy behind the real text, peeking out on one side — the
+  classic "text sitting above the background" title read. `drop_shadow_text()`
+  does this.
 
 References also demonstrate a real technique the house tooling doesn't
 default to: **cursor-addressing** (jumping the cursor back to an
