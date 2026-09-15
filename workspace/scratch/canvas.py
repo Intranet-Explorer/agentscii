@@ -277,6 +277,135 @@ def strand_shade(cv, region_fn, direction_fn, fg_list, n_strands=40, length=6,
                 cv.set(x, y, ch, fg)
 
 
+def streak_field(cv, region_fn, fg_ramp, ch=RAMP[0], density=0.5,
+                  min_len=3, max_len=None, seed=None):
+    """Dense vertical noise-streak texture -- studied from
+    references/study/blocktronics-tnt_bl0b.ANS and blocktronics-hx_night.ANS
+    (both real ACiD/Blocktronics flame/static-field pieces). NOT the same
+    technique as strand_shade() (discrete angled strokes from an origin
+    point) -- this is a per-COLUMN randomized-run vertical noise field: for
+    each column that region_fn allows, pick a random run length and fill it
+    solid from the bottom up, biased toward brighter/hotter colors in
+    fg_ramp lower in the run and cooler/dimmer higher up. Repeated across
+    many adjacent columns with independent random run lengths, this is what
+    produces the ragged, flame-like vertical streak texture in both
+    references (very different from a smooth horizontal gradient or a flat
+    fill -- the raggedness IS the technique).
+
+    region_fn(x,y) -> bool: where streaks are allowed to exist.
+    fg_ramp: a list of colors from HOT (index 0, used near the base of each
+      streak) to COOL (last index, used near the streak's tip) -- streak
+      color is picked by position within its own run, not randomly, so each
+      individual streak reads as a coherent flame/tongue, not noise.
+    density: fraction of eligible columns that get a streak at all.
+    min_len/max_len: streak length range in cells (max_len defaults to
+      region height).
+    seed: deterministic output across passes if set.
+
+    Call this AFTER your base composition (title, subject, frame) so
+    streaks fill remaining negative space without covering intentional
+    content -- same convention as texture_fill()."""
+    import random
+    rng = random.Random(seed)
+    cols = {}
+    for x in range(cv.w):
+        for y in range(cv.h):
+            if region_fn(x, y):
+                cols.setdefault(x, []).append(y)
+    for x, ys in cols.items():
+        if rng.random() > density:
+            continue
+        ys_sorted = sorted(ys)
+        base_y = ys_sorted[-1]  # streak grows UPWARD from the lowest eligible cell
+        col_max_len = max_len if max_len is not None else len(ys_sorted)
+        run_len = rng.randint(min_len, max(min_len, col_max_len))
+        eligible_set = set(ys_sorted)
+        for i in range(run_len):
+            y = base_y - i
+            if y not in eligible_set:
+                break
+            t = i / max(1, run_len - 1)  # 0 at base (hot) -> 1 at tip (cool)
+            idx = min(len(fg_ramp) - 1, int(t * len(fg_ramp)))
+            cv.set(x, y, ch, fg_ramp[idx], cv.get(x, y)[2])
+
+
+def drip(cv, x, y0, y1, fg, ch=RAMP[0], bg=None, taper=True, seed=None):
+    """A single paint-drip/run mark hanging down from (x, y0) to a random
+    depth up to y1 -- studied from references/study/blocktronics-n_silove.ANS
+    (drip/paint-run texture on hand-styled lettering). Real drip technique:
+    a thin vertical line whose length varies per-column (not a uniform
+    fringe) and whose WIDTH narrows as it falls (a droplet tapering to a
+    point), which is what reads as "dripping" rather than "a row of icicles
+    of the same length." Call once per column along a letter/shape's lower
+    edge with a fresh seed or varying x so drips don't line up mechanically.
+
+    x: the column to drip in (typically along a letterform's bottom edge).
+    y0: the row the drip starts from (the letter's edge).
+    y1: the furthest row a drip could reach (a ceiling on length).
+    fg: drip color (usually the same hue as the source letter, optionally
+      darker/desaturated to read as "wet").
+    taper: if True, the ch glyph density drops (using RAMP) as the drip
+      thins toward its tip -- a full block near the source, lighter marks
+      at the tip. If False, uses ch uniformly (a harder-edged drip).
+    seed: per-drip randomness; vary this per call (e.g. seed=x) or drips
+      look identical."""
+    import random
+    rng = random.Random(seed)
+    length = rng.randint(1, max(1, y1 - y0))
+    for i in range(length):
+        y = y0 + i
+        if y > y1:
+            break
+        if taper:
+            t = i / max(1, length - 1)
+            idx = min(len(RAMP) - 1, int(t * len(RAMP)))
+            cv.set(x, y, RAMP[idx], fg, bg if bg is not None else cv.get(x, y)[2])
+        else:
+            cv.set(x, y, ch, fg, bg if bg is not None else cv.get(x, y)[2])
+
+
+def drip_edge(cv, edge_fn, y_max, fg, x_range=None, coverage=0.4, taper=True, seed=None):
+    """Convenience wrapper around drip(): call drip() along every column of
+    a shape's bottom edge automatically. edge_fn(x) -> y or None: returns
+    the row of the lowest painted cell in column x (the drip's start point),
+    or None if that column has no shape to drip from. coverage: fraction of
+    eligible columns that get a drip at all (real drip work isn't on every
+    single column -- that reads as a uniform fringe, not dripping).
+    x_range: (x0, x1) to limit which columns are checked; defaults to the
+    whole canvas width."""
+    import random
+    rng = random.Random(seed)
+    x0, x1 = x_range if x_range else (0, cv.w)
+    for x in range(x0, x1):
+        y0 = edge_fn(x)
+        if y0 is None:
+            continue
+        if rng.random() > coverage:
+            continue
+        drip(cv, x, y0, y_max, fg, taper=taper, seed=rng.randint(0, 1 << 30))
+
+
+def mirror_quad(cv):
+    """4-way (kaleidoscope/mandala) mirror: mirrors the canvas's upper-left
+    quadrant into all four quadrants -- studied from
+    references/study/blocktronics-mx_mess.ANS (a true 4-way mirrored
+    ornamental piece, distinct from canvas.mirror()'s single-axis v/h
+    mirror). Build your ornamental motif ONLY in the upper-left quadrant
+    (x < w/2, y < h/2), then call this once: it mirrors that quadrant
+    rightward (h-axis) AND downward (v-axis) AND diagonally (both), so one
+    authored wedge becomes a full symmetric rosette/mandala. This is what
+    makes dense curled ornamental patterns (see the reference) cheap --
+    author 1/4 of the detail, get a fully symmetric result."""
+    w, h = cv.w, cv.h
+    mid_x, mid_y = w // 2, h // 2
+    for y in range(mid_y):
+        for x in range(mid_x):
+            src = cv.cells[y][x]
+            cv.cells[y][w - 1 - x] = list(src)          # mirror right (h-axis)
+            cv.cells[h - 1 - y][x] = list(src)           # mirror down (v-axis)
+            cv.cells[h - 1 - y][w - 1 - x] = list(src)   # mirror diagonal (both)
+
+
 def cycle_hue(phase, wheel=HOUSE_HUE):
     """House color-cycling helper: map a float phase to a wheel index. Use
     this instead of hand-rolling `int(phase) % len(HUE)` in every piece."""

@@ -87,17 +87,20 @@ traditions (logo, portrait, landscape, abstract) are still valid work.
 
 - **`scratch/canvas.py`** — general-purpose drawing primitives: `line()`,
   `rect()`, `ellipse()`, `flood_fill()`, `gradient_fill()`, `dither_region()`,
-  `texture_fill()` (sparse negative-space texture) and `strand_shade()`
-  (directional stroke-based texture for fur/hair/grain — see "Reference
-  study" below for the technique gap both close), `mirror()`,
-  `copy_region()`/`paste_block()`, `rotate90_block()`, plus
-  `write_ans()` to go straight from a finished canvas to a hygiene-clean
-  `.ans` file. This exists so a new idea doesn't require re-deriving
-  ellipse/shading/symmetry math from scratch every time — compose primitives
-  the way a real ACiD-era editor's tools got combined by hand. It's the
-  general layer underneath `figure_common.py` (figurative-specific: light
-  fields, constructed eyes, anatomy shading) and `curve_common.py`
-  (parametric-curve-specific: phosphor trails, hue cycling).
+  `texture_fill()` (sparse negative-space texture), `strand_shade()`
+  (directional stroke-based texture for fur/hair/grain), `streak_field()`
+  (dense vertical noise-streak/flame texture — see "Reference study"
+  below), `drip()`/`drip_edge()` (paint-drip/run marks hanging off an
+  edge), `mirror()` (single-axis) and `mirror_quad()` (4-way kaleidoscope/
+  mandala mirror), `copy_region()`/`paste_block()`, `rotate90_block()`,
+  plus `write_ans()` to go straight from a finished canvas to a
+  hygiene-clean `.ans` file. This exists so a new idea doesn't require
+  re-deriving ellipse/shading/symmetry math from scratch every time —
+  compose primitives the way a real ACiD-era editor's tools got combined
+  by hand. It's the general layer underneath `figure_common.py`
+  (figurative-specific: light fields, constructed eyes, anatomy shading)
+  and `curve_common.py` (parametric-curve-specific: phosphor trails, hue
+  cycling).
 
   **REQUIRED for any body/creature/figure-shaped subject (a person, a
   face, a mask, a crowd, anything with a head/torso/limb structure):
@@ -166,6 +169,29 @@ references into reusable `canvas.py` primitives so they're cheap to apply:
   `strand_shade()` does this — pass it a direction function that follows
   your subject's actual form (radiating from a point, combed along a
   curve, etc.), not a fixed angle everywhere.
+
+Three more, added 2026-09-15 from the Blocktronics references Tyler named
+directly — none of these were being used at all (checked: `preview_piece`
+had opened only 1 of the 6 newest references, one time, across 85 shifts).
+Same pattern as above — the technique wasn't obvious from the references
+alone, so it's now a callable primitive instead of something to reverse-
+engineer by eye:
+
+- **Vertical noise-streak / flame texture** (see blocktronics-tnt_bl0b.ANS,
+  blocktronics-hx_night.ANS): dense ragged vertical streaks of varying
+  length, hot-to-cool colored bottom-to-top per streak — a genuinely
+  different technique from strand_shade()'s discrete angled strokes.
+  `streak_field()` does this in one call.
+- **Paint-drip/run marks** (see blocktronics-n_silove.ANS): letterforms
+  and shapes with individual drips of varying length hanging off their
+  lower edge, each one tapering to a point rather than a uniform icicle
+  fringe. `drip()` (single drip) / `drip_edge()` (auto-applies along a
+  shape's bottom edge) do this.
+- **4-way kaleidoscope/mandala mirroring** (see blocktronics-mx_mess.ANS):
+  dense ornamental swirl patterns built by authoring ONE wedge and
+  mirroring it both axes at once, not `canvas.py`'s existing single-axis
+  `mirror()`. `mirror_quad()` mirrors an upper-left quadrant into all
+  four, turning 1/4 authored detail into a full symmetric rosette.
 
 References also demonstrate a real technique the house tooling doesn't
 default to: **cursor-addressing** (jumping the cursor back to an
