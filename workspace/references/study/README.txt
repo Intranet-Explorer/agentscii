@@ -142,3 +142,33 @@ pin-up piece earlier) -- the six below are all original work.
     specifically, a tradition STYLE.md names but this corpus was
     otherwise thin on.
 
+---
+
+Added 2026-09-15 (second batch), from 16colo.rs/pack/blocktronics_16colors
+(2013) and 16colo.rs/pack/blocktr0nics30302020 (2020). Same standard as
+before: several candidates reviewed and excluded before adding these --
+one depicting a licensed film franchise, one pin-up/cheesecake-style piece
+off-brief regardless of origin, one ambiguous multi-artist collage with
+unclear individual provenance, one with a character-suggestive filename.
+The five below are confirmed original technique-focused work.
+
+  - blocktronics-avg_16c.ANS -- by AVG, 16colors pack (2013). A painted
+    portrait/creature study using genuine photorealistic multi-hue color
+    transitions (not the house's usual single-hue density ramp) --
+    reference for figure_common.photoreal_gradient().
+  - blocktronics-zo_16cdraw.ANS -- by zO, 16colors pack (2013). Original
+    mutant/creature illustration with constructed mouth/teeth anatomy and
+    dense gradient shading -- another figurative reference alongside
+    somms-neo_tokyo.ANS and we-ACiDTrip.ANS's row-2160 creature.
+  - blocktronics-we_c22.ANS -- by Sudden Death (outline) & Knocturnal
+    (shading), 16colors pack (2013). Metallic/mechanical object with real
+    specular highlights (tight bright cores distinct from the broader
+    diffuse shading) -- reference for figure_common.specular_shade().
+  - blocktronics-biz_collo.ANS -- by BIZ, 16colors pack (2013). Original
+    graffiti-style wordmark lettering, a different letterform style than
+    n_silove.ANS -- second logo/wordmark reference.
+  - blocktronics-ra_mindseye.ANS -- "Mind's Eye" by RA, 30302020 pack
+    (2020). Abstract swirl composition with genuine specular highlight
+    technique (tight gloss cores on curved forms) -- second reference for
+    figure_common.specular_shade() alongside we_c22.ANS.
+

@@ -153,7 +153,7 @@ traditions (logo, portrait, landscape, abstract) are still valid work.
 
 ## Reference study: ground technique in real work, not just each other
 
-`references/study/` has ~19 real ACiD/Blocktronics pieces (see its README
+`references/study/` has ~25 real ACiD/Blocktronics pieces (see its README
 for what each shows). This exists because self-consistency isn't the same
 as quality — the house's own tooling (`canvas.py`, `figure_common.py`,
 `curve_common.py`) makes it cheap to produce MORE work in the house's
@@ -222,6 +222,24 @@ covered by the shared font at all until now:
   offset dark copy behind the real text, peeking out on one side — the
   classic "text sitting above the background" title read. `drop_shadow_text()`
   does this.
+
+Two more, added from a second batch of Blocktronics packs (16colors 2013,
+30302020 2020) — real shading techniques the figurative work didn't have
+a primitive for yet:
+
+- **Specular/gloss highlights** (see blocktronics-ra_mindseye.ANS,
+  blocktronics-we_c22.ANS): a small, tight, sharp-edged bright spot ON TOP
+  OF normal diffuse shading is what reads as glossy/wet/metallic rather
+  than matte — different from a broad soft diffuse peak.
+  `figure_common.specular_shade()` adds this second highlight pass; use it
+  for eyes, metal, glass, or any reflective surface.
+- **Photorealistic multi-hue gradients** (see blocktronics-avg_16c.ANS):
+  a real color SPECTRUM (e.g. yellow through orange through red through
+  magenta) rather than one hue's density varying — this is what gives
+  skin tones, sunsets, and painterly work their photo-like quality instead
+  of the house's usual flat-color-plus-shading look.
+  `figure_common.photoreal_gradient()` interpolates across an ordered list
+  of hue stops.
 
 References also demonstrate a real technique the house tooling doesn't
 default to: **cursor-addressing** (jumping the cursor back to an
