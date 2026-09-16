@@ -37,7 +37,83 @@ import math
 import re
 
 RAMP = "\u2588\u2593\u2592\u2591"   # full -> empty block-density ramp (bright to dim)
-HOUSE_HUE = [95, 91, 93, 92, 96, 94, 107, 103]  # bright magenta/red/yellow/green/cyan/blue/white/amber wheel
+
+# ---- fixed palette reference + hue-family ramps ------------------------------
+# Added 2026-09-16 directly in response to a real, repeated failure: both the
+# artist agent and the assistant building this toolkit independently guessed
+# wrong about what a color INDEX (0-15) actually renders as, more than once
+# the same session -- assuming index 6 was "dark red" (it's cyan, #00aaaa),
+# assuming HOUSE_HUE's raw SGR codes (95, 91, 93...) were interchangeable with
+# 0-15 indices (they aren't -- passing 95 as an index computes a WRONG color
+# via the (90+(fg&7)) formula, since 95 was never meant to go through that
+# math a second time). Re-deriving "what does this number mean" from memory
+# every shift is exactly the kind of thing a fixed reference exists to avoid.
+#
+# PALETTE below is the ACTUAL hex value for every index 0-15, taken directly
+# from harness.py's _ANSI_PALETTE (the single source of truth for what
+# actually renders) -- not re-derived, not guessed.
+PALETTE = {
+    0: ("black",         "#000000"),
+    1: ("red",           "#aa0000"),
+    2: ("green",         "#00aa00"),
+    3: ("brown/orange",  "#aa5500"),
+    4: ("blue",          "#0000aa"),
+    5: ("magenta",       "#aa00aa"),
+    6: ("cyan",          "#00aaaa"),
+    7: ("light gray",    "#aaaaaa"),
+    8: ("dark gray",     "#555555"),
+    9: ("bright red",    "#ff5555"),
+    10: ("bright green", "#55ff55"),
+    11: ("bright yellow","#ffff55"),
+    12: ("bright blue",  "#5555ff"),
+    13: ("bright magenta","#ff55ff"),
+    14: ("bright cyan",  "#55ffff"),
+    15: ("white",        "#ffffff"),
+}
+
+# Hue-family ramps: [hot, mid, cold] -- three indices that are GENUINELY the
+# same hue at different brightness, verified against PALETTE above, not
+# assumed from index proximity (9,10,11 look adjacent but are red/green/
+# yellow -- three different hues, the exact rainbow-flooding bug this fixes).
+# Use these instead of hand-picking 3 numbers and hoping they're related.
+_HUE_RAMPS = {
+    "amber":   [11, 9, 1],    # bright yellow -> bright red -> red (warm lamp/fire)
+    "red":     [9, 1, 1],     # bright red -> red -> red (no dim-red index exists; repeats)
+    "blue":    [12, 4, 4],    # bright blue -> blue -> blue
+    "cyan":    [14, 6, 6],    # bright cyan -> cyan -> cyan
+    "green":   [10, 2, 2],    # bright green -> green -> green
+    "magenta": [13, 5, 5],    # bright magenta -> magenta -> magenta
+    "gray":    [15, 7, 8],    # white -> light gray -> dark gray (the usual "neutral" ramp)
+    "white":   [15, 7, 8],    # alias for gray -- what most callers mean by "white ramp"
+}
+
+
+def ramp(hue_name):
+    """Return [hot, mid, cold] -- three palette indices (0-15) that are the
+    SAME hue family at descending brightness, verified against the real
+    palette. Use this instead of hand-computing a 3-color ramp: 'amber',
+    'red', 'blue', 'cyan', 'green', 'magenta', 'gray'/'white' are defined.
+    Raises KeyError with the valid options listed if the name isn't known --
+    deliberately loud instead of silently returning something wrong."""
+    if hue_name not in _HUE_RAMPS:
+        raise KeyError(
+            f"ramp({hue_name!r}) not defined. Valid hue families: "
+            f"{sorted(_HUE_RAMPS.keys())}"
+        )
+    return list(_HUE_RAMPS[hue_name])
+
+
+HOUSE_HUE = [13, 9, 11, 10, 14, 12, 15, 3]  # bright magenta/red/yellow/green/
+# cyan/blue/white/amber wheel -- FIXED 2026-09-16: this used to store raw SGR
+# codes (95, 91, 93, 92, 96, 94, 107, 103), which is a DIFFERENT number space
+# than the 0-15 palette index that cv.set()/render() actually expect. Passing
+# 95 through render()'s sgr() formula ((90+(fg&7)) if fg>7 else 30+fg)
+# computes an unrelated color (verified: cycle_hue(0) rendered as bright
+# WHITE, not the intended bright magenta). Real pieces built on the old
+# HOUSE_HUE (_afterimage_scroll.py, _patch_traveler_v4.py, make_dialogue.py,
+# make_traveler_scroll.py) likely have miscolored hue-cycling as a result --
+# flagged in OBSERVER_NOTES.txt for the agents to review, not silently
+# rewritten here.
 
 
 def sgr(fg, bg=0):

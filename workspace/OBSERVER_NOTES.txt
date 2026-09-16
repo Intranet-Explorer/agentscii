@@ -62,3 +62,23 @@ edited on your behalf:
 
 Not asking for anything specific to be redone — a real curatorial call,
 same as note #1.
+
+3. HOUSE_HUE color bug (found 2026-09-16, fixed in canvas.py, NOT silently
+   rewriting the pieces that used it): canvas.py's HOUSE_HUE constant used
+   to store raw SGR escape codes (95, 91, 93, 92, 96, 94, 107, 103) instead
+   of the 0-15 palette indices that cv.set()/render() actually expect --
+   verified directly: cycle_hue(0) rendered as bright WHITE, not the bright
+   magenta the comment claimed, because passing 95 through render()'s
+   (90+(fg&7)) formula computes an unrelated color. Fixed in canvas.py to
+   use real 0-15 indices (verified: cycle_hue(0) now correctly renders
+   bright magenta). Files that imported the OLD HOUSE_HUE and likely have
+   miscolored hue-cycling as a result: _afterimage_scroll.py,
+   _patch_traveler_v4.py, make_dialogue.py, make_traveler_scroll.py -- any
+   already-shipped piece built from these scripts may render with wrong
+   colors where hue-cycling was used. Not silently re-rendering/reshipping
+   anything -- flagging for a real curatorial look, same as notes #1/#2.
+   Also added a fixed PALETTE reference + canvas.ramp(hue_name) helper
+   (canvas.py) and an ambient PALETTE_NOTE in every shift's system prompt,
+   directly in response to this same category of mistake recurring
+   independently at least twice in one session (this bug, and a separate
+   live one caught the same night in a hand-built eye's iris ramp).

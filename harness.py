@@ -29,6 +29,7 @@ import re
 import signal
 import subprocess
 import sqlite3
+import hashlib
 import time
 import sys
 import urllib.request
@@ -190,6 +191,27 @@ STYLE_DOC_NOTE = (
 # entirely yours (random_direction, your own ideas, extending scratch/,
 # whatever). It's the concrete HOW, always present, so building well isn't
 # something you have to remember to go look up.
+PALETTE_NOTE = (
+    "FIXED PALETTE REFERENCE (added 2026-09-16, read this before choosing any "
+    "color): color indices are 0-15, NOT raw SGR codes — this distinction has "
+    "caused real bugs this project, including one built AND caught live in "
+    "the same shift (an eye's iris meant to ramp bright-yellow -> dark-red "
+    "instead rendered bright-yellow -> bright-red -> CYAN, because index 6 "
+    "was assumed to be a dark red without checking). The actual palette: "
+    "0=black 1=red 2=green 3=brown/orange 4=blue 5=magenta 6=cyan "
+    "7=light gray (8-15 are the BRIGHT versions of 0-7, same order) "
+    "8=dark gray 9=bright red 10=bright green 11=bright yellow 12=bright blue "
+    "13=bright magenta 14=bright cyan 15=white. Don't compute a 3-color ramp "
+    "by picking nearby-looking numbers — canvas.py now has a real ramp(name) "
+    "helper: ramp('amber') -> [11,9,1] (bright yellow->bright red->red), "
+    "and 'red'/'blue'/'cyan'/'green'/'magenta'/'gray' are also defined, all "
+    "verified against the real palette. Use it instead of hand-picking "
+    "indices when you want ONE hue family at varying brightness — that "
+    "single mistake (rainbow-flooding a region that was meant to be one "
+    "hue) has independently caused visible defects in this project multiple "
+    "times."
+)
+
 TECHNIQUE_NOTE = (
     "HALF-BLOCK RESOLUTION (added 2026-09-16, read this first for anything "
     "round): for eyes, craniums, orbs, faces, or any curved/circular shape "
@@ -251,7 +273,7 @@ AGENTS = {
             "submit_piece when something is ready for review. That's the only "
             "hard boundary between you and your collaborator — everything else "
             "upstream is shared. "
-            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + TECHNIQUE_NOTE +
+            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + PALETTE_NOTE + " " + TECHNIQUE_NOTE +
             "A human (Tyler) directs this project overall and can leave either "
             "of you direction via your inbox. "
             "This is directed, quality-focused work — idle equilibrium isn't a "
@@ -287,7 +309,7 @@ AGENTS = {
             "everything upstream is shared, and you're a full contributor "
             "there too, not just an outside judge. Jump into scratch/ and add "
             "a pass to something your collaborator started whenever you want. "
-            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + TECHNIQUE_NOTE +
+            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + PALETTE_NOTE + " " + TECHNIQUE_NOTE +
             "A human (Tyler) directs this project overall and can leave either "
             "of you direction via your inbox. "
             "Ground every judgment in something real: fetch and actually look "
@@ -620,6 +642,17 @@ def init_db():
         had_pending_peer_message INTEGER,
         replied_to_peer INTEGER
     )""")
+    # Migration, 2026-09-16: carry the agent's last real reasoning block into
+    # the next shift on ANY forced end (stop request, empty-turns give-up,
+    # max-tool-calls cap), per user direction -- an in-progress diagnosis
+    # (e.g. "I found the color bug, the fix is X") shouldn't be lost just
+    # because the shift ended before the agent could act on it. ALTER TABLE
+    # guarded because CREATE TABLE IF NOT EXISTS above is a no-op on an
+    # existing state.db from before this column existed.
+    try:
+        conn.execute("ALTER TABLE shifts ADD COLUMN last_reasoning TEXT")
+    except sqlite3.OperationalError:
+        pass  # column already exists
     conn.execute("""CREATE TABLE IF NOT EXISTS agent_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         from_agent TEXT NOT NULL,
@@ -2028,11 +2061,20 @@ def get_pending_human_messages(conn, agent, mark_delivered=True):
 
 def get_last_own_shift_note(conn, agent):
     row = conn.execute(
-        "SELECT note FROM shifts WHERE agent=? AND ended_at IS NOT NULL AND note != '' "
+        "SELECT note, last_reasoning FROM shifts WHERE agent=? AND ended_at IS NOT NULL AND note != '' "
         "ORDER BY id DESC LIMIT 1",
         (agent,),
     ).fetchone()
-    return row[0] if row and row[0] else None
+    if not row or not row[0]:
+        return None
+    note, last_reasoning = row
+    if last_reasoning:
+        return (
+            f"{note}\n\nYour own last reasoning right before that forced end "
+            f"(this is your in-progress diagnosis/plan — pick up from here, "
+            f"don't start over from scratch): {last_reasoning}"
+        )
+    return note
 
 
 def run_shift(conn, agent):
@@ -2103,6 +2145,7 @@ def run_shift(conn, agent):
     log_event(conn, agent, shift_id, "system", cfg["soul"] + msg_note)
 
     note = ""
+    last_reasoning = ""
     had_pending_final = None
     replied_final = None
     wants_continue = False
@@ -2131,6 +2174,7 @@ def run_shift(conn, agent):
         if reasoning.strip():
             log_event(conn, agent, shift_id, "assistant", reasoning=reasoning.strip())
             print(f"[{agent}] thinks: {reasoning.strip()[:200]}")
+            last_reasoning = reasoning.strip()
 
         if content.strip():
             log_event(conn, agent, shift_id, "assistant", content.strip())
@@ -2156,47 +2200,6 @@ def run_shift(conn, agent):
                 fargs = json.loads(fn.get("arguments") or "{}")
             except Exception:
                 fargs = {}
-
-            raw_arg = str(
-                fargs.get("command") or fargs.get("path") or fargs.get("text")
-                or fargs.get("note") or fargs.get("critique") or fargs.get("handle")
-                or fargs.get("pack_note") or ""
-            )
-            normalized_arg = re.sub(r"\d+", "#", raw_arg)[:120]
-            # preview_piece and inspect_piece are meant to be called repeatedly on
-            # the same file as part of a normal edit-check-edit-check loop (verifying
-            # each fix actually landed) — that's real iteration, not a stall, so give
-            # them their own identity per call rather than fuzzy-matching just the
-            # path, and a higher repeat tolerance before the loop-guard kicks in.
-            #
-            # bash read-only paging commands (sed -n 'A,Bp', head -N, tail -N) hit
-            # the exact same problem for a different reason: digit-normalization
-            # collapses `sed -n '195,260p' file.py` and `sed -n '63,180p' file.py`
-            # into the identical signature `sed -n '#,#p' file.py`, even though
-            # they're genuinely different, progressive reads of a growing file —
-            # real diagnostic work, not a stall. Use the RAW (non-normalized)
-            # argument for these so different ranges don't collide, while a truly
-            # identical repeated command still gets caught at the same threshold.
-            is_readonly_paging = bool(name == "bash" and re.search(
-                r"\b(sed\s+-n|head\s+-|tail\s+-|awk\b|grep\s+-n)\b", raw_arg
-            ))
-            if name in ("preview_piece", "inspect_piece"):
-                fuzzy_sig = (name, raw_arg, fargs.get("offset"), i)
-                loop_threshold = 8
-            elif is_readonly_paging:
-                fuzzy_sig = (name, raw_arg[:200])
-                loop_threshold = 3
-            else:
-                fuzzy_sig = (name, normalized_arg)
-                loop_threshold = 3
-            recent_calls.append(fuzzy_sig)
-            recent_calls = recent_calls[-6:]
-            if recent_calls.count(fuzzy_sig) >= loop_threshold:
-                note = f"(loop detected: '{name}' called near-identically {loop_threshold}x in a row, forced end)"
-                log_event(conn, agent, shift_id, "tool", "[harness: loop detected, ending shift]",
-                          tool_name=name, tool_call_id=tc.get("id"))
-                ended = True
-                break
 
             log_event(conn, agent, shift_id, "assistant", None, tool_name=name,
                       tool_args=json.dumps(fargs), tool_call_id=tc.get("id"))
@@ -2335,15 +2338,73 @@ def run_shift(conn, agent):
             log_event(conn, agent, shift_id, "tool", result, tool_name=name, tool_call_id=tc.get("id"))
             messages.append({"role": "tool", "tool_call_id": tc.get("id"), "content": result})
 
+            # --- stall detection, rewritten 2026-09-16 -----------------------
+            # Old rule (truncate args to 120 chars, replace all digits with '#')
+            # was auditable and wrong: a blind audit of all 115 real loop-kills
+            # in project history found 113 (98%) were genuine iteration wrongly
+            # killed -- write_file/curate_piece calls with different full content
+            # (different file, different critique, different fix) collapsed to
+            # the same 120-char-truncated, digit-blind signature. Real example
+            # that motivated this: an artist writing _eye_v3.py then _eye_v4.py
+            # with different code got killed mid-fix because both filenames
+            # normalize to the same string once digits are stripped.
+            #
+            # New rule: fingerprint = (tool name, sha256 of the FULL raw
+            # arguments JSON, no truncation, no digit normalization). A stall
+            # is only counted when BOTH the call fingerprint AND the result
+            # fingerprint match an earlier entry THIS SHIFT -- same action,
+            # same outcome, not just a similar-looking call. Different file
+            # contents, different critiques, or a different result (even from
+            # an identical command, e.g. a flaky network call) are never
+            # treated as the same event.
+            call_fp = hashlib.sha256(
+                (name + "\x00" + json.dumps(fargs, sort_keys=True, default=str)).encode("utf-8", "replace")
+            ).hexdigest()
+            result_fp = hashlib.sha256(
+                str(result).encode("utf-8", "replace")
+            ).hexdigest()
+            full_sig = (call_fp, result_fp)
+            recent_calls.append((name, full_sig))
+            recent_calls = recent_calls[-40:]  # generous window -- cheap to keep, no truncation risk
+            repeat_count = sum(1 for n, s in recent_calls if n == name and s == full_sig)
+            if repeat_count >= 3:
+                prior = [
+                    f"{n}: {json.dumps(fargs, default=str)[:200]}"
+                    for n, s in recent_calls[-6:]
+                ]
+                print(
+                    f"[{agent}] STALL DETECTED (log-only, not ending shift): "
+                    f"'{name}' produced the IDENTICAL call+result {repeat_count}x this shift. "
+                    f"Last 5 calls before this one: {prior[-6:-1]}"
+                )
+                log_event(
+                    conn, agent, shift_id, "system",
+                    f"[harness: stall detected (log-only) — '{name}' called with identical "
+                    f"arguments and got the identical result {repeat_count}x this shift. Per-role "
+                    "tool-call caps remain the real backstop; this is not ending the shift.]",
+                    tool_name=name,
+                )
+                # NOTE: per user direction 2026-09-16, do not set ended=True here
+                # until the audit above has been reviewed. The per-role
+                # MAX_TOOL_CALLS_BY_ROLE cap is the real backstop for now.
+
         if ended:
             break
     else:
         note = "(hit max tool calls for this shift, forced handoff)"
 
     ended_at = time.time()
+    # Save last_reasoning on any FORCED end (note is non-empty: stop request,
+    # empty-turns give-up, max-tool-calls cap) -- per user direction 2026-
+    # 09-16, so an in-progress diagnosis carries into the agent's next shift
+    # via get_last_own_shift_note's sibling lookup, instead of being lost.
+    # A clean end_shift() call leaves note=="" and doesn't need this -- the
+    # agent already said what it wanted to say via end_shift's own note arg.
     conn.execute(
-        "UPDATE shifts SET ended_at=?, note=?, had_pending_peer_message=?, replied_to_peer=? WHERE id=?",
-        (ended_at, note, had_pending_final, replied_final, shift_id),
+        "UPDATE shifts SET ended_at=?, note=?, had_pending_peer_message=?, "
+        "replied_to_peer=?, last_reasoning=? WHERE id=?",
+        (ended_at, note, had_pending_final, replied_final,
+         last_reasoning if note else None, shift_id),
     )
     conn.commit()
     print(f"=== {agent} shift {shift_id} ended ({ended_at - started_at:.1f}s): {note} ===")
