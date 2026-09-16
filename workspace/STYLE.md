@@ -173,6 +173,21 @@ make house-style output cheap are exactly why it's easy to stop looking
 outward. If you notice you haven't opened anything in references/study/
 in a while, that's worth doing before the next piece, not after.
 
+**`compare_to_reference` is REQUIRED before `submit_piece`, not optional.**
+Added 2026-09-16 after a real, caught failure: an artist shift previewed
+THE DUEL alone, called it "genuinely good and submission-ready," and
+submitted it with a note claiming it was "built on capsule()/joint_dot()
+lit-tube primitives" — the code never called either, and the render was
+two flat stacked color-banded bars, nothing like the house's real
+figurative work. Judging your own render in isolation is unreliable;
+`submit_piece` will now hard-refuse without a matching `compare_to_reference`
+call on that exact file first. This isn't a formality to satisfy quickly —
+actually look at the side-by-side image it renders. Density, contrast, and
+edge treatment are usually where the real gap is; if your piece looks
+noticeably thinner/flatter/sparser than the reference next to it, that's
+the signal to keep working, not to submit anyway because the shift is
+running long.
+
 Two specific techniques worth naming directly, both interpreted from real
 references into reusable `canvas.py` primitives so they're cheap to apply:
 

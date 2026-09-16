@@ -210,10 +210,16 @@ TECHNIQUE_NOTE = (
     "framed more often than not. inspect_piece now flags LOW BACKGROUND "
     "TEXTURE and NO FRAME/BORDER DETECTED specifically to catch a skipped "
     "pass — treat those as 'which step needs another round,' not a "
-    "nitpick. Before finishing a piece in this register, page through one "
-    "file in references/study/ with preview_piece and compare density "
-    "honestly — same tool works on your own WIP mid-build, not just at the "
-    "end."
+    "nitpick. BEFORE calling submit_piece, call compare_to_reference on "
+    "your own file against whichever reference in references/study/ is "
+    "closest in subject/technique — this is now REQUIRED, submit_piece "
+    "will refuse without it. It exists because judging your own render "
+    "alone is unreliable: a real submission once got called 'genuinely "
+    "good and submission-ready' by the same shift that previewed it, "
+    "when a direct side-by-side would have shown it was two flat color-"
+    "banded bars next to real anatomical shading. Look at density, "
+    "contrast, and edge treatment directly against the reference image, "
+    "not from memory of what technique you intended to use."
 )
 
 
@@ -492,6 +498,37 @@ TOOLS = [
                     "rows": {"type": "integer", "description": "How many rows to render, starting at offset. Default 120, max 200 (larger images cost more to process)."},
                 },
                 "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "compare_to_reference",
+            "description": (
+                "Render YOUR piece and a REAL reference file side by side as one "
+                "image, so you can actually see the gap instead of judging your "
+                "own work from memory of what technique you intended to use. "
+                "Built directly in response to a real, caught failure: an artist "
+                "shift submitted a piece with a note claiming it was 'built on "
+                "capsule()/joint_dot() lit-tube primitives' when the code never "
+                "called either, and separately judged its own flat-banded render "
+                "'genuinely good and submission-ready' after previewing it alone. "
+                "Self-assessment in isolation is unreliable — a side-by-side with "
+                "a real reference is not. Use this on any figurative/shaded piece "
+                "before submit_piece, and use it AS a curator reviewing a "
+                "submission, picking whichever reference in references/study/ is "
+                "closest in subject/technique to what you're checking."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "piece_path": {"type": "string", "description": "Path to your .ans/.asc file, relative to workspace/."},
+                    "reference_path": {"type": "string", "description": "Path to a real reference file, relative to workspace/ (normally under references/study/)."},
+                    "offset": {"type": "integer", "description": "Row to start rendering both from (0-indexed). Default 0."},
+                    "rows": {"type": "integer", "description": "How many rows of each to render. Default 60, max 90."},
+                },
+                "required": ["piece_path", "reference_path"],
             },
         },
     },
@@ -843,6 +880,61 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120):
     b64 = base64.b64encode(buf.getvalue()).decode()
     note = f" (truncated to first {max_rows} rows of {total_lines}+)" if truncated else ""
     return b64, note
+
+
+def render_comparison_b64(piece_path, reference_path, offset=0, max_rows=60):
+    """Render a piece and a real reference side by side as ONE composite
+    image, with labels, so an agent judging its own work sees the actual
+    pixel gap instead of reasoning from memory of what it intended to build.
+
+    Built 2026-09-16 in direct response to a caught real failure: an artist
+    shift submitted a piece whose note claimed a shared primitive
+    (capsule()/joint_dot()) that the code never called, and separately
+    judged its own flat-banded render "genuinely good" after previewing it
+    ALONE — nothing in that judgment was ever anchored to what real
+    reference-quality work actually looks like next to it. A vision model
+    reliably sees defects (dithering, banding, flat shading) when directly
+    asked to compare two images — the earlier failures weren't a vision
+    capability gap, they were a "never actually looked at a real reference
+    right next to the work" gap. This tool forces that comparison to exist
+    as a single image an agent can't reason around.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    piece_b64, piece_note = render_ans_to_png_b64(piece_path, offset=offset, max_rows=max_rows)
+    if piece_b64 is None:
+        return None, f"(error rendering piece: {piece_note})"
+    ref_b64, ref_note = render_ans_to_png_b64(reference_path, offset=offset, max_rows=max_rows)
+    if ref_b64 is None:
+        return None, f"(error rendering reference: {ref_note})"
+
+    piece_img = Image.open(io.BytesIO(base64.b64decode(piece_b64))).convert("RGB")
+    ref_img = Image.open(io.BytesIO(base64.b64decode(ref_b64))).convert("RGB")
+
+    label_h = 28
+    gap = 6
+    h = max(piece_img.height, ref_img.height) + label_h
+    w = piece_img.width + gap + ref_img.width
+    canvas = Image.new("RGB", (w, h), (20, 20, 20))
+    draw = ImageDraw.Draw(canvas)
+    try:
+        font = ImageFont.truetype(_FONT_PATH, 18)
+    except Exception:
+        font = ImageFont.load_default()
+
+    draw.text((4, 4), f"YOUR PIECE: {Path(piece_path).name}", font=font, fill=(255, 255, 0))
+    draw.text((piece_img.width + gap + 4, 4), f"REFERENCE: {Path(reference_path).name}", font=font, fill=(0, 255, 255))
+    canvas.paste(piece_img, (0, label_h))
+    canvas.paste(ref_img, (piece_img.width + gap, label_h))
+    draw.rectangle([piece_img.width + gap // 2 - 1, 0, piece_img.width + gap // 2, h], fill=(80, 80, 80))
+
+    buf = io.BytesIO()
+    canvas.save(buf, format="PNG")
+    out_b64 = base64.b64encode(buf.getvalue()).decode()
+    note = ""
+    if piece_note or ref_note:
+        note = f" (piece{piece_note or ' full'}, reference{ref_note or ' full'})"
+    return out_b64, note
 
 
 def _resolve_workspace_path(raw_path):
@@ -1224,6 +1316,39 @@ def run_tool(name, args, agent):
             src = _resolve_workspace_path(args["path"])
             if not src.exists():
                 return f"(error: {src} does not exist)"
+
+            # --- reference-comparison gate ---------------------------------
+            # Added 2026-09-16 directly in response to: an artist judged its
+            # own flat-banded THE DUEL render "genuinely good and submission-
+            # ready" after previewing it ALONE (see the capsule() gate right
+            # below for the other half of that same incident). Self-
+            # assessment in isolation is unreliable; a real side-by-side
+            # against actual reference-quality work is not (confirmed: the
+            # vision model correctly spotted banding/confetti/etc. in ad hoc
+            # tests every time it was shown a direct comparison). Hard
+            # requirement, not a suggestion: submit_piece is blocked unless
+            # compare_to_reference was called on this exact filename at some
+            # point in the last 40 tool events by this agent. Cheap to
+            # satisfy (one real tool call), impossible to fake with a note.
+            db = sqlite3.connect(DB_PATH)
+            recent = db.execute(
+                "SELECT tool_args FROM events WHERE agent=? AND tool_name='compare_to_reference' "
+                "ORDER BY id DESC LIMIT 40",
+                (agent,),
+            ).fetchall()
+            db.close()
+            did_compare = any(
+                src.name in (row[0] or "") for row in recent
+            )
+            if not did_compare:
+                return (
+                    f"(error: submit_piece blocked — call compare_to_reference on "
+                    f"{src.name} against a real file in references/study/ first. "
+                    "Pick whichever reference is closest in subject/technique. "
+                    "This isn't optional: self-judging a render alone has caused "
+                    "real submitted pieces to look nothing like reference quality "
+                    "while being called 'submission-ready'.)"
+                )
 
             # --- capsule()/joint_dot() claim-vs-reality gate --------------
             # Found directly 2026-09-15: _duel.py's own header comment
@@ -1864,6 +1989,40 @@ def run_shift(conn, agent):
                             continue
                 except Exception as e:
                     result = f"(error rendering preview: {e})"
+            elif name == "compare_to_reference":
+                try:
+                    piece_p = _resolve_workspace_path(fargs.get("piece_path", ""))
+                    ref_p = _resolve_workspace_path(fargs.get("reference_path", ""))
+                    if not piece_p.exists():
+                        result = f"(error: {piece_p} does not exist)"
+                    elif not ref_p.exists():
+                        result = f"(error: {ref_p} does not exist — check references/study/ for real filenames)"
+                    else:
+                        offset = max(0, int(fargs.get("offset", 0) or 0))
+                        rows = fargs.get("rows", 60) or 60
+                        rows = max(1, min(int(rows), 90))
+                        b64, note_or_err = render_comparison_b64(piece_p, ref_p, offset=offset, max_rows=rows)
+                        if b64 is None:
+                            result = note_or_err
+                        else:
+                            result = (
+                                f"side-by-side rendered: {piece_p.name} vs {ref_p.name}{note_or_err} — "
+                                "see image. Yellow label = your piece (left), cyan label = reference (right). "
+                                "Look at density, contrast, edge treatment, highlight placement directly against "
+                                "the reference, not from memory of what you intended to build."
+                            )
+                            log_event(conn, agent, shift_id, "tool", result, tool_name=name, tool_call_id=tc.get("id"))
+                            messages.append({
+                                "role": "tool",
+                                "tool_call_id": tc.get("id"),
+                                "content": [
+                                    {"type": "text", "text": result},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                                ],
+                            })
+                            continue
+                except Exception as e:
+                    result = f"(error rendering comparison: {e})"
             elif name == "release_pack":
                 if agent != "curator":
                     result = "(error: only the curator seat can release_pack)"
