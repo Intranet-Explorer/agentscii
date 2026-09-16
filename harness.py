@@ -43,6 +43,7 @@ GALLERY_UNPACKED = GALLERY / "unpacked"
 SUBMISSIONS = WORKSPACE / "submissions"
 SCRATCH = WORKSPACE / "scratch"
 REJECTED = WORKSPACE / "rejected"
+SHELVED = WORKSPACE / "shelved"
 REFERENCES = WORKSPACE / "references"
 STYLE_DOC = WORKSPACE / "STYLE.md"
 DB_PATH = PROJECT_DIR / "state.db"
@@ -1307,8 +1308,27 @@ def run_tool(name, args, agent):
 
     if name == "bash":
         try:
+            cmd = args["command"]
+            # Block direct invocation of the `claude` CLI from agent shell
+            # commands (user direction, 2026-09-16): Opus 5 review is
+            # billed against the human's own subscription via
+            # opus_curate_review(), reserved for the harness's curate_piece
+            # path only. An agent shelling out to `claude` directly would
+            # spend that same budget outside the cap/logging/shelve
+            # machinery entirely -- word-boundary match so this catches
+            # `claude -p ...` but not an unrelated word containing
+            # "claude" as a substring.
+            if re.search(r"(?:^|[;&|\s])claude(?:\s|$)", cmd):
+                return (
+                    "(error: direct `claude` CLI invocation is blocked in "
+                    "agent shell commands — Opus 5 review runs only through "
+                    "the harness's curate_piece flow, which enforces the "
+                    "daily cap and per-piece review limit. If you need a "
+                    "second opinion, use curate_piece's built-in Opus gate, "
+                    "not a direct CLI call.)"
+                )
             r = subprocess.run(
-                args["command"], shell=True, cwd=str(WORKSPACE),
+                cmd, shell=True, cwd=str(WORKSPACE),
                 capture_output=True, text=True, timeout=BASH_TIMEOUT,
             )
             out = (r.stdout or "") + (r.stderr or "")
@@ -1579,11 +1599,15 @@ def run_tool(name, args, agent):
                             "blind check is right, this should be a reject, "
                             "not an accept.)"
                         ), None
-                dest = _move_with_sidecars(src, GALLERY_UNPACKED, new_critique=critique)
-                return f"accepted: moved to gallery/unpacked/{dest.name}, pending next pack release", dest
+                # Opus 5 is now the sole accept/reject authority (user
+                # direction, 2026-09-16) -- Qwen's own decision/critique are
+                # passed through for logging/disagreement-rate comparison,
+                # not used to decide where the file goes. This replaces the
+                # direct _move_with_sidecars(...) calls that used to run
+                # here for both branches.
+                return curate_piece_opus_gated(src, decision, critique)
             elif decision == "reject":
-                dest = _move_with_sidecars(src, REJECTED, new_critique=critique)
-                return f"rejected: moved to rejected/{dest.name} with critique attached", dest
+                return curate_piece_opus_gated(src, decision, critique)
             else:
                 return f"(error: decision must be 'accept' or 'reject', got {decision!r})", None
         except Exception as e:
@@ -1596,6 +1620,45 @@ def run_tool(name, args, agent):
         return "(handled by harness)"
 
     return f"(unknown tool: {name})"
+
+
+def curate_piece_opus_gated(src, decision, critique):
+    """Real replacement for the tail of curate_piece's accept/reject move,
+    per the user's explicit 2026-09-16 direction: Opus 5 is the ONLY
+    authority on accept/reject; Qwen's decision/critique are logged for
+    the disagreement-rate comparison but do not decide where the file
+    goes. Called instead of the plain _move_with_sidecars(...)-then-return
+    pair inside curate_piece once the pre-existing checks (path validity,
+    blind claim-consistency gate) have already passed for whatever Qwen
+    itself asserted.
+
+    Returns (message, dest_path_or_None) matching curate_piece's existing
+    return shape so the dispatcher doesn't need to change."""
+    result = opus_curate_review(src, decision, critique)
+    status = result["status"]
+
+    if status == "queued":
+        return result["message"], None
+    if status == "shelved":
+        dest = _move_with_sidecars(src, SHELVED, new_critique=critique)
+        return result["message"] + f"\n\n(moved to shelved/{dest.name})", dest
+    if status == "error":
+        return result["message"], None
+    if status == "accept":
+        dest = _move_with_sidecars(src, GALLERY_UNPACKED, new_critique=critique)
+        agree = "" if decision == "accept" else " (Qwen's own read was REJECT — Opus overrode it)"
+        return (
+            f"accepted: moved to gallery/unpacked/{dest.name}, pending next "
+            f"pack release. Opus verdict: ACCEPT{agree}.\n\n{result['message']}"
+        ), dest
+    if status == "reject":
+        dest = _move_with_sidecars(src, REJECTED, new_critique=critique)
+        agree = "" if decision == "reject" else " (Qwen's own read was ACCEPT — Opus overrode it)"
+        return (
+            f"rejected: moved to rejected/{dest.name} with critique "
+            f"attached. Opus verdict: REJECT{agree}.\n\n{result['message']}"
+        ), dest
+    return f"(error: unexpected Opus review status {status!r})", None
 
 
 def _shipped_catalog_index():
@@ -1628,6 +1691,188 @@ def _shipped_catalog_index():
             h = hashlib.md5(f.read_bytes()).hexdigest()
             by_md5.setdefault(h, []).append(str(f.relative_to(GALLERY)))
     return by_md5, by_slug
+
+
+def _opus_daily_cost_and_count(conn):
+    """Today's Opus review count/cost (UTC calendar day) -- used for the
+    daily cap. Condition 2 (user, 2026-09-16): when the cap is hit,
+    submissions QUEUE for review, they never silently fall back to Qwen
+    for the accept/reject decision -- so this must be checked BEFORE
+    calling Opus, not after, and the caller must hard-stop on cap-hit
+    rather than degrade to a different judge."""
+    import datetime
+    day_start = datetime.datetime.utcnow().replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ).timestamp()
+    row = conn.execute(
+        "SELECT COUNT(*), COALESCE(SUM(opus_cost_usd), 0) FROM opus_reviews "
+        "WHERE timestamp >= ? AND opus_verdict IS NOT NULL",
+        (day_start,),
+    ).fetchone()
+    return row[0], row[1]
+
+
+OPUS_DAILY_CALL_CAP = 40  # ~$0.20-0.28/call observed -> ~$8-11/day ceiling.
+# Deliberately a call-count cap, not a dollar cap: a dollar cap that fires
+# mid-review would need the same queue-not-fallback handling anyway, and a
+# call count is simpler to reason about and log.
+
+OPUS_MAX_REVIEWS_PER_PIECE = 3  # condition 3 (user): one re-review per
+# revision, shelved (not resubmitted indefinitely) after 3 total.
+
+
+def opus_curate_review(path, qwen_decision, qwen_critique):
+    """The real accept/reject authority for curate_piece, per the user's
+    explicit 2026-09-16 direction: 'Only curate_piece. Opus gets render +
+    crops + cell dump, never the note, script, or title. Add a daily Opus
+    call cap; when exhausted, queue submissions, never fall back to Qwen
+    for accept/reject. One Opus re-review per revision, shelve after
+    three rejections. Keep Qwen's verdict logged alongside Opus's.'
+
+    Validated against a real blind set before being wired in here (2026-
+    09-16): a genuine ACiD reference correctly ACCEPTed with coordinate-
+    grounded reasoning; 3 real rejected-catalog pieces correctly REJECTed;
+    3 pieces Qwen had previously ACCEPTed and shipped all got REJECTed by
+    Opus with specific, concrete defects -- user reviewed the actual
+    renders and confirmed: 'Yes this is what I've been telling you this
+    whole time. They're extremely weak.' Confirms Qwen's accept bar has
+    been too permissive, not that this gate is miscalibrated.
+
+    Returns a dict: {"status": "accept"|"reject"|"queued"|"shelved"|"error",
+                      "message": str, "opus_verdict": str|None}
+    """
+    import subprocess, json, tempfile, shutil, base64, datetime
+
+    slug = Path(path).stem
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        count_today, cost_today = _opus_daily_cost_and_count(conn)
+        if count_today >= OPUS_DAILY_CALL_CAP:
+            return {
+                "status": "queued",
+                "message": (
+                    f"(Opus daily cap reached: {count_today}/{OPUS_DAILY_CALL_CAP} "
+                    f"calls, ${cost_today:.2f} spent today. This submission is "
+                    "QUEUED, not auto-decided — it will not fall back to Qwen for "
+                    "the accept/reject call. Try again after the cap resets "
+                    "(UTC midnight), or ask the human to raise OPUS_DAILY_CALL_CAP.)"
+                ),
+                "opus_verdict": None,
+            }
+
+        prior_reviews = conn.execute(
+            "SELECT COUNT(*) FROM opus_reviews WHERE piece_slug=?", (slug,)
+        ).fetchone()[0]
+        if prior_reviews >= OPUS_MAX_REVIEWS_PER_PIECE:
+            return {
+                "status": "shelved",
+                "message": (
+                    f"(this piece ('{slug}') has already had "
+                    f"{prior_reviews} Opus reviews, the maximum allowed. "
+                    "Per house policy it is SHELVED, not resubmitted again — "
+                    "move it to a new file/slug if you want to try a genuinely "
+                    "different approach, don't keep resubmitting the same "
+                    "revision chain.)"
+                ),
+                "opus_verdict": None,
+            }
+
+        # --- condition 1: Opus sees ONLY the render + cell dump, nothing
+        # else -- no note, no generator script, no title, no path. Fresh
+        # isolated temp dir with generic filenames.
+        b64, note = render_ans_to_png_b64(path, offset=0, max_rows=140)
+        if b64 is None:
+            return {"status": "error", "message": f"(render failed: {note})", "opus_verdict": None}
+
+        tmpdir = tempfile.mkdtemp(prefix="opus_gate_")
+        try:
+            render_path = Path(tmpdir) / "render.png"
+            render_path.write_bytes(base64.b64decode(b64))
+            raw = Path(path).read_bytes()
+            text = _decode_ans_bytes(raw).replace("\r\n", "\n").replace("\r", "\n")
+            cells_text = "\n".join(_SGR_RE.sub("", l) for l in text.split("\n")[:140])
+            (Path(tmpdir) / "cells.txt").write_text(cells_text)
+
+            prompt = (
+                "Read render.png and cells.txt in this directory. You have NO "
+                "other context about this image — no title, no artist's "
+                "description, no intent. Look only at what is actually there.\n\n"
+                "Answer plainly and skeptically:\n"
+                "1. Describe literally what you see — shapes, colors, any "
+                "recognizable subject or lack thereof.\n"
+                "2. List concrete defects, with approximate row/column "
+                "coordinates from cells.txt where relevant (banding, flat "
+                "unshaded regions, broken silhouette, placeholder/debug text, "
+                "illegible construction, anything that reads as unfinished "
+                "or wrong).\n"
+                "3. Give a final verdict: ACCEPT or REJECT, on one line at "
+                "the very end, formatted exactly as: VERDICT: ACCEPT or "
+                "VERDICT: REJECT.\n\n"
+                "Be skeptical. If it looks unfinished, flat, or like a "
+                "geometric placeholder rather than a real constructed "
+                "piece, say so and reject it, even if the character data "
+                "shows some structure."
+            )
+
+            result = subprocess.run(
+                ["claude", "-p", prompt, "--model", "claude-opus-5",
+                 "--allowedTools", "Read", "--output-format", "json"],
+                cwd=tmpdir, capture_output=True, text=True, timeout=90,
+            )
+            if result.returncode != 0:
+                err = f"claude CLI exit {result.returncode}: {result.stderr[:500]}"
+                conn.execute(
+                    "INSERT INTO opus_reviews (piece_slug, path, qwen_decision, "
+                    "qwen_critique, opus_verdict, opus_reasoning, opus_cost_usd, "
+                    "opus_error, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (slug, str(path), qwen_decision, qwen_critique, None, None,
+                     None, err, time.time()),
+                )
+                conn.commit()
+                return {"status": "error", "message": f"(Opus review call failed: {err})", "opus_verdict": None}
+
+            data = json.loads(result.stdout)
+            reasoning = data.get("result", "")
+            cost = data.get("total_cost_usd")
+
+            verdict = None
+            for line in reasoning.splitlines():
+                if line.strip().upper().startswith("VERDICT:"):
+                    v = line.split(":", 1)[1].strip().upper()
+                    if "ACCEPT" in v:
+                        verdict = "accept"
+                    elif "REJECT" in v:
+                        verdict = "reject"
+                    break
+
+            # condition 4: log Qwen's verdict alongside Opus's regardless of
+            # outcome, so disagreement rate is measurable over time
+            conn.execute(
+                "INSERT INTO opus_reviews (piece_slug, path, qwen_decision, "
+                "qwen_critique, opus_verdict, opus_reasoning, opus_cost_usd, "
+                "opus_error, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
+                (slug, str(path), qwen_decision, qwen_critique, verdict,
+                 reasoning, cost, None if verdict else "no VERDICT line found",
+                 time.time()),
+            )
+            conn.commit()
+
+            if verdict is None:
+                return {
+                    "status": "error",
+                    "message": "(Opus review returned no parseable VERDICT line — treat as unresolved, do not accept.)",
+                    "opus_verdict": None,
+                }
+
+            return {
+                "status": verdict,
+                "message": reasoning,
+                "opus_verdict": verdict,
+            }
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+    finally:
+        conn.close()
 
 
 def _blind_visual_check(path):
