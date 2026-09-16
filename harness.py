@@ -190,6 +190,20 @@ STYLE_DOC_NOTE = (
 # whatever). It's the concrete HOW, always present, so building well isn't
 # something you have to remember to go look up.
 TECHNIQUE_NOTE = (
+    "HALF-BLOCK RESOLUTION (added 2026-09-16, read this first for anything "
+    "round): for eyes, craniums, orbs, faces, or any curved/circular shape "
+    "at any scale, use workspace/scratch/halfblock.py's HalfBlockCanvas, "
+    "NOT figure_common.eye() or a whole-cell circle formula. A normal ANSI "
+    "cell is ~2x taller than wide, so whole-cell curves either squash "
+    "(uncorrected) or alias into flat rings/bands (aspect-corrected, but "
+    "still too few pixels per curve) — a RESOLUTION problem, not a math "
+    "one. HalfBlockCanvas uses ▀ with independent fg/bg to address 2 "
+    "pixels per cell, making pixel-space units square — call "
+    "fill_circle(cx, cy, r, color) with pixel-space coordinates (already "
+    "2x the cell height) and circles come out genuinely round with zero "
+    "aspect math at the call site. Verified directly: a real eye "
+    "(sclera/iris/pupil/glint) and a cranium-scale circle both rendered "
+    "cleanly round on the first attempt this way. "
     "CONCRETE BUILD METHOD (read workspace/METHODOLOGY.md for the full "
     "version — this is the always-present summary): real ANSI art is built "
     "in PASSES, not one generative shot. For any figurative/scene/ambition-"
@@ -871,7 +885,24 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120):
             bg = _ANSI_PALETTE[bg_idx]
             if bg_idx != 0:
                 draw.rectangle([x, y, x + _CELL_W, y + _CELL_H], fill=bg)
-            if ch not in (" ", ""):
+            if ch == "\u2588":
+                # FULL BLOCK drawn as a solid filled rectangle, not a font
+                # glyph. Found directly 2026-09-16 building a real piece:
+                # Menlo's '█' glyph at this font size is only 16px tall but
+                # cells are drawn 18px apart, leaving a real 2px black gap
+                # between every pair of vertically-adjacent full-block rows
+                # — anything relying on stacked █ cells to read as one solid
+                # shape (a large eye(), a filled silhouette, anything using
+                # the brightest step of RAMP) rendered with visible
+                # horizontal banding that was never actually in the data —
+                # confirmed by inspecting the underlying character grid,
+                # which was a correctly round, solid disc; only the PNG
+                # preview had the gap. Other RAMP chars (▓▒░) keep font
+                # rendering since their partial-fill dot patterns are the
+                # actual content, not a bug to route around.
+                fg = _ANSI_PALETTE[fg_idx]
+                draw.rectangle([x, y, x + _CELL_W, y + _CELL_H], fill=fg)
+            elif ch not in (" ", ""):
                 fg = _ANSI_PALETTE[fg_idx]
                 draw.text((x, y - 2), ch, font=font, fill=fg)
 

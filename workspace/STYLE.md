@@ -144,6 +144,31 @@ traditions (logo, portrait, landscape, abstract) are still valid work.
   `canvas.py`'s primitives (ellipse, capsule-free shading, texture)
   remain the right choice for anything that ISN'T body-shaped —
   landscapes, objects, abstract/geometric, logos.
+
+**`halfblock.HalfBlockCanvas` is now REQUIRED for round/curved shapes at
+  ANY scale — eyes, craniums, orbs, faces, anything drawn as a circle or
+  curve.** Added 2026-09-16 after a real, exhausting failure sequence:
+  `figure_common.eye()` was redesigned three separate times (aspect-ratio
+  fix, two-tier cluster, single-gesture) and failed real-world visual
+  verification every time, because a normal ANSI cell is ~2x taller than
+  wide — any curve drawn in whole-cell units either squashes vertically
+  (uncorrected) or aliases into flat rings/bands (aspect-corrected, but
+  still too few pixels per curve at real call-site radii). That's a
+  RESOLUTION problem, not a math problem, and no amount of formula-tuning
+  on top of whole-cell primitives fixes it. `HalfBlockCanvas` uses
+  U+2580 (▀) with independent fg/bg per cell to address TWO pixels per
+  cell instead of one — doubling vertical resolution, which makes pixel-
+  space units approximately SQUARE. Circles drawn in pixel space (see
+  `fill_circle(cx, cy, r, color)`, coordinates already in pixel units)
+  are genuinely round with ZERO aspect correction at the call site —
+  verified directly: a real eye (sclera/iris/pupil/glint) and a large
+  cranium-scale circle both rendered cleanly round on the first attempt,
+  no banding, no squash, replacing what took `eye()` three failed
+  redesigns to not-quite-achieve. Use `figure_common.py`'s whole-cell
+  primitives (`capsule()`, `shade()`, etc.) for everything else —
+  limbs/torsos/lit surfaces don't have this problem, only round/curved
+  shapes at small-to-medium radius do.
+
 - **`random_direction` tool** — rolls a random subject/theme + technique
   constraint + palette lean, weighted toward whatever tradition the catalog
   is currently thinnest in. It's a seed for genuine variety, not a mandate —
