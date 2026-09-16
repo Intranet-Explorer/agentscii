@@ -1224,6 +1224,76 @@ def run_tool(name, args, agent):
             src = _resolve_workspace_path(args["path"])
             if not src.exists():
                 return f"(error: {src} does not exist)"
+
+            # --- capsule()/joint_dot() claim-vs-reality gate --------------
+            # Found directly 2026-09-15: _duel.py's own header comment
+            # claimed "built on hollis's capsule()/joint_dot() lit-tube
+            # primitives as its CORE" while the actual code never called
+            # either -- it reimplemented its own local cap()/joint() that
+            # threw away shade()'s density-varying glyph and hardcoded a
+            # solid block, guaranteeing the exact flat-color-banded look
+            # STYLE.md's "REQUIRED for any body-shaped subject" rule exists
+            # to prevent. Three separate pixel-statistics heuristics were
+            # tried and failed to discriminate this reliably (see git log)
+            # -- the only reliable signal is checking the SOURCE CODE
+            # actually does what its own note claims, at the one point
+            # (submission) where the .py source is still guaranteed to sit
+            # alongside the .ans in scratch/. This is a hard block, not a
+            # warning: figurative/body-shaped work claiming the shared
+            # primitive must actually call it.
+            note_text = args.get("note", "")
+            body_words = ("figure", "figurative", "body", "torso", "limb",
+                          "capsule", "joint_dot", "anatomy", "anatomical")
+            claims_body_tooling = any(w in note_text.lower() for w in body_words)
+            if claims_body_tooling:
+                py_candidate = src.with_suffix(".py")
+                if py_candidate.exists():
+                    py_text = py_candidate.read_text(errors="replace")
+                    # Strip comments before checking for REAL calls -- a
+                    # comment mentioning "capsule()" (like _duel.py's own
+                    # header claiming to use it) must not count as an
+                    # actual call, or this gate has the exact same
+                    # claim-vs-reality blind spot it exists to catch.
+                    code_only = "\n".join(
+                        line.split("#", 1)[0] for line in py_text.split("\n")
+                    )
+                    calls_capsule = bool(re.search(
+                        r"\b(?:fc\.|figure_common\.)?capsule\s*\(", code_only
+                    ))
+                    calls_joint_dot = bool(re.search(
+                        r"\b(?:fc\.|figure_common\.)?joint_dot\s*\(", code_only
+                    ))
+                    # Negation-aware, same fix as the earlier blind-check
+                    # gate bug: "NOT the shared capsule()" or "my own
+                    # shading, not capsule()" is an honest disclosure, not
+                    # a false claim -- only block when the note asserts
+                    # USING it without a negator governing that mention.
+                    _NEGATORS = (
+                        r"\b(?:no|not|n't|without|instead of|rather than|"
+                        r"my own|hand-?rolled|custom)\b"
+                    )
+                    note_claims_shared_tooling = False
+                    for m in re.finditer(r"capsule\(\)|joint_dot\(\)", note_text):
+                        pre = note_text[max(0, m.start() - 40):m.start()]
+                        if re.search(_NEGATORS, pre, re.IGNORECASE):
+                            continue  # negated mention -- honest disclosure, not a claim
+                        note_claims_shared_tooling = True
+                        break
+                    if note_claims_shared_tooling and not (calls_capsule or calls_joint_dot):
+                        return (
+                            "(error: submission BLOCKED — your note references "
+                            "capsule()/joint_dot() but the matching source file "
+                            f"({py_candidate.name}) never actually calls either "
+                            "function. If you built your own local shading "
+                            "function instead of the shared primitive, that's "
+                            "fine — but say so explicitly and don't claim the "
+                            "shared tooling. If you meant to use capsule(), fix "
+                            "the code to actually call it before resubmitting — "
+                            "a body/limb surface needs shade()'s DENSITY-varying "
+                            "glyph (not a hardcoded solid block) to read as a "
+                            "lit 3D form instead of a flat color band.)"
+                        )
+
             SUBMISSIONS.mkdir(parents=True, exist_ok=True)
             dest = SUBMISSIONS / src.name
             src.rename(dest)
