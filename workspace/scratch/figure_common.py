@@ -211,30 +211,78 @@ def brow_ridge(cv, cx, cy, halfw, light, base_fg=7, hot_fg=15):
 
 
 def eye(cv, cx, cy, r=1.4, iris_fg=96, glint=True):
-    """A CONSTRUCTED eye: dark socket ring -> colored iris -> white glint. Not a dot.
-    This is the difference between 'a face with eyes' and 'a face with dots for eyes'."""
+    """A CONSTRUCTED eye: not a flat dot, not a single color.
+
+    REDESIGNED 2026-09-15 after finding it was fundamentally broken at
+    every radius tested (r=1.4 through r=6). Two separate bugs, both real:
+    (1) distance was measured as plain Euclidean (x,y) cell-distance, but
+    terminal cells are ~2x taller than wide, so a "circle" rendered as a
+    squashed vertical stripe -- fixed with an aspect-corrected distance.
+    (2) even fixed, concentric RINGS (socket -> sclera -> iris) fundamentally
+    alias into flat horizontal color bands on a low-resolution block grid
+    at the radii actually used in real pieces (r=1.4-3) -- a thin 1-cell
+    ring just doesn't have enough pixels to read as a curve at that scale,
+    aspect-correct or not. Confirmed by direct rendered-image inspection,
+    not assumed.
+
+    Fix: two different constructions depending on scale, not one ring
+    model stretched across all sizes.
+      - r < 2.2 (the common case: a face-scale eye): a SMALL CLUSTER, not
+        concentric rings -- a solid iris disc, an off-center glint, and a
+        few individual dark accent marks (not a full ring) suggesting a
+        socket without needing enough resolution to render a real circle.
+        This is closer to how real small-scale ANSI eyes are actually
+        built (see references/study/somms-neo_tokyo.ANS) -- a handful of
+        deliberate marks, not a scaled-down version of a big shape.
+      - r >= 2.2 (a large/ambition-tier eye with real pixel budget):
+        the aspect-corrected ring construction, which DOES read correctly
+        at this scale (verified via rendered test at r=4-6)."""
+    ASPECT = 0.5   # cells are ~2x taller than wide; shrink y-delta to compensate
+    def dist(x, y):
+        return math.hypot(x - cx, (y - cy) / ASPECT)
+
+    if r < 2.2:
+        # --- small-scale cluster construction -----------------------------
+        icx, icy = int(round(cx)), int(round(cy))
+        # iris: a small solid disc, 1-2 cells depending on r
+        iris_r = max(1, r * 0.7)
+        for y in range(icy - 2, icy + 3):
+            for x in range(icx - 2, icx + 3):
+                if dist(x, y) <= iris_r:
+                    set_cell(cv, x, y, "\u2588", iris_fg, 0)
+        # dark accent marks flanking the iris (suggest a socket without a
+        # full ring) -- left/right only, not top/bottom, since the aspect
+        # squash means top/bottom marks sit too close to read as separate
+        set_cell(cv, icx - 2, icy, "\u2591", 8, 0)
+        set_cell(cv, icx + 2, icy, "\u2591", 8, 0)
+        # glint: single bright cell, offset upper-left of the iris center
+        if glint:
+            set_cell(cv, icx - 1, icy - 1, "\u2588", 15, 0)
+        return
+
+    # --- large-scale ring construction (r >= 2.2) -------------------------
     # socket: dim shadowed ring around the eyeball
     for y in range(int(cy - r - 1), int(cy + r + 2)):
         for x in range(int(cx - r - 1), int(cx + r + 2)):
-            d = math.hypot(x - cx, y - cy)
+            d = dist(x, y)
             if r < d <= r + 1.0:
                 set_cell(cv, x, y, "\u2591", 8, 0)        # shadowed socket wall
     # eyeball: light sclera
     rr = int(round(r))
     for y in range(int(cy) - rr, int(cy) + rr + 1):
         for x in range(int(cx) - rr, int(cx) + rr + 1):
-            d = math.hypot(x - cx, y - cy)
+            d = dist(x, y)
             if d <= r:
                 set_cell(cv, x, y, "\u2588", 15, 0)
     # iris: colored core
     for y in range(int(cy - r * 0.6), int(cy + r * 0.6 + 1)):
         for x in range(int(cx - r * 0.6), int(cx + r * 0.6 + 1)):
-            d = math.hypot(x - cx, y - cy)
+            d = dist(x, y)
             if d <= r * 0.6:
                 set_cell(cv, x, y, "\u2588", iris_fg, 0)
     # glint: a single white catch-light, upper-left (light side)
     if glint:
-        set_cell(cv, int(cx - r * 0.3), int(cy - r * 0.3), "\u2588", 15, 0)
+        set_cell(cv, int(cx - r * 0.3), int(cy - r * 0.3 * ASPECT), "\u2588", 15, 0)
 
 
 def teeth(cv, x0, x1, y, n=6):
