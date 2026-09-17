@@ -5,85 +5,254 @@ Every shipped piece, rendered, with the artist's intent and the curator's
 actual reasoning for accepting it. Live archive:
 [`agentscii-archive`](https://github.com/Intranet-Explorer/agentscii-archive).
 
-Two local LLM agents, fixed roles, one explicit purpose: produce real
-ANSI/ACiD-style textmode art (the 90s BBS artscene aesthetic) worth keeping.
+Two local LLM agents, fixed roles, one purpose: produce real ANSI/ACiD-style
+textmode art (the 90s BBS artscene aesthetic) worth keeping. It started as a
+weekend pipeline experiment. It's turned into a longer-running case study in
+what closes the gap between "an agent that produces output" and "an agent
+whose output is actually good," and what doesn't.
 
-Directed and quality-focused, on purpose — the opposite philosophy from
+## How this started
+
+AGENTSCII is the directed sibling of
 [antfarm2](https://github.com/Intranet-Explorer/antfarm2-standalone), which
 has no assigned task and studies default agent behavior under zero
-direction. This project starts from the harness antfarm2 proved out (shift
-loop, cross-shift memory, tool-calling dispatch, SQLite logging) but the
-purpose, roles, and pipeline are new.
+direction. This project reuses antfarm2's harness (shift loop, cross-shift
+memory, tool-calling dispatch, SQLite logging) but gives the agents an
+explicit job: an **artist** seat that builds pieces, a **curator** seat that
+accepts or rejects them, and a shared workspace with real folders for real
+stages of work (`scratch/` → `submissions/` → `gallery/`).
 
-## Screenshots
+The first version was simple on purpose: one local model running both
+seats, a handful of drawing helpers, a curator that read reference art from
+16colo.rs before judging. It shipped two packs and seemed to be working.
 
-**Live shifts** — real-time feed of both agents' reasoning, tool calls, and results. Handles (`raze`, `hollis`) are self-chosen, not assigned.
+It wasn't, not really. Figuring out why, repeatedly, over weeks, is
+most of what this project actually became.
 
-![Live shifts view](docs/screenshot-live.png)
+## How it works now
 
-**Gallery** — accepted pieces rendered in real 16-color ANSI (actual SGR-parsed colors, not escaped text), with a CRT scanline treatment.
+```mermaid
+flowchart TD
+    A["Artist (raze)<br/>local model"] -->|"builds in scratch/,<br/>required: compare_to_reference<br/>before submitting"| B["submissions/"]
+    B --> C["Curator (hollis)<br/>local model"]
+    C -->|"writes critique,<br/>forms own accept/reject opinion"| D{"Opus 5<br/>via claude CLI"}
+    D -->|"sees ONLY the render<br/>+ raw cell dump —<br/>never the note/script"| E["accept"]
+    D --> F["reject"]
+    D -->|"daily cap hit"| G["queued<br/>(never falls back to Qwen)"]
+    D -->|"3rd review on<br/>same piece"| H["shelved/"]
+    E --> I["gallery/unpacked/"]
+    F --> J["rejected/<br/>+ critique sidecar"]
+    I -->|"release_pack,<br/>curator's call"| K["gallery/packNN/<br/>shipped, FILE_ID.DIZ"]
+    J -.->|"revise, resubmit"| B
 
-![Gallery / packs view](docs/screenshot-gallery.png)
+    L["references/study/<br/>real ACiD/Blocktronics files"] -.->|"compare_to_reference,<br/>technique study"| A
+    L -.-> C
+```
 
-**Scratch / WIP** — a live, unfiltered look at whatever the agents currently have in progress: the generator script, note, and credits alongside the render.
+Both agent seats run the same local model (`qwen3.8:27b-mlx`). The
+asymmetry that matters isn't the artist/curator split, it's the second
+line under Opus 5 in the diagram: **the local model no longer makes the
+final accept/reject call.** It still does the actual review work
+(previewing the render, comparing it to a reference, writing a critique)
+and still forms its own opinion, but that opinion is logged for comparison
+and doesn't decide where the file goes. Why, below.
 
-![Scratch / WIP view](docs/screenshot-scratch.png)
+## Three phases, and what each one taught
 
-## Roles
+### Phase 1: build the pipeline, ship volume
 
-- **Artist** (`raze`) — makes pieces. Free to work in `scratch/` however it
-  wants (character-by-character, procedural Python + chafa/jp2a conversion,
-  remixing references), submits finished work via `submit_piece`.
-- **Curator** (`hollis`) — reviews everything the Artist submits, grounded
-  in real reference pieces from `references/study/` and 16colo.rs, not
-  vibes. Calls `curate_piece` with a decision + critique — but as of
-  2026-09-16, **the accept/reject decision itself is no longer made by the
-  local model.** See "Two-tier review" below.
+Getting two agents to hand work back and forth through a real folder
+structure, with a curator that fetches reference material instead of
+judging from memory, was the first real milestone. It worked. Packs
+shipped. The dashboard showed live reasoning. It looked like a working
+system.
 
-Both agent seats run the same local model (`qwen3.8:27b-mlx`, stock/non-
-obliterated) — role comes entirely from the system prompt. Model diversity
-wasn't the original point here; instruction-following and taste were the
-scarce resource, so the strongest local model ran both seats. That
-assumption changed once real evidence showed the local model's accept bar
-was too permissive (see below).
+**What this phase got wrong, in hindsight:** shipped volume looks like
+progress from the outside and says nothing about quality. 52 packs and
+531 shifts in, the recurring question wasn't "is it producing things,"
+it was "does the curator's accept bar mean anything," and for a long
+stretch, nobody had checked.
+
+### Phase 2: governance, or catching failures after they happen
+
+Once specific defects got noticed (a piece accepted with a critique
+describing "two facing profile heads with brow and jaw shading" that
+was, on direct inspection, three flat solid-color blocks with no facial
+structure at all), the response was to build checks: `inspect_piece`
+for structural hygiene, a blind adversarial re-check that makes the
+curator's own model describe a piece with zero access to its own
+critique, `STYLE.md` rules requiring shared shading primitives instead
+of ad hoc math, `OBSERVER_NOTES.txt` for flagging shipped defects
+without silently rewriting them.
+
+This helped in practice. It also revealed its own limit fast: **a checker
+that catches a bad decision after it's made doesn't make the agent
+better at the underlying judgment that produced it.** The blind-check
+gate itself had a real bug (naive substring matching that couldn't tell
+"no anatomy, no face" (a correct denial) from an actual false claim)
+that silently stalled curation for four shifts before anyone noticed,
+because a governance layer is still just more code, with its own bugs,
+that needs the same scrutiny as everything else.
+
+### Phase 3: capability and a second opinion, not more rules
+
+The turn that mattered: stop asking "what rule catches this" and start
+asking "can the model physically do the thing we're asking for."
+
+Two concrete examples:
+
+- **`eye()` was redesigned three separate times** trying to build a
+  constructed eye that read as round at the radius agents actually use.
+  All three failed real visual verification. The root cause wasn't
+  technique, it was resolution: a standard ANSI cell is roughly twice as
+  tall as wide, so a curve drawn in whole-cell units either squashes or
+  aliases into flat bands, no matter how the math is tuned. The fix was
+  a new primitive (`HalfBlockCanvas`, using half-block
+  characters to address two pixels per cell) that made pixel-space units
+  square. Verified directly (a real eye and a cranium-scale circle both
+  rendered cleanly round on the first attempt), and confirmed again in
+  live use: the very next artist shift found the primitive unprompted,
+  connected it to a specific past critique, and built with it
+  successfully.
+
+- **The curator's accept bar was measurably too permissive**, and no
+  amount of prompting the same local model to "be more critical" was
+  going to fix that from the inside. A model can't reliably grade its
+  own blind spot. A blind validation set (a real ACiD reference as a
+  control, 3 known-bad rejected pieces, and 3 pieces the curator had
+  *already shipped*) run through Claude Opus 5 came back: reference
+  correctly accepted, all 3 known-bad pieces correctly rejected, and all
+  3 previously-shipped pieces rejected too, with specific defects. Those
+  renders were reviewed directly, not taken on faith, and confirmed
+  weak. Opus 5 now makes the final call; the local model's critique is
+  still logged for comparison, which is itself a live measurement of how
+  much the original curator was missing.
+
+A third finding from this phase belongs here too, because it's a caution
+against over-trusting even the fixes: an internal audit of the harness's
+own loop-guard (meant to stop a genuinely stuck shift from burning its
+whole budget on one repeated action) found it had been killing shifts on
+a broken fingerprint: truncated to 120 characters with all digits
+stripped, so two calls writing genuinely different file content could
+collapse onto the same signature. Auditing all 115 historical kills
+under a strict same-call-same-result rule: **2 were real stalls, 113
+were legitimate iteration killed by mistake.** The fix (full-content
+hashing, both call and result) is live; shift-ending on a detected stall
+is intentionally left in log-only mode until more evidence accumulates,
+because the audit itself proved that "the mechanism exists" was never
+sufficient grounds to trust it.
+
+## What we've learned about running agents on a real, judged task
+
+- **A capability gap and a judgment gap need different fixes, and
+  confusing them wastes real time.** `eye()`'s three failed redesigns
+  were prompting harder at a resolution problem no amount of prompting
+  could solve. The curator's permissive bar was the opposite: the model
+  had the tools, the references, and the instructions, and still
+  couldn't reliably self-correct its own accept threshold. One needed a
+  new primitive. The other needed a second, independent judge.
+
+- **Self-assessment in isolation is unreliable, structurally, not just
+  occasionally.** Every serious false-positive in this project's history
+  followed the same shape: the accepted piece with fabricated anatomical
+  detail, a submission called "genuinely good and submission-ready" that
+  was actually two flat color bars. Both happened when an agent judged
+  its own render from memory of intent instead of a forced, direct
+  comparison. `compare_to_reference`
+  (a required side-by-side against a real file before submission) and
+  the Opus-5 gate are the same fix applied twice: replace "trust the
+  agent's read of its own work" with "make the comparison unavoidable."
+
+- **Volume is not a proxy for quality, and checking that requires
+  looking, not counting.** 52 packs and 531 shifts describe throughput.
+  Whether that throughput is any good took direct human review of actual
+  renders next to actual references, and nothing in the pipeline's own
+  metrics would have surfaced it on its own.
+
+- **A safety mechanism is a claim, not a guarantee, until it's
+  measured.** The loop-guard existed for a real reason and still failed
+  98% of the time it fired. Building a check is not the same as
+  verifying the check does what it's supposed to.
+
+- **The same mistake can recur independently in different places**,
+  which is itself a signal something's missing structurally, not just a
+  one-off bug. Color-index confusion (assuming what a palette number
+  renders as, instead of checking) happened twice in one session, in
+  unrelated code, by different authors, which is why the fix was a
+  verified helper function and an always-present prompt note, not a
+  single corrected line.
+
+- **Procedural generation has a real ceiling, and more tooling doesn't
+  obviously close it.** A test piece built with the full current
+  toolkit, correct construction technique, and direct iteration against
+  a real reference still read as "nothing like" genuine hand-drawn ACiD
+  art on direct review. Formulas encode statistics: density, hue
+  family, falloff shape. Real reference art is built from thousands of
+  small authored choices a human made looking at the emerging image.
+  Whether that gap closes with more primitives, or needs a fundamentally
+  different approach, remains an open question here, not
+  papered over.
+
+## Honest status, as of this write-up
+
+**52 packs shipped, 531 agent shifts, ~131 pieces in the gallery, ~47
+shared drawing primitives across the toolkit.** Real, sustained output,
+and, per the lessons above, not itself evidence that the quality
+question is settled. What's confirmed:
+
+- The resolution/aliasing problem behind every failed constructed-curve
+  attempt is genuinely fixed, verified in both isolated tests and live
+  unprompted agent use.
+- The curator's accept bar was measurably too permissive; a stronger
+  independent reviewer now makes the real accept/reject call, with
+  guardrails against runaway cost or an infinite resubmission loop.
+- The loop-guard's false-positive rate is now understood and fixed, with
+  the fix itself left in a conservative, evidence-gated mode rather than
+  fully re-enabled on faith.
+
+What's still open: whether the current toolkit, iterated further, closes
+the gap to real hand-drawn reference quality, or whether that requires a
+different kind of approach entirely. This section gets rewritten as real
+evidence comes in from here. The goal is staying true, not reading well.
+
+## The toolkit
+
+`workspace/scratch/canvas.py` (general primitives), `figure_common.py`
+(anatomy/shading), and `halfblock.py` (sub-cell-resolution shapes) are the
+shared library both agents build with instead of re-deriving per-cell math
+from scratch every script. Every primitive in here exists because of a
+specific, diagnosed defect, not speculative capability-building:
+
+- **`HalfBlockCanvas`** — described above. The single most consequential
+  fix this project has made.
+- **`compare_to_reference`** — renders the artist's piece and a real
+  reference side by side as one labeled image, required before
+  `submit_piece`. Built after a submission was judged "genuinely good"
+  from a solo preview when a direct comparison would have shown
+  otherwise.
+- **`ramp(hue_name)` + a fixed `PALETTE` reference** — returns three
+  palette indices verified to be the same hue family at different
+  brightness, instead of an agent picking nearby-looking numbers and
+  getting the hue wrong (see the "same mistake, twice" lesson above).
 
 ## Two-tier review: Qwen critiques, Opus 5 decides
 
-As of 2026-09-16, `curate_piece`'s final accept/reject call is made by
-Claude Opus 5 via the official `claude` CLI (Claude Code), authenticated
-against the project owner's own subscription — **no API key anywhere in
-this repo**, credentials live in the OS keychain on the machine running the
-harness. Qwen (`hollis`) still does the actual review work (`preview_piece`,
-`compare_to_reference`, writing the critique) and still forms its own
-accept/reject opinion, but that opinion is now advisory, logged alongside
-Opus's real verdict for a disagreement-rate comparison over time — it does
-not decide where the file goes.
+`curate_piece`'s final accept/reject call is made by Claude Opus 5 via the
+official `claude` CLI (Claude Code), authenticated against the project
+owner's own subscription. No API key anywhere in this repo: credentials
+live in the OS keychain on the machine running the harness.
 
-Why: a blind validation set (a real ACiD reference as a control, 3 pieces
-from `rejected/`, and — critically — 3 pieces Qwen had **already accepted
-and shipped**) showed Opus correctly accepted the real reference and
-rejected the 3 known-bad pieces, but also rejected all 3 previously-shipped
-pieces with specific, concrete defects. The project owner reviewed the
-actual renders directly and confirmed the stricter read was correct, not
-miscalibrated. That's a real, measured finding, not a guess: **the local
-model's curation bar had been letting weaker work through than the house
-intended**, at least in that sample.
-
-Guardrails on the Opus gate (all live, all tested against real pieces
-before shipping):
-- Opus sees **only** the render + a raw character-cell dump — never the
-  artist's note, generator script, or title, so a stronger model can't
-  just grade stated intent instead of actual pixels.
-- A daily call cap. When hit, submissions **queue** — they never silently
-  fall back to Qwen for the accept/reject call.
-- One re-review per revision; a piece shelved after 3 total Opus reviews
-  (`workspace/shelved/`) instead of resubmitted indefinitely.
-- Every review — Qwen's decision and Opus's verdict — is logged to a
-  `opus_reviews` table, so the actual disagreement rate is measurable, not
-  felt.
-- Agents' `bash` tool blocks direct invocation of the `claude` CLI, so the
-  cap/logging/shelve machinery can't be bypassed by an agent shelling out
-  to it directly.
+Guardrails, all tested against real pieces before shipping:
+- Opus sees **only** the render and a raw character-cell dump, never the
+  artist's note, generator script, or title.
+- A daily call cap. When hit, submissions queue; they never silently fall
+  back to the local model for the accept/reject call.
+- One re-review per revision; a piece is shelved (`workspace/shelved/`)
+  after 3 total Opus reviews instead of resubmitted indefinitely.
+- Every review is logged (both the local model's decision and Opus's
+  verdict) so the actual disagreement rate is measurable, not felt.
+- Agents' shell tool blocks direct invocation of the `claude` CLI, so this
+  can't be bypassed from inside a shift.
 
 ## Workspace pipeline
 
@@ -93,113 +262,36 @@ workspace/
   submissions/   artist's finished work awaiting curator review
   gallery/       curated, accepted pieces (with critique + note sidecars)
   rejected/      sent back with a .critique.txt sidecar — nothing deleted
-  shelved/       hit the 3-review cap under the Opus gate — needs a genuinely
-                 different approach, not another resubmit of the same file
+  shelved/       hit the 3-review cap under the Opus gate. Needs a
+                 genuinely different approach, not another resubmit
   references/    real ACiD/ANSI study material (kept on disk, untracked
                  from git — modular, drop a file in and it's usable)
 ```
 
 Nothing is ever destroyed. A rejection is feedback to act on, not a dead
-end — the critique sidecar stays with the piece in `rejected/` so the
-Artist can revise and resubmit.
+end. The critique sidecar stays with the piece so the artist can revise
+and resubmit.
 
-## The toolkit
+## Screenshots
 
-`workspace/scratch/canvas.py` (general primitives), `figure_common.py`
-(anatomy/shading), and `halfblock.py` (sub-cell-resolution shapes) are the
-shared drawing library both agents build with, instead of hand-deriving
-per-cell math from scratch in every new script. ~47 functions total across
-the three modules as of this write-up. Every primitive in here exists
-because of a specific, diagnosed real defect — the library grew by fixing
-what was actually broken, not by speculatively adding capability:
+**Live shifts.** Real-time feed of both agents' reasoning, tool calls, and results. Handles (`raze`, `hollis`) are self-chosen, not assigned.
 
-- **`HalfBlockCanvas`** (`halfblock.py`) — the single most consequential
-  fix this project has made. A normal ANSI cell is ~2x taller than wide, so
-  any circle/curve drawn in whole-cell units either squashes (uncorrected)
-  or aliases into flat rings/bands once aspect-corrected — there simply
-  aren't enough pixels per curve. `figure_common.py`'s `eye()` primitive
-  was redesigned **three separate times** trying to fix this at the
-  whole-cell level and failed real visual verification every time.
-  `HalfBlockCanvas` uses the ▀ half-block character with independent fg/bg
-  to address 2 pixels per cell instead of 1, making pixel-space units
-  genuinely square — `fill_circle(cx, cy, r, color)` in pixel-space
-  coordinates comes out round with zero aspect math at the call site.
-  Verified directly: a real constructed eye (sclera/iris/pupil/glint) and
-  a large cranium-scale circle both rendered cleanly round on the first
-  attempt. Confirmed working in practice, not just in a test: the very
-  next live artist shift after this shipped found the primitive
-  unprompted, connected it to a specific past curator critique it was
-  built to fix, and used it to build a genuinely round constructed eye —
-  then caught and diagnosed a real color-mapping bug in its own
-  `_sgr()` encoding through careful debugging rather than guessing.
+![Live shifts view](docs/screenshot-live.png)
 
-- **`compare_to_reference`** (harness tool) — renders the artist's own
-  piece and a real reference side-by-side as one labeled image, so
-  self-assessment is grounded in an actual visual comparison instead of
-  memory of what technique was intended. Built after a specific, real
-  incident: a piece was previewed alone, called "genuinely good and
-  submission-ready" in the same shift, and separately claimed to use a
-  shared shading primitive that its own code never called. Now
-  **required** before `submit_piece` — the tool hard-refuses submission
-  without a matching comparison call on that exact file.
+**Gallery.** Accepted pieces rendered in real 16-color ANSI (actual SGR-parsed colors, not escaped text), with a CRT scanline treatment.
 
-- **`ramp(hue_name)` + a fixed `PALETTE` reference** (`canvas.py`) — added
-  after the *same* category of mistake happened twice independently in one
-  session: color index 6 was assumed to be dark red (it's cyan), and
-  `canvas.py`'s own `HOUSE_HUE` constant turned out to store raw SGR escape
-  codes instead of the 0-15 indices the renderer actually expects,
-  silently miscoloring hue-cycling in at least 4 files (documented,
-  not silently rewritten — see `OBSERVER_NOTES.txt`). `ramp('amber')` now
-  returns `[11, 9, 1]` — three indices verified against the real palette
-  to actually be the same hue family, not picked by proximity.
+![Gallery / packs view](docs/screenshot-gallery.png)
 
-## Honest status, as of 2026-09-16
+**Scratch / WIP.** A live, unfiltered look at whatever the agents currently have in progress: the generator script, note, and credits alongside the render.
 
-**52 packs shipped, 531 agent shifts run, ~131 pieces in the gallery.**
-That's real, sustained output — but volume was never the question the
-project owner was asking. The direct, repeated question all session was
-whether the *quality* is closing the gap to real ACiD/Blocktronics
-reference work, and the honest answer is: **partially, and only just
-starting to be measured properly.**
-
-What's real and confirmed:
-- The resolution/aliasing problem that broke every attempt at a
-  constructed round shape is genuinely fixed (`HalfBlockCanvas`),
-  verified both in isolated tests and in live, unprompted agent use.
-- The curator's accept bar was measurably too permissive — 3 real shipped
-  pieces failed a stronger, blind review with specific defects the project
-  owner confirmed by eye. That's now caught before shipping, not after.
-- A loop-guard bug had been force-ending ~98% of "stalled" shifts on
-  false positives (audited: 115 historical kills, only 2 were genuine
-  stalls under a strict same-call-same-result test) — likely a real,
-  previously invisible drag on how much iteration pieces actually got
-  before being cut off.
-
-What's still an open, unresolved problem, said plainly:
-- A hand-built test piece using the new toolkit and correct construction
-  technique (a full pass: silhouette, socket, constructed eye, jaw, outline,
-  accent color, dense reference-derived dithering) was reviewed directly
-  by the project owner and called "awful... looks nothing at all like it"
-  next to the real reference it was built against. Procedurally-generated
-  primitives — however well-built — encode *statistics* (density, hue
-  family, falloff shape); real ACiD art is built from *authored choices* a
-  human artist made looking at the emerging image. That gap is not yet
-  closed, and it's an open question whether more primitives closes it or
-  whether it needs a different approach (a real editor-style workflow, or
-  training directly on the reference corpus).
-- The Opus-gate disagreement-rate data is brand new (as of this commit) —
-  real production evidence of whether it changes actual shipped quality,
-  not just this session's 8-piece blind set, is still accumulating.
-
-This section will keep getting rewritten as that evidence comes in. The
-goal is for it to stay true, not to read well.
+![Scratch / WIP view](docs/screenshot-scratch.png)
 
 ## Human inbox
 
 Direct the project mid-run from the dashboard's prompt box without ever
 interrupting a live shift: messages queue in a `human_messages` table and
 are delivered at the start of the recipient's next shift. Target the
-Artist, the Curator, or both.
+artist, the curator, or both.
 
 ## Run it
 
@@ -213,8 +305,8 @@ touch STOP          # or Ctrl+C / SIGTERM
 ```
 
 Requires `claude` (Claude Code CLI) logged in (`claude login`) on the
-machine running the harness — this is what powers the Opus-5 curator gate.
-No API key is stored anywhere; auth lives in the OS keychain.
+machine running the harness. This is what powers the Opus 5 curator
+gate. No API key is stored anywhere; auth lives in the OS keychain.
 
 Dashboard (separate repo, `~/agentscii-dashboard/`):
 
@@ -224,7 +316,7 @@ python3 server.py
 # open http://127.0.0.1:8766
 ```
 
-For persistence across reboots/crashes, see `launchd/README.md` — both the
+For persistence across reboots/crashes, see `launchd/README.md`. Both the
 watchdog and the dashboard can run as real macOS launchd agents, same
 pattern as antfarm2.
 
