@@ -31,6 +31,7 @@
 
 import math
 import re
+import random
 
 W = 80
 H = 46
@@ -161,7 +162,8 @@ def specular_shade(cv, region_fn, Lfn, x_hl, y_hl, hl_r,
             set_cell(cv, x, y, ch, fg, 0)
 
 
-def photoreal_gradient(cv, region_fn, cx, cy, hue_stops, max_dist=None):
+def photoreal_gradient(cv, region_fn, cx, cy, hue_stops, max_dist=None,
+                        aspect=0.5):
     """Smooth multi-hue radial gradient across a region -- studied from
     references/study/blocktronics-avg_16c.ANS (a real ACiD piece using a
     genuinely photorealistic multi-color transition, not the house's usual
@@ -173,28 +175,53 @@ def photoreal_gradient(cv, region_fn, cx, cy, hue_stops, max_dist=None):
     skin tones, sunsets, painterly portrait work -- anywhere the reference
     shows a real color SPECTRUM, not just one hue's brightness varying.
 
+    BUG FIXED 2026-09-16 (found building a real piece, not a synthetic
+    test): two real defects. (1) distance had no aspect correction -- on a
+    canvas much wider than tall, x dominates the distance calc entirely
+    and rows near cy read as nearly identical, producing horizontal
+    banding instead of a radial look (the same aspect lesson eye() taught
+    earlier -- terminal cells are ~2x taller than wide). (2) hue selection
+    hard-switched at the interval midpoint (local_t<0.5 picks one stop,
+    else the next) instead of interpolating -- that alone guarantees
+    stepped solid-color blocks, not a gradient, at ANY aspect ratio. Fixed
+    both: aspect-corrected distance (matches eye()'s convention), and a
+    real per-cell probabilistic dither between adjacent stops so the
+    transition is visually smooth instead of a hard color swap.
+
     region_fn(x,y) -> bool: where the gradient applies.
     hue_stops: an ordered list of fg color indices, e.g. [11, 9, 1, 5]
       (bright yellow -> amber -> red -> magenta) -- the gradient walks
       through them in order from center (index 0) to edge (last index).
-    max_dist: gradient radius; defaults to covering the whole region."""
+    max_dist: gradient radius; defaults to covering the whole region.
+    aspect: cell aspect ratio correction (default 0.5, matching eye()) --
+      pass 1.0 if calling on a region you've already aspect-corrected
+      yourself, or if you specifically want a non-circular gradient."""
     if max_dist is None:
         max_dist = max(len(cv[0]), len(cv)) / 2.0
     n = len(hue_stops)
+    rng = random.Random(0)
     for y in range(len(cv)):
         for x in range(len(cv[0])):
             if not region_fn(x, y):
                 continue
-            d = math.hypot(x - cx, y - cy) / max_dist
+            d = math.hypot(x - cx, (y - cy) / aspect) / max_dist
             d = max(0.0, min(1.0, d))
             # which pair of adjacent hue stops does this distance fall
-            # between, and how far through that pair (for the density ramp
-            # to carry the local transition, not just a hard color swap)
+            # between, and how far through that pair. Real dither instead
+            # of a hard midpoint switch (the second bug found 2026-09-16):
+            # probabilistically pick the near or far stop weighted by
+            # local_t, so the transition is a scattered blend of both
+            # colors rather than a hard-edged seam at local_t==0.5.
             pos = d * (n - 1)
             idx = min(n - 2, int(pos))
             local_t = pos - idx
-            fg = hue_stops[idx] if local_t < 0.5 else hue_stops[idx + 1]
-            ramp_idx = int(abs(local_t - 0.5) * 2 * (len(RAMP) - 1))
+            fg = hue_stops[idx + 1] if rng.random() < local_t else hue_stops[idx]
+            # density ramp carries brightness WITHIN whichever stop got
+            # picked -- peaks mid-transition (visual texture), settles to
+            # a solid full-block glyph at each stop's own center so the
+            # named hue actually reads clearly there, not just noise.
+            dist_from_stop_center = min(local_t, 1.0 - local_t) * 2.0
+            ramp_idx = int(dist_from_stop_center * (len(RAMP) - 1))
             set_cell(cv, x, y, RAMP[ramp_idx], fg, 0)
 
 
@@ -440,7 +467,8 @@ def joint_dot(cv, cx, cy, r, Lfn, base_fg=7, hot_fg=15):
 
 def standing_figure(cv, hipx, hipy, Lfn, *,
                     height=18.0, stance="contrapposto",
-                    base_fg=7, hot_fg=15, iris_fg=96, one_eye=True):
+                    base_fg=7, hot_fg=15, iris_fg=96, one_eye=True,
+                    head_scale=1.0):
     """Build a full STANDING figure from shaded capsule surfaces + the head primitives.
     This is the joint-VIGIL unit: call it and you get a posed full-body figure lit by
     Lfn -- the gradient-anatomy idiom extended from a bust to a whole body.
@@ -454,7 +482,15 @@ def standing_figure(cv, hipx, hipy, Lfn, *,
     # --- proportions from hip point upward/downward ---------------------------
     torso_h = height * 0.34
     leg_h   = height * 0.46
-    head_r  = max(2.0, height * 0.11)
+    # head_scale enlarges the head beyond real proportions -- block-char anatomy
+
+    # needs bigger heads than a real human; at full-body scale a 0.11 ratio reads as
+
+    # a tiny head on a column. Default 1.0 keeps old behavior; pass ~1.6-2.0 for
+
+    # legible full-body figures (raze, crowd legibility fix).
+
+    head_r    = max(2.0, height * 0.11) * head_scale
     shoulder_y = hipy - torso_h
     neck_y     = shoulder_y - head_r * 0.4
     head_cy    = neck_y - head_r

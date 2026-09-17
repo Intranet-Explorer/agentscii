@@ -213,6 +213,17 @@ PALETTE_NOTE = (
     "times."
 )
 
+FREEZE_NOTE = (
+    "figure_common.py IS FROZEN (house direction, 2026-09-17, read-only on "
+    "disk): draw with half-block primitives — workspace/scratch/"
+    "halfblock.py's HalfBlockCanvas — for the next few pieces instead, "
+    "even if the result is simpler than what figure_common.py's whole-cell "
+    "primitives could produce. Simple and genuinely shaded beats complex "
+    "and flat. This isn't a permanent ban on figure_common.py, it's a "
+    "deliberate constraint while half-block technique gets real practice "
+    "reps instead of staying a one-off proof of concept."
+)
+
 TECHNIQUE_NOTE = (
     "HALF-BLOCK RESOLUTION (added 2026-09-16, read this first for anything "
     "round): for eyes, craniums, orbs, faces, or any curved/circular shape "
@@ -274,7 +285,7 @@ AGENTS = {
             "submit_piece when something is ready for review. That's the only "
             "hard boundary between you and your collaborator — everything else "
             "upstream is shared. "
-            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + PALETTE_NOTE + " " + TECHNIQUE_NOTE +
+            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + PALETTE_NOTE + " " + FREEZE_NOTE + " " + TECHNIQUE_NOTE +
             "A human (Tyler) directs this project overall and can leave either "
             "of you direction via your inbox. "
             "This is directed, quality-focused work — idle equilibrium isn't a "
@@ -310,7 +321,7 @@ AGENTS = {
             "everything upstream is shared, and you're a full contributor "
             "there too, not just an outside judge. Jump into scratch/ and add "
             "a pass to something your collaborator started whenever you want. "
-            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + PALETTE_NOTE + " " + TECHNIQUE_NOTE +
+            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + PALETTE_NOTE + " " + FREEZE_NOTE + " " + TECHNIQUE_NOTE +
             "A human (Tyler) directs this project overall and can leave either "
             "of you direction via your inbox. "
             "Ground every judgment in something real: fetch and actually look "
@@ -351,6 +362,95 @@ MAX_TOOL_CALLS_PER_SHIFT = 40
 # the curator, whose job is comparatively bounded (read, judge, decide).
 MAX_TOOL_CALLS_BY_ROLE = {"artist": 60, "curator": 40}
 BASH_TIMEOUT = 60
+
+SHIFT_WALL_CLOCK_CAP_S = 90 * 60  # 90 minutes (user direction, 2026-09-17):
+# the loop guard fingerprints identical call+result pairs, so it can't see
+# a shift that keeps making genuinely DIFFERENT tool calls while never
+# converging -- found live: an artist shift spent 4+ hours iterating on one
+# foreground (_dusk_yard), every edit a real, different diff, never once
+# tripping the stall detector, because nothing about it was actually a
+# repeat. Wall-clock is a separate, cruder backstop for exactly that case:
+# it doesn't care whether the calls are novel, only how long the shift has
+# run. Checked once per tool-call loop iteration, same place the stall
+# detector and per-role cap are checked, so it's covered even for the
+# artist's 60-call/shift budget which the curator's 40 would exhaust
+# time-wise anyway.
+
+_VERSION_RE = re.compile(r"(?:\.[vV]|-v|_v)(\d+)$")
+
+FIGURATIVE_WORDS = ("face", "eye", "watch", "sentinel", "cyborg", "scan",
+                     "mind", "portrait", "figure", "warden", "vigil",
+                     "traveler", "procession", "ember")
+
+
+def core_slug(name_noext):
+    """Strip a trailing version suffix (.v3, -v4, _v12) to find the
+    underlying piece identity, e.g. '_orb.v5' and '_orb' are the same
+    core piece at different revisions. Shared by the shipped-catalog dedup
+    index, the revision-over-novelty gate, and the open-subject cap so all
+    three agree on what counts as \"the same piece\" -- extracted to module
+    scope 2026-09-17 (was previously a closure inside
+    _shipped_catalog_index() only, duplicated ad hoc anywhere else that
+    needed the same logic)."""
+    s = name_noext
+    while True:
+        m = _VERSION_RE.search(s)
+        if not m:
+            return s
+        s = s[: m.start()]
+
+
+def _extract_version(name_noext):
+    """Return the trailing version number (.v3 -> 3) or 0 if the filename
+    has no version suffix (a bare first submission)."""
+    m = _VERSION_RE.search(name_noext)
+    return int(m.group(1)) if m else 0
+
+
+def _get_subject(conn, slug):
+    row = conn.execute(
+        "SELECT slug, status, opened_at, last_version, last_path, "
+        "abandon_reason, updated_at FROM subjects WHERE slug=?",
+        (slug,),
+    ).fetchone()
+    if row is None:
+        return None
+    keys = ["slug", "status", "opened_at", "last_version", "last_path",
+            "abandon_reason", "updated_at"]
+    return dict(zip(keys, row))
+
+
+def _open_subjects(conn):
+    # 'rejected' counts as still-open for cap purposes: rejection isn't a
+    # close-out, it's a mandate to revise (revision-over-novelty). Only
+    # accepted/abandoned/shelved actually free up a slot.
+    rows = conn.execute(
+        "SELECT slug, last_version, opened_at FROM subjects "
+        "WHERE status IN ('open','rejected') ORDER BY opened_at"
+    ).fetchall()
+    return [{"slug": r[0], "last_version": r[1], "opened_at": r[2]} for r in rows]
+
+
+def _touch_subject(conn, slug, version, path, status="open"):
+    """Create or update a subject row. Called from submit_piece (new
+    submission -> ensure the subject exists / bump last_version) and
+    curate_piece (accept/reject -> update status)."""
+    existing = _get_subject(conn, slug)
+    now = time.time()
+    if existing is None:
+        conn.execute(
+            "INSERT INTO subjects (slug, status, opened_at, last_version, "
+            "last_path, updated_at) VALUES (?,?,?,?,?,?)",
+            (slug, status, now, version, str(path), now),
+        )
+    else:
+        new_version = max(existing["last_version"], version)
+        conn.execute(
+            "UPDATE subjects SET status=?, last_version=?, last_path=?, "
+            "updated_at=? WHERE slug=?",
+            (status, new_version, str(path), now, slug),
+        )
+    conn.commit()
 
 TOOLS = [
     {
@@ -466,6 +566,30 @@ TOOLS = [
                     "critique": {"type": "string", "description": "Specific, concrete critique — required either way: praise specifics on accept, actionable issues on reject."},
                 },
                 "required": ["path", "decision", "critique"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "abandon_subject",
+            "description": (
+                "Artist seat only. Explicitly abandon an open subject (a "
+                "piece slug that's been submitted but not yet accepted) "
+                "with a written reason. Required before starting a third "
+                "concurrent subject — the open-subject cap is 2. This is "
+                "not a punishment, it's an honest record: some subjects "
+                "genuinely don't work out, and saying so plainly (with a "
+                "real reason) is better than letting them sit open forever "
+                "or quietly starting something else under a fresh name."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "The core subject slug to abandon (filename with any .vN/-vN/_vN suffix stripped), e.g. '_orb'."},
+                    "reason": {"type": "string", "description": "Why this subject is being abandoned, not just resubmitted again."},
+                },
+                "required": ["slug", "reason"],
             },
         },
     },
@@ -682,6 +806,29 @@ def init_db():
         seat TEXT PRIMARY KEY,
         handle TEXT NOT NULL,
         timestamp REAL NOT NULL
+    )""")
+    # subjects: tracks each distinct piece IDENTITY (by core_slug, i.e. the
+    # filename with any trailing .vN/-vN/_vN stripped) through its
+    # accept/reject lifecycle. Added 2026-09-17 (user direction) to enforce
+    # two real rules that were previously unenforceable from the filesystem
+    # alone: (1) revision-over-novelty -- a rejected piece must come back
+    # as the SAME slug at a higher version, not reappear as a fresh slug
+    # to dodge review history (observed live: _exchange rejected, came
+    # back rebuilt as _voices; _crowd_joint rejected, came back as
+    # _crowd_wave -- same underlying subject, new name each time, no
+    # continuity an outside observer -- or this gate -- could trace); (2) a
+    # hard cap of 2 open (not yet accepted/abandoned) subjects at once, so
+    # a stalled piece can't just be abandoned silently in favor of endless
+    # new starts -- it must be explicitly abandoned with a written reason,
+    # which is preserved for the record.
+    conn.execute("""CREATE TABLE IF NOT EXISTS subjects (
+        slug TEXT PRIMARY KEY,
+        status TEXT NOT NULL DEFAULT 'open',
+        opened_at REAL NOT NULL,
+        last_version INTEGER NOT NULL DEFAULT 0,
+        last_path TEXT,
+        abandon_reason TEXT,
+        updated_at REAL
     )""")
     conn.commit()
     return conn
@@ -1003,6 +1150,200 @@ def render_comparison_b64(piece_path, reference_path, offset=0, max_rows=60):
     return out_b64, note
 
 
+def _parse_ans_grid(path):
+    """Parse an .ans/.asc file into a cursor-addressable grid: dict of
+    (row, col) -> (char, fg_idx 0-15, bg_idx 0-15), plus total_lines.
+    Shared by render_ans_to_png_b64 (visual rendering) and
+    _figurative_precheck (the hard pre-submission gate, 2026-09-17) so
+    both work from the exact same real cell data instead of the gate
+    re-deriving its own approximate parse. Handles cursor-addressing
+    (ESC[A/B/C/D/H/f) the way a real terminal does, not a flat
+    one-line-in-source-equals-one-row model -- classic ACiD/Blocktronics
+    .ANS files routinely draw a base layer then jump the cursor back up to
+    add highlight detail on rows already drawn."""
+    raw = Path(path).read_bytes()
+    text = _decode_ans_bytes(raw).replace("\r\n", "\n").replace("\r", "\n")
+
+    grid = {}
+    row, col = 0, 0
+    max_row_seen = 0
+    base_fg, bright_fg, base_bg = 7, False, 0
+    pos = 0
+    n = len(text)
+    pending_wrap = False
+
+    def put(ch):
+        nonlocal col, row, max_row_seen, pending_wrap
+        if pending_wrap:
+            row += 1
+            col = 0
+            pending_wrap = False
+            if row > max_row_seen:
+                max_row_seen = row
+        fg_idx = (base_fg + 8) if bright_fg else base_fg
+        grid[(row, col)] = (ch, fg_idx % 16, base_bg % 16)
+        col += 1
+        if col >= _TERMINAL_WIDTH:
+            col = _TERMINAL_WIDTH - 1
+            pending_wrap = True
+
+    while pos < n:
+        ch = text[pos]
+        if ch == "\n":
+            if pending_wrap:
+                pending_wrap = False
+            else:
+                row += 1
+                col = 0
+                if row > max_row_seen:
+                    max_row_seen = row
+            pos += 1
+            continue
+        m = _CSI_RE.match(text, pos)
+        if m:
+            param_str, code = m.group(1), m.group(2)
+            params = [int(c) for c in param_str.split(";") if c != ""]
+            if code == "m":
+                for p in (params or [0]):
+                    if p == 0:
+                        base_fg, bright_fg, base_bg = 7, False, 0
+                    elif p == 1:
+                        bright_fg = True
+                    elif p == 22:
+                        bright_fg = False
+                    elif p == 39:
+                        base_fg, bright_fg = 7, False
+                    elif p == 49:
+                        base_bg = 0
+                    elif 30 <= p <= 37:
+                        base_fg = p - 30
+                    elif 90 <= p <= 97:
+                        base_fg, bright_fg = p - 90, True
+                    elif 40 <= p <= 47:
+                        base_bg = p - 40
+                    elif 100 <= p <= 107:
+                        base_bg = p - 100 + 8
+            elif code == "C":
+                col = min(_TERMINAL_WIDTH - 1, col + (params[0] if params else 1))
+                pending_wrap = False
+            elif code == "D":
+                col = max(0, col - (params[0] if params else 1))
+                pending_wrap = False
+            elif code == "A":
+                row = max(0, row - (params[0] if params else 1))
+                pending_wrap = False
+            elif code == "B":
+                row = row + (params[0] if params else 1)
+                pending_wrap = False
+                if row > max_row_seen:
+                    max_row_seen = row
+            elif code in ("H", "f"):
+                r = params[0] - 1 if len(params) >= 1 and params[0] else 0
+                c = params[1] - 1 if len(params) >= 2 and params[1] else 0
+                row, col = max(0, r), max(0, min(_TERMINAL_WIDTH - 1, c))
+                pending_wrap = False
+                if row > max_row_seen:
+                    max_row_seen = row
+            pos = m.end()
+            continue
+        put(ch)
+        pos += 1
+
+    return grid, max_row_seen + 1
+
+
+_HALF_BLOCK_CHARS = set("\u2580\u2584\u2588")  # ▀ upper, ▄ lower, █ full
+# (full block counts as half-block usage too -- HalfBlockCanvas.render()
+# emits a plain space with bg=color, or a full block, whenever both pixels
+# in a cell match, which is a normal and correct half-block-canvas output,
+# not colored-ASCII avoidance).
+
+
+def _figurative_precheck(path):
+    """Hard pre-submission gate (user direction, 2026-09-17): a figurative
+    piece (filename matches FIGURATIVE_WORDS) with under 10% half-block
+    cells, OR fewer than 3 distinct brightness steps inside its subject
+    mask, cannot be submitted. Runs BEFORE curate_piece / the Opus gate --
+    hollis never sees a piece that fails this, and no Opus call is spent
+    reviewing it. This is mechanical, not a judgment call: it exists
+    specifically because figurative pieces built from flat whole-cell
+    shapes (not half-block resolution, not real shading) have repeatedly
+    reached the curator and burned real review cycles before being
+    rejected for exactly this -- pushing the check earlier is strictly
+    cheaper and catches the same defect class deterministically.
+
+    Returns None if the piece passes (not figurative, or passes both
+    checks), else a string explaining the specific failure.
+
+    'Subject mask' is approximated as all non-background cells (any cell
+    that isn't a true empty space with black bg) -- an exact silhouette
+    isn't derivable without vision, but brightness-step counting across
+    ALL non-space drawn cells is a reasonable proxy: a genuinely
+    flat/unshaded figurative subject won't clear 3 steps even counted
+    this generously."""
+    name_lower = Path(path).stem.lower()
+    if not any(w in name_lower for w in FIGURATIVE_WORDS):
+        return None  # gate only applies to figurative work
+
+    try:
+        grid, total_lines = _parse_ans_grid(path)
+    except Exception:
+        return None  # don't hard-block on a parse error; let normal review catch it
+
+    total_cells = 0
+    half_block_cells = 0
+    brightness_values = set()
+    # Perceived brightness per 0-15 ANSI index, coarse but consistent
+    # ordering (dim -> bright within each color, dark grays below colors
+    # below bright colors below white) -- enough to count real STEPS, not
+    # exact luminance.
+    _BRIGHTNESS = [0, 2, 2, 2, 2, 2, 2, 3, 1, 4, 4, 4, 4, 4, 4, 5]
+
+    for (r, c), (ch, fg_idx, bg_idx) in grid.items():
+        if ch == " " and bg_idx == 0:
+            continue  # true empty cell, not part of the drawn subject
+        total_cells += 1
+        if ch in _HALF_BLOCK_CHARS:
+            half_block_cells += 1
+        # brightness proxy: for a space-with-bg cell the bg carries the
+        # visible color; otherwise the fg glyph does.
+        visible_idx = bg_idx if (ch == " " and bg_idx != 0) else fg_idx
+        brightness_values.add(_BRIGHTNESS[visible_idx % 16])
+
+    if total_cells == 0:
+        return None  # empty file -- other checks will catch this
+
+    half_block_frac = half_block_cells / total_cells
+    n_brightness_steps = len(brightness_values)
+
+    failures = []
+    if half_block_frac < 0.10:
+        failures.append(
+            f"only {half_block_frac*100:.1f}% of drawn cells use half-block "
+            f"characters (upper/lower/full block) -- figurative work needs "
+            f"half-block resolution (workspace/scratch/halfblock.py's "
+            f"HalfBlockCanvas) to read as constructed anatomy instead of "
+            f"whole-cell blocks; under 10% means this is essentially "
+            f"whole-cell-only construction"
+        )
+    if n_brightness_steps < 3:
+        failures.append(
+            f"only {n_brightness_steps} distinct brightness step(s) found "
+            f"across the piece's drawn cells -- real shading needs at least "
+            f"3 (e.g. shadow/mid/highlight) to read as a lit form rather "
+            f"than flat color fills"
+        )
+    if not failures:
+        return None
+    return (
+        f"figurative pre-submission gate FAILED for {Path(path).name} "
+        f"(checked automatically, before curator/Opus review -- no review "
+        f"cycle spent): " + "; ".join(failures) + ". This is a hard block, "
+        "not a suggestion: rework with half-block resolution and a real "
+        "light_field()/shade() pass before resubmitting."
+    )
+
+
 def _resolve_workspace_path(raw_path):
     p = Path(raw_path).expanduser()
     if not p.is_absolute():
@@ -1036,6 +1377,30 @@ def _move_with_sidecars(src, dest_dir, new_critique=None):
 
 
 def run_tool(name, args, agent):
+    if name == "abandon_subject":
+        if agent != "artist":
+            return "(error: only the artist seat can abandon_subject)"
+        slug = (args.get("slug") or "").strip()
+        reason = (args.get("reason") or "").strip()
+        if not slug or not reason:
+            return "(error: both slug and reason are required)"
+        db5 = sqlite3.connect(DB_PATH)
+        try:
+            existing = _get_subject(db5, slug)
+            if existing is None:
+                return f"(error: no open subject found for slug '{slug}')"
+            if existing["status"] not in ("open", "rejected"):
+                return f"(error: subject '{slug}' is already {existing['status']}, nothing to abandon)"
+            db5.execute(
+                "UPDATE subjects SET status='abandoned', abandon_reason=?, "
+                "updated_at=? WHERE slug=?",
+                (reason, time.time(), slug),
+            )
+            db5.commit()
+            return f"abandoned: '{slug}' — {reason}"
+        finally:
+            db5.close()
+
     if name == "random_direction":
         # Weighted toward the tradition the catalog is thinnest in (figurative/
         # character/scene work — 2 of 41 pieces at last count) so the randomness
@@ -1299,11 +1664,8 @@ def run_tool(name, args, agent):
             # piece" pattern mechanically instead of relying on the curator's
             # judgment alone every time.
             scope_fingerprint = {95, 91, 93, 92, 96, 94, 107, 103, 97, 0, 40, 104, 105}
-            figurative_words = ("face", "eye", "watch", "sentinel", "cyborg", "scan",
-                                "mind", "portrait", "figure", "warden", "vigil",
-                                "traveler", "procession", "ember")
             name_lower = p.stem.lower()
-            reads_figurative = any(w in name_lower for w in figurative_words)
+            reads_figurative = any(w in name_lower for w in FIGURATIVE_WORDS)
             if sgr_params and sgr_params.issubset(scope_fingerprint) and reads_figurative:
                 out.append(
                     "POSSIBLE MISLABEL: this piece's SGR palette exactly matches "
@@ -1382,6 +1744,22 @@ def run_tool(name, args, agent):
     if name == "write_file":
         try:
             p = _resolve_workspace_path(args["path"])
+            # figure_common.py freeze (user direction, 2026-09-17): "Raze
+            # draws with half-block primitives for the next few pieces,
+            # even if the output is simpler. Simple and shaded beats
+            # complex and flat." The file is also chmod 444 on disk as the
+            # real enforcement (blocks bash redirects/sed -i/etc, not just
+            # this one code path) -- this check exists purely to give a
+            # clear, on-topic error instead of a bare permission-denied.
+            if p.name == "figure_common.py":
+                return (
+                    "(error: figure_common.py is frozen — house direction "
+                    "2026-09-17: draw with half-block primitives "
+                    "(workspace/scratch/halfblock.py's HalfBlockCanvas) for "
+                    "the next few pieces instead, even if the result is "
+                    "simpler. Simple and shaded beats complex and flat. "
+                    "The file is also read-only on disk.)"
+                )
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(args["content"])
             return f"wrote {len(args['content'])} bytes to {p}"
@@ -1401,6 +1779,56 @@ def run_tool(name, args, agent):
             src = _resolve_workspace_path(args["path"])
             if not src.exists():
                 return f"(error: {src} does not exist)"
+
+            # --- figurative hard pre-submission gate ------------------------
+            # User direction, 2026-09-17: runs FIRST, before any other gate,
+            # before curate_piece, before any Opus call is spent. Mechanical,
+            # not a judgment call -- see _figurative_precheck's docstring.
+            precheck_fail = _figurative_precheck(src)
+            if precheck_fail:
+                return f"(error: {precheck_fail})"
+
+            # --- revision-over-novelty + open-subject cap gate ---------------
+            # User direction, 2026-09-17: a rejected piece must come back as
+            # the SAME file at v+1, not reappear under a fresh slug to dodge
+            # review history -- observed live: _exchange (rejected) came back
+            # rebuilt as _voices; _crowd_joint (rejected) came back as
+            # _crowd_wave. Also caps open (not accepted/abandoned) subjects
+            # at 2: starting a third is blocked until one is accepted or
+            # explicitly abandoned via abandon_subject with a written reason.
+            slug = core_slug(src.stem)
+            version = _extract_version(src.stem)
+            db2 = sqlite3.connect(DB_PATH)
+            try:
+                existing_subject = _get_subject(db2, slug)
+                if existing_subject is not None and existing_subject["status"] == "rejected":
+                    if version <= existing_subject["last_version"]:
+                        return (
+                            f"(error: submit_piece blocked — '{slug}' was "
+                            f"rejected at v{existing_subject['last_version']}. "
+                            "Revision-over-novelty: resubmit the SAME file "
+                            f"at a HIGHER version (v{existing_subject['last_version']+1} "
+                            "or later, filename suffix .vN/-vN/_vN), not a "
+                            "differently-named fresh file for the same "
+                            "underlying subject. If this genuinely is a "
+                            "different subject, that's fine — just don't "
+                            "reuse a name that reads as the same core slug.)"
+                        )
+                elif existing_subject is None:
+                    open_subjects = _open_subjects(db2)
+                    if len(open_subjects) >= 2:
+                        names = ", ".join(s["slug"] for s in open_subjects)
+                        return (
+                            f"(error: submit_piece blocked — 2 subjects "
+                            f"already open ({names}). Starting a third is "
+                            "blocked until one is accepted or explicitly "
+                            "abandoned via abandon_subject with a written "
+                            "reason. This isn't a suggestion: pick one of "
+                            "the open subjects to push to done, or abandon "
+                            "one honestly first.)"
+                        )
+            finally:
+                db2.close()
 
             # --- reference-comparison gate ---------------------------------
             # Added 2026-09-16 directly in response to: an artist judged its
@@ -1511,6 +1939,11 @@ def run_tool(name, args, agent):
             contributors = args.get("contributors")
             if contributors:
                 dest.with_suffix(dest.suffix + ".credits.txt").write_text(contributors)
+            db3 = sqlite3.connect(DB_PATH)
+            try:
+                _touch_subject(db3, slug, version, dest, status="open")
+            finally:
+                db3.close()
             return f"submitted: moved {src.relative_to(WORKSPACE)} -> {dest.relative_to(WORKSPACE)}"
         except Exception as e:
             return f"(error: {e})"
@@ -1666,20 +2099,37 @@ def curate_piece_opus_gated(src, decision, critique):
     blind claim-consistency gate) have already passed for whatever Qwen
     itself asserted.
 
+    Also keeps the `subjects` table (2026-09-17, revision-over-novelty +
+    open-subject-cap gate) in sync: accept/shelve close the subject out,
+    reject leaves it open but records the rejection so the next
+    submit_piece call for the same slug is forced to a higher version.
+
     Returns (message, dest_path_or_None) matching curate_piece's existing
     return shape so the dispatcher doesn't need to change."""
     result = opus_curate_review(src, decision, critique)
     status = result["status"]
 
+    slug = core_slug(Path(src).stem)
+    version = _extract_version(Path(src).stem)
+
+    def _sync_subject(new_status):
+        db4 = sqlite3.connect(DB_PATH)
+        try:
+            _touch_subject(db4, slug, version, src, status=new_status)
+        finally:
+            db4.close()
+
     if status == "queued":
         return result["message"], None
     if status == "shelved":
         dest = _move_with_sidecars(src, SHELVED, new_critique=critique)
+        _sync_subject("shelved")
         return result["message"] + f"\n\n(moved to shelved/{dest.name})", dest
     if status == "error":
         return result["message"], None
     if status == "accept":
         dest = _move_with_sidecars(src, GALLERY_UNPACKED, new_critique=critique)
+        _sync_subject("accepted")
         agree = "" if decision == "accept" else " (Qwen's own read was REJECT — Opus overrode it)"
         return (
             f"accepted: moved to gallery/unpacked/{dest.name}, pending next "
@@ -1687,6 +2137,7 @@ def curate_piece_opus_gated(src, decision, critique):
         ), dest
     if status == "reject":
         dest = _move_with_sidecars(src, REJECTED, new_critique=critique)
+        _sync_subject("rejected")
         agree = "" if decision == "reject" else " (Qwen's own read was ACCEPT — Opus overrode it)"
         return (
             f"rejected: moved to rejected/{dest.name} with critique "
@@ -1702,15 +2153,6 @@ def _shipped_catalog_index():
     to run a separate dedup script (the pack17 nebula-dup incident happened
     exactly because that step was optional and got skipped)."""
     import hashlib
-    version_re = re.compile(r"(?:\.[vV]|-v|_v)(\d+)$")
-
-    def core_slug(name_noext):
-        s = name_noext
-        while True:
-            m = version_re.search(s)
-            if not m:
-                return s
-            s = s[: m.start()]
 
     by_md5, by_slug = {}, {}
     for pack_dir in GALLERY.glob("pack*"):
@@ -2244,6 +2686,21 @@ def run_shift(conn, agent):
         if stop_requested():
             note = "(stopped by harness shutdown request, mid-shift)"
             print(f"[{agent}] stop requested mid-shift, wrapping up now")
+            break
+        # Wall-clock cap (user direction, 2026-09-17): the stall detector
+        # fingerprints identical call+result pairs, so it's structurally
+        # blind to a shift that keeps making genuinely DIFFERENT tool
+        # calls while never converging -- found live: an artist shift
+        # spent 4+ hours iterating on one foreground (_dusk_yard), every
+        # edit a real diff, never once tripping stall detection. This is a
+        # separate, cruder check: total elapsed time, independent of
+        # whether the calls look novel or repeated.
+        if time.time() - started_at > SHIFT_WALL_CLOCK_CAP_S:
+            note = (
+                f"(wall-clock cap hit: shift ran over "
+                f"{SHIFT_WALL_CLOCK_CAP_S/60:.0f} minutes, forced checkpoint)"
+            )
+            print(f"[{agent}] wall-clock cap hit ({(time.time()-started_at)/60:.1f}min), forcing checkpoint")
             break
         if i > 0:
             try:
