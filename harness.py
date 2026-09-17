@@ -24,6 +24,7 @@ real FILE_ID.DIZ — the actual unit of "we made this," not a flat accept bin.
 import base64
 import io
 import json
+import os
 import random
 import re
 import signal
@@ -1754,6 +1755,65 @@ OPUS_MAX_REVIEWS_PER_PIECE = 3  # condition 3 (user): one re-review per
 # revision, shelved (not resubmitted indefinitely) after 3 total.
 
 
+def _kill_stale_claude_login(max_age_s=300):
+    """Find and kill any `claude login` process older than max_age_s.
+
+    A hung `claude login` holds ~/.claude/.credentials.lock and makes
+    every `claude -p` call in opus_curate_review fail instantly with
+    exit 1 and empty stderr -- found live 2026-09-17 (a `claude login`
+    process had been running 16+ hours, blocking every Opus review that
+    shift). Only kills processes older than max_age_s so a login the
+    user is actively completing right now is never touched.
+
+    Returns True if a stale process was found and killed, else False.
+    """
+    import subprocess as _sp
+
+    def _etime_to_seconds(s):
+        # macOS/BSD `ps -eo etime` format: [[dd-]hh:]mm:ss (no raw-seconds
+        # `etimes` field on macOS, unlike Linux -- confirmed live, the
+        # first version of this function used `etimes` and silently
+        # produced zero matches on this machine).
+        days = 0
+        if "-" in s:
+            d, s = s.split("-", 1)
+            days = int(d)
+        parts = s.split(":")
+        parts = [int(p) for p in parts]
+        while len(parts) < 3:
+            parts.insert(0, 0)
+        h, m, sec = parts[-3:]
+        return days * 86400 + h * 3600 + m * 60 + sec
+
+    try:
+        out = _sp.run(
+            ["ps", "-eo", "pid,etime,command"],
+            capture_output=True, text=True, timeout=10,
+        ).stdout
+    except Exception:
+        return False
+    killed = False
+    for line in out.splitlines()[1:]:
+        parts = line.split(None, 2)
+        if len(parts) < 3:
+            continue
+        pid_s, etime_s, cmd = parts
+        if "claude login" not in cmd:
+            continue
+        try:
+            pid = int(pid_s)
+            age = _etime_to_seconds(etime_s)
+        except ValueError:
+            continue
+        if age >= max_age_s:
+            try:
+                os.kill(pid, signal.SIGTERM)
+                killed = True
+            except Exception:
+                pass
+    return killed
+
+
 def opus_curate_review(path, qwen_decision, qwen_critique):
     """The real accept/reject authority for curate_piece, per the user's
     explicit 2026-09-16 direction: 'Only curate_piece. Opus gets render +
@@ -1853,7 +1913,35 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                 cwd=tmpdir, capture_output=True, text=True, timeout=90,
             )
             if result.returncode != 0:
+                # A stuck/orphaned `claude login` process holds
+                # ~/.claude/.credentials.lock and makes every `claude -p`
+                # call fail instantly with exit 1 and NO stderr -- which
+                # reads to the agent narrating it as "logged out" when the
+                # login itself never actually dropped (found live,
+                # 2026-09-17: a `claude login` process had been hung for
+                # 16+ hours). Detect that specific signature and self-heal
+                # with one retry instead of surfacing a misleading error
+                # and burning the shift on repeated identical retries.
+                if result.returncode == 1 and not result.stderr.strip():
+                    stale_login_killed = _kill_stale_claude_login(
+                        max_age_s=300
+                    )
+                    if stale_login_killed:
+                        result = subprocess.run(
+                            ["claude", "-p", prompt, "--model", "claude-opus-5",
+                             "--allowedTools", "Read", "--output-format", "json"],
+                            cwd=tmpdir, capture_output=True, text=True, timeout=90,
+                        )
+            if result.returncode != 0:
                 err = f"claude CLI exit {result.returncode}: {result.stderr[:500]}"
+                if result.returncode == 1 and not result.stderr.strip():
+                    err += (
+                        " (empty stderr on exit 1 usually means a stuck "
+                        "`claude login` process is holding "
+                        "~/.claude/.credentials.lock -- check `ps aux | "
+                        "grep 'claude login'` and kill it; auto-heal already "
+                        "attempted and did not clear it)"
+                    )
                 conn.execute(
                     "INSERT INTO opus_reviews (piece_slug, path, qwen_decision, "
                     "qwen_critique, opus_verdict, opus_reasoning, opus_cost_usd, "
