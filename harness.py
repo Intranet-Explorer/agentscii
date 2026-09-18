@@ -383,19 +383,21 @@ FIGURATIVE_WORDS = ("face", "eye", "watch", "sentinel", "cyborg", "scan",
                      "traveler", "procession", "ember")
 
 _FIGURATIVE_WORDS_RE = re.compile(
-    r"\b(?:" + "|".join(re.escape(w) for w in FIGURATIVE_WORDS) + r")"
+    r"(?<![a-zA-Z])(?:" + "|".join(re.escape(w) for w in FIGURATIVE_WORDS) + r")"
 )
-# LEFT word-boundary only, not \b...\b on both sides -- these words are
-# meant to match as STEMS (watch -> watcher/watching, warden -> wardens,
-# figure -> figures/figurative), not exact whole words only. Found live
-# testing this exact fix: a strict \b...\b version correctly stopped
-# "ember" matching inside "member" (the bug this was built to fix) but
-# ALSO stopped "watch" matching inside "watcher" -- which broke real
-# detection on _orb.v7.ans, titled "THE WATCHER" in-piece, the literal
-# piece this whole gate exists for. A left-boundary-only regex keeps
-# "ember" from matching mid-word (member/remember/december all fail,
-# since there's no word boundary immediately before "ember" in any of
-# them) while still matching "watcher", "figures", "wardens" correctly.
+# Negative lookbehind for a LETTER specifically, not \b -- found live,
+# testing this exact fix: \b treats underscore as a word character, so
+# it never fires between '_' and a letter -- meaning \b failed to match
+# ANY of this project's own filenames at all (e.g. "_watcher", "_face",
+# "_eyeball" all start with an underscore immediately before the word,
+# so a plain \b left-boundary regex silently never matched a single
+# real project file by name, only ever via the in-file-title fallback).
+# A negative lookbehind for a letter (not \w) correctly allows '_',
+# digits, and start-of-string as valid left edges while still rejecting
+# "ember" inside "member"/"remember"/"december" (all preceded by a
+# LETTER immediately before "ember"), and still matches "watcher",
+# "figures", "wardens" as word stems (see below for why stems, not
+# whole-word-only, are wanted here).
 
 
 def _reads_figurative(path):
@@ -1654,6 +1656,7 @@ def _flat_region_check(path):
     # checking real _orb.v7 cell data first. Same visible-color logic as
     # _figurative_precheck, kept consistent rather than reinvented.
     subject_cells = {}
+    dither_cells = set()
     for (r, c), (ch, fg, bg) in grid.items():
         if ch == " " and bg == 0:
             continue
@@ -1665,7 +1668,11 @@ def _flat_region_check(path):
             # see canvas.shade_ramp()) -- never flood-fill them into a
             # "flat region," and don't let them BREAK an otherwise-flat
             # run either (a dither glyph adjacent to a solid run is a
-            # real transition edge, not noise to route around).
+            # real transition edge, not noise to route around). Recorded
+            # separately in dither_cells so the hue-step check below can
+            # credit a region for bordering a real dithered transition
+            # -- see that check's own comment for why this matters.
+            dither_cells.add((r, c))
             continue
         visible_idx = bg if (ch == " " and bg != 0) else fg
         # region identity: (glyph-class, visible color) -- glyph-class
@@ -1706,6 +1713,7 @@ def _flat_region_check(path):
             large_regions.append({
                 "size": len(region), "char": key[0], "visible_idx": key[1],
                 "rows": (min(rows), max(rows)), "cols": (min(cols), max(cols)),
+                "cells": region,
             })
 
     failures = []
@@ -1726,19 +1734,24 @@ def _flat_region_check(path):
             f"unshaded flat fill, not a lit form."
         )
 
-    # Lit-to-shadow transition check: within each hue family (fg indices
-    # sharing the same low-3 bits -- the same color at different
-    # brightness, see PALETTE_NOTE's 0-7/8-15 convention), require the
-    # SET of large flat regions in that hue family to span at least 3
-    # distinct brightness steps, not just hot+cold with nothing between.
-    # NOTE: this does not check spatial adjacency between the regions --
-    # a genuine hue-family split with only 2 brightness levels anywhere
-    # in the piece is flagged even if the two regions aren't touching,
-    # since two flat fills of the same hue at only 2 brightness levels
-    # with zero gradient between them is itself the defect Opus flagged
-    # ("hard vertical seam... meet along a hard edge"), independent of
-    # exact adjacency -- a real shaded surface doesn't have TWO flat
-    # same-hue fills anywhere with nothing graduated between them.
+    # Lit-to-shadow transition check: with a real 16-color ANSI palette,
+    # each hue family (fg & 7) has only 2 real members (e.g. dim vs
+    # bright amber) -- there is NO third flat color level to reach for
+    # a genuine gradient. Real shading on this palette is ALWAYS done by
+    # DITHERING between the two flat levels (canvas.shade_ramp()), never
+    # by a third solid fill. An earlier version of this check demanded
+    # ">=3 distinct flat brightness steps," which is a mathematically
+    # impossible bar on a real 16-color palette -- found live: raze
+    # built an independent local replica of this exact gate while
+    # debugging a rejection, and it proved the ACCEPTED v7 benchmark
+    # piece also fails the old "3 flat steps" rule, since no 16-color
+    # hue family can ever have 3 members. The check now asks the right
+    # question instead: when a hue family has large flat regions at
+    # more than one brightness level, is there a real DITHERED bridge
+    # (a connected run of ░▒▓ cells) physically between them? That's
+    # exactly what shade_ramp() produces and exactly what a hard flat-
+    # to-flat seam lacks -- this is checkable, unlike counting
+    # non-existent third flat levels.
     if len(large_regions) >= 2:
         # group large regions by hue family (fg & 7); a genuine
         # lit-to-shadow transition happens WITHIN one hue family across
@@ -1747,18 +1760,72 @@ def _flat_region_check(path):
         for reg in large_regions:
             hue_key = reg["visible_idx"] & 7
             by_hue.setdefault(hue_key, []).append(reg)
+
+        # Connected components of dither cells (4-connected), computed
+        # once -- a "bridge" is one dither component that touches both
+        # of two differing-brightness regions' boundaries.
+        dither_components = []
+        dither_visited = set()
+        for start in dither_cells:
+            if start in dither_visited:
+                continue
+            stack = [start]
+            comp = set()
+            dither_visited.add(start)
+            while stack:
+                cur = stack.pop()
+                comp.add(cur)
+                r, c = cur
+                for nr, nc in ((r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)):
+                    nxt = (nr, nc)
+                    if nxt in dither_cells and nxt not in dither_visited:
+                        dither_visited.add(nxt)
+                        stack.append(nxt)
+            dither_components.append(comp)
+
+        def _touches(cells_a, comp):
+            # 4-connected adjacency (not just overlap) between a
+            # region's cell set and a dither component's cell set.
+            for (r, c) in cells_a:
+                for nr, nc in ((r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)):
+                    if (nr, nc) in comp:
+                        return True
+            return False
+
         for hue_key, regs in by_hue.items():
             if len(regs) < 2:
                 continue
-            steps = set(_BRIGHTNESS_STEPS[reg["visible_idx"] % 16] for reg in regs)
-            if len(steps) < 3:
+            # dedupe by brightness step: two regions at the SAME
+            # brightness aren't a "seam" to bridge (they're just the
+            # same flat fill in two places), only a step DIFFERENCE
+            # needs a dither bridge between it.
+            by_step = {}
+            for reg in regs:
+                step = _BRIGHTNESS_STEPS[reg["visible_idx"] % 16]
+                by_step.setdefault(step, []).append(reg)
+            steps = sorted(by_step)
+            if len(steps) < 2:
+                continue  # only one brightness level present -- nothing to bridge
+            unbridged = []
+            for i in range(len(steps) - 1):
+                lo_regs, hi_regs = by_step[steps[i]], by_step[steps[i + 1]]
+                bridged = any(
+                    _touches(lo["cells"], comp) and _touches(hi["cells"], comp)
+                    for lo in lo_regs for hi in hi_regs for comp in dither_components
+                )
+                if not bridged:
+                    unbridged.append((steps[i], steps[i + 1]))
+            if unbridged:
+                pairs = ", ".join(f"{a}->{b}" for a, b in unbridged)
                 failures.append(
-                    f"hue family fg&7={hue_key}: {len(regs)} large flat "
-                    f"region(s) span only {len(steps)} distinct "
-                    f"brightness step(s) (need >= 3) -- this reads as a "
-                    f"hard seam between a hot and cold flat fill, not a "
-                    f"real lit-to-shadow gradient. Use "
-                    f"canvas.shade_ramp(hot, cold) between them."
+                    f"hue family fg&7={hue_key}: brightness step "
+                    f"transition(s) {pairs} have no dithered (░▒▓) bridge "
+                    f"between the flat regions -- this reads as a hard "
+                    f"seam between a hot and cold flat fill, not a real "
+                    f"lit-to-shadow gradient. Use canvas.shade_ramp() "
+                    f"between them so the two flat levels are connected "
+                    f"by a real dithered transition, not touching "
+                    f"directly."
                 )
 
     if not failures:
