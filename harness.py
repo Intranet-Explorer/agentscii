@@ -382,6 +382,55 @@ FIGURATIVE_WORDS = ("face", "eye", "watch", "sentinel", "cyborg", "scan",
                      "mind", "portrait", "figure", "warden", "vigil",
                      "traveler", "procession", "ember")
 
+_FIGURATIVE_WORDS_RE = re.compile(
+    r"\b(?:" + "|".join(re.escape(w) for w in FIGURATIVE_WORDS) + r")"
+)
+# LEFT word-boundary only, not \b...\b on both sides -- these words are
+# meant to match as STEMS (watch -> watcher/watching, warden -> wardens,
+# figure -> figures/figurative), not exact whole words only. Found live
+# testing this exact fix: a strict \b...\b version correctly stopped
+# "ember" matching inside "member" (the bug this was built to fix) but
+# ALSO stopped "watch" matching inside "watcher" -- which broke real
+# detection on _orb.v7.ans, titled "THE WATCHER" in-piece, the literal
+# piece this whole gate exists for. A left-boundary-only regex keeps
+# "ember" from matching mid-word (member/remember/december all fail,
+# since there's no word boundary immediately before "ember" in any of
+# them) while still matching "watcher", "figures", "wardens" correctly.
+
+
+def _reads_figurative(path):
+    """Whether a piece counts as 'figurative' for the half-block/shading
+    gates: filename match (the original signal) OR any FIGURATIVE_WORD
+    appearing in the piece's own rendered/visible text (title cards,
+    sig blocks) -- checked against the SGR-stripped visible content, not
+    the raw source (so a word inside an escape sequence's parameters
+    can't accidentally match).
+
+    Extended 2026-09-18 after finding a real, concrete gap: _orb.v7.ans
+    is a literal eye piece titled \"THE WATCHER // IT SEES IN THE DARK\"
+    inside the file, but the bare filename '_orb' doesn't match any
+    FIGURATIVE_WORD, so BOTH _figurative_precheck and the new
+    _flat_region_check silently didn't apply to the exact piece these
+    gates exist for -- found by testing this function against real data
+    before trusting it, not assumed. Filename-only matching was always
+    an incomplete proxy for 'what is this piece actually of'; the
+    in-piece title is a much more direct signal and costs one extra
+    regex pass, already-computed-ready SGR-strip logic reused from
+    elsewhere in this file."""
+    name_lower = Path(path).stem.lower()
+    if _FIGURATIVE_WORDS_RE.search(name_lower):
+        return True
+    try:
+        raw = Path(path).read_bytes()
+        text = _decode_ans_bytes(raw)
+        idx = text.find("\x1aSAUCE00")
+        if idx >= 0:
+            text = text[:idx]
+        visible = _SGR_RE.sub("", text).lower()
+    except Exception:
+        return False
+    return bool(_FIGURATIVE_WORDS_RE.search(visible))
+
 
 def core_slug(name_noext):
     """Strip a trailing version suffix (.v3, -v4, _v12) to find the
@@ -410,13 +459,14 @@ def _extract_version(name_noext):
 def _get_subject(conn, slug):
     row = conn.execute(
         "SELECT slug, status, opened_at, last_version, last_path, "
-        "abandon_reason, updated_at FROM subjects WHERE slug=?",
+        "abandon_reason, updated_at, pinned_script_path, pinned_version "
+        "FROM subjects WHERE slug=?",
         (slug,),
     ).fetchone()
     if row is None:
         return None
     keys = ["slug", "status", "opened_at", "last_version", "last_path",
-            "abandon_reason", "updated_at"]
+            "abandon_reason", "updated_at", "pinned_script_path", "pinned_version"]
     return dict(zip(keys, row))
 
 
@@ -429,6 +479,125 @@ def _open_subjects(conn):
         "WHERE status IN ('open','rejected') ORDER BY opened_at"
     ).fetchall()
     return [{"slug": r[0], "last_version": r[1], "opened_at": r[2]} for r in rows]
+
+
+def _compute_piece_metrics(path):
+    """Real, measured per-version quality metrics for the pinned-best
+    regression gate (user direction, 2026-09-18). The exact metrics the
+    user specified: half-block %, shade-char %, distinct colors in the
+    subject mask, subject bounding box, plus subject cell count (needed
+    to make the bbox/pct numbers comparable across versions that might
+    resize the canvas).
+
+    'Subject mask' = anything not true background (not a plain space
+    with bg=0), same approximation used throughout this file. Percentages
+    are of SUBJECT cells only, not the whole canvas -- matches how the
+    user's own diagnostic numbers were computed (measured directly
+    against real _orb versions before this function existed, and
+    reproduced exactly: v5-v8 showed 0.0% shade_char_pct across all
+    four, confirming this definition).
+
+    Returns a dict, or None if the file can't be parsed (caller should
+    treat that as 'no metrics available', not block on it)."""
+    try:
+        grid, total_lines = _parse_ans_grid(path)
+    except Exception:
+        return None
+
+    half_block_chars = _HALF_BLOCK_CHARS
+    shade_chars = set("\u2593\u2592\u2591")  # ▓▒░
+
+    subject_visible_colors = set()
+    half_ct = 0
+    shade_ct = 0
+    subject_ct = 0
+    rows, cols = [], []
+    for (r, c), (ch, fg, bg) in grid.items():
+        if ch == " " and bg == 0:
+            continue
+        subject_ct += 1
+        rows.append(r)
+        cols.append(c)
+        if ch in half_block_chars:
+            half_ct += 1
+        if ch in shade_chars:
+            shade_ct += 1
+        visible_idx = bg if (ch == " " and bg != 0) else fg
+        subject_visible_colors.add(visible_idx)
+
+    if subject_ct == 0:
+        return {
+            "half_block_pct": 0.0, "shade_char_pct": 0.0,
+            "distinct_colors_in_subject": 0,
+            "subject_bbox_rows": 0, "subject_bbox_cols": 0,
+            "subject_cell_count": 0,
+        }
+
+    return {
+        "half_block_pct": 100.0 * half_ct / subject_ct,
+        "shade_char_pct": 100.0 * shade_ct / subject_ct,
+        "distinct_colors_in_subject": len(subject_visible_colors),
+        "subject_bbox_rows": (max(rows) - min(rows) + 1) if rows else 0,
+        "subject_bbox_cols": (max(cols) - min(cols) + 1) if cols else 0,
+        "subject_cell_count": subject_ct,
+    }
+
+
+def _record_piece_metrics(conn, slug, version, path):
+    """Compute and store metrics for one version -- called from
+    submit_piece on every real submission (not just accepted ones), so
+    the full version history is measurable, not just whichever versions
+    happened to get accepted."""
+    metrics = _compute_piece_metrics(path)
+    if metrics is None:
+        return None
+    conn.execute(
+        "INSERT INTO piece_metrics (slug, version, path, half_block_pct, "
+        "shade_char_pct, distinct_colors_in_subject, subject_bbox_rows, "
+        "subject_bbox_cols, subject_cell_count, timestamp) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?)",
+        (slug, version, str(path), metrics["half_block_pct"],
+         metrics["shade_char_pct"], metrics["distinct_colors_in_subject"],
+         metrics["subject_bbox_rows"], metrics["subject_bbox_cols"],
+         metrics["subject_cell_count"], time.time()),
+    )
+    conn.commit()
+    return metrics
+
+
+def _get_best_metrics(conn, slug):
+    """The pinned-best metrics for a slug: whichever version is marked
+    pinned_version on the subjects row, or (if nothing pinned yet) the
+    single best-so-far by a simple composite (half_block_pct +
+    shade_char_pct + distinct_colors_in_subject) -- used both to decide
+    what counts as 'best' the first time a subject accrues metrics, and
+    to compare a new submission against."""
+    subj = _get_subject(conn, slug)
+    if subj and subj.get("pinned_version") is not None:
+        row = conn.execute(
+            "SELECT half_block_pct, shade_char_pct, distinct_colors_in_subject, "
+            "subject_bbox_rows, subject_bbox_cols, subject_cell_count, version "
+            "FROM piece_metrics WHERE slug=? AND version=? ORDER BY id DESC LIMIT 1",
+            (slug, subj["pinned_version"]),
+        ).fetchone()
+        if row:
+            keys = ["half_block_pct", "shade_char_pct", "distinct_colors_in_subject",
+                    "subject_bbox_rows", "subject_bbox_cols", "subject_cell_count", "version"]
+            return dict(zip(keys, row))
+    # no explicit pin yet -- fall back to the best-scoring version seen so far
+    rows = conn.execute(
+        "SELECT half_block_pct, shade_char_pct, distinct_colors_in_subject, "
+        "subject_bbox_rows, subject_bbox_cols, subject_cell_count, version "
+        "FROM piece_metrics WHERE slug=?",
+        (slug,),
+    ).fetchall()
+    if not rows:
+        return None
+    keys = ["half_block_pct", "shade_char_pct", "distinct_colors_in_subject",
+            "subject_bbox_rows", "subject_bbox_cols", "subject_cell_count", "version"]
+    dicts = [dict(zip(keys, r)) for r in rows]
+    dicts.sort(key=lambda d: -(d["half_block_pct"] + d["shade_char_pct"] + d["distinct_colors_in_subject"]))
+    return dicts[0]
 
 
 def _touch_subject(conn, slug, version, path, status="open"):
@@ -829,6 +998,40 @@ def init_db():
         last_path TEXT,
         abandon_reason TEXT,
         updated_at REAL
+    )""")
+    try:
+        conn.execute("ALTER TABLE subjects ADD COLUMN pinned_script_path TEXT")
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    try:
+        conn.execute("ALTER TABLE subjects ADD COLUMN pinned_version INTEGER")
+    except sqlite3.OperationalError:
+        pass
+    # piece_metrics: per-VERSION quality metrics, tracked at every
+    # submit_piece call (not just accepted ones) so a revision's real
+    # progress -- or regression -- is measurable, not just "Opus said
+    # reject again." Added 2026-09-18, user direction, directly in
+    # response to the measured finding behind this whole session's
+    # fixes: half-block % DECLINED v5->v8 (13.3% -> 9.4% -> 10.8% ->
+    # 7.9%) across four straight revisions that were each supposed to be
+    # improvements -- nothing before this table would have caught that
+    # a "fix" was quietly making a different real metric worse. Pinning
+    # (subjects.pinned_script_path/pinned_version) then lets
+    # submit_piece hard-block any revision whose OWN metrics regress
+    # versus the pinned best, even if the specific defect the agent
+    # thought they were fixing is in fact fixed.
+    conn.execute("""CREATE TABLE IF NOT EXISTS piece_metrics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        path TEXT NOT NULL,
+        half_block_pct REAL,
+        shade_char_pct REAL,
+        distinct_colors_in_subject INTEGER,
+        subject_bbox_rows INTEGER,
+        subject_bbox_cols INTEGER,
+        subject_cell_count INTEGER,
+        timestamp REAL NOT NULL
     )""")
     conn.commit()
     return conn
@@ -1281,8 +1484,7 @@ def _figurative_precheck(path):
     ALL non-space drawn cells is a reasonable proxy: a genuinely
     flat/unshaded figurative subject won't clear 3 steps even counted
     this generously."""
-    name_lower = Path(path).stem.lower()
-    if not any(w in name_lower for w in FIGURATIVE_WORDS):
+    if not _reads_figurative(path):
         return None  # gate only applies to figurative work
 
     try:
@@ -1341,6 +1543,232 @@ def _figurative_precheck(path):
         f"cycle spent): " + "; ".join(failures) + ". This is a hard block, "
         "not a suggestion: rework with half-block resolution and a real "
         "light_field()/shade() pass before resubmitting."
+    )
+
+
+_BRIGHTNESS_STEPS = [0, 2, 2, 2, 2, 2, 2, 3, 1, 4, 4, 4, 4, 4, 4, 5]
+# same coarse brightness-ordering table as _figurative_precheck -- shared
+# here rather than duplicated so both checks agree on what "a brightness
+# step" means.
+
+FLAT_REGION_CELL_THRESHOLD = 40
+# User direction, 2026-09-18, load-bearing measurement behind this whole
+# check: every version of _orb (v5-v8) and _phosphor.v3 measured at 0.0%
+# RAMP (░▒▓) density characters -- literally zero dithering anywhere.
+# That's not a style choice, it's the absence of a shading mechanism, and
+# it's the exact, repeated reason the Opus gate kept rejecting them (flat
+# unshaded region, hard seam, no gradient). A checker alone can't fix the
+# underlying capability gap (see shade_ramp() in canvas.py, built the same
+# day for that reason) -- but it SHOULD catch the defect class before an
+# Opus call is spent reviewing it, which this does.
+
+
+def _flat_region_check(path):
+    """Hard pre-submission gate companion to _figurative_precheck (user
+    direction, 2026-09-18): any contiguous same-(char-class,fg,bg) region
+    larger than FLAT_REGION_CELL_THRESHOLD cells, INSIDE the subject (not
+    the background), is a defect -- and within any hue family, the set
+    of large flat regions must span at least 3 distinct brightness
+    steps, not just a hot fill and a cold fill with nothing graduated
+    between them. Runs BEFORE curate_piece / the Opus gate, same as
+    _figurative_precheck -- no review cycle spent on a piece this
+    catches.
+
+    SCOPED TO FIGURATIVE PIECES ONLY, same gate as _figurative_precheck
+    (filename matches FIGURATIVE_WORDS) -- found live, before shipping,
+    that applying this unscoped produces real false positives: a real
+    reference wordmark/logo piece (asphyx-acid_logo.ANS) has a genuine
+    45-cell solid-fill letter stroke, which is completely normal for
+    wordmark/logo work (a bold stroke has no reason to internally shade)
+    but would read as a defect under "a lit surface must shade across
+    itself" logic. That logic only actually applies to a lit FORM (an
+    eye, a face, a rounded body) -- exactly the same subject class
+    _figurative_precheck already targets. Also found and fixed before
+    shipping: a large-area DITHERED texture fill (a real reference
+    piece's 2262-cell scattered ▒ field, a genuine and deliberate ACiD
+    background-texture technique) triggered a false positive on an
+    earlier version of this check that grouped purely by visible color
+    regardless of glyph -- fixed by only flood-filling SOLID-ink glyphs
+    (space-with-bg, or a full block) into regions; a RAMP/dither glyph
+    (▒▓░) breaks region continuity by design, since density variation
+    within an area is itself evidence of real shading work, not a
+    defect.
+
+    'Subject' cells = anything not true background (not a plain space
+    with bg=0) -- same approximation used elsewhere in this file, since
+    an exact subject silhouette isn't derivable without vision. A large
+    flat region OUTSIDE the subject (e.g. a deliberately flat black
+    void, or a deliberately solid-color title-card band) is legitimate
+    and not flagged -- texture_fill()/negative-space conventions are a
+    separate, already-existing check (LOW BACKGROUND TEXTURE in this
+    same function). This check is specifically about flatness WITHIN
+    drawn content, which is the actual defect class Opus kept catching.
+
+    Returns None if the piece passes (including: not a figurative
+    piece, so the check doesn't apply), else a string describing the
+    specific violation(s) found (region size + location, or a
+    transition with too few brightness steps)."""
+    if not _reads_figurative(path):
+        return None  # scoped to figurative work, see docstring
+
+    try:
+        grid, total_lines = _parse_ans_grid(path)
+    except Exception:
+        return None  # don't hard-block on a parse error; let normal review catch it
+
+    # Exclude border/title-rule rows before building the subject set: a
+    # horizontal rule (a long run of one box-drawing/rule glyph spanning
+    # most of the row) is a deliberate house convention (STYLE.md /
+    # Methodology Pass 6, "real packs are framed more often than not"),
+    # not part of the shaded subject -- found live on a real test: the
+    # top/bottom double-line border rows (79 cells of solid '═' each) on
+    # _orb.v7 were flagged as "flat regions" before this exclusion, which
+    # would have blocked every single framed piece in the house style,
+    # not just genuinely flat subject fills. Same box_chars set already
+    # used by inspect_piece's separate frame-detection check, reused
+    # here rather than redefined.
+    _box_chars = set("═║╔╗╚╝╠╣╦╩╬─│┌┐└┘├┤┬┴┼")
+    rows_seen = {}
+    for (r, c), (ch, fg, bg) in grid.items():
+        if ch == " " and bg == 0:
+            continue
+        rows_seen.setdefault(r, []).append(ch)
+    border_rows = set()
+    for r, chars in rows_seen.items():
+        if len(chars) < 20:
+            continue
+        box_frac = sum(1 for ch in chars if ch in _box_chars) / len(chars)
+        if box_frac > 0.7:
+            border_rows.add(r)
+
+    # Build a subject-cell coordinate set keyed by VISIBLE color, not raw
+    # (char, fg, bg). For a half-block "space with bg" cell (the common
+    # case from HalfBlockCanvas -- confirmed live on a real _orb render:
+    # the dominant cell shapes were exactly this, (' ', fg=15, bg=<real
+    # color>), where fg=15 is leftover SGR state from an earlier bold
+    # code and carries no visible meaning since a space glyph has no ink)
+    # the color that's actually ON SCREEN is bg, not fg. An earlier
+    # version of this function grouped by raw fg unconditionally and
+    # would have silently failed to detect real large flat regions in
+    # exactly this common cell shape -- caught before shipping by
+    # checking real _orb.v7 cell data first. Same visible-color logic as
+    # _figurative_precheck, kept consistent rather than reinvented.
+    subject_cells = {}
+    for (r, c), (ch, fg, bg) in grid.items():
+        if ch == " " and bg == 0:
+            continue
+        if r in border_rows:
+            continue
+        if ch in "\u2593\u2592\u2591":  # ▓▒░ -- partial-density dither
+            # glyphs are themselves evidence of real shading (that's
+            # literally what they exist to fake on a 16-color palette,
+            # see canvas.shade_ramp()) -- never flood-fill them into a
+            # "flat region," and don't let them BREAK an otherwise-flat
+            # run either (a dither glyph adjacent to a solid run is a
+            # real transition edge, not noise to route around).
+            continue
+        visible_idx = bg if (ch == " " and bg != 0) else fg
+        # region identity: (glyph-class, visible color) -- glyph-class
+        # collapses ' ' and any RAMP/half-block char that would render
+        # with equal apparent density into one bucket only when they're
+        # genuinely the same visible fill; kept simple and exact (raw
+        # char) rather than fuzzy, since over-merging would UNDER-count
+        # real flat regions, the opposite of this check's purpose.
+        subject_cells[(r, c)] = (ch, visible_idx)
+
+    if len(subject_cells) < FLAT_REGION_CELL_THRESHOLD:
+        return None  # too small a piece for this check to mean anything
+
+    visited = set()
+    large_regions = []
+    for start in subject_cells:
+        if start in visited:
+            continue
+        key = subject_cells[start]
+        # BFS flood fill over 4-connected same-key cells
+        stack = [start]
+        region = []
+        visited.add(start)
+        while stack:
+            cur = stack.pop()
+            region.append(cur)
+            r, c = cur
+            for nr, nc in ((r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)):
+                nxt = (nr, nc)
+                if nxt in visited:
+                    continue
+                if subject_cells.get(nxt) == key:
+                    visited.add(nxt)
+                    stack.append(nxt)
+        if len(region) > FLAT_REGION_CELL_THRESHOLD:
+            rows = [r for r, c in region]
+            cols = [c for r, c in region]
+            large_regions.append({
+                "size": len(region), "char": key[0], "visible_idx": key[1],
+                "rows": (min(rows), max(rows)), "cols": (min(cols), max(cols)),
+            })
+
+    failures = []
+    if large_regions:
+        large_regions.sort(key=lambda x: -x["size"])
+        examples = "; ".join(
+            f"{r['size']} cells at rows {r['rows'][0]}-{r['rows'][1]}, "
+            f"cols {r['cols'][0]}-{r['cols'][1]} (char {r['char']!r}, "
+            f"visible color index={r['visible_idx']})"
+            for r in large_regions[:3]
+        )
+        more = f" (+{len(large_regions) - 3} more)" if len(large_regions) > 3 else ""
+        failures.append(
+            f"{len(large_regions)} contiguous flat region(s) over "
+            f"{FLAT_REGION_CELL_THRESHOLD} cells found inside the drawn "
+            f"subject: {examples}{more}. A real lit surface shades "
+            f"across itself -- a same-color patch this large reads as an "
+            f"unshaded flat fill, not a lit form."
+        )
+
+    # Lit-to-shadow transition check: within each hue family (fg indices
+    # sharing the same low-3 bits -- the same color at different
+    # brightness, see PALETTE_NOTE's 0-7/8-15 convention), require the
+    # SET of large flat regions in that hue family to span at least 3
+    # distinct brightness steps, not just hot+cold with nothing between.
+    # NOTE: this does not check spatial adjacency between the regions --
+    # a genuine hue-family split with only 2 brightness levels anywhere
+    # in the piece is flagged even if the two regions aren't touching,
+    # since two flat fills of the same hue at only 2 brightness levels
+    # with zero gradient between them is itself the defect Opus flagged
+    # ("hard vertical seam... meet along a hard edge"), independent of
+    # exact adjacency -- a real shaded surface doesn't have TWO flat
+    # same-hue fills anywhere with nothing graduated between them.
+    if len(large_regions) >= 2:
+        # group large regions by hue family (fg & 7); a genuine
+        # lit-to-shadow transition happens WITHIN one hue family across
+        # brightness, not across unrelated hues
+        by_hue = {}
+        for reg in large_regions:
+            hue_key = reg["visible_idx"] & 7
+            by_hue.setdefault(hue_key, []).append(reg)
+        for hue_key, regs in by_hue.items():
+            if len(regs) < 2:
+                continue
+            steps = set(_BRIGHTNESS_STEPS[reg["visible_idx"] % 16] for reg in regs)
+            if len(steps) < 3:
+                failures.append(
+                    f"hue family fg&7={hue_key}: {len(regs)} large flat "
+                    f"region(s) span only {len(steps)} distinct "
+                    f"brightness step(s) (need >= 3) -- this reads as a "
+                    f"hard seam between a hot and cold flat fill, not a "
+                    f"real lit-to-shadow gradient. Use "
+                    f"canvas.shade_ramp(hot, cold) between them."
+                )
+
+    if not failures:
+        return None
+    return (
+        f"flat-region gate FAILED for {Path(path).name} (checked "
+        f"automatically, before curator/Opus review -- no review cycle "
+        f"spent): " + "; ".join(failures) + ". This is a hard block: "
+        "rework the flagged region(s) with canvas.shade_ramp() before "
+        "resubmitting."
     )
 
 
@@ -1665,7 +2093,7 @@ def run_tool(name, args, agent):
             # judgment alone every time.
             scope_fingerprint = {95, 91, 93, 92, 96, 94, 107, 103, 97, 0, 40, 104, 105}
             name_lower = p.stem.lower()
-            reads_figurative = any(w in name_lower for w in FIGURATIVE_WORDS)
+            reads_figurative = bool(_FIGURATIVE_WORDS_RE.search(name_lower))
             if sgr_params and sgr_params.issubset(scope_fingerprint) and reads_figurative:
                 out.append(
                     "POSSIBLE MISLABEL: this piece's SGR palette exactly matches "
@@ -1788,6 +2216,16 @@ def run_tool(name, args, agent):
             if precheck_fail:
                 return f"(error: {precheck_fail})"
 
+            # --- flat-region hard pre-submission gate ------------------------
+            # User direction, 2026-09-18, built after measuring the real
+            # root cause of repeated _orb/_phosphor Opus rejections (0.0%
+            # RAMP density chars across every version) -- see
+            # _flat_region_check's docstring for the full finding and the
+            # false-positive fixes made before shipping this.
+            flat_fail = _flat_region_check(src)
+            if flat_fail:
+                return f"(error: {flat_fail})"
+
             # --- revision-over-novelty + open-subject cap gate ---------------
             # User direction, 2026-09-17: a rejected piece must come back as
             # the SAME file at v+1, not reappear under a fresh slug to dodge
@@ -1826,6 +2264,46 @@ def run_tool(name, args, agent):
                             "reason. This isn't a suggestion: pick one of "
                             "the open subjects to push to done, or abandon "
                             "one honestly first.)"
+                        )
+
+                # --- per-version metrics, pinned-best regression gate --------
+                # User direction, 2026-09-18: block any revision whose OWN
+                # measured metrics (half-block %, shade-char %, distinct
+                # subject colors) drop versus the pinned best, even if the
+                # specific defect the agent thought they were fixing is
+                # genuinely fixed. Built after measuring the real case this
+                # exists to prevent: _orb's half-block % declined on every
+                # single revision (v5->v8: 13.3%->9.4%->10.8%->7.9%) while
+                # each version was submitted believing it was an
+                # improvement -- nothing caught the regression until now.
+                new_metrics = _compute_piece_metrics(src)
+                best = _get_best_metrics(db2, slug)
+                if new_metrics is not None and best is not None:
+                    regressions = []
+                    for key, label in (
+                        ("half_block_pct", "half-block %"),
+                        ("shade_char_pct", "shade-char (░▒▓) %"),
+                        ("distinct_colors_in_subject", "distinct subject colors"),
+                    ):
+                        old_v, new_v = best[key], new_metrics[key]
+                        # small floating-point slack (0.5) so a rounding
+                        # difference doesn't block an otherwise-flat metric
+                        if new_v < old_v - 0.5:
+                            regressions.append(
+                                f"{label}: {old_v:.1f} (v{best['version']}) -> "
+                                f"{new_v:.1f} (this submission)"
+                            )
+                    if regressions:
+                        return (
+                            f"(error: submit_piece blocked — this revision "
+                            f"regresses versus the pinned best (v{best['version']}) "
+                            f"on: {'; '.join(regressions)}. Fixing the flagged "
+                            f"defect isn't enough if it comes at the cost of a "
+                            f"real metric going backward — revise from the "
+                            f"pinned script (see subjects.pinned_script_path) "
+                            f"and make sure this version is strictly at or "
+                            f"above the pinned best on every tracked metric, "
+                            f"not just the one you were focused on fixing.)"
                         )
             finally:
                 db2.close()
@@ -1942,6 +2420,34 @@ def run_tool(name, args, agent):
             db3 = sqlite3.connect(DB_PATH)
             try:
                 _touch_subject(db3, slug, version, dest, status="open")
+                # Record real metrics for this version, and if this is the
+                # first version ever seen for this slug, pin it as the
+                # initial "best" so version 2 has something real to be
+                # compared against -- see _get_best_metrics's fallback
+                # logic for what happens before any pin is explicit.
+                recorded = _record_piece_metrics(db3, slug, version, dest)
+                if recorded is not None:
+                    existing_pin = db3.execute(
+                        "SELECT pinned_version FROM subjects WHERE slug=?", (slug,)
+                    ).fetchone()
+                    if existing_pin and existing_pin[0] is None:
+                        # The real generator-script convention (confirmed
+                        # against actual scratch/ files, not assumed): the
+                        # base script is UNVERSIONED, e.g. scratch/_orb.py,
+                        # edited in place across every revision (real
+                        # evidence: _orb.v8.bak.py / _orb.v9.bak.py sit
+                        # next to it as pre-edit backups of that same
+                        # file). An earlier version of this derived the
+                        # pinned path from the SUBMITTED .ans filename
+                        # (e.g. "_orb.v6.py"), which doesn't correspond to
+                        # any real file on disk -- fixed before shipping.
+                        pinned_script = SCRATCH / f"{slug}.py"
+                        db3.execute(
+                            "UPDATE subjects SET pinned_script_path=?, "
+                            "pinned_version=? WHERE slug=?",
+                            (str(pinned_script), version, slug),
+                        )
+                        db3.commit()
             finally:
                 db3.close()
             return f"submitted: moved {src.relative_to(WORKSPACE)} -> {dest.relative_to(WORKSPACE)}"

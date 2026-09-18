@@ -103,6 +103,72 @@ def ramp(hue_name):
     return list(_HUE_RAMPS[hue_name])
 
 
+def shade_ramp(from_color, to_color, steps=None):
+    """Build a REAL brightness transition between two palette indices,
+    using genuine ░▒▓ density dithering -- not a hand-picked flat fill.
+
+    Added 2026-09-18 in direct response to a measured, load-bearing gap:
+    every version of _orb (v5-v8) and _phosphor.v3 used 0.0% RAMP density
+    characters -- zero dithering anywhere in the piece. That's not a
+    style choice, it's the literal absence of a shading mechanism, and
+    it's the exact, repeated reason the Opus curator gate rejected all of
+    them ("flat unshaded region", "hard vertical seam", "no gradient
+    within each color zone"). A checker can only keep catching this; it
+    can't fix it. This function is the fix: a real way to go from a lit
+    color to a shadow color across a surface instead of two flat blocks
+    meeting at a hard edge.
+
+    Technique (the actual real-ACiD dithering trick, not invented):
+    ANSI has only 16 real colors, so intermediate brightness is FAKED by
+    varying how much of the "hot" color's ink shows through against the
+    "cold" color's background, using the block-density glyphs
+    █(100% ink) ▓(~75%) ▒(~50%) ░(~25%) space(0% ink, pure bg). fg is
+    ALWAYS from_color, bg is ALWAYS to_color, across every step -- only
+    the GLYPH changes, which is what fakes the extra brightness levels a
+    16-color palette doesn't actually have.
+
+    Returns a list of `steps` (char, fg_idx, bg_idx) tuples, ordered from
+    from_color (index 0, solid) to to_color (index -1, solid). Default
+    steps=5 (one solid + the 3 RAMP density levels + one solid) is the
+    real ceiling of distinct-looking dither levels obtainable from one
+    glyph's density pattern between two colors -- passing a larger
+    `steps` repeats levels near the ends rather than inventing more real
+    ones, which is honest (you cannot fake more gradations than the
+    glyph set provides).
+
+    Usage: index into the returned list by local position along the
+    transition -- `shade_ramp(hot, cold, 5)[int(t * 4)]` for t in [0,1]
+    -- instead of picking one flat (fg, bg) pair for a whole shaded
+    region. Combine with ramp(hue_name) for real same-hue endpoints:
+    hot, mid, cold = ramp('amber'); stops = shade_ramp(hot, cold, 7).
+    """
+    if steps is None:
+        steps = len(RAMP) + 1  # 5: solid-hot, ▓, ▒, ░, solid-cold
+    if steps < 2:
+        raise ValueError("shade_ramp needs steps >= 2 (at least the two endpoints)")
+
+    stops = []
+    for i in range(steps):
+        t = i / (steps - 1)
+        if i == 0:
+            # solid from_color: full-block glyph, fg=from, bg=to (bg is
+            # irrelevant here since the glyph is 100% ink, but keep it
+            # consistent so a renderer relying on bg for anything else
+            # -- e.g. a later texture pass -- sees the right value)
+            stops.append((RAMP[0], from_color, to_color))
+        elif i == steps - 1:
+            # solid to_color: space char, 0% ink, pure bg
+            stops.append((" ", from_color, to_color))
+        else:
+            # map the interior fraction onto RAMP's density levels
+            # (RAMP[0]=█ full ink already used for i==0, so interior
+            # steps draw from RAMP[1:] -- the ▓▒░ partial-density glyphs)
+            interior_t = (i - 1) / (steps - 2) if steps > 2 else 0.0
+            ramp_idx = 1 + min(len(RAMP) - 2, int(interior_t * (len(RAMP) - 1)))
+            stops.append((RAMP[ramp_idx], from_color, to_color))
+    return stops
+
+
 HOUSE_HUE = [13, 9, 11, 10, 14, 12, 15, 3]  # bright magenta/red/yellow/green/
 # cyan/blue/white/amber wheel -- FIXED 2026-09-16: this used to store raw SGR
 # codes (95, 91, 93, 92, 96, 94, 107, 103), which is a DIFFERENT number space
@@ -117,10 +183,31 @@ HOUSE_HUE = [13, 9, 11, 10, 14, 12, 15, 3]  # bright magenta/red/yellow/green/
 
 
 def sgr(fg, bg=0):
-    """Return the raw ESC[...m code for a given fg/bg pair (0-15 each)."""
-    f = (90 + (fg & 7)) if fg > 7 else (30 + fg)
+    """Return the raw ESC[...m code for a given fg/bg pair (0-15 each).
+
+    Uses the classic bold-prefix form (1;3X / 1;4X) for bright colors,
+    NOT the aixterm 90-97/100-107 extended range -- confirmed live
+    2026-09-18 that ansilove (and, per the DOS/ANSI.SYS convention real
+    scene tools followed, most classic ANSI renderers) does not support
+    90-97/100-107 at all: ESC[93;40m rendered as pure BLACK, not bright
+    yellow, in a direct pixel test. harness.py's own renderer (what
+    agents see via preview_piece) DOES parse 90-97 correctly, so this
+    bug was invisible in the live agent pipeline -- but any ansilove-
+    based tool (external viewers, the corpus validation pipeline) would
+    render every bright-color cell from this house library as flat
+    black. Classic 1;3X form works everywhere; 90-97 doesn't. Bright
+    background (100-107) has no unambiguous classic equivalent (real
+    DOS ANSI used the blink-bit + iCE-colors convention for that, which
+    is a file-level mode flag, not something a single SGR sequence can
+    express) -- emits 100-107 as-is for now since a renderer that
+    doesn't support iCE colors wouldn't render bright backgrounds
+    correctly under ANY encoding, this only fixes the strictly-worse
+    "no bright fg at all" case.
+    """
+    bright = fg > 7
+    f = 30 + (fg & 7)
     b = (100 + (bg & 7)) if bg > 7 else (40 + bg)
-    return "\x1b[%d;%dm" % (f, b)
+    return ("\x1b[1;%d;%dm" % (f, b)) if bright else ("\x1b[%d;%dm" % (f, b))
 
 
 class Canvas:

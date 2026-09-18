@@ -97,6 +97,12 @@ class HalfBlockCanvas:
 
 
 def _sgr(fg, bg=0):
-    f = (90 + (fg & 7)) if fg > 7 else (30 + fg)
+    # See canvas.py's sgr() docstring for why this uses the classic
+    # bold-prefix (1;3X) form instead of aixterm 90-97 for bright fg --
+    # confirmed live 2026-09-18 that ansilove renders 90-97 as flat
+    # black, not the intended bright color. Fixed identically here since
+    # this module duplicated the same (buggy) formula independently.
+    bright = fg > 7
+    f = 30 + (fg & 7)
     b = (100 + (bg & 7)) if bg > 7 else (40 + bg)
-    return "\x1b[%d;%dm" % (f, b)
+    return ("\x1b[1;%d;%dm" % (f, b)) if bright else ("\x1b[%d;%dm" % (f, b))
