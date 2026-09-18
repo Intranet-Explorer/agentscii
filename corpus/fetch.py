@@ -23,6 +23,7 @@ import os
 import sys
 import time
 import zipfile
+import zlib
 import io
 from pathlib import Path
 
@@ -161,7 +162,18 @@ def extract_pack(zip_path, out_dir, manifest_fh):
                     continue
                 try:
                     data = zf.read(info)
-                except (NotImplementedError, zipfile.BadZipFile, RuntimeError) as e:
+                except (NotImplementedError, zipfile.BadZipFile, RuntimeError,
+                        zlib.error, EOFError) as e:
+                    # zlib.error found live: a real archive zip (1995
+                    # scene pack) has a member with corrupted deflate
+                    # stream data -- "invalid distance too far back" --
+                    # which zipfile.read() raises as a bare zlib.error,
+                    # not wrapped in BadZipFile. Uncaught, this killed a
+                    # full 37-year fetch run partway through 1995 with
+                    # zero packs processed afterward. EOFError is the
+                    # same class of real corruption (truncated member),
+                    # added defensively since it's the other documented
+                    # zipfile failure mode for a damaged member.
                     print(f"    [skip member, unsupported: {info.filename}: {e}]", file=sys.stderr)
                     continue
                 safe_name = Path(info.filename).name  # drop any internal dir structure
@@ -236,7 +248,28 @@ def main():
                     continue
                 total_packs += 1
                 out_dir = DATA_DIR / year / Path(name).stem
-                n = extract_pack(zip_dest, out_dir, manifest_fh)
+                if out_dir.exists() and any(out_dir.iterdir()):
+                    # Already extracted in a prior (resumed) run -- skip
+                    # re-extraction. Without this guard, re-running after
+                    # an interrupted fetch would re-extract every
+                    # already-downloaded zip and hit extract_pack's
+                    # within-pack de-dup suffix logic against files that
+                    # are the SAME extraction, not a real duplicate,
+                    # silently doubling the file count with __2 copies.
+                    continue
+                try:
+                    n = extract_pack(zip_dest, out_dir, manifest_fh)
+                except Exception as e:
+                    # Belt-and-suspenders on top of extract_pack's own
+                    # internal handling: a 30+ year, thousands-of-packs
+                    # archive WILL contain failure modes neither of us
+                    # anticipated. One pack's unexpected exception must
+                    # never discard however many hours of a full-archive
+                    # run already completed (found live: an uncaught
+                    # zlib.error from one corrupted 1995 pack killed a
+                    # run 1000 packs / ~13000 files in).
+                    print(f"  [unexpected error extracting {name}, skipping pack: {e}]", file=sys.stderr)
+                    n = 0
                 total_files += n
                 if total_packs % 25 == 0:
                     manifest_fh.flush()

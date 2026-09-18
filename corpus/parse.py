@@ -463,7 +463,7 @@ def main():
 
     if args.file:
         result = parse_file(args.file)
-        out_path = Path(args.output_dir) / (Path(args.file).stem + ".npz")
+        out_path = Path(args.output_dir) / (Path(args.file).name + ".npz")
         out_path.parent.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(out_path, **result)
         print(f"parsed {args.file} -> {out_path} ({result['n_rows']}x{result['n_cols']})")
@@ -483,7 +483,7 @@ def main():
     ok, failed = 0, []
     for i, path in enumerate(files):
         rel = path.relative_to(input_dir)
-        out_path = output_dir / rel.with_suffix(".npz")
+        out_path = output_dir / rel.with_name(rel.name + ".npz")
         try:
             result = parse_file(path)
             out_path.parent.mkdir(parents=True, exist_ok=True)
