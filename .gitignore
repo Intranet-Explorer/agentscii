@@ -19,3 +19,16 @@ workspace/README.md
 workspace/references/study/*.ans
 workspace/references/study/*.ANS
 
+# ANSI training corpus (2026-09-17): downloaded 16colo.rs artpacks and their
+# parsed .npz cell-grid output are other artists' actual work, same
+# rationale as workspace/references/study/ above -- kept locally for
+# corpus-building/training use, not ours to publish/redistribute on
+# GitHub. Only the fetch/parse SCRIPTS are tracked, not the downloaded
+# packs or parsed output.
+corpus/data/
+corpus/parsed/
+corpus/raw/
+corpus/*.zip
+corpus/validation_report*.json
+corpus/validation_report*.txt
+
