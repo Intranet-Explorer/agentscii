@@ -31,4 +31,8 @@ corpus/raw/
 corpus/*.zip
 corpus/validation_report*.json
 corpus/validation_report*.txt
+corpus/dedupe_report.json
+corpus/technique_manifest.jsonl
+corpus/holdout_split.json
+corpus/*_full.log
 
