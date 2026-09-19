@@ -203,6 +203,68 @@ def render_grid_to_png(chars, fg, bg, out_path):
         return False
 
 
+def copy_detection_score(model_chars, model_fg, model_bg,
+                          full_chars, full_fg, full_bg, top, left, mask_h, mask_w):
+    """User direction, 2026-09-19: 'how often the filled region
+    duplicates adjacent rows/columns from context.' A cheap, common
+    failure mode for a small/undertrained FIM model is literally
+    copying the nearest real row or column outward into the hole
+    instead of constructing new content -- this catches that directly,
+    rather than only via the (noisier, more expensive) blind pairwise
+    Opus judgment.
+
+    Returns two numbers:
+    - exact_match_frac: fraction of the mask's edge rows/columns (up
+      to 4 checkable: row above, row below, col left, col right) that
+      are an EXACT full duplicate of their nearest real neighbor.
+    - cell_overlap_frac: a softer, continuous signal -- mean fraction
+      of individual cells (char,fg,bg all matching) between each edge
+      row/column and its neighbor, averaged over all checkable edges.
+      Included because exact-full-row equality is a blunt binary
+      signal that a model copying MOST but not all of a row (a
+      partial-copy failure mode, still real duplication) would score
+      0 on -- cell_overlap_frac catches the partial case exact_match
+      misses.
+
+    Cell equality is the full (char, fg, bg) triple -- a row that
+    happens to share glyphs but different colors with its neighbor is
+    NOT counted as copied, since that's a real (if suspicious)
+    coincidence, not literal duplication."""
+    h, wd = full_chars.shape
+
+    def _row_pair(r):
+        return full_chars[r, left:left + mask_w], full_fg[r, left:left + mask_w], full_bg[r, left:left + mask_w]
+
+    def _col_pair(c):
+        return full_chars[top:top + mask_h, c], full_fg[top:top + mask_h, c], full_bg[top:top + mask_h, c]
+
+    def _cell_overlap(a, b):
+        ac, af, ab = a
+        bc, bf, bb = b
+        match = (ac == bc) & (af == bf) & (ab == bb)
+        return float(np.mean(match))
+
+    def _exact(a, b):
+        return bool(np.array_equal(a[0], b[0]) and np.array_equal(a[1], b[1]) and np.array_equal(a[2], b[2]))
+
+    checks = []
+    if top > 0:
+        checks.append((_row_pair(top - 1), (model_chars[0], model_fg[0], model_bg[0])))
+    if top + mask_h < h:
+        checks.append((_row_pair(top + mask_h), (model_chars[-1], model_fg[-1], model_bg[-1])))
+    if left > 0:
+        checks.append((_col_pair(left - 1), (model_chars[:, 0], model_fg[:, 0], model_bg[:, 0])))
+    if left + mask_w < wd:
+        checks.append((_col_pair(left + mask_w), (model_chars[:, -1], model_fg[:, -1], model_bg[:, -1])))
+
+    if not checks:
+        return 0.0, 0.0
+
+    exact_matches = sum(1 for neighbor, edge in checks if _exact(neighbor, edge))
+    overlaps = [_cell_overlap(neighbor, edge) for neighbor, edge in checks]
+    return exact_matches / len(checks), float(np.mean(overlaps))
+
+
 def opus_pairwise_eval(model_png, truth_png):
     """Blind pairwise: which region reads better, model's fill or the
     real ground truth -- randomized A/B, no labels beyond A/B."""
@@ -278,7 +340,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model", default="qwen3.8:27b-mlx",
                      help="Ollama model to eval as the fill-in model (no 8B model is currently pulled locally -- pass one once available)")
-    ap.add_argument("--n", type=int, default=10)
+    ap.add_argument("--n", type=int, default=50)
     ap.add_argument("--parsed-dir", default=str(CORPUS_DIR / "parsed"))
     ap.add_argument("--holdout-split", default=str(CORPUS_DIR / "holdout_split.json"))
     ap.add_argument("--out", default=str(CORPUS_DIR / "eval_results.json"))
@@ -322,7 +384,9 @@ def main():
         f_win = fg_full[row0:row0 + w.WINDOW_ROWS, col0:col0 + w.WINDOW_COLS]
         b_win = bg_full[row0:row0 + w.WINDOW_ROWS, col0:col0 + w.WINDOW_COLS]
 
-        context_text, target_text, mask_box = w.make_fitm_example(c_win, f_win, b_win, rng)
+        context_text, target_text, mask_box = w.make_fitm_example(
+            c_win, f_win, b_win, rng, fixed_mask_size=(8, 14)
+        )
         top, left, mask_h, mask_w = mask_box
 
         prompt = make_eval_prompt(context_text, mask_h, mask_w)
@@ -340,10 +404,26 @@ def main():
         model_half, model_shade = w.window_technique_metrics(model_chars, model_fg, model_bg)
         truth_half, truth_shade = w.window_technique_metrics(truth_chars, truth_fg, truth_bg)
 
+        copy_exact, copy_overlap = copy_detection_score(
+            model_chars, model_fg, model_bg, c_win, f_win, b_win, top, left, mask_h, mask_w
+        )
+        # same check against the REAL ground-truth fill, as a baseline
+        # for how much "duplication" is normal in real art (a genuine
+        # repeating pattern -- a brick wall, a fence -- legitimately
+        # duplicates its neighbor row/column; copy_detection_score
+        # can't distinguish that from a lazy model copy on its own,
+        # so the ground-truth rate is the honest reference point for
+        # "how much of this is just real repeating texture").
+        truth_copy_exact, truth_copy_overlap = copy_detection_score(
+            truth_chars, truth_fg, truth_bg, c_win, f_win, b_win, top, left, mask_h, mask_w
+        )
+
         entry = {
             "path": rel, "row0": row0, "col0": col0, "mask_box": list(mask_box),
             "model_half_block_pct": model_half, "model_shade_pct": model_shade,
             "truth_half_block_pct": truth_half, "truth_shade_pct": truth_shade,
+            "model_copy_exact_frac": copy_exact, "model_copy_overlap_frac": copy_overlap,
+            "truth_copy_exact_frac": truth_copy_exact, "truth_copy_overlap_frac": truth_copy_overlap,
         }
 
         if not args.no_opus:
@@ -360,7 +440,8 @@ def main():
         results.append(entry)
         n_done += 1
         print(f"  [{n_done}/{args.n}] {rel}: model half={model_half:.1f} shade={model_shade:.1f} "
-              f"| truth half={truth_half:.1f} shade={truth_shade:.1f}"
+              f"| truth half={truth_half:.1f} shade={truth_shade:.1f} "
+              f"| copy(exact/overlap)={copy_exact:.2f}/{copy_overlap:.2f}"
               + (f" | pairwise={entry.get('pairwise', {}).get('winner', 'n/a')}" if not args.no_opus else ""))
 
     Path(args.out).write_text(json.dumps(results, indent=2))
@@ -373,6 +454,11 @@ def main():
         print(f"Truth half_block_pct: mean={statistics.mean(r['truth_half_block_pct'] for r in valid):.1f}")
         print(f"Model shade_pct:      mean={statistics.mean(r['model_shade_pct'] for r in valid):.1f}")
         print(f"Truth shade_pct:      mean={statistics.mean(r['truth_shade_pct'] for r in valid):.1f}")
+        print(f"Model copy-exact frac:   mean={statistics.mean(r['model_copy_exact_frac'] for r in valid):.3f}")
+        print(f"Truth copy-exact frac:   mean={statistics.mean(r['truth_copy_exact_frac'] for r in valid):.3f} "
+              f"(baseline -- real repeating texture also 'copies' by this metric)")
+        print(f"Model copy-overlap frac: mean={statistics.mean(r['model_copy_overlap_frac'] for r in valid):.3f}")
+        print(f"Truth copy-overlap frac: mean={statistics.mean(r['truth_copy_overlap_frac'] for r in valid):.3f}")
         if not args.no_opus:
             pairwise_results = [r["pairwise"]["winner"] for r in valid if r.get("pairwise", {}).get("status") == "ok"]
             wins = pairwise_results.count("model")
