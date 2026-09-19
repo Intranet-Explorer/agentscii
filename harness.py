@@ -363,6 +363,19 @@ MAX_TOOL_CALLS_PER_SHIFT = 40
 MAX_TOOL_CALLS_BY_ROLE = {"artist": 60, "curator": 40}
 BASH_TIMEOUT = 60
 
+MAX_REVISIONS_PER_SUBJECT = 8  # user direction, 2026-09-19: "Cap revisions
+# at 8 per subject. After that it ships, gets shelved, or reverts to the
+# best-scoring earlier version. 59 versions is not iteration, it's
+# thrashing." -- _orb reached v59 before shipping (v53-v59 alone were the
+# post-fix revision round covered by the flat-region/half-block gates),
+# a real, measured case of a piece grinding through dozens of versions
+# instead of converging. This is a hard, separate cap from
+# OPUS_MAX_REVIEWS_PER_PIECE (which counts REVIEWS, not submitted
+# VERSIONS -- a piece can rack up many mechanically-gate-blocked
+# submissions, each consuming zero Opus reviews, and still never hit
+# the review cap while still thrashing on raw version count). Enforced
+# in submit_piece, same place as the other house-direction gates.
+
 SHIFT_WALL_CLOCK_CAP_S = 90 * 60  # 90 minutes (user direction, 2026-09-17):
 # the loop guard fingerprints identical call+result pairs, so it can't see
 # a shift that keeps making genuinely DIFFERENT tool calls while never
@@ -380,7 +393,30 @@ _VERSION_RE = re.compile(r"(?:\.[vV]|-v|_v)(\d+)$")
 
 FIGURATIVE_WORDS = ("face", "eye", "watch", "sentinel", "cyborg", "scan",
                      "mind", "portrait", "figure", "warden", "vigil",
-                     "traveler", "procession", "ember")
+                     "traveler", "procession", "ember", "guardian", "demon",
+                     "cyclops", "totem", "mantis", "lantern", "oracle",
+                     "coghead", "gargoyle", "wraith", "golem", "knight",
+                     "colossus", "sphinx", "phantom", "silhouette")
+# Found live, 2026-09-19: this list is a leaky approximation by
+# construction and WILL keep missing real figurative subjects as new
+# ones get invented -- confirmed directly: "_guardian" reached
+# submissions with 0.0% shade chars, 0% full blocks, all flat fills
+# (exactly the defect class _flat_region_check/_figurative_precheck
+# exist to catch) because "guardian" matched no word here, so BOTH
+# gates silently treated it as non-figurative and never ran at all.
+# This is the same bug class as the "_orb"/"THE WATCHER" gap found
+# 2026-09-18, now confirmed a second time on a different word -- adding
+# words as they're found (this commit added guardian/demon/cyclops/
+# totem/mantis/lantern/oracle/coghead/gargoyle/wraith/golem/knight/
+# colossus/sphinx/phantom/silhouette, the real gaps audited against
+# every slug ever shipped in workspace/gallery/) is a real fix but NOT
+# a durable one -- the blind Opus subject-recognition check (see
+# opus_subject_check()) is the actual structural backstop, since it
+# asks "what is this an image of?" directly rather than guessing from
+# a filename, and will catch a mis-scoped flat piece even when this
+# list misses the word. Keep expanding this list when a gap is found
+# (it's free, runs before any Opus call), but don't treat it as
+# complete.
 
 _FIGURATIVE_WORDS_RE = re.compile(
     r"(?<![a-zA-Z])(?:" + "|".join(re.escape(w) for w in FIGURATIVE_WORDS) + r")"
@@ -491,13 +527,22 @@ def _compute_piece_metrics(path):
     to make the bbox/pct numbers comparable across versions that might
     resize the canvas).
 
-    'Subject mask' = anything not true background (not a plain space
-    with bg=0), same approximation used throughout this file. Percentages
-    are of SUBJECT cells only, not the whole canvas -- matches how the
-    user's own diagnostic numbers were computed (measured directly
-    against real _orb versions before this function existed, and
-    reproduced exactly: v5-v8 showed 0.0% shade_char_pct across all
-    four, confirming this definition).
+    half_block_pct/shade_char_pct are computed over the WHOLE CANVAS
+    (every cell in the parsed grid, background included), NOT subject-
+    only cells. Found live, 2026-09-19: an earlier version of this
+    function used a subject-only denominator, which does NOT reproduce
+    the user's own original diagnostic numbers -- verified directly by
+    recomputing both ways against the real historical _orb v5/v6/v7/v8
+    files: whole-canvas gives 13.3%/9.5%/10.8%/7.9%, an EXACT match to
+    the user's original report ("13.3% -> 9.4% -> 10.8% -> 7.9%");
+    subject-only gives a completely different, non-matching series
+    (35.7%/35.1%/38.1%/29.9%). The pinned-best regression gate is
+    meaningless if it's using a different definition of the metric than
+    the one actually driving house decisions -- fixed to match.
+    distinct_colors_in_subject/subject_bbox/subject_cell_count remain
+    subject-scoped (anything not a plain space with bg=0), since those
+    are about the drawn silhouette specifically, not a percentage that
+    needs a consistent shared denominator across versions.
 
     Returns a dict, or None if the file can't be parsed (caller should
     treat that as 'no metrics available', not block on it)."""
@@ -509,25 +554,27 @@ def _compute_piece_metrics(path):
     half_block_chars = _HALF_BLOCK_CHARS
     shade_chars = set("\u2593\u2592\u2591")  # ▓▒░
 
-    subject_visible_colors = set()
+    total_ct = len(grid)  # whole canvas, background included
     half_ct = 0
     shade_ct = 0
+
+    subject_visible_colors = set()
     subject_ct = 0
     rows, cols = [], []
     for (r, c), (ch, fg, bg) in grid.items():
+        if ch in half_block_chars:
+            half_ct += 1
+        if ch in shade_chars:
+            shade_ct += 1
         if ch == " " and bg == 0:
             continue
         subject_ct += 1
         rows.append(r)
         cols.append(c)
-        if ch in half_block_chars:
-            half_ct += 1
-        if ch in shade_chars:
-            shade_ct += 1
         visible_idx = bg if (ch == " " and bg != 0) else fg
         subject_visible_colors.add(visible_idx)
 
-    if subject_ct == 0:
+    if total_ct == 0:
         return {
             "half_block_pct": 0.0, "shade_char_pct": 0.0,
             "distinct_colors_in_subject": 0,
@@ -536,8 +583,8 @@ def _compute_piece_metrics(path):
         }
 
     return {
-        "half_block_pct": 100.0 * half_ct / subject_ct,
-        "shade_char_pct": 100.0 * shade_ct / subject_ct,
+        "half_block_pct": 100.0 * half_ct / total_ct,
+        "shade_char_pct": 100.0 * shade_ct / total_ct,
         "distinct_colors_in_subject": len(subject_visible_colors),
         "subject_bbox_rows": (max(rows) - min(rows) + 1) if rows else 0,
         "subject_bbox_cols": (max(cols) - min(cols) + 1) if cols else 0,
@@ -1035,6 +1082,22 @@ def init_db():
         subject_cell_count INTEGER,
         timestamp REAL NOT NULL
     )""")
+    # Safety net: opus_reviews was originally created ad hoc, never via
+    # init_db, so a genuinely fresh DB would be missing it entirely.
+    # IF NOT EXISTS makes this a no-op against the live DB's existing
+    # table/data.
+    conn.execute("""CREATE TABLE IF NOT EXISTS opus_reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        piece_slug TEXT NOT NULL,
+        path TEXT NOT NULL,
+        qwen_decision TEXT,
+        qwen_critique TEXT,
+        opus_verdict TEXT,
+        opus_reasoning TEXT,
+        opus_cost_usd REAL,
+        opus_error TEXT,
+        timestamp REAL NOT NULL
+    )""")
     conn.commit()
     return conn
 
@@ -1107,11 +1170,26 @@ def _decode_ans_bytes(raw):
         return raw.decode("cp437", errors="replace")
 
 
-def render_ans_to_png_b64(path, offset=0, max_rows=120):
+def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False):
     """Render an .ans/.asc file to a PNG, base64-encoded, for vision input.
     offset/max_rows let a long/scrolling piece be paged through panel by
     panel instead of only ever seeing the top — full content is always
-    readable via read_file regardless."""
+    readable via read_file regardless.
+
+    redact_title_rows=True blanks out (fills with true background) any
+    row that reads as mostly-letters -- the house title-card/credit-line
+    convention (row 1 = title, second-to-last content row = credit line,
+    both ASCII letter text at high density) -- before rasterizing.
+    Built for opus_subject_check() (user direction, 2026-09-19): the
+    EXISTING opus_curate_review render already claimed to Opus "you have
+    NO other context — no title" while literally baking the house's own
+    title-card text into the rendered pixels (confirmed live: THE
+    WATCHER's title row and credit line, containing the words "WATCHER"
+    and "GUARDIAN" etc, render as plain readable text in row 0/1 and the
+    second-to-last row of every real piece). A subject-recognition check
+    is meaningless if the answer is printed directly on the image being
+    judged -- this flag exists to make the blindness real, not just
+    claimed in the prompt text."""
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError:
@@ -1251,6 +1329,23 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120):
         while line_cells and line_cells[-1] == (" ", 7, 0):
             line_cells.pop()
         rows.append(line_cells)
+
+    if redact_title_rows:
+        # A row is title/credit text if its non-space glyphs are mostly
+        # ASCII letters at high density -- verified against 3 real house
+        # pieces before trusting this threshold: title/credit rows measure
+        # 0.56-0.92 letter-fraction, real drawn-art rows (half-block
+        # glyphs, dither, box-drawing) measure far lower since almost none
+        # of their characters are ASCII letters at all.
+        for line_cells in rows:
+            visible_chars = [ch for ch, fg, bg in line_cells if ch != " "]
+            if len(visible_chars) < 8:
+                continue
+            letters = sum(1 for ch in visible_chars if ch.isascii() and ch.isalpha())
+            if letters / len(visible_chars) > 0.5:
+                for i in range(len(line_cells)):
+                    line_cells[i] = (" ", 7, 0)
+
     max_width = max((len(r) for r in rows), default=1)
 
     if not rows:
@@ -2305,6 +2400,44 @@ def run_tool(name, args, agent):
             version = _extract_version(src.stem)
             db2 = sqlite3.connect(DB_PATH)
             try:
+                # --- hard revision cap ---------------------------------------
+                # User direction, 2026-09-19: "Cap revisions at 8 per subject.
+                # After that it ships, gets shelved, or reverts to the best-
+                # scoring earlier version. 59 versions is not iteration, it's
+                # thrashing." Counted from piece_metrics (one row per real
+                # submit_piece call that reached this point, regardless of
+                # accept/reject outcome -- the true revision count, not just
+                # the reviewed count) rather than the bare version NUMBER in
+                # the filename, since a version number can skip ahead (a
+                # subject could reach ".v20" after only 8 actual submissions
+                # if earlier attempts were blocked before reaching this gate,
+                # or could have gaps from abandoned parallel attempts) --
+                # what must be capped is real submitted revisions, not the
+                # numeric suffix an agent chose.
+                revision_count = db2.execute(
+                    "SELECT COUNT(*) FROM piece_metrics WHERE slug=?", (slug,)
+                ).fetchone()[0]
+                if revision_count >= MAX_REVISIONS_PER_SUBJECT:
+                    best = _get_best_metrics(db2, slug)
+                    best_desc = (
+                        f"v{best['version']} (half_block_pct={best['half_block_pct']:.1f}, "
+                        f"shade_char_pct={best['shade_char_pct']:.1f})"
+                        if best else "(no metrics on file)"
+                    )
+                    return (
+                        f"(error: submit_piece blocked — '{slug}' has already "
+                        f"had {revision_count} real submitted revisions, the "
+                        f"cap ({MAX_REVISIONS_PER_SUBJECT}). This is not a "
+                        "suggestion to try harder on a 9th version: 59 "
+                        "versions is thrashing, not iteration. Pick one: "
+                        "(a) if the current version is genuinely ship-quality, "
+                        "get it through curate_piece as-is; (b) revert to the "
+                        f"best-scoring earlier version instead — {best_desc} — "
+                        "and submit THAT file unchanged rather than a new "
+                        "attempt; or (c) abandon_subject with a written reason "
+                        "if neither is true. Do not keep editing toward a v9.)"
+                    )
+
                 existing_subject = _get_subject(db2, slug)
                 if existing_subject is not None and existing_subject["status"] == "rejected":
                     if version <= existing_subject["last_version"]:
@@ -2679,6 +2812,29 @@ def curate_piece_opus_gated(src, decision, critique):
 
     Returns (message, dest_path_or_None) matching curate_piece's existing
     return shape so the dispatcher doesn't need to change."""
+    # --- blind subject-recognition gate (user direction, 2026-09-19) ----
+    # Runs FIRST, before the metric-based defect review: measures
+    # technique, this asks whether the piece even reads as its intended
+    # subject at all. A piece can pass every mechanical gate (half-block
+    # %, shade %, flat-region check) while the actual composition has
+    # drifted into something that no longer reads as the intended
+    # subject -- exactly the failure mode this catches regardless of
+    # metrics being satisfied.
+    subject_result = opus_subject_check(src)
+    if subject_result["status"] == "mismatch":
+        dest = _move_with_sidecars(src, REJECTED, new_critique=subject_result["message"])
+        slug0 = core_slug(Path(src).stem)
+        version0 = _extract_version(Path(src).stem)
+        db0 = sqlite3.connect(DB_PATH)
+        try:
+            _touch_subject(db0, slug0, version0, src, status="rejected")
+        finally:
+            db0.close()
+        return (
+            f"rejected: moved to rejected/{dest.name} — "
+            f"{subject_result['message']}"
+        ), dest
+
     result = opus_curate_review(src, decision, critique)
     status = result["status"]
 
@@ -2829,6 +2985,242 @@ def _kill_stale_claude_login(max_age_s=300):
     return killed
 
 
+def _extract_intended_title(path):
+    """Best-effort extraction of the piece's own declared title, from
+    its in-file title-card text (the same convention _reads_figurative
+    checks) -- used only to log what the artist INTENDED next to what
+    Opus blindly saw, for a human-readable report. Never fed to the
+    blind check itself."""
+    try:
+        raw = Path(path).read_bytes()
+    except Exception:
+        return None
+    text = _decode_ans_bytes(raw)
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    for line in lines[:3]:
+        clean = _SGR_RE.sub("", line).strip()
+        if len(clean) >= 4 and sum(1 for ch in clean if ch.isascii() and ch.isalpha()) / len(clean) > 0.5:
+            return clean
+    return None
+
+
+def opus_subject_check(path):
+    """Blind subject-recognition gate (user direction, 2026-09-19):
+    'Send Opus the render with no title, note, or subject name, and
+    ask: What is this an image of? If its answer doesn't match the
+    intended subject, reject regardless of metrics.'
+
+    Built after confirming a real, separate bug: the EXISTING
+    opus_curate_review render already claimed 'you have NO other
+    context -- no title' to Opus while literally baking the house
+    title-card and credit-line text into the rendered PNG pixels
+    (confirmed directly: _orb.v59's title row 'THE WATCHER // IT SEES
+    IN THE DARK' and credit row both render as plain legible text in
+    the image Opus was shown). A subject-recognition check is
+    meaningless if the answer is printed on the image -- this uses
+    render_ans_to_png_b64(..., redact_title_rows=True) so the
+    blindness is real, not just asserted in the prompt.
+
+    This is a SEPARATE call from opus_curate_review's existing defect
+    review, by design: mixing 'what is this' with 'what's wrong with
+    it' lets a model that's already read the title-adjacent defect
+    list rationalize a subject match it wouldn't have made cold. Two
+    separate temp dirs, two separate isolated `claude -p` calls.
+
+    Returns a dict: {"status": "ok"|"mismatch"|"error", "message": str,
+    "blind_subject": str|None, "intended_title": str|None}. "ok" also
+    covers "couldn't determine intent" (no title text found) -- this
+    check can only REJECT on a confirmed mismatch, never block on its
+    own inability to find a title to compare against.
+    """
+    import subprocess, json, tempfile, shutil, base64
+
+    intended_title = _extract_intended_title(path)
+
+    # Check the SAME daily Opus cost/count cap opus_curate_review uses --
+    # this check makes up to 2 additional real Opus calls per submission,
+    # which must count against the same $/day ceiling, not run for free
+    # outside it (found live while wiring this in: opus_reviews'
+    # daily-cap query only ever counted opus_curate_review's own writes,
+    # so this new gate's cost was completely invisible to the cap unless
+    # explicitly logged into the same table).
+    conn_cap = sqlite3.connect(DB_PATH)
+    try:
+        count_today, cost_today = _opus_daily_cost_and_count(conn_cap)
+        if count_today >= OPUS_DAILY_CALL_CAP:
+            return {
+                "status": "ok",  # don't hard-block submission on this gate
+                # specifically when the cap is hit -- opus_curate_review's
+                # OWN cap check (called right after this, same submission)
+                # is the one authorized to queue the piece; this gate just
+                # skips its check rather than double-blocking.
+                "message": f"(subject check skipped: Opus daily cap "
+                            f"reached, {count_today}/{OPUS_DAILY_CALL_CAP})",
+                "blind_subject": None, "intended_title": intended_title,
+            }
+    finally:
+        conn_cap.close()
+
+    slug_for_log = Path(path).stem
+
+    b64, note = render_ans_to_png_b64(path, offset=0, max_rows=140, redact_title_rows=True)
+    if b64 is None:
+        return {"status": "error", "message": f"(render failed: {note})",
+                "blind_subject": None, "intended_title": intended_title}
+
+    tmpdir = tempfile.mkdtemp(prefix="opus_subject_")
+    try:
+        render_path = Path(tmpdir) / "render.png"
+        render_path.write_bytes(base64.b64decode(b64))
+
+        prompt = (
+            "Read render.png in this directory. You have NO other context "
+            "about this image at all -- no title, no artist's description, "
+            "no intent. Look only at what is literally drawn.\n\n"
+            "Answer in this exact format:\n"
+            "SUBJECT: <one short phrase, 2-8 words, naming the literal "
+            "subject, or \"abstract/no clear subject\" if there genuinely "
+            "is none>\n"
+            "DESCRIPTION: <one or two sentences of what you actually see>"
+        )
+
+        result = subprocess.run(
+            ["claude", "-p", prompt, "--model", "claude-opus-5",
+             "--allowedTools", "Read", "--output-format", "json"],
+            cwd=tmpdir, capture_output=True, text=True, timeout=90,
+        )
+        if result.returncode != 0 and result.returncode == 1 and not result.stderr.strip():
+            # same stuck-login auto-heal as opus_curate_review
+            if _kill_stale_claude_login(max_age_s=300):
+                result = subprocess.run(
+                    ["claude", "-p", prompt, "--model", "claude-opus-5",
+                     "--allowedTools", "Read", "--output-format", "json"],
+                    cwd=tmpdir, capture_output=True, text=True, timeout=90,
+                )
+        if result.returncode != 0:
+            err = f"claude CLI exit {result.returncode}: {result.stderr[:500]}"
+            return {"status": "error", "message": f"(subject check call failed: {err})",
+                    "blind_subject": None, "intended_title": intended_title}
+
+        data = json.loads(result.stdout)
+        reasoning = data.get("result", "")
+        cost1 = data.get("total_cost_usd")
+
+        # Log this call's cost into opus_reviews immediately, same table
+        # opus_curate_review uses, so the daily cap sees it -- marked
+        # with qwen_decision='subject_check' to distinguish from a real
+        # defect review when reading the table back.
+        conn_log = sqlite3.connect(DB_PATH)
+        try:
+            conn_log.execute(
+                "INSERT INTO opus_reviews (piece_slug, path, qwen_decision, "
+                "qwen_critique, opus_verdict, opus_reasoning, opus_cost_usd, "
+                "opus_error, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
+                (slug_for_log, str(path), "subject_check", None,
+                 "n/a_subject_id", reasoning, cost1, None, time.time()),
+            )
+            conn_log.commit()
+        finally:
+            conn_log.close()
+
+        blind_subject = None
+        for line in reasoning.splitlines():
+            if line.strip().upper().startswith("SUBJECT:"):
+                blind_subject = line.split(":", 1)[1].strip()
+                break
+
+        if blind_subject is None:
+            return {"status": "error",
+                    "message": "(subject check returned no parseable SUBJECT line)",
+                    "blind_subject": None, "intended_title": intended_title}
+
+        if intended_title is None:
+            # No title text found to compare against -- can't judge a
+            # mismatch, so this check has nothing to say. Not a defect
+            # in the piece, just nothing for THIS gate to check.
+            return {"status": "ok",
+                    "message": f"(blind read: \"{blind_subject}\" -- no in-file "
+                                "title found to compare against, so this check "
+                                "has nothing to judge a mismatch against)",
+                    "blind_subject": blind_subject, "intended_title": None}
+
+        # Second, separate call: does the blind subject match the
+        # intended title? Asked as its own question rather than
+        # keyword-matched in Python, since "a lit ring in a dark void"
+        # vs "THE WATCHER" needs judgment (an eye IS a watcher; a ring
+        # with no eye-like features is NOT), not string overlap.
+        match_prompt = (
+            f"An artist intended to draw: \"{intended_title}\"\n"
+            f"An independent blind viewer, shown ONLY the rendered image "
+            f"with no title, described the subject as: \"{blind_subject}\"\n\n"
+            "Does the blind description plausibly match what the artist "
+            "intended (allowing for stylized/conceptual titles -- e.g. "
+            "\"THE WATCHER\" matching a description of an eye is a MATCH, "
+            "not a mismatch), or does it read as a genuinely different "
+            "subject than intended?\n\n"
+            "Answer in this exact format:\n"
+            "VERDICT: MATCH or VERDICT: MISMATCH\n"
+            "REASON: <one sentence>"
+        )
+        match_result = subprocess.run(
+            ["claude", "-p", match_prompt, "--model", "claude-opus-5",
+             "--output-format", "json"],
+            capture_output=True, text=True, timeout=60,
+        )
+        if match_result.returncode != 0:
+            return {"status": "error",
+                    "message": f"(subject-match judgment call failed: exit {match_result.returncode})",
+                    "blind_subject": blind_subject, "intended_title": intended_title}
+        match_data = json.loads(match_result.stdout)
+        match_reasoning = match_data.get("result", "")
+        cost2 = match_data.get("total_cost_usd")
+
+        conn_log2 = sqlite3.connect(DB_PATH)
+        try:
+            conn_log2.execute(
+                "INSERT INTO opus_reviews (piece_slug, path, qwen_decision, "
+                "qwen_critique, opus_verdict, opus_reasoning, opus_cost_usd, "
+                "opus_error, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
+                (slug_for_log, str(path), "subject_check", None,
+                 "n/a_subject_match", match_reasoning, cost2, None, time.time()),
+            )
+            conn_log2.commit()
+        finally:
+            conn_log2.close()
+
+        verdict = None
+        for line in match_reasoning.splitlines():
+            if line.strip().upper().startswith("VERDICT:"):
+                v = line.split(":", 1)[1].strip().upper()
+                verdict = "match" if "MATCH" in v and "MISMATCH" not in v else "mismatch"
+                break
+
+        if verdict == "mismatch":
+            return {
+                "status": "mismatch",
+                "message": (
+                    f"BLIND SUBJECT CHECK FAILED: the artist intended "
+                    f"\"{intended_title}\", but an independent blind viewer "
+                    f"(no title, no note, no filename) described the "
+                    f"rendered image as: \"{blind_subject}\". "
+                    f"{match_reasoning.strip()} This is a hard reject "
+                    "regardless of any metric floor being met -- the "
+                    "gates measure technique, not whether the piece "
+                    "actually reads as its intended subject."
+                ),
+                "blind_subject": blind_subject, "intended_title": intended_title,
+            }
+
+        return {
+            "status": "ok",
+            "message": f"blind subject check passed: intended \"{intended_title}\", "
+                        f"blind read \"{blind_subject}\" -- {match_reasoning.strip()}",
+            "blind_subject": blind_subject, "intended_title": intended_title,
+        }
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 def opus_curate_review(path, qwen_decision, qwen_critique):
     """The real accept/reject authority for curate_piece, per the user's
     explicit 2026-09-16 direction: 'Only curate_piece. Opus gets render +
@@ -2869,7 +3261,8 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
             }
 
         prior_reviews = conn.execute(
-            "SELECT COUNT(*) FROM opus_reviews WHERE piece_slug=?", (slug,)
+            "SELECT COUNT(*) FROM opus_reviews WHERE piece_slug=? "
+            "AND qwen_decision != 'subject_check'", (slug,)
         ).fetchone()[0]
         if prior_reviews >= OPUS_MAX_REVIEWS_PER_PIECE:
             return {
