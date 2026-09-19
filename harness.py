@@ -527,22 +527,23 @@ def _compute_piece_metrics(path):
     to make the bbox/pct numbers comparable across versions that might
     resize the canvas).
 
-    half_block_pct/shade_char_pct are computed over the WHOLE CANVAS
-    (every cell in the parsed grid, background included), NOT subject-
-    only cells. Found live, 2026-09-19: an earlier version of this
-    function used a subject-only denominator, which does NOT reproduce
-    the user's own original diagnostic numbers -- verified directly by
-    recomputing both ways against the real historical _orb v5/v6/v7/v8
-    files: whole-canvas gives 13.3%/9.5%/10.8%/7.9%, an EXACT match to
-    the user's original report ("13.3% -> 9.4% -> 10.8% -> 7.9%");
-    subject-only gives a completely different, non-matching series
-    (35.7%/35.1%/38.1%/29.9%). The pinned-best regression gate is
-    meaningless if it's using a different definition of the metric than
-    the one actually driving house decisions -- fixed to match.
-    distinct_colors_in_subject/subject_bbox/subject_cell_count remain
-    subject-scoped (anything not a plain space with bg=0), since those
-    are about the drawn silhouette specifically, not a percentage that
-    needs a consistent shared denominator across versions.
+    half_block_pct/shade_char_pct are SUBJECT-ONLY (denominator =
+    non-true-background cells), matching corpus/technique_index.py's
+    definition exactly -- user direction, 2026-09-19: "use subject-only
+    for both the harness gate and the corpus technique index -- same
+    definition on both sides, so raze's output can be scored against
+    the corpus distribution. My earlier whole-canvas numbers were
+    expedient, not correct." This REVERSES the 2026-09-19 whole-canvas
+    change (which matched the user's own quick diagnostic numbers at
+    the time but was explicitly an expedient read, not the definition
+    to standardize on) -- confirmed subject-only is what
+    corpus/technique_index.py has used unchanged this whole time, so
+    reverting here is what actually makes the two sides comparable.
+    half_block_pct_whole_canvas/shade_char_pct_whole_canvas are logged
+    alongside as secondary diagnostic fields (not used by any gate),
+    since the whole-canvas number is still occasionally useful for a
+    quick eyeball and was already the basis of several past diagnostic
+    reports -- kept, not discarded, just demoted to non-authoritative.
 
     Returns a dict, or None if the file can't be parsed (caller should
     treat that as 'no metrics available', not block on it)."""
@@ -554,37 +555,46 @@ def _compute_piece_metrics(path):
     half_block_chars = _HALF_BLOCK_CHARS
     shade_chars = set("\u2593\u2592\u2591")  # ▓▒░
 
-    total_ct = len(grid)  # whole canvas, background included
-    half_ct = 0
-    shade_ct = 0
+    total_ct = len(grid)  # whole canvas, background included -- secondary only
+    half_ct_whole = 0
+    shade_ct_whole = 0
 
     subject_visible_colors = set()
     subject_ct = 0
+    half_ct_subj = 0
+    shade_ct_subj = 0
     rows, cols = [], []
     for (r, c), (ch, fg, bg) in grid.items():
         if ch in half_block_chars:
-            half_ct += 1
+            half_ct_whole += 1
         if ch in shade_chars:
-            shade_ct += 1
+            shade_ct_whole += 1
         if ch == " " and bg == 0:
             continue
         subject_ct += 1
         rows.append(r)
         cols.append(c)
+        if ch in half_block_chars:
+            half_ct_subj += 1
+        if ch in shade_chars:
+            shade_ct_subj += 1
         visible_idx = bg if (ch == " " and bg != 0) else fg
         subject_visible_colors.add(visible_idx)
 
     if total_ct == 0:
         return {
             "half_block_pct": 0.0, "shade_char_pct": 0.0,
+            "half_block_pct_whole_canvas": 0.0, "shade_char_pct_whole_canvas": 0.0,
             "distinct_colors_in_subject": 0,
             "subject_bbox_rows": 0, "subject_bbox_cols": 0,
             "subject_cell_count": 0,
         }
 
     return {
-        "half_block_pct": 100.0 * half_ct / total_ct,
-        "shade_char_pct": 100.0 * shade_ct / total_ct,
+        "half_block_pct": 100.0 * half_ct_subj / subject_ct if subject_ct else 0.0,
+        "shade_char_pct": 100.0 * shade_ct_subj / subject_ct if subject_ct else 0.0,
+        "half_block_pct_whole_canvas": 100.0 * half_ct_whole / total_ct,
+        "shade_char_pct_whole_canvas": 100.0 * shade_ct_whole / total_ct,
         "distinct_colors_in_subject": len(subject_visible_colors),
         "subject_bbox_rows": (max(rows) - min(rows) + 1) if rows else 0,
         "subject_bbox_cols": (max(cols) - min(cols) + 1) if cols else 0,
@@ -602,11 +612,13 @@ def _record_piece_metrics(conn, slug, version, path):
         return None
     conn.execute(
         "INSERT INTO piece_metrics (slug, version, path, half_block_pct, "
-        "shade_char_pct, distinct_colors_in_subject, subject_bbox_rows, "
+        "shade_char_pct, half_block_pct_whole_canvas, shade_char_pct_whole_canvas, "
+        "distinct_colors_in_subject, subject_bbox_rows, "
         "subject_bbox_cols, subject_cell_count, timestamp) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
         (slug, version, str(path), metrics["half_block_pct"],
-         metrics["shade_char_pct"], metrics["distinct_colors_in_subject"],
+         metrics["shade_char_pct"], metrics["half_block_pct_whole_canvas"],
+         metrics["shade_char_pct_whole_canvas"], metrics["distinct_colors_in_subject"],
          metrics["subject_bbox_rows"], metrics["subject_bbox_cols"],
          metrics["subject_cell_count"], time.time()),
     )
@@ -620,30 +632,35 @@ def _get_best_metrics(conn, slug):
     single best-so-far by a simple composite (half_block_pct +
     shade_char_pct + distinct_colors_in_subject) -- used both to decide
     what counts as 'best' the first time a subject accrues metrics, and
-    to compare a new submission against."""
+    to compare a new submission against. Includes 'path' (the stored
+    .ans path for that version at submission time -- may no longer
+    exist on disk if the file has since moved/been cleaned up; callers
+    needing the real render should verify with Path.exists() first) for
+    opus_pairwise_regression_check, which needs the actual rendered
+    file, not just its numbers."""
     subj = _get_subject(conn, slug)
     if subj and subj.get("pinned_version") is not None:
         row = conn.execute(
             "SELECT half_block_pct, shade_char_pct, distinct_colors_in_subject, "
-            "subject_bbox_rows, subject_bbox_cols, subject_cell_count, version "
+            "subject_bbox_rows, subject_bbox_cols, subject_cell_count, version, path "
             "FROM piece_metrics WHERE slug=? AND version=? ORDER BY id DESC LIMIT 1",
             (slug, subj["pinned_version"]),
         ).fetchone()
         if row:
             keys = ["half_block_pct", "shade_char_pct", "distinct_colors_in_subject",
-                    "subject_bbox_rows", "subject_bbox_cols", "subject_cell_count", "version"]
+                    "subject_bbox_rows", "subject_bbox_cols", "subject_cell_count", "version", "path"]
             return dict(zip(keys, row))
     # no explicit pin yet -- fall back to the best-scoring version seen so far
     rows = conn.execute(
         "SELECT half_block_pct, shade_char_pct, distinct_colors_in_subject, "
-        "subject_bbox_rows, subject_bbox_cols, subject_cell_count, version "
+        "subject_bbox_rows, subject_bbox_cols, subject_cell_count, version, path "
         "FROM piece_metrics WHERE slug=?",
         (slug,),
     ).fetchall()
     if not rows:
         return None
     keys = ["half_block_pct", "shade_char_pct", "distinct_colors_in_subject",
-            "subject_bbox_rows", "subject_bbox_cols", "subject_cell_count", "version"]
+            "subject_bbox_rows", "subject_bbox_cols", "subject_cell_count", "version", "path"]
     dicts = [dict(zip(keys, r)) for r in rows]
     dicts.sort(key=lambda d: -(d["half_block_pct"] + d["shade_char_pct"] + d["distinct_colors_in_subject"]))
     return dicts[0]
@@ -1082,6 +1099,14 @@ def init_db():
         subject_cell_count INTEGER,
         timestamp REAL NOT NULL
     )""")
+    try:
+        conn.execute("ALTER TABLE piece_metrics ADD COLUMN half_block_pct_whole_canvas REAL")
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    try:
+        conn.execute("ALTER TABLE piece_metrics ADD COLUMN shade_char_pct_whole_canvas REAL")
+    except sqlite3.OperationalError:
+        pass
     # Safety net: opus_reviews was originally created ad hoc, never via
     # init_db, so a genuinely fresh DB would be missing it entirely.
     # IF NOT EXISTS makes this a no-op against the live DB's existing
@@ -2835,6 +2860,44 @@ def curate_piece_opus_gated(src, decision, critique):
             f"{subject_result['message']}"
         ), dest
 
+    # --- pairwise regression gate (user direction, 2026-09-19) -----------
+    # Runs SECOND, after subject recognition, before the defect review:
+    # built directly for the v55->v59 case, where both tracked %
+    # metrics improved while the piece genuinely read worse (shrunken
+    # sclera, noisy background) -- a regression no metric-floor check
+    # can see by construction. Blind side-by-side against the pinned
+    # best, randomized A/B, titles redacted.
+    slug_pw = core_slug(Path(src).stem)
+    db_pw = sqlite3.connect(DB_PATH)
+    try:
+        best_pw = _get_best_metrics(db_pw, slug_pw)
+    finally:
+        db_pw.close()
+    pinned_render_path = None
+    if best_pw and best_pw.get("path"):
+        candidate_pinned_path = Path(best_pw["path"])
+        # only compare against a DIFFERENT version than the one being
+        # submitted right now, and only if that file still exists on
+        # disk (a pinned version's .ans can be cleaned up after ship,
+        # same gap documented for _orb v53 elsewhere in this file)
+        if candidate_pinned_path.resolve() != Path(src).resolve() and candidate_pinned_path.exists():
+            pinned_render_path = candidate_pinned_path
+    intended_title_pw = _extract_intended_title(src)
+    pairwise_result = opus_pairwise_regression_check(pinned_render_path, src, intended_title_pw)
+    if pairwise_result["status"] == "regression":
+        dest = _move_with_sidecars(src, REJECTED, new_critique=pairwise_result["message"])
+        slug1 = core_slug(Path(src).stem)
+        version1 = _extract_version(Path(src).stem)
+        db1 = sqlite3.connect(DB_PATH)
+        try:
+            _touch_subject(db1, slug1, version1, src, status="rejected")
+        finally:
+            db1.close()
+        return (
+            f"rejected: moved to rejected/{dest.name} — "
+            f"{pairwise_result['message']}"
+        ), dest
+
     result = opus_curate_review(src, decision, critique)
     status = result["status"]
 
@@ -3221,6 +3284,199 @@ def opus_subject_check(path):
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+def render_blind_pairwise_b64(path_a, path_b, offset=0, max_rows=140):
+    """Render two pieces side by side, BOTH with title/credit rows
+    redacted and labeled only 'A'/'B' (never 'pinned'/'candidate' or a
+    filename) -- built for opus_pairwise_regression_check (user
+    direction, 2026-09-19): 'send Opus the pinned best and the
+    candidate side by side, titles redacted, and ask which reads better
+    as the stated subject, with reasons.' Neutral A/B labels
+    specifically to avoid anchoring bias -- a model told upfront which
+    side is the 'existing accepted best' vs. the 'new attempt' has an
+    obvious reason to defer to the established one regardless of what
+    it actually sees, exactly the kind of bias a blind check exists to
+    remove."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    a_b64, a_note = render_ans_to_png_b64(path_a, offset=offset, max_rows=max_rows, redact_title_rows=True)
+    if a_b64 is None:
+        return None, f"(error rendering A: {a_note})"
+    b_b64, b_note = render_ans_to_png_b64(path_b, offset=offset, max_rows=max_rows, redact_title_rows=True)
+    if b_b64 is None:
+        return None, f"(error rendering B: {b_note})"
+
+    a_img = Image.open(io.BytesIO(base64.b64decode(a_b64))).convert("RGB")
+    b_img = Image.open(io.BytesIO(base64.b64decode(b_b64))).convert("RGB")
+
+    label_h = 28
+    gap = 6
+    h = max(a_img.height, b_img.height) + label_h
+    w = a_img.width + gap + b_img.width
+    canvas = Image.new("RGB", (w, h), (20, 20, 20))
+    draw = ImageDraw.Draw(canvas)
+    try:
+        font = ImageFont.truetype(_FONT_PATH, 18)
+    except Exception:
+        font = ImageFont.load_default()
+
+    draw.text((4, 4), "A", font=font, fill=(255, 255, 0))
+    draw.text((a_img.width + gap + 4, 4), "B", font=font, fill=(0, 255, 255))
+    canvas.paste(a_img, (0, label_h))
+    canvas.paste(b_img, (a_img.width + gap, label_h))
+    draw.rectangle([a_img.width + gap // 2 - 1, 0, a_img.width + gap // 2, h], fill=(80, 80, 80))
+
+    buf = io.BytesIO()
+    canvas.save(buf, format="PNG")
+    out_b64 = base64.b64encode(buf.getvalue()).decode()
+    note = ""
+    if a_note or b_note:
+        note = f" (A{a_note or ' full'}, B{b_note or ' full'})"
+    return out_b64, note
+
+
+def opus_pairwise_regression_check(pinned_path, candidate_path, intended_title):
+    """Pairwise regression gate (user direction, 2026-09-19): 'On any
+    revision, send Opus the pinned best and the candidate side by side,
+    titles redacted, and ask which reads better as the stated subject,
+    with reasons. Reject a candidate that loses to the pinned best even
+    when metrics improve.' Built directly for the v55->v59 case: v59
+    improved on both tracked % metrics (measured against v55) while
+    genuinely reading worse (shrunken sclera, noisy background reading
+    as texture-free static) -- a regression the metric-floor gate
+    cannot see by construction, since it only ever checks 'did the
+    number go up,' never 'does it still look as good.'
+
+    A/B sides are randomized per call (not always pinned=A) so a
+    position bias in the model can't systematically favor either side.
+
+    Returns a dict: {"status": "ok"|"regression"|"error", "message": str}.
+    "ok" also covers "no pinned version to compare against yet" (a
+    brand-new subject) -- this check can only ever REJECT on a
+    confirmed pairwise loss, never block for lack of a baseline."""
+    import subprocess, json, tempfile, shutil, base64, random
+
+    if pinned_path is None:
+        return {"status": "ok", "message": "(no pinned version yet to compare against)"}
+
+    conn_cap = sqlite3.connect(DB_PATH)
+    try:
+        count_today, cost_today = _opus_daily_cost_and_count(conn_cap)
+        if count_today >= OPUS_DAILY_CALL_CAP:
+            return {"status": "ok",
+                    "message": f"(pairwise check skipped: Opus daily cap reached, "
+                                f"{count_today}/{OPUS_DAILY_CALL_CAP})"}
+    finally:
+        conn_cap.close()
+
+    pinned_is_a = random.random() < 0.5
+    path_a = pinned_path if pinned_is_a else candidate_path
+    path_b = candidate_path if pinned_is_a else pinned_path
+
+    b64, note = render_blind_pairwise_b64(path_a, path_b)
+    if b64 is None:
+        return {"status": "error", "message": f"(render failed: {note})"}
+
+    tmpdir = tempfile.mkdtemp(prefix="opus_pairwise_")
+    try:
+        render_path = Path(tmpdir) / "compare.png"
+        render_path.write_bytes(base64.b64decode(b64))
+
+        title_line = (
+            f"The stated subject for both is: \"{intended_title}\"\n\n"
+            if intended_title else ""
+        )
+        prompt = (
+            "Read compare.png in this directory. It shows two ANSI-art "
+            "renders side by side, labeled A and B. You have NO other "
+            "context -- no titles, no notes, no version history, no "
+            "indication of which is older or newer.\n\n"
+            f"{title_line}"
+            "Which one reads better AS THAT SUBJECT -- clearer form, "
+            "better lit, less noisy, more coherent as the stated "
+            "subject? This is about which one actually looks better, "
+            "not which one is more technically complex.\n\n"
+            "Answer in this exact format:\n"
+            "WINNER: A or WINNER: B or WINNER: TIE\n"
+            "REASON: <2-3 sentences, specific to what you see in each>"
+        )
+
+        result = subprocess.run(
+            ["claude", "-p", prompt, "--model", "claude-opus-5",
+             "--allowedTools", "Read", "--output-format", "json"],
+            cwd=tmpdir, capture_output=True, text=True, timeout=90,
+        )
+        if result.returncode != 0 and result.returncode == 1 and not result.stderr.strip():
+            if _kill_stale_claude_login(max_age_s=300):
+                result = subprocess.run(
+                    ["claude", "-p", prompt, "--model", "claude-opus-5",
+                     "--allowedTools", "Read", "--output-format", "json"],
+                    cwd=tmpdir, capture_output=True, text=True, timeout=90,
+                )
+        if result.returncode != 0:
+            err = f"claude CLI exit {result.returncode}: {result.stderr[:500]}"
+            return {"status": "error", "message": f"(pairwise check call failed: {err})"}
+
+        data = json.loads(result.stdout)
+        reasoning = data.get("result", "")
+        cost = data.get("total_cost_usd")
+
+        slug_for_log = Path(candidate_path).stem
+        conn_log = sqlite3.connect(DB_PATH)
+        try:
+            conn_log.execute(
+                "INSERT INTO opus_reviews (piece_slug, path, qwen_decision, "
+                "qwen_critique, opus_verdict, opus_reasoning, opus_cost_usd, "
+                "opus_error, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
+                (slug_for_log, str(candidate_path), "pairwise_check", None,
+                 "n/a_pairwise", reasoning, cost, None, time.time()),
+            )
+            conn_log.commit()
+        finally:
+            conn_log.close()
+
+        winner_side = None
+        for line in reasoning.splitlines():
+            if line.strip().upper().startswith("WINNER:"):
+                w = line.split(":", 1)[1].strip().upper()
+                if w.startswith("A"):
+                    winner_side = "A"
+                elif w.startswith("B"):
+                    winner_side = "B"
+                else:
+                    winner_side = "TIE"
+                break
+
+        if winner_side is None:
+            return {"status": "error",
+                    "message": "(pairwise check returned no parseable WINNER line)"}
+
+        pinned_won = (winner_side == "A" and pinned_is_a) or (winner_side == "B" and not pinned_is_a)
+
+        if pinned_won:
+            return {
+                "status": "regression",
+                "message": (
+                    f"PAIRWISE REGRESSION CHECK FAILED: shown blind side-by-side "
+                    f"(randomized A/B, no titles/versions visible), an independent "
+                    f"reviewer judged the PINNED BEST version to read better as "
+                    f"\"{intended_title}\" than this candidate, even if this "
+                    f"candidate's tracked metrics are equal or higher. "
+                    f"{reasoning.strip()} This is a hard reject -- a metric floor "
+                    "being satisfied is not the same as the piece actually "
+                    "looking better; revert to the pinned version or make a "
+                    "change that a blind viewer would actually prefer."
+                ),
+            }
+
+        return {
+            "status": "ok",
+            "message": f"pairwise check passed: candidate judged equal-or-better "
+                        f"than the pinned best. {reasoning.strip()}",
+        }
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 def opus_curate_review(path, qwen_decision, qwen_critique):
     """The real accept/reject authority for curate_piece, per the user's
     explicit 2026-09-16 direction: 'Only curate_piece. Opus gets render +
@@ -3262,7 +3518,7 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
 
         prior_reviews = conn.execute(
             "SELECT COUNT(*) FROM opus_reviews WHERE piece_slug=? "
-            "AND qwen_decision != 'subject_check'", (slug,)
+            "AND qwen_decision NOT IN ('subject_check', 'pairwise_check')", (slug,)
         ).fetchone()[0]
         if prior_reviews >= OPUS_MAX_REVIEWS_PER_PIECE:
             return {
