@@ -205,22 +205,45 @@ def make_windows(chars, fg, bg):
             yield (row, col), c_slice, f_slice, b_slice
 
 
-def make_fitm_example(chars, fg, bg, rng):
+def make_fitm_example(chars, fg, bg, rng, area_frac_range=None, fixed_mask_size=None):
     """Mask a random rectangle inside the window; context = the window
     with that rectangle blanked to true background; target = the
     rectangle's real original content, RLE-encoded on its own
     coordinate system (row/col relative to the rectangle, not the
-    window) so the target is self-contained."""
+    window) so the target is self-contained.
+
+    area_frac_range overrides the default mask-size range -- used by
+    eval_harness.py with a LARGER range than training (user direction,
+    2026-09-19: "use larger masks: roughly 14x8 cells or ~20% of the
+    subject area, so the fill requires real construction, not
+    interpolation" -- a harder eval than the ~300-token-tuned training
+    mask size, deliberately, since the training-size mask is easy
+    enough to interpolate from adjacent context rather than requiring
+    real construction).
+
+    fixed_mask_size=(mask_h, mask_w) pins the mask to a specific shape
+    with +/-1 cell jitter per dimension, rather than deriving mask_h/
+    mask_w from area_frac via the WINDOW's own aspect ratio (40:16 =
+    2.5:1) -- the user's literal "14x8" target is a 1.75:1 rectangle,
+    a genuinely different shape than what area_frac alone would
+    produce at the same cell count (verified directly: 20% area_frac
+    on a 40x16 window naturally comes out ~7x18, not ~8x14)."""
     h, w = chars.shape
-    # mask rectangle: 12-25% of window area (tuned down from an initial
-    # 20-40%, user direction, 2026-09-19: "target under ~300 tokens" --
-    # 20-40% measured at a real mean of 461 target tokens on a 10k
-    # sample, well over the target; 12-25% is the range that actually
-    # lands near it, verified below), clamped to sane min size
-    area_frac = rng.uniform(0.12, 0.25)
-    target_area = area_frac * h * w
-    mask_h = max(3, min(h - 1, round((target_area * h / w) ** 0.5)))
-    mask_w = max(3, min(w - 1, round((target_area * w / h) ** 0.5)))
+    if fixed_mask_size:
+        base_h, base_w = fixed_mask_size
+        mask_h = max(3, min(h - 1, base_h + rng.randint(-1, 1)))
+        mask_w = max(3, min(w - 1, base_w + rng.randint(-1, 1)))
+    else:
+        # mask rectangle: 12-25% of window area (tuned down from an initial
+        # 20-40%, user direction, 2026-09-19: "target under ~300 tokens" --
+        # 20-40% measured at a real mean of 461 target tokens on a 10k
+        # sample, well over the target; 12-25% is the range that actually
+        # lands near it, verified below), clamped to sane min size
+        lo, hi = area_frac_range if area_frac_range else (0.12, 0.25)
+        area_frac = rng.uniform(lo, hi)
+        target_area = area_frac * h * w
+        mask_h = max(3, min(h - 1, round((target_area * h / w) ** 0.5)))
+        mask_w = max(3, min(w - 1, round((target_area * w / h) ** 0.5)))
     top = rng.randint(0, h - mask_h)
     left = rng.randint(0, w - mask_w)
 

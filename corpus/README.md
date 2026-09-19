@@ -24,6 +24,8 @@ token_stats.py       -> token-length stats over windows.jsonl
 bench_encoding.py    -> tokens/cell benchmark across 3 candidate cell encodings
 subsample.py         -> stratified 40k-example subsample for v1 -> train_subsample.jsonl
 eval_harness.py      -> FIM eval: mask+fill+score+pairwise-Opus-judge against frozen holdout
+prepare_training_data.py -> converts train_subsample.jsonl to mlx_lm chat-messages format
+lora_config.yaml     -> mlx_lm.lora hyperparameters for the v1 training run
 caption.py           -> per-parent-piece caption via local VLM + SAUCE year/group prefix (DROPPED from v1, kept for a later phase)
 ```
 
@@ -387,6 +389,132 @@ model is currently pulled in this Ollama instance -- the smallest
 available is `mistral-nemo:12b`. The eval harness is fully
 model-agnostic (`--model <any-ollama-model>`); running it against a
 real 8B requires pulling one first, not a code change.
+
+## Step 3: hardened eval + LoRA training v1
+
+**Re-baseline (user direction, 2026-09-19): "harden the eval... expand
+to 50 holdout examples, and use larger masks... add a copy-detection
+metric... keep per-example results."**
+
+```
+python3 corpus/eval_harness.py --model qwen3.8:27b-mlx --n 50 --out corpus/eval_results_hardened.json
+```
+
+Changes from the earlier 15-example baseline:
+- **50 holdout examples** (up from 15), zero errors.
+- **Larger, fixed-shape masks (~8x14 cells, +/-1 jitter)**, not the
+  training-tuned 12-25%-area range -- deliberately harder than
+  training, per instruction ("so the fill requires real construction,
+  not interpolation"). Added `fixed_mask_size` to
+  `windowing.make_fitm_example` for this rather than deriving mask
+  shape from an area fraction, since the literal "14x8" target (a
+  1.75:1 rectangle) is a genuinely different shape than what 20% area
+  on a 40x16 (2.5:1) window naturally produces via the area-fraction
+  formula (~7x18) -- verified directly before trusting it.
+- **Copy-detection metric**: checks the filled region's edge rows/
+  columns against their real adjacent neighbors for exact duplication
+  (`copy_exact_frac`) and a softer per-cell overlap fraction
+  (`copy_overlap_frac`), computed for BOTH the model's fill and the
+  real ground truth (as a baseline for how much "duplication" is just
+  normal repeating texture -- a fence, a brick wall -- that
+  copy-detection can't distinguish from lazy copying on its own).
+- **Per-example results kept**, not just aggregates -- full detail in
+  `corpus/eval_results_hardened.json` for post-hoc analysis by piece
+  type.
+
+**Hardened baseline, untrained qwen3.8:27b-mlx, 50 holdout examples:**
+
+| metric | model | ground truth |
+|---|---|---|
+| half_block_pct (mean) | 12.7 | 13.2 |
+| shade_pct (mean) | 10.5 | 12.2 |
+| copy_exact_frac (mean) | 0.045 | 0.118 |
+| copy_overlap_frac (mean) | 0.295 | 0.507 |
+| pairwise vs. ground truth (blind Opus) | won 20 / lost 26 / tied 0 (of 46 judged) | -- |
+
+**Real, non-obvious finding**: the model copies LESS than real ground
+truth does by this metric (0.045 vs 0.118 exact, 0.295 vs 0.507
+overlap) -- real archive art legitimately repeats adjacent rows/
+columns more often than the untrained model does (borders, brick-wall/
+fence-style textures, repeating dither patterns are all genuine,
+intentional repetition). This means a low copy-detection score alone
+is NOT evidence of good construction -- it needs to be read against
+this ground-truth baseline, not a fixed threshold. Pairwise win rate
+(30%) is consistent with the earlier smaller-sample estimate (43%),
+within the noise of a 46-comparison sample.
+
+### Real bugs found while building/running the hardened eval
+
+- The `mlx-lm` LoRA infrastructure setup surfaced along the way (see
+  below) exposed that `grad_checkpoint=true` combined with validation-
+  loss computation genuinely hangs (0% CPU, macOS reports the process
+  STATE as literally "stuck") under the installed `mlx-lm` 0.29.1 --
+  isolated via direct testing (disabling grad_checkpoint fixed it
+  immediately; val_batches size wasn't the cause, contrary to the
+  first hypothesis). Unrelated to eval_harness.py itself but found
+  while validating the overall pipeline was healthy before training.
+
+## Step 3: LoRA training v1 (mlx-lm)
+
+**Base model for iteration speed**: `mlx-community/Mistral-Nemo-
+Instruct-2407-4bit` (a real MLX-native quant of the same 12B model
+already available via Ollama as `mistral-nemo:12b`, downloaded fresh
+via `huggingface_hub.snapshot_download` since `mlx_lm` needs the MLX
+weight format directly, not Ollama's own format). Per instruction,
+this is the fast-iteration model for v1; the final run targets
+`qwen3.8:27b-mlx` so the trained adapter can drop directly into raze's
+own seat.
+
+**Hyperparameters** (`corpus/lora_config.yaml`): rank 16, scale 2.0
+(alpha 32 / rank 16 -- `mlx_lm`'s config uses `rank`+`scale`, not
+`rank`+`alpha` directly), lr 1e-5, ~3,000 iterations on the 40k
+subsample, `--mask-prompt` so loss only counts the FITM target (not
+the context), checkpoints every 500 steps.
+
+**Data prep** (`corpus/prepare_training_data.py`): converts
+`train_subsample.jsonl` into `mlx_lm`'s expected chat-messages JSONL
+format (train/valid/test split: 38,000 / 1,200 / 800), embedding SAUCE
+year/group + per-window technique metrics as conditioning text in the
+prompt (captions dropped from v1, per prior direction).
+
+### Real bugs found and fixed before training could run
+
+1. **A genuine bug in `mlx_lm` 0.29.1's own `CompletionsDataset`
+   class**: its `--mask-prompt` code path calls
+   `tokenizer.apply_chat_template(messages[0], ...)`, passing a bare
+   dict instead of a single-element list -- crashes immediately on
+   Mistral's chat template with `jinja2.exceptions.UndefinedError:
+   dict object has no element 0` (the template tries to iterate the
+   dict as if it were a list of messages). Confirmed this is upstream
+   library code, not a mistake in my own data format, by reading
+   `mlx_lm/tuner/datasets.py` directly. Worked around by using the
+   `messages`-format `ChatDataset` path instead of `prompt`/
+   `completion` (`ChatDataset.process` uses `messages[:-1]`, a real
+   list slice, which doesn't hit this bug) -- verified end-to-end
+   before committing to it.
+2. **`grad_checkpoint=true` + validation hangs indefinitely.** First
+   observed as a real Metal OOM crash during a concurrent test run (a
+   50-example eval_harness.py run sharing the same GPU); investigated
+   further and found the crash recurred even in complete isolation.
+   Bisected step by step: model loads and runs a single long forward
+   pass fine (6.8s for a real 3,221-token example); `val_batches=0`
+   trains cleanly; `val_batches=1` and `val_batches=4` both complete
+   cleanly WITHOUT `grad_checkpoint`; `grad_checkpoint=true` with ANY
+   validation never completes even one batch (0% CPU, process state
+   "stuck", 3+ minutes with zero progress). Fixed by disabling
+   `grad_checkpoint` -- peak memory without it measured at 35.4GB on a
+   real training step, comfortably within this machine's 64GB, so its
+   memory savings aren't needed here anyway.
+3. **`val_batches=25` (the original production value) completes but
+   leaves too little memory headroom for the next training step**,
+   causing a real Metal OOM crash immediately after a successful
+   25-batch validation pass (393s, real val loss 0.786). Reduced to
+   `val_batches=8` -- a real, deliberate memory/thoroughness tradeoff,
+   not an arbitrary number.
+
+Config verified end-to-end at full production `batch_size`/
+`max_seq_length` settings (just `grad_checkpoint` and `val_batches`
+changed) before launching the real 3,000-iteration run.
 
 ## Step 2: captioning (caption.py) -- DROPPED FROM v1
 

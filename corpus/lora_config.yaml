@@ -1,0 +1,44 @@
+model: /Users/octo/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c
+train: true
+data: /Users/octo/agentscii/corpus/mlx_train_data
+seed: 0
+
+fine_tune_type: lora
+mask_prompt: true
+
+# rank 16, alpha 32 -- mlx_lm's config uses (rank, scale) not (rank,
+# alpha) directly; scale is the standard LoRA alpha/rank ratio, so
+# alpha=32 at rank=16 -> scale=2.0.
+lora_parameters:
+  rank: 16
+  scale: 2.0
+  dropout: 0.0
+
+num_layers: 16
+batch_size: 2
+iters: 3000
+learning_rate: 1.0e-5
+max_seq_length: 4096
+
+val_batches: 8
+# reduced from 25 -- found live: val_batches=25 (batch_size=2,
+# max_seq_length=4096) completes (393s, ~15.7s/batch) but pushes
+# memory to a point where the VERY NEXT training step crashes with a
+# real Metal OOM ("Insufficient Memory"). val_batches=4 tested clean
+# with real headroom in isolation; 8 is a conservative middle ground.
+steps_per_report: 20
+steps_per_eval: 500
+save_every: 500
+
+adapter_path: /Users/octo/agentscii/corpus/lora_adapters
+
+# grad_checkpoint DISABLED -- found live: grad_checkpoint=true combined
+# with validation-loss computation hangs indefinitely (0% CPU, macOS
+# reports the process STATE as "stuck") under mlx_lm 0.29.1, isolated
+# via direct testing (grad_checkpoint=false + val_batches=4 completes
+# cleanly in ~25s; grad_checkpoint=true never completes even a single
+# validation batch after 3+ minutes). Peak memory without
+# grad_checkpoint measured at 35.4GB on a real training step -- well
+# within this machine's 64GB budget, so grad_checkpoint's memory
+# savings aren't needed here anyway.
+grad_checkpoint: false
