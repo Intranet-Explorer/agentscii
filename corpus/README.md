@@ -19,9 +19,12 @@ technique_index.py  -> per-piece shading/technique metrics                -> tec
 technique_report.py -> distribution report over the technique manifest
 holdout.py           -> frozen, dedup-aware train/holdout split            -> holdout_split.json
 score_shipped.py     -> scores every shipped AGENTSCII piece against the corpus percentile distribution
-windowing.py         -> step 2: 80x24 windows, RLE encoding, fill-in-the-middle examples -> windows.jsonl
+windowing.py         -> step 2: 40x16 windows, RLE encoding, fill-in-the-middle examples -> windows.jsonl
 token_stats.py       -> token-length stats over windows.jsonl
-caption.py           -> per-parent-piece caption via local VLM + SAUCE year/group prefix -> captions.json
+bench_encoding.py    -> tokens/cell benchmark across 3 candidate cell encodings
+subsample.py         -> stratified 40k-example subsample for v1 -> train_subsample.jsonl
+eval_harness.py      -> FIM eval: mask+fill+score+pairwise-Opus-judge against frozen holdout
+caption.py           -> per-parent-piece caption via local VLM + SAUCE year/group prefix (DROPPED from v1, kept for a later phase)
 ```
 
 ## Current real numbers (full run, all 37 available years, 1990-2026)
@@ -206,14 +209,21 @@ model sees more heavily shaded work."
 
 ### Windows
 
-80x24 windows, 50% row overlap (12-row stride). **20,245 of the 55,161
-selected piece-instances (37%) were too short (<24 rows) to yield even
-one window** -- a real, material fraction of the shading-heavy subset
-is short-form pieces (banners, small logos) rather than full-canvas
-art; not fixed here since a genuinely 18-row piece can't be padded into
-a meaningful 24-row context without inventing content, flagged rather
-than worked around. Final count: **264,947 windows across 34,916
-pieces yielded at least one window.**
+**40x16 windows** (user direction, 2026-09-19: "shrink the window, 40
+cols x 16 rows, not 80x24"), 50% overlap in BOTH dimensions (8-row,
+20-col stride). At this smaller width, a window only covers half of a
+typical 80-col piece, so real 2D column tiling is used, not just row
+tiling with column pad/trim like the original 80-col-window version.
+Pieces smaller than the window are padded with true background rather
+than skipped -- at 40x16 that discards far fewer real pieces than the
+old 80x24 skip-if-too-small rule did. Final count: **1,324,191 windows
+across all 55,161 selected piece-instances** (every piece now yields
+at least one window, vs. 37% skipped entirely at the old size).
+
+Conditioning is **SAUCE year + group + per-window technique metrics**
+(`half_block_pct`, `shade_pct`, `shade_bucket` = low/mid/high, computed
+per-WINDOW not per-parent-piece) -- captioning was dropped from v1 (see
+below) since FIM doesn't need it.
 
 ### RLE row encoding
 
@@ -230,59 +240,171 @@ is background. Real example (see `windows.jsonl`):
 r00 14,90:▄ 15,90:█ 16,10:██████████████████████████████████████████████ 62,90:█ 63,90:▄▄▄
 ```
 
+**Real bug found and fixed**: a run of literal SPACE glyphs on a
+colored background (a genuine, valid case -- a solid color block with
+no visible character) contains the same `' '` character used as the
+run separator. An early FITM masking implementation naively
+`str.split(' ')`-reparsed an already-joined run string to shift column
+indices, which silently corrupted exactly this case. Fixed by working
+with structured `(col, color, glyphs)` run tuples throughout
+(`rle_encode_row_runs`), never re-parsing joined text.
+
 ### Fill-in-the-middle (FITM)
 
-Each window gets one FITM example: a random rectangle (20-40% of
-window area) is masked in the CONTEXT (marked with an explicit `MASK
-at row=R col=C h=H w=W` line, real background cells left alone so the
-model can't confuse "masked" with "empty"), and the TARGET is that
-rectangle's real original content, RLE-encoded on its own local
-coordinate system.
+Each window gets one FITM example: a rectangle is masked (marked with
+an explicit `[MASK w=N]` inline token on each affected row, with real
+left/right context on either side of the hole preserved -- NOT a
+private-use sentinel glyph written into the grid and RLE-encoded like
+real content, which an earlier version did; that wasted real tokens on
+long runs of an invisible, rarely-trained-on codepoint and visually
+looked identical to blank background when inspected). The TARGET is
+the masked rectangle's real original content, RLE-encoded on its own
+local coordinate system.
 
-### Token stats (tiktoken cl100k_base, full 264,947 windows -- exact, not sampled)
+Mask area tuned to **12-25% of window area** (down from an initial
+20-40%, which measured a real mean of 461 target tokens against the
+user's "~300 tokens" target).
+
+### Token stats (tiktoken cl100k_base, 30,000-window sample)
 
 | | mean | median | p90 | p99 | max |
 |---|---|---|---|---|---|
-| context tokens | 5,003 | 4,992 | 6,792 | 8,243 | 12,073 |
-| target tokens | 1,501 | 1,472 | 2,454 | 3,310 | 5,398 |
-| context+target tokens | 6,503 | 6,493 | 9,020 | 11,101 | 16,121 |
+| context tokens | 1,225 | 1,219 | 1,911 | 2,456 | 3,148 |
+| target tokens | 287 | 281 | 514 | 718 | 975 |
+| context+target tokens | 1,512 | 1,510 | 2,349 | 2,988 | 3,776 |
 
-chars-per-token (context): 0.89 -- **the RLE format tokenizes WORSE
-than 1 char/token** under a standard BPE vocabulary (cl100k_base
-wasn't trained on dense box-drawing/block Unicode, so each glyph often
-costs more than one token) -- a real cost of this encoding worth
-weighing against its cell-count compression before committing to it
-for training, not assumed free.
+Lands close to the stated targets (~1,200 context / ~300 target) at
+the mean/median; the p90 tail runs meaningfully higher (context 1,911,
+target 514) since mask size and window content density both vary
+window to window -- reported honestly rather than force-tuned further
+and distorting the mask-size distribution.
 
-## Step 2: captioning (caption.py)
+### Encoding benchmark (bench_encoding.py) -- RLE confirmed as the cheapest of 3
 
 ```
-python3 corpus/caption.py
+python3 corpus/bench_encoding.py
 ```
 
-For each window's parent piece: render via real `ansilove` (CP437,
-correct for real archive files), one call to the local VLM
-(`qwen3.8:27b-mlx` via Ollama) asking for a plain, un-opinionated
-description, prefixed with `[year / group]` from SAUCE metadata
-(falling back to the year directory in the parsed path when a file has
-no SAUCE record, common in early-90s packs). One caption per unique
-parent piece, not per window, since many windows share a parent.
+Measured tokens/cell on the ACTUAL tokenizer (tiktoken cl100k_base) for
+3 candidate encodings, on the same 3,000 real windows:
 
-**Real captions produced, verified by eye against their actual
-renders** -- e.g. `[1990] This is a pixel-art portrait... depicting a
-woman with voluminous bright red hair... rendered with chunky, blocky
-pixels in a limited palette` for a real 1990 face portrait. Roughly
-right, not exact -- matches the "caption quality only needs to be
-roughly right" instruction.
+| encoding | mean tokens/cell |
+|---|---|
+| **(a) current RLE** | **2.04** |
+| (b) plain per-cell, 1-char color code | 3.36 |
+| (c) packed single-codepoint (1 Unicode PUA char per cell) | 4.08 |
 
-**Honest throughput finding: measured ~26 seconds per caption
-end-to-end** (render + local VLM inference) on this machine. Full
-coverage of all 34,916 unique parent pieces would take roughly **252
-hours** of continuous local inference -- not run to completion.
-`captions_sample.json` has a real 300-piece sample (~2.2 hours) to
-validate the pipeline and caption quality; captioning the full training
-set is a real, sizeable compute cost to plan for before step 3, not
-a quick script run.
+**RLE wins decisively -- it is NOT the wrong choice.** The "0.89
+chars/token" number from the earlier token_stats.py report measures a
+different thing (chars-per-token, not tokens-per-cell) and doesn't by
+itself imply RLE is inefficient; benchmarked head-to-head against the
+literal alternatives, it's the cheapest. The packed single-codepoint
+scheme -- intuitively the most "compressed" (one symbol per cell,
+252-glyph x 16-fg x 16-bg = 64,512 real distinct combinations, mapped
+into Unicode Private-Use-Area codepoints) -- is actually the MOST
+expensive, confirmed directly: a single PUA-A codepoint costs **4
+tokens** under cl100k_base (falls back to raw UTF-8 byte-level
+encoding, since the tokenizer was never trained on that codepoint
+range), vs. 2 tokens for a real half-block character and 1 for plain
+ASCII. Packing cells into rare codepoints trades real compression at
+the character level for a worse outcome at the token level, which is
+the level that actually matters for training/inference cost.
+
+### Subsampling for v1 (subsample.py)
+
+```
+python3 corpus/subsample.py --n 40000
+```
+
+Stratified subsample to **40,000 training examples** (user direction,
+2026-09-19), sampling a fixed, explicit ratio out of the full window
+pool rather than a uniform slice: **50% high-tier (20,000) / 35%
+mid-tier (14,000) / 15% low-tier (6,000)**, using the same
+low/mid/high `shade_bucket` labels computed during windowing. The full
+pool has plenty of headroom in every bucket (787,772 high / 381,342
+mid / 155,077 low across 1,324,191 total windows), so the exact target
+ratio was hit with no shortfall.
+
+### Eval harness (eval_harness.py) -- baseline established, before any training
+
+```
+python3 corpus/eval_harness.py --model qwen3.8:27b-mlx --n 15
+```
+
+From the FROZEN HOLDOUT (never selected/windowed above): mask a random
+40x16 region, have a model fill it (RLE format, same prompt style as
+training), decode the reply back into a cell grid, score
+`half_block_pct`/`shade_pct` on the filled region against the real
+ground truth, render both, and run a blind pairwise Opus judgment
+(randomized A/B, no labels) asking which looks like more plausible
+ANSI art. Includes a hard round-trip self-test (encode a random grid,
+decode it, require an exact match) that runs FIRST and aborts if it
+fails -- a scoring run means nothing if the encoder/decoder don't even
+agree with each other.
+
+**Real bugs found and fixed while building this**:
+- The RLE decoder's `line.strip()` silently dropped a trailing literal
+  SPACE glyph run at the end of a line (the same space-as-separator
+  ambiguity documented above) -- caught by the round-trip self-test
+  failing before ever trusting the decoder on real model output; fixed
+  to `lstrip()` only.
+- The first real eval call took **10+ minutes and generated 7,054
+  decode iterations** for what should be a ~300-token answer, then
+  came back with EMPTY content. Inspecting the raw Ollama response
+  (not just the parsed text) found a separate `"thinking"` field
+  containing a full chain-of-thought trace that consumed the entire
+  token budget -- `qwen3.8:27b-mlx` is a Qwen3-family reasoning model;
+  `harness.py`'s own `SAMPLING` dict documents "non-thinking mode" but
+  that describes sampling PARAMETERS, not an actual mode switch.
+  Confirmed via direct testing that Ollama's chat API has a separate
+  top-level `"think": false` field that actually disables it -- fixed,
+  plus an explicit `num_predict=800` hard ceiling as a backstop.
+- A malformed model-generated grid crashed PIL's PNG encoder mid-batch
+  (`"tile cannot extend outside image"`) on one real eval run -- wrapped
+  rendering in try/except so one bad generation can't kill the whole
+  eval batch.
+
+**Baseline established with the untrained base model (qwen3.8:27b-mlx,
+15 holdout examples, no 8B model currently pulled locally -- see
+below)**:
+
+| metric | model (untrained base) | ground truth |
+|---|---|---|
+| half_block_pct (mean) | 11.1 | 14.9 |
+| shade_pct (mean) | 15.7 | 19.0 |
+| pairwise vs. ground truth (blind Opus judgment) | won 6 / lost 8 / tied 0 (of 14 judged, 1 render error) | -- |
+
+The untrained base model is already reasonably competitive (43% blind
+win rate against real ground truth, on both mechanical metrics running
+slightly below ground truth rather than wildly off) -- this is the
+number any fine-tuned v1 needs to beat, not zero. Full per-example
+detail in `corpus/eval_results.json`.
+
+**Model size gap, reported honestly**: the user's stated preference for
+v1 is an 8B base model ("iteration speed matters more than final
+quality while we're finding out whether this works at all"). No 8B
+model is currently pulled in this Ollama instance -- the smallest
+available is `mistral-nemo:12b`. The eval harness is fully
+model-agnostic (`--model <any-ollama-model>`); running it against a
+real 8B requires pulling one first, not a code change.
+
+## Step 2: captioning (caption.py) -- DROPPED FROM v1
+
+Per user direction, 2026-09-19: "Drop captioning from v1. Kill the
+300-piece job. FIM doesn't need captions. Condition each example on
+SAUCE year + group + the technique metrics... Captions return in a
+later phase if prompt-conditioning is needed." The 300-piece sample
+job in progress was killed mid-run (no output file was ever produced).
+`caption.py` itself is kept, unmodified, for the later phase mentioned
+above -- it is NOT part of the v1 windowing/training pipeline.
+
+For reference, the real findings from before it was dropped: captions
+were roughly accurate when spot-checked against real renders, but
+measured throughput was ~26s/caption end-to-end, meaning full coverage
+of ~35k unique pieces would take on the order of 250 hours of
+continuous local inference -- a real, sizeable cost that was the
+practical reason this got reprioritized out of v1, not just the
+architectural "FIM doesn't need it" argument.
 
 ## Real bugs found and fixed via validation (not assumed, not guessed)
 

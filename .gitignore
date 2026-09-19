@@ -37,6 +37,8 @@ corpus/holdout_split.json
 corpus/*_full.log
 corpus/shipped_scoring_report.json
 corpus/windows.jsonl
+corpus/train_subsample.jsonl
+corpus/eval_results*.json
 corpus/captions*.json
 corpus/*.log
 
