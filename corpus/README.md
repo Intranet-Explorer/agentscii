@@ -17,7 +17,11 @@ validate.py         -> renders N random files with ansilove, diffs cell-by-cell
 dedupe.py           -> content-hashes parsed pieces, finds cross-pack duplicates
 technique_index.py  -> per-piece shading/technique metrics                -> technique_manifest.jsonl
 technique_report.py -> distribution report over the technique manifest
-holdout.py          -> frozen, dedup-aware train/holdout split            -> holdout_split.json
+holdout.py           -> frozen, dedup-aware train/holdout split            -> holdout_split.json
+score_shipped.py     -> scores every shipped AGENTSCII piece against the corpus percentile distribution
+windowing.py         -> step 2: 80x24 windows, RLE encoding, fill-in-the-middle examples -> windows.jsonl
+token_stats.py       -> token-length stats over windows.jsonl
+caption.py           -> per-parent-piece caption via local VLM + SAUCE year/group prefix -> captions.json
 ```
 
 ## Current real numbers (full run, all 37 available years, 1990-2026)
@@ -150,6 +154,135 @@ Frozen 5% train/holdout split, computed once before any training step.
 Splits on content-hash canonical pieces (via `dedupe_report.json`) then
 expands each side back out to every raw duplicate path, so a piece
 appearing in 3 packs never has 2 copies in train and 1 in holdout.
+
+## Raze vs. the corpus (score_shipped.py)
+
+```
+python3 corpus/score_shipped.py
+```
+
+Scores every shipped AGENTSCII piece (130 pieces, 54 packs) against the
+corpus technique distribution, using the EXACT SAME subject-only metric
+definitions as `technique_index.py` (fixed 2026-09-19 so the two sides
+are directly comparable -- `harness.py`'s own pinned-best gate had
+briefly drifted to a whole-canvas denominator and a different glyph set
+before being reverted to match).
+
+**Summary across 130 shipped pieces:**
+
+| metric | mean percentile | median percentile |
+|---|---|---|
+| half_block_pct | 37.2 | 36.5 |
+| shade_pct | 89.8 | 97.7 |
+
+**The house leans almost entirely on `▓░▒` dithering, not half-block
+subpixel geometry, relative to the real archive**: median shade_pct
+percentile is 97.7 (heavier dithering than 97.7% of the real 86,093-
+piece corpus), while median half_block_pct percentile is 36.5 --
+slightly BELOW the corpus median. **109 of 130 shipped pieces (84%)
+have exactly 0.0% half_block_pct** -- zero ▀▄ usage at all. Full
+per-piece breakdown in `shipped_scoring_report.json`.
+
+## Step 2: windowing, RLE encoding, fill-in-the-middle (windowing.py)
+
+**Nothing has been trained on. This step reports window counts and
+token stats only, per instruction.**
+
+```
+python3 corpus/windowing.py
+```
+
+### Selection
+
+Train-split pieces only (`holdout_split.json`'s `train_paths`; holdout
+is never touched by this step). Base filter: `half_block_pct > 30 OR
+shade_pct > 15`, AND `alnum_pct < 15`, AND `distinct_colors >= 4` --
+**29,701 pieces**. The p90 tier within that (`half_block_pct > 36.8 OR
+shade_pct > 38.3`, same alnum/color filters) -- **12,730 pieces** --
+is oversampled 3x (i.e. appears as 3 separate piece-instances going
+into windowing, each independently windowed) per instruction: "train
+on the H=30/S=15 subset... but oversample the p90 tier ~3x so the
+model sees more heavily shaded work."
+
+### Windows
+
+80x24 windows, 50% row overlap (12-row stride). **20,245 of the 55,161
+selected piece-instances (37%) were too short (<24 rows) to yield even
+one window** -- a real, material fraction of the shading-heavy subset
+is short-form pieces (banners, small logos) rather than full-canvas
+art; not fixed here since a genuinely 18-row piece can't be padded into
+a meaningful 24-row context without inventing content, flagged rather
+than worked around. Final count: **264,947 windows across 34,916
+pieces yielded at least one window.**
+
+### RLE row encoding
+
+Rows are encoded as `r{NN} {col},{fg}{bg}:{glyphs} ...` -- run-length
+merged runs of identical (char, fg, bg), color packed as two hex
+digits (fg then bg, not a single palette index, since a single index
+can't represent a colored glyph on a colored background without
+silently dropping one). Fully-background runs (space, bg=0) are
+omitted entirely -- that omission is the actual compression this
+format buys over raw per-cell encoding, since most of a typical window
+is background. Real example (see `windows.jsonl`):
+
+```
+r00 14,90:▄ 15,90:█ 16,10:██████████████████████████████████████████████ 62,90:█ 63,90:▄▄▄
+```
+
+### Fill-in-the-middle (FITM)
+
+Each window gets one FITM example: a random rectangle (20-40% of
+window area) is masked in the CONTEXT (marked with an explicit `MASK
+at row=R col=C h=H w=W` line, real background cells left alone so the
+model can't confuse "masked" with "empty"), and the TARGET is that
+rectangle's real original content, RLE-encoded on its own local
+coordinate system.
+
+### Token stats (tiktoken cl100k_base, full 264,947 windows -- exact, not sampled)
+
+| | mean | median | p90 | p99 | max |
+|---|---|---|---|---|---|
+| context tokens | 5,003 | 4,992 | 6,792 | 8,243 | 12,073 |
+| target tokens | 1,501 | 1,472 | 2,454 | 3,310 | 5,398 |
+| context+target tokens | 6,503 | 6,493 | 9,020 | 11,101 | 16,121 |
+
+chars-per-token (context): 0.89 -- **the RLE format tokenizes WORSE
+than 1 char/token** under a standard BPE vocabulary (cl100k_base
+wasn't trained on dense box-drawing/block Unicode, so each glyph often
+costs more than one token) -- a real cost of this encoding worth
+weighing against its cell-count compression before committing to it
+for training, not assumed free.
+
+## Step 2: captioning (caption.py)
+
+```
+python3 corpus/caption.py
+```
+
+For each window's parent piece: render via real `ansilove` (CP437,
+correct for real archive files), one call to the local VLM
+(`qwen3.8:27b-mlx` via Ollama) asking for a plain, un-opinionated
+description, prefixed with `[year / group]` from SAUCE metadata
+(falling back to the year directory in the parsed path when a file has
+no SAUCE record, common in early-90s packs). One caption per unique
+parent piece, not per window, since many windows share a parent.
+
+**Real captions produced, verified by eye against their actual
+renders** -- e.g. `[1990] This is a pixel-art portrait... depicting a
+woman with voluminous bright red hair... rendered with chunky, blocky
+pixels in a limited palette` for a real 1990 face portrait. Roughly
+right, not exact -- matches the "caption quality only needs to be
+roughly right" instruction.
+
+**Honest throughput finding: measured ~26 seconds per caption
+end-to-end** (render + local VLM inference) on this machine. Full
+coverage of all 34,916 unique parent pieces would take roughly **252
+hours** of continuous local inference -- not run to completion.
+`captions_sample.json` has a real 300-piece sample (~2.2 hours) to
+validate the pipeline and caption quality; captioning the full training
+set is a real, sizeable compute cost to plan for before step 3, not
+a quick script run.
 
 ## Real bugs found and fixed via validation (not assumed, not guessed)
 

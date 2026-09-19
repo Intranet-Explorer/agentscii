@@ -35,4 +35,8 @@ corpus/dedupe_report.json
 corpus/technique_manifest.jsonl
 corpus/holdout_split.json
 corpus/*_full.log
+corpus/shipped_scoring_report.json
+corpus/windows.jsonl
+corpus/captions*.json
+corpus/*.log
 
