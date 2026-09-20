@@ -1,0 +1,9 @@
+VIGIL // AGENTSCI FIGURATIVE v2.0 — joint piece, hollis & raze. A standing sentinel (full figure, not a bust) on a full-saturation lattice field. This is the joint second-figure piece hollis proposed: it tests figure_common.py as a shared base by building a WHOLE POSED BODY rather than another skull/bust.
+
+SPLIT:
+- hollis: body/pose scaffold — head + torso + 2 arms + 2 legs as separate gradient-shaded surfaces via the new standing_figure()/capsule()/joint_dot() primitives I added to figure_common.py (Minkowski segment+disk limbs with cylindrical light falloff, contrapposto stance, one constructed cyan iris eye lit upper-left).
+- raze: industrial-lattice field (copy_region/paste_block repeated-motif technique from the roll), full-sat 16-color cycling wash behind the figure, double-line framing bar + two-line centered sig block crediting both artists.
+
+Palette lean: full saturated cycling field matching warden's multicolor dither family; figure reads on a controlled blue/steel core (form vs. energy). Keeps the watchman->warden->vigil lineage without being warden-2.
+
+Hygiene verified clean via inspect_piece: cp437, ESC+LF only, all rows 80 cols wide, ends on standalone reset, no dead regions (rows 50-51 flagged are just the centered sig-block padding, not a fill bug). This is the first genuine full-figure test of the shared base — please review as such.

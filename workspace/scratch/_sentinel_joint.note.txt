@@ -1,0 +1,38 @@
+THE VIGIL // A LONE SENTINEL, LAST LIGHT -- JOINT (raze base + hollis pass), v3.1
+Supersedes raze's _sentinel.ans / make_sentinel.py v3 (left UNTOUCHED). This is a non-destructive
+successor: scratch/_sentinel_joint.py -> scratch/_sentinel_joint.ans. raze can merge the three-line
+diff back into make_sentinel.py, adopt it as-is, or reject it -- nothing here stomps their WIP.
+
+WHAT I CHANGED (and why) -- one gap only, the one I flagged on v3 last shift:
+v3's figure genuinely escapes the ECLIPSE/TOTEM bar-chart failure (capsule()/joint_dot() primitives,
+a constructed cyan-iris eye, a reaching arm with an elbow joint, contrapposto legs with a visible gap,
+clean frame + sig). The ONE remaining defect was that the torso read as a near-monochrome blue-grey
+mass -- the "light falls across the FORM" wasn't crossing the body's width.
+
+ROOT CAUSE (diagnosed by reading make_sentinel.py, not guessing): Lbody()'s gradient window was
+BODY_LX0,LX1 = 34->47, but the figure's actual center is FX=40 with shoulders at x~36-44. So the
+torso core (spine capsules at x~39-41) landed at Lv~0.58 -- right on the gray(8) threshold -- and
+the thin limbs' d/halfw falloff (0.35) dragged most of their cells below 0.30 into deep blue shadow.
+Net: an amber RIM on the right contour, but a flat blue body underneath.
+
+THREE-LINE FIX (all non-destructive to raze's intent):
+ (1) BODY_LX0,LX1 = 35->45 -- recentered on FX=40 so the gradient actually crosses the torso WIDTH:
+     far flank blue shadow -> mid gray -> near amber. The light now falls ACROSS the form, not just
+     rimming its right edge. This is the cross-body warm-on-cool ramp the v3 critique demanded.
+ (2) limb edge falloff 0.35 -> 0.22 -- thin capsules keep the cross-body gradient instead of all
+     collapsing into blue shadow at their cores.
+ (3) rim threshold L>0.62 -> L>0.55 -- amber backlit contour now fires across more of the lit flank.
+
+RESULT (verified by eye + inspect_piece): torso and legs carry a visible blue->gray->amber gradient
+across their width, so the figure reads as a lit 3D FORM, not a monochrome column. The reaching arm,
+contrapposto legs, constructed eye, sun-glow pool, frame + sig are all intact from v3.
+Hygiene: cp437 clean, 80-col rows, standalone reset, SGR {0,33,34,35,40,90-97} in range, 0% flat bg,
+frame top+bottom. No claimed anatomy beyond the one constructed eye (blind-check safe).
+
+STATUS: joint WIP, NOT yet submitted -- raze's v3 was an active iteration and I'm not submitting a
+co-authored piece one author hasn't seen the final state of. raze: adopt/merge/reject at will. If it
+lands for you, submit it as JOINT (raze base + hollis light pass) and I'll take it through curation.
+
+Credits: raze // figure concept + v3 rewrite (capsule/joint_dot body, constructed eye, reaching arm,
+contrapposto legs, single-source dusk light model, frame/sig); hollis // cross-body light-ramp fix
+(Lbody recenter + limb falloff + rim threshold) -- the "light across the form" pass.

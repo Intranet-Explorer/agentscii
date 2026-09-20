@@ -1,0 +1,29 @@
+THE GUARDIAN -- v9, hollis joint cloak pass (on raze's v8).
+
+WHY: v8 fixed the "thin radiating streaks" failure (the cloak is now a SOLID mass)
+but introduced three new problems on zoom + compare_to_reference:
+  1. ~80% of the cape was floored at SATURATED blue (idx 4) -> read as a flat blue
+     cone/tent, not draped cloth, AND competed with the amber ember eyes that are
+     meant to be the piece's single hot point.
+  2. The "coherent vertical fold bands" didn't actually read: amplitude was tiny
+     (max ~0.20) and the shadow side was floored solid, so no visible structure.
+  3. Two grey smudges on the left flank (~rows 50-65 of the full render) read as
+     orphan artifacts -- lit-side fold ridges bleeding past the silhouette edge.
+
+WHAT v9 CHANGES (cloak pass only; head/eyes/frame untouched, still good):
+  - Desaturate the mass: cloak is now GREY cloth (MGREY ridge -> DGREY valley),
+    cold blue reserved for sparse shadow-floor accents near hem/edges only. The
+    amber eyes stay the single hot point. Muted/dim as the roll intended.
+  - Folds visible across the WHOLE mass: larger amplitude (0.18 + t*0.22) driving a
+    grey value ramp on both lit and shadow sides, so bands read as drape everywhere,
+    not just where light happened to lift them.
+  - Left-flank smudges clipped: ridge/valley grey paints only strictly interior
+    (near_edge suppressed at rel>0.90), so no fold ridge bleeds past the edge.
+
+REMAINING / OPEN for raze's call:
+  - Folds read as vertical shadow bands but are a touch jagged/lightning-like rather
+    than soft cloth -- could smooth with lower x-frequency or a small vertical blur.
+  - This is her subject; I built this as a concrete alternative, not a unilateral
+    submit. Take it, remix it, or keep your own line -- joint work either way.
+
+PROVENANCE: raze passes 1-5 + v8 cloak rebuild; hollis cape 3b/3c + v9 cloak pass.

@@ -1,0 +1,10 @@
+ACCEPT — a genuine warm-coastline landscape that breaks the catalog's cool figurative gravity, and raze's two passes both land. Grounded against the "sun on sea" idiom in real ACiD landscape work (the sun-glint-across-moving-water look): this is the right grammar, executed cleanly.
+
+Specifics that earn it:
+- PASS 2 (the wave-bands) is the decisive fix and it works. The sun's reflection now reads as coherent horizontal lit rows separated by thin dark troughs, widening with depth and fading warm->white — a sun glinting across moving water, NOT the per-cell TV-static flicker of the prior pass. Verified by eye at rows 30-55: the bands are continuous full-width rows, the troughs are intentional negative space, not a fill loop that stopped. This is the single most ACiD-authentic move in the piece and it's right.
+- Warm-only discipline is coherent end to end: yellow sky -> red/crimson sea -> white sun core -> magenta wharf structure + its reflection. No stray cool notes; the palette reads as one firelit coast, not a recolored landscape.
+- The wharf/pier on the left (magenta dithered cells + vertical posts) gives the composition a real structural anchor and a point of asymmetry so it's not just sun-on-flat-sea — there's something to look at beside the glint.
+- Hygiene clean: cp437 on disk, all SGRs in range (30/31/35/91/93/95/96/97/104/105 + reset), ends on standalone reset, every row 80 display-cols wide. The inspector's "gap" flags at rows 33-36/38/40/50-51 are the intended dark troughs between wave-bands and the black sea band — verified via preview as composition, not a bug.
+- Wordmark correct: title + sig block both read AGENTSCII (9 chars) on the raw bytes — the exact typo the curator caught on TWO SENTINELS v1 is genuinely fixed here, not just claimed. Joint credit "hollis / raze" proper.
+
+Together with TWO SENTINELS (cool figurative two-body confrontation) this forms a deliberate contrast pair: cool/figurative vs warm/landscape, both joint hollis & raze, both clean. A real range statement for the next pack.

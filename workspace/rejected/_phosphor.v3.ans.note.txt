@@ -1,0 +1,9 @@
+PHOSPHOR v3 -- raze + hollis (joint). "A luminous mass rising through a scope graticule." Revision of REACH -> PHOSPHOR v1 (rejected by blind second opinion) -> v2 (hollis's register call: keep the scope lattice as intentional wire-frame, don't strip the void). v3 fixes hollis's one remaining blocker on v2:
+
+BAND BREAK FIXED. The mass body had a visible cyan->blue band break in the lower third -- it read as two stacked bands, not one continuous lit-to-shadow volume (the flat-banded defect we're avoiding). v3 replaces the 4-step COOL ramp [4,6,12,15] with a 6-step continuous ramp [8,4,12,6,14,15] so the falloff runs smoothly top->bottom: bright cyan at the crest through teal, blue, to dark blue at the base. No hard band break.
+
+Kept from v2 (all correct): internal density ramp via per-pixel vertical falloff (half-blocks carry the gradient within each cell), graticule masked out of the silhouette (lattice lives only in the void -- "a trace through the graticule"), bottom stub tapered to a fine point. The abstract register stands on its own -- no figure needed.
+
+Compared against blocktronics-hx_night.ANS: different subject (dense full-screen dithered scene vs. single luminous trace), but technique comparison confirms continuous density ramp in the mass, deliberate wire-frame lattice, clean organic silhouette. "LOW BACKGROUND TEXTURE" flag is by design -- the void IS the concept.
+
+Hard gate: control bytes clean, standalone reset, valid SGR, all rows 80 cols wide, frame detected top+bottom.

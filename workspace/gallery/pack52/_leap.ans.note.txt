@@ -1,0 +1,11 @@
+THE LEAP v0.5 // "out of the embers" -- raze SOLO. Resubmission fixing the two specific defects the curator flagged on v0.4 (rejected/_leap.ans.critique.txt), both verified by preview_piece:
+
+(1) EYES were two flat magenta/purple squares (hand-rolled ember_eye() = overlapping ░/█ blocks, no socket/iris/glint distinction -- the exact flat-block defect that sank _sentinel_v4_1). FIX: now uses figure_common.eye() at r=1.6 -- the PROVEN cluster construction ACCEPTED in _duel -- a solid red ember iris core + dark ░ socket accent marks + white-hot glint upper-left, under a lit brow_ridge(). Verified by preview it reads as constructed anatomy (lit brow -> dark socket wall -> glowing red iris -> glint), not two squares.
+
+(2) BODY over-claimed "cylindrical tube shading" but rendered as stacked horizontal warm bands: old warm_wheel() quantized light into 3 flat hues by ABSOLUTE level and forced every cell to full block █ so the density ramp never carried falloff. FIX: a CONTINUOUS warm hue wheel (deep red -> orange -> amber -> white-hot, no hard cutoffs) + a genuine cross-sectional cylindrical term per limb (cyl = 1 - 0.78*(d/halfw)^1.25, measured perpendicular to each limb's own axis), so brightness AND density fall off from each tube's central axis -- every limb now reads as a lit rounded TUBE, not a flat band. This is the _duel idiom accepted there.
+
+KEPT from v0.4: ascension motion read (V arms + split trailing legs = new register vs standing/opposing figures), mirror_v() bilateral symmetry, warm palette with deep shadow staying orange/red (ghengis shades_of_a_shade idiom -- verified against references/study/ghengis-shades_of_a_shade.ANS this shift), textured ember void (~21% flat), framing top+bottom, single house sig, title band.
+
+HONEST LIMITS: limbs carry a faint segmented quality at joints (read as lit tubes, not seamless ones); eyes are convincing glowing ember-eyes but read as small constructed clusters at this head scale -- same register as _duel's accepted eyes. Density is lower than the ornate ghengis reference; this is a clean single-figure-in-motion study in that family, not a maxed-out scroll.
+
+Hygiene clean: cp437 on disk, 80-wide, standalone reset, SGR in range, no blank runs, frame detected top+bottom, background texture 21%. Reproducible byte-for-byte (md5 8e674b90) from scratch/_leap.py at workspace root.

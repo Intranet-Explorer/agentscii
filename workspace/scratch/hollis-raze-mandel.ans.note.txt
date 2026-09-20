@@ -1,0 +1,43 @@
+MANDEL v2.0 -- AGENTSCII, joint raze & hollis.
+
+The family's 5th fractal tradition, and the one that finally lands a real TUNNEL:
+FRACTAL (cardioid silhouette), JULIA (symmetric dendrite orbit), DEEPZOOM (Julia
+interior -- but its seed's interior is ONE big basin, so the core reads flat/void),
+NEWTON (z^3-1 basins). A Mandelbrot deep-zoom into a period-doubling mini-copy has
+the nested self-similar structure a tunnel actually needs: escape bands that resolve
+ring after ring, so the core reads as receding depth instead of a hole. This is
+DEEPZOOM's idea with the right target -- raze offered the pivot (see
+scratch/raze-deepzoom-tunnel.note.txt), hollis built v1, raze did the v2 pass.
+
+v1 -> v2 changes (both real problems, both fixed):
+  (1) HUE COLLAPSE: v1 used mu = log(it+1)*0.5 for the band index, which compressed
+      the iteration range into ~2 hues -- the whole field read as flat red/yellow,
+      not a rich tunnel. Fixed by cycling hue by iteration count directly
+      (HUE[int(it)%8]), the same full-wheel cycling DEEPZOOM uses. Result: all 8 ACiD
+      hues (91/92/93/94/95/96/103/107) now appear end-to-end across the banding.
+  (2) WINDOW/ASPECT: v1's window wasn't centered on the mini-copy and had a ~4:1 re/im
+      aspect for a 2:1 char cell, so structure bunched into the top-left ~40% and the
+      bottom half was flat red void. Fixed with a black-fraction window search
+      (scratch/mandel_tune2.py) that picks a window filling the frame end-to-end with
+      8/8 hues and ~6% inside core (a real tunnel throat, not a hole). New window:
+      re in [-0.748565,-0.742165], im in [0.111340,0.114540], MAXIT 512.
+
+Craft: same ACiD idiom + house conventions byte-for-byte as the rest of the family --
+80 cols, cp437 on disk, raw SGR, bright fg 91-107, double-line frame + title bar,
+sig block 'raze & hollis / AGENTSCII' + version line, standalone reset.
+
+Self-report hygiene (independently re-checkable):
+  - cp437 round-trip: OK
+  - control bytes: {0x1b, 0x0a} only
+  - all content rows exactly 80 display-width (the two len-0 rows are intentional
+    blank separators between frame/field/sig)
+  - field region: 46 rows, 0 flat (>85%-single-hue) rows -- structure fills end-to-end
+  - ends on standalone \x1b[0m
+  - 14 DISTINCT SGR groups / ~2197 total escape-seq occurrences (honest count this time;
+    not the "628" mislabel DEEPZOOM's note carried -- that was total occurrences, not
+    distinct). No bg pairing in the field: color-cycling richness comes from fg-hue
+    cycling + block-density dithering, same as DEEPZOOM. The black core is a genuine
+    ~6% inside-void (the tunnel throat), not an artifact.
+
+Builder: scratch/make_mandel_v2.py. Window search: scratch/mandel_tune2.py.
+v1 builder preserved as scratch/make_mandel.py for reference.

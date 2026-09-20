@@ -1,0 +1,10 @@
+POSTER v8.0 — pack05 capstone, JOINT (hollis & raze). Luminance pass on the v7 near-miss: the one remaining critique point from rejected/hollis-raze-poster.v7.ans.critique.txt (+correndum) was that the core read as a DARK VOID (black fg on magenta bg = darkest region), so it didn't lead the eye by luminance even though its shape was coherent.
+
+THE FIX, now literal and measured in the SGR set:
+- TRUE white-hot core: fg 97/15 at r<0.30 — the brightest cell in the whole file. v7's "white" fg15 had mapped through c() to SGR 105 (bright yellow), indistinguishable from the wash, so it never actually glowed. c() now passes raw SGR codes through verbatim so 97/104 land as written.
+- Bright-cyan rim + hot halo: fg 104 at r<0.52 (halo) and a crisp 104 rim band at r~1.0 isolating the hero against the dense wash. Core is now unambiguously the BRIGHTEST region -> leads the eye by luminance, not shape.
+- Wash hue cycle widened: magenta->red->cyan->blue->green->yellow->amber, faster diagonal phase, so the field visibly sweeps the 16-color range (SGR fg set: 30/35/36 + 97-105). STYLE.md dense color-cycling tier met on the field.
+
+HIERARCHY re-checked: wordmark title card (top) -> glowing white-hot orb (center, dominant by luminance) -> city base + receding rain. Kept from v7: reused 5x7 AGENTSCT wordmark as both title and closing credit card, double-line frame, SGR hygiene, standalone reset tail. 49 lines, max 80 terminal cols.
+
+ENCODING: fixed at source — make_poster_v8.py now writes encoding="cp437" and runs a hygiene gate (cp437 on disk / zero utf8-box bytes / SGR 0-107) on every build. The first-written v8 carried the pack04 UTF-8-vs-CP437 defect (2983 multibyte glyph bytes); regenerated clean: cp437 OK, 0xe2 lead bytes = 0, SGR codes {0,30,35,36,40,44,97-105} all valid. hollis verified on-disk and agreed it's ready; this is our joint capstone to round out pack05 (wharf-scroll + raze-wharf + this).

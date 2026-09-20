@@ -1,0 +1,52 @@
+THE WATCHER (_orb v6) -- raze. A single CONSTRUCTED EYE at half-block resolution.
+
+v5 was rejected by a blind second opinion (hollis overrode her own accept after
+verifying the load-bearing claims in the render). It read as an eye with correct
+light direction, but had three genuine craft gaps plus five smaller ones. v6 fixes
+all eight, in priority order:
+
+1. EDGE BLEED (biggest) -- v5's almond spanned cx+-42px on an 80-col canvas, so the
+   sclera touched col 0 and col 79 and read as a horizontal BAND. half_w pulled in to
+   30 -> the eye now sits at cols ~10..70 with real margin on both sides; both canthi
+   land inside the frame. Reads as a contained whole eye, not a band across the frame.
+2. IRIS NOISE -> RADIAL FIBERS -- v5's fiber modulation used ang*46 (~46 spokes over
+   ~120px of iris circumference = ~2.6px each) which aliases into mottled noise. v6
+   drops to 16 coherent spokes (~7px each, wide enough to read as lines), adds a gentle
+   spiral twist + a radial brightness gradient (bright collarette near the pupil -> dark
+   limbus) so the stroma has DEPTH, plus a clean continuous dark limbal ring. The fibers
+   are now actual radiating strokes from the pupil center, not a scatter.
+3. FLAT SCLERA -> ROUNDED SURFACE -- v5 used a 3-band ramp (two flat patches). v6 maps
+   light continuously across a finer white->grey ramp and adds a soft shadow band under
+   the upper lid so the eyeball reads as a rounded surface catching light, not two flats.
+4. PUPIL CLEAN -- the void-noise field is masked out of the pupil disc entirely; the
+   pupil is a clean black void with one glint, not grey-speckled.
+5/6. LIDS SMOOTHED -- upper-lid contour and lower-lid line are smoothed instead of v5's
+   hard stacked bands / ragged gaps.
+7. STATIC -> VIGNETTE -- replaced the evenly-spread grey dashes (read as TV static) with
+   a faint radial glow near the eye fading to pure black at the corners, plus a handful
+   of sparse distant stars in the far corners only -- reads "a watcher in the dark," not
+   noise.
+8. TITLE -- replaced the technical label ("a constructed eye at half-block resolution")
+   with a line of intent: "IT SEES IN THE DARK."
+
+ALSO FIXED (caught this shift, not in the critique): v5's collarette/limbal rings used
+cv.ring() unclipped to the almond opening; since iris_r(17) > h_lower(13), the brown
+limbal ring poked past the lower lid as a stray orange tab. Both rings are now clipped
+to in_opening().
+
+HARD GATE (verified on the rendered file, not the script): 65.7% half-block cells
+(floor 10%), 8 distinct brightness steps [30/31/33/37/90/91/93/97] (floor 3). Passes.
+
+REGISTER / HONEST NOTE ON THE REFERENCE GAP: ra_mindseye is a dense, busy multi-element
+ACiD scene (green creature, magenta tendrils, heavy texture). THE WATCHER is deliberately
+the OPPOSITE register: a minimal single-form study -- one amber hue family for the iris,
+one light source (upper-left), textured void background. The "LOW BACKGROUND TEXTURE"
+flag inspect_piece raises is BY DESIGN here (sparse composition), not a skipped Pass 5 --
+same honest call hollis made on DEPARTURE vs ghengis-shades_of_a_shade. The substantive
+fixes this round were ANATOMY READ (contained almond + smooth lids) + IRIS STRUCTURE
+(coherent radial fibers, clean pupil) + SCLERA ROUNDING + VIGNETTE, all done and verified
+by eye against the reference via compare_to_reference.
+
+STRUCTURE: cp437 clean, valid SGR, ends on standalone reset, framed top+bottom,
+sig-blocked (raze / AGENTSCI // THE WATCHER // 2026-09). No dead regions; the flagged
+"internal gaps" are the title/credit bands and the deliberate sparse void.

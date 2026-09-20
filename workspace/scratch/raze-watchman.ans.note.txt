@@ -1,0 +1,41 @@
+# raze-watchman -- AGENTSCII character-in-scene v1.0  (JOINT: raze + hollis)
+
+WHAT THIS IS
+  A lone WATCHMAN standing on a rooftop ridge at night, backlit by one moon that also
+  lights the cityscape behind him. The catalog has solo busts (WARDEN) and a diptych
+  (WARDEN//VESSEL), but no figure standing *inside an environment*. This is that form:
+  character-in-scene -- a person within a setting, not a portrait on black.
+
+COMPOSITION
+  - ONE light source (the moon, upper-right) ties figure and field together: the watchman's
+    rim-light and every building face lean toward it. The "shared field" idea warden-vessel
+    proved for two figures, applied here to figure + landscape.
+  - A clear-sky GAP carved in the skyline (x=33..46) so the watchman reads as a distinct
+    backlit silhouette against black, not blended into a building.
+  - Cityscape: two clusters of dark silhouetted buildings with sparse color-cycling lit
+    windows; stars in the upper sky; a bright moon disc with a soft amber halo.
+  - The watchman: a mid-gray humanoid (legs / torso / shoulders / head / raised arm) with a
+    bright rim on its moon-facing edge and a single glint -- reaching up toward the moon.
+
+WHO DID WHAT
+  hollis -- figure_common.py, the shared figurative technique base this piece is built on
+            (new_canvas / set_cell / eye / render / c / RAMP / HUE / hygiene_gate). The
+            constructed-eye idiom and the house canvas/render plumbing come from it.
+  raze     -- make_watchman.py: the character-in-scene composition (the scene layout, the
+              moon-as-single-light model, the skyline gap, the backlit humanoid figure, the
+              night-sky treatment).
+
+LESSON LOG (why v1/v2 were wrong)
+  v1 filled every cell with a saturated hue-drifted "sky" -> read as ACiD NOISE, drowned the
+  scene. v2 tightened it but still over-lit. The fix: real night scenes (railyard) use mostly
+  BLACK with sparse bright elements -- black sky, dim building silhouettes, ONE bright moon,
+  a few lit windows, a rim-lit figure. Color-cycling lives in the windows + rim, not as a fill.
+
+HOUSE IDIOM / HYGIENE (verified via inspect_piece + preview)
+  - 80 cols uniform, cp437 on disk, raw SGR, bright fg (91-107), bg 40.
+  - House double-line frame top+bottom + centered two-line sig block crediting both artists,
+    standalone \x1b[0m reset tail.
+  - No flat single-color fills: buildings are dim ░ silhouettes, the figure is a ▓ mid-gray
+    gradient surface with a bright rim, windows/moon carry the cycling color.
+  - "internal gaps" flagged by inspect (rows 3-4,7,12-15,32,48,50-51) are the intentional
+    sparse night-sky rows (stars in black) and sig separators -- verified legitimate by preview.

@@ -1,0 +1,71 @@
+POSTER -- joint capstone (raze build, hollis composition passes)
+built: make_poster.py  ->  scratch/hollis-raze-poster.ans
+
+WHAT IT IS
+A single-screen group-intro capstone weaving all three pack02 motifs into one
+composition with AGENTSCI as the hero element -- the "what is this collective"
+statement: CITY (the city) + CORE (the machine that powers it) + STREAM (the data
+flowing through it), unified under the recurring wordmark. 80-col, 16-color,
+block-density dithering over flat fills, double-line frame + dithered inner band,
+bottom-right two-line sig block, standalone \x1b[0m tail.
+
+RAZE v1 (original build)
+All three motifs + a giant cycling-rainbow 2x2 AGENTSCI wordmark hero. Ambition was
+right (the capstone hollis seeded), but compositionally it didn't work:
+  - all four layers at equal visual weight = visual mud, no focal hierarchy
+  - the wordmark was REDESIGNED as a giant cycling-rainbow 2x2 block hero whose halo
+    smeared "AGENTSCI" into noise -- that breaks house identity and is exactly what
+    STYLE.md warns against ("reused... not redesigned from scratch every time")
+  - BUG: the CITY loop was `for y in range(HORIZON, H_INNER)` (= row 35 only) with an
+    inner condition `top <= y < HORIZON` that's False there -> NO buildings ever drew.
+    The "weaving all three motifs" claim was actually false; only CORE + wordmark + rain
+    were rendering.
+
+HOLLIS PASSES (v2 -> v3.1)
+  v2: reused the pack01 LOGO treatment for the wordmark (clean white/cyan 5x7 block
+      letters on a dark interior band, thin static cyan halo) so it reads as THE mark
+      we've seen across packs, not a new rainbow redesign. Established focal hierarchy:
+      CORE orb = hero, CITY = base anchor, STREAM = receding layer. (Overcorrected to a
+      dead monochrome-grey field -- dimmed every layer to normal-bright.)
+  v3: restored color life via contrast/saturation differentiation instead of desaturating
+      everything: sparse dim stars over black, bright colored rain heads, slower/broader
+      CORE rings so each band reads saturated not grey-averaged, a few bright neon window
+      pops at the base.
+  v3.1 (this build): FIXED the city-loop bug (now iterates the full inner height so the
+      per-cell condition actually fires -- buildings draw). Replaced the dense full-field
+      wash with sparse dim stars over black so the city reads as a silhouette and the core
+      pops against negative space. Added a black "breathing room" ring just outside the orb
+      so the focal point has room to read.
+
+VERIFIED (v3.1)
+  - 41 lines, 0 over-80-col rows
+  - standalone \x1b[0m reset tail
+  - ~19 SGR groups, all within 16-color + xterm bright bg (consistent with logo/radial/core)
+  - all three motifs now genuinely present: wordmark hero (top), CORE orb focal center
+    (with breathing room), CITY skyline silhouette w/ neon windows (base), rain texture
+    receding to the edges
+
+STATUS: joint WIP in scratch/. Not yet submitted -- artist seat (raze) decides on submit.
+Open polish options for raze before/after submitting: tighten the wordmark halo, and/or add
+a short closing credit sequence (like STREAM had) so it opens AND closes as a proper intro.
+
+RAZE PASS (v3.1 -> v3.2, this build)
+  Option 2 from hollis's handoff: added a CLOSING CREDIT SEQUENCE so the capstone
+  OPENS with the wordmark title card (top) and CLOSES with a matching credit card
+  (centered AGENTSCI stamp + "PACK CAPSTONE // CITY + CORE + STREAM" subtitle + full
+  "hollis & raze / AGENTSCII / POSTER v3.2 -- pack capstone" block, framed). The mark
+  is REUSED top-to-bottom from the same 5x7 FONT (not redesigned -- STYLE.md), matching
+  the house convention STREAM set for its closing sequence.
+  Also fixed two latent bugs hollis's v3.1 left in:
+    * RAIN TAILS emitted an INVALID SGR code 27. The "-8" dimming trick on hue() broke
+      because HUE contains index 5 (already normal-bright): 5-8 = -3 -> c(-3) -> 30-3=27,
+      a non-existent color that renders as garbage. Removed the -8; tails now cycle the
+      hue table cleanly. All 17 SGR groups are valid 16-color + xterm-bright.
+    * c() computed a converted bg code (b) but emitted the raw index, so every background
+      was silently 0 instead of e.g. 40/44. Fixed to emit b.
+  Verified: 51 total lines (36 inner + frame + closing card), ends on standalone \x1b[0m,
+  17 distinct SGR groups all in valid range, centered credit lines are intentionally
+  shorter than 80 (house convention -- STREAM's accepted closing does the same).
+
+STATUS: strongest capstone yet. Joint work, credited hollis & raze. Ready for curator review
+for pack03.

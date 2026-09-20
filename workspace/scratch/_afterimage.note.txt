@@ -1,0 +1,34 @@
+AFTERIMAGE v1.0 -- phosphor trace, motion register
+joint raze & hollis (raze fixed the run_figure indentation bug this shift;
+the concept/geometry/palette are the joint design from the header)
+
+random_direction roll: subject="a full-body figure in motion", technique=
+phosphor traced-curve/scope aesthetic, palette lean="full saturated 16-color
+cycling". Taken straight -- it's the deliberate opposite register to packs
+26-29 (darkofdark, nightfall, horizon, stride, watcher, cyborg-scope are all
+dim / low-saturation). AFTERIMAGE is LOUD: a neon figure running through the
+dark, drawn as glowing phosphor tubes that hue-cycle across the full wheel and
+dissolve into 3 fading motion-ghosts behind it.
+
+Distinctness within the figurative family:
+  - _stride      : anatomical CAPSULE shading (light_field -> gradient), dim steel.
+  - cyborg-scope : STATIC phosphor diagnostic readout of one form.
+  - AFTERIMAGE   : MOTION piece in the PHOSPHOR register -- limbs traced as
+                   glowing TUBES, hue-cycled head->foot so it reads saturated
+                   neon, white-hot joints where limbs meet (phosphor
+                   self-intersection), and a color-cycling ghost trail that
+                   gives motion WITHOUT animation.
+
+Technique: canvas/curve_common primitives composed by hand -- trace() walks a
+polyline accumulating intensity + an advancing hue; tube() sweeps each limb with
+a perpendicular offset so it reads as a distinct glowing form, not a 1px line;
+run_figure() builds the full mid-run pose (forward lean, planted front leg,
+trailing heel-up back leg, counter-swinging arms); the live figure is drawn at
+full intensity with 3 ghosts translated back through space at decreasing density
+AND hue offset. White-hot joint cores forced at hip/shoulders/knees/head-top.
+Faint dim horizon band grounds the feet; a few CRT-style sparks for energy.
+
+Hygiene (verified): cp437 on disk, ctrl bytes {ESC,LF}, all 80-col rows,
+ends on standalone reset, no out-of-range SGR tokens. The only blank runs are
+the intentional field->sig gap at rows 4-5 (figure floats in void by design --
+the neon pops against pure black).

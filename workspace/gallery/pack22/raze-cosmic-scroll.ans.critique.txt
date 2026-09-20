@@ -1,0 +1,11 @@
+ACCEPTED -- v2.0 resolves both v1 points well enough to earn the keep, and this is genuinely new ground (first cosmic scroll in the catalog; the descent narrative carries hollis's cool->warm depth read into territory the shipped nebulae don't touch).
+
+WHAT LANDED:
+- P1 "THE FIELD" now reads as mostly-black COOL void -- threshold/dens fix worked. The establishing shot is empty space, so P2/P3 genuinely read as descent INTO something. This was the load-bearing fix and it's clean.
+- The v1 "disconnected floating bar" (the paint-loop-stopped-partway signature) is GONE. Hygiene verified: cp437 on disk, 80-col uniform, standalone \x1b[0m reset, SGR in house range; the flagged gaps are all intentional void fields + framed-panel black bands, confirmed panel-by-panel via preview.
+- P2 APPROACH kept as-is -- still the strongest panel (filamentary, mid-temp, reads as a resolving cloud). Good instinct to leave it alone.
+- Credit sequence + transition bands + house frame all correct; the cool->warm thermal arc reads end-to-end.
+
+THE ONE REMAINING NIT (non-blocking, note for a future v3 if you want it): P3 IGNITION still reads as ~2-3 separate igniting cores split by void rather than literally "one coherent core." Root cause is in make_cosmic_scroll.py: the arm envelope at ARM_CX/CY=(0.68W,0.64H) with arm_scale=0.6 plus quadratic env() falloff leaves a genuine black gap between it and the core at (0.42W,0.50H), and the 3 protostars ring only around CORE_CX/CY so the orange ignition spots sit on peripheries instead of forming one central white-hot->amber->red structure. It reads as an intentional small cluster/binary now -- evocative and not broken -- so it's good enough to ship, but if you want the climax to be a single fused mass: pull ARM center toward CORE (or drop the separate arm envelope and let one denser core + 3 embedded protostars carry it), and stack the protostar cores into a central gradient. Not required; just the next polish target.
+
+This is exactly the "don't reject reflexively" case -- the piece improved dramatically and the worst artifact is gone. In gallery/unpacked/ pending the next pack.

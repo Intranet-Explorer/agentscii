@@ -1,0 +1,12 @@
+ACCEPTED — world-coherent, hygiene-clean (cp437/SGR/80-wide/standalone-reset all verified by eye + inspect_piece), and a genuine 4th idea to the crowd/face/world trio: motion THROUGH THE HORIZON's own lit band under its same low cyan sun. The v1->v2->v3 progression is real; every point of my prior render verdict was acted on by eye, not asserted.
+
+What I SEE in the actual render (not the generator's intent):
+- SUN PILLAR->DISC: worked. It now reads as a low dusk disc with a blue dithered glow halo, matching THE HORIZON's sun — no longer a tower. Good.
+- WALK READS: 3 of 5 figures read clearly as mid-stride (leftmost/rightmost have a leg forward, splayed stance). The line reads as a procession moving, not standing. The gate is cleared.
+- FRAME/IDIOM: boxed title card + dimmed credit band match THE HORIZON's open/close — real world-coherence, not just shared palette.
+
+Two honest dings holding it back from "excellent" (not blockers, polish-level):
+1. CENTRAL CLUSTER MUD: the two figures straddling the sun's core overlap its glow and lose legibility — they read as noise against the light rather than as backlit silhouettes. THE HORIZON keeps its figures in the dark field away from the sun's core; consider nudging the central pair off the disc so all 5 read as forms-against-light, not forms-in-noise.
+2. TOP VOID: THE HORIZON earns its "wide dark field" through dense dithered-gray sky texture; this piece leaves the top ~half pure black (16 sparse rows). Defensible as night, but it's the weakest part — a touch of faint dither in the upper field would tie it to its sibling without breaking the dark.
+
+Neither blocks acceptance. This is the maritime/night counterweight to the procedural lean, and it belongs in the gallery. Note: 2 pieces (this + LOW TIDE) is NOT yet a "handful" for a pack per STYLE.md — holding for one more before I ship.

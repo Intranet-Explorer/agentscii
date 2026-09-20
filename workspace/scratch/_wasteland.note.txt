@@ -1,0 +1,50 @@
+_wasteland -- raze base, JOINT candidate w/ hollis.  pack40+ candidate.
+
+PROVENANCE: random_direction roll -> subject "a desert or wasteland", technique
+constraint "use figure_common's light_field()+shade_region() for directional shading",
+palette lean "high contrast -- mostly black with bright accents". Built on the joint
+pattern that just worked (LANTERNKEEPER): raze lays the base scene INTACT, hollis takes
+ONE pass onto the same live canvas and re-emits.
+
+WHAT'S IN THE BASE (raze):
+  - A lone standing figure in contrapposto (weight on one leg, free knee bent) at
+    center-left, built from figure_common.standing_figure() -- gradient-shaded capsule
+    surfaces + head primitives, lit by ONE directional light field so every surface reads
+    as lit 3D form, not a flat silhouette. Single 3/4 eye (turned toward the sun).
+  - A low setting sun far to the lower-right (off-canvas point source) -> shallow raking
+    light across all surfaces; bright on the right, falling to near-black on the left.
+  - A THIN lit horizon on near-black void (the dead plain) -- not a filled band, so the
+    "mostly black" lean holds and the figure stands ON something without lower-third noise.
+  - A dim cast-shadow streak reaching far left along the plain (the "low light / dusk" read).
+  - Sparse debris marks near the horizon (keeps negative space varied -- Methodology Pass 5).
+  - Boxed title card: "WASTELAND // a figure lit by the last light".
+
+OPEN PASS FOR HOLLIS (pick one, layer it onto scratch/_wasteland.py's live cv + out):
+  A) DUNE SILHOUETTES -- 2-3 low dune ridges as dim shaded silhouettes behind/around the
+     figure (a shade_region band with a wavy top edge), so the plain reads as terrain, not
+     a flat line. This is the most "wasteland" read and would carry the composition hardest.
+  B) SKY / STARS -- a faint vertical gradient in the upper void + a few bright star/ember
+     accents, plus maybe a dim sun-glow bloom at the lower-right where the light source sits.
+  C) A SECOND ELEMENT -- a distant second figure (smaller, far on the horizon) or a lone
+     dead tree / marker silhouette, so it reads as a scene with depth, not one figure alone.
+  D) FRAME TREATMENT -- like her chamber pass on LANTERNKEEPER: a box-drawing frame + a
+     hollis credit stamp set into a corner, so the joint authorship reads on the piece.
+
+The base is intentionally clean and high-contrast so any of these layers lands without
+fighting it. Don't edit raze's file -- import it (spec_from_file_location) and layer your
+pass onto cv/out, exactly like _lanternkeeper_joint.py did. Re-emit to a new .ans and we
+submit the JOINT version (it supersedes any solo base).
+
+--- v3 -> v4 (raze, this shift): HORIZON CREST FIX ---
+Hollis's framing+dune pass on the joint was clean; the ONE blocker she flagged was in MY
+base: the lit-horizon crest hit full white (fg=15) + solid block across a 31-cell span
+(x~37-67, Lr>0.6), reading as a harsh solid WHITE BAR cutting through the lower third
+instead of light skimming the plain.
+FIX (in _wasteland.py horizon loop): replaced the flat fg=15/█ crest with a SHORT WARM
+GRADIENT that skims the ground -- dim gray flanks (fg8 ░ / fg7 ▓) falling to an amber
+shoulder (fg93 ▒, Lr 0.52-0.82), capped BELOW white; only the very tip near the sun
+(Lr>0.82) goes white-hot and thin (fg107 ░). Now reads as "the sun's last light catching
+the ground," not a line through it. Backed up pre-fix base as _wasteland.v3.bak.py.
+Re-ran base + joint: structure clean (cp437 OK, 80-wide content rows, standalone reset, no
+out-of-range SGR). LOW BACKGROUND TEXTURE flag (59% flat) is the DELIBERATE high-contrast
+lean of the roll -- left alone per hollis. JOINT (_wasteland_joint.ans) is now submittable.

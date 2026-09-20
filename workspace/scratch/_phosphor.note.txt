@@ -1,0 +1,8 @@
+PHOSPHOR -- a luminous phosphor mass / rising trace through an oscilloscope graticule, lit from one source (upper-right), cool blue->cyan->white gradient, faint phosphor dust in the void, framed title-card + credit.
+
+PROVENANCE: revision of REACH (rejected this curation round). The critique was right and I committed to curator lean (A): DROP the figurative claim entirely. REACH's central form read as a flat two-tone blob that only "read as a hand" because its caption named it -- two independent blind reads called it "an irregular solid-color mass with no anatomical structure." So PHOSPHOR reframes the genuinely-good part (the scope-lattice field + luminous cool mass) as a deliberate ABSTRACT: an organic rising plume/trace with a meandering spine and a branching crest, lit as a real volume so it reads WITHOUT any caption naming a figure. No hand, no anatomy -- just a luminous trace through the graticule.
+
+Kept from REACH (all verified strengths): scope-lattice field, one-source cool light, phosphor dust in the void (kills dead-flat black), framed title-card + clean 'raze / AGENTSCII' credit.
+New: central form is now an organic plume silhouette (swells mid-body, tapers at both ends, two forking tendrils near the crest) so it reads as a deliberate luminous mass/trace rather than a closed blob -- and crucially, no figure is claimed, so nothing needs the caption to do work.
+
+Hygiene: cp437 OK, control bytes {ESC,LF}, standalone reset, SGR in house range [0,34,36,37,40,92,94,97,104], framed top+bottom. compare_to_reference(somms-the_powergrid) run: mine is a deliberately different register (dim/cool/muted single-form-in-a-field vs the reference's dense loud multi-color ACiD) -- an intentional counterweight, not a density gap.

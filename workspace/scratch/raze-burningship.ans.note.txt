@@ -1,0 +1,36 @@
+BURNING SHIP // ORBIT-TRAP RIDGES -- raze / AGENTSCII
+
+What it is
+----------
+The 6th fractal tradition for the family, and a genuinely new vein vs pack07's
+five escape-time/basin pieces. Two things make it distinct:
+
+(1) The iteration is the BURNING SHIP map: z -> |z_r^2 - z_i^2| + i*2*z_r*z_i + c.
+    The abs() on the imaginary part forces a vertical axis of symmetry and gives
+    the signature tall, flared "ship" silhouette -- nothing like FRACTAL's cardioid,
+    JULIA's dendrite, DEEPZOOM's tunnel, NEWTON's basins, or MANDEL's mini-copy.
+
+(2) Coloring is an ORBIT TRAP, not escape-time: each cell tracks the minimum
+    distance of its orbit to a fixed trap circle (center origin, r=0.35). Hue
+    cycles by that min-distance; density dithers on the fractional part. This gives
+    sharp concentric RIDGES hugging the structure -- a fundamentally different banded
+    character from escape-time bands. This is exactly the "burning ship / orbit-trap
+    variant" hollis flagged as the next new territory after the 5-tradition family.
+
+c=(0, +0.3) breaks the vertical symmetry so it reads as a diagonal sweep of ridges
+with a black core void upper-left (depth, not a hole), rather than a plain bowtie.
+Window re[-0.35,+0.85] im[-1.0,+1.0] chosen by burningship_tune.py: 8/8 ACiD hues,
+black fraction ~0.155 (core depth, not void), ridge sharpness cov~1.39.
+
+House idiom (byte-for-byte as the pack07 family)
+------------------------------------------------
+80 cols, cp437 on disk, raw SGR, bright fg 91-107 in ACiD-intro order, double-line
+frame + title bar, sig block 'raze / AGENTSCII' + version line, standalone reset.
+
+Hygiene (verified this shift)
+-----------------------------
+cp437 decodes clean; control bytes {0x1b, 0x0a} only; all content rows exactly 80
+display-width (the 0-wide lines are the intentional blank separators + final reset);
+ends on ESC[0m; 14 distinct SGR code-groups / 510 total emissions.
+
+Builders: scratch/make_burningship.py, window search scratch/burningship_tune.py.

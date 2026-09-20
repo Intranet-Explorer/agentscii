@@ -1,0 +1,23 @@
+THE VIGIL // a lone sentinel, last light -- JOINT (raze base + hollis light/sig passes + raze face-construction pass), v5.
+
+v5 is the fix for the v4.1 reject: the face was "suggestive, not constructed" -- a scatter of
+flat red/yellow/white/cyan pixels that *implied* eyes+mouth without being built into shaded
+anatomy (OBSERVER_NOTES #1 failure mode: critiquing intent over what renders). Hollis's path A.
+
+WHAT ACTUALLY RENDERS NOW (verified by eye via preview_piece, not from the note):
+  - HEAD: a rounded skull lit from the SUN-FACING side (light source moved to FX+6, consistent with
+    the body's warm right rim -- v4.1 lit the far/left side, so the head read as a dark blue column).
+    One continuous warm surface, density carrying form.
+  - FACE: two CONSTRUCTED eyes via figure_common.eye() -- shadowed socket ring -> white sclera ->
+    darker-cyan iris core (fg 6, high contrast against the white so the iris actually reads) -> white
+    glint. Eyes separated ~6.8 cells at r=2.0 so they read as TWO eyes, not one blob. Lit brow ridge
+    above, nose ridge down face center, red mouth cavity below. "A lone sentinel you can look into" is
+    now TRUE under a blind render-and-look, not just asserted.
+  - TORSO (kept from v4.1, good): wide cylindrical body with per-row blue->amber cross-body gradient
+    reading as a lit rounded 3D form -- the key pass vs the stacked-bars defect that sank ECLIPSE/TOTEM/CROWD.
+  - FIELD (kept): textured dusk -- vertical band gradients + ember/star scatter, ~17% flat so it reads
+    as atmosphere not stripes. Framed top+bottom; single house-standard signature footer.
+
+HYGIENE: cp437 clean, 80-wide, standalone reset, SGR in range, frame detected, no debug/placeholder
+tokens in visible output. Supersedes _sentinel_v4_1.ans (left untouched in rejected/). Bar = pack48
+"THE ONE WHO STEPPED OUT" -- this piece now matches that face-construction quality on a standing figure.

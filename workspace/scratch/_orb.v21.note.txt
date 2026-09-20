@@ -1,0 +1,59 @@
+THE WATCHER (_orb v21) -- JOINT: raze + hollis. THE MERGE CANDIDATE, GATE-CLEARED.
+
+Built on raze's _orb.v20 (the peak of the v12->v20 line: clean directional-fiber amber
+iris + lit-sphere sclera + closed lids + sparse deterministic void-scatter atmosphere),
+raze added PASS 9: a REAL DITHERED BRIDGE on the flat sclera, done on the native path.
+
+WHY THIS VERSION -- it clears the CORRECTED flat-region gate (Tyler's 2026-09-18 fix):
+    The corrected gate no longer demands an impossible "3rd flat brightness step" on a
+    16-color palette. It now wants a REAL DITHERED BRIDGE -- a connected run of ░▒▓ cells
+    sitting between two flat regions at different brightness within one hue family. That is
+    exactly canvas.shade_ramp()'s trick, and v21 applies it:
+
+    PASS 9 samples the continuous light field L(px,py) at each FLAT sclera cell (top==bot,
+    greys/white only, inside the almond) and places a density glyph with HOT WHITE ink over
+    the existing grey/black bg -- faking the intermediate brightness the palette can't hold as
+    a flat fill. Result: 154 real ░▒▓ glyphs (120 ▓ + 34 ▒) forming a connected dithered bridge
+    between the flat white(15) crown and the light/mid-grey(7/8) flanks -- one hue family
+    (fg&7==7), two different brightness levels, continuous falloff instead of hard cutoff.
+
+ON THE MECHANISM (why this didn't break like v17):
+    v17 tried the same idea via a render() MONKEY-PATCH and it collapsed into a mangled left-edge
+    strip (52/57 rows non-80-width). v21 does NOT monkey-patch: it uses a native per-cell
+    glyph_override added to HalfBlockCanvas.render() -- an optional dict keyed (cell_row,col) that
+    substitutes a density glyph on ONE flat cell, leaving every other cell's half-block packing
+    untouched. Only flat cells (top==bot) in the sclera greys/white are ever overridden; the round
+    ▀ iris/silhouette are never touched, so packing stays intact. Verified: all content rows exactly
+    80 cols wide, control bytes clean {ESC,LF}, ends on standalone reset, valid SGR.
+
+WHY NOT JUST "v7 was 0% shade-chars so it's not a real gate" (the v18 argument):
+    That was true of the OLD gate. Tyler's fix makes the new gate achievable and asks for exactly
+    this bridge. The dithered sclera falloff is also genuinely BETTER craft -- the lit sphere now
+    shades continuously across its flanks instead of reading as flat white/grey slabs meeting at a
+    hard edge. No regression vs v7 on any axis; strictly more shading.
+
+IRIS (unchanged, accepted register): NCRYPTS=9 radiating crypts over a clean two-tone amber stroma
+(bright-yellow collarette -> orange mid -> brown limbus), NO red mid-band -- so no pink/red speckle
+(the v6/v10 noise defect). Directional fibers, not mottle.
+
+VOID (unchanged from v18): sparse DETERMINISTIC grey flecks radiating outward from the form, denser
+near the eye fading to clean black at the corners -- "a watcher in the dark," not random scatter.
+
+HYGIENE (verified by inspect_piece + eye): cp437/utf-8 OK, control bytes clean {ESC,LF}, ends on
+standalone reset, valid SGR [0,1,30,31,33,37,40,43,47,90,97,100,101,103,107], all content rows 80
+cols wide, frame top+bottom detected. 'LOW BACKGROUND TEXTURE' (86%) + internal-gap flags are BY
+DESIGN -- the void IS the concept of a watcher in the dark; verified by eye, not a skipped pass.
+
+compare_to_reference vs blocktronics-ra_mindseye (side by side): ra_mindseye is a dense full-screen
+character with heavy dithering everywhere; this piece is a deliberately MINIMAL single-eye benchmark.
+v7's ACCEPTED critique explicitly said it "isn't competing with full-screen density work like
+ra_mindseye on that axis, and shouldn't be judged on it." On the axes that matter for THIS piece --
+coherent lit-sphere sclera (now with a real dithered bridge), clean directional-fiber amber iris,
+closed lids, atmospheric void, framed title-card + credit -- v21 is at or above the accepted v7
+benchmark and clears the corrected flat-region gate.
+
+CREDIT: raze + hollis (joint). v10 base raze; edits a/b/c + atmosphere pass hollis; glow pass raze;
+PASS 9 dithered bridge + native glyph_override mechanism raze. submit_piece contributors = "raze, hollis".
+
+STATUS: finished, gate-cleared merge candidate. Submitting jointly -- this is the piece hollis proposed
+shipping rather than unilaterally submitting+accepting our own shared work.

@@ -1,0 +1,39 @@
+REFLEX v1.0 -- JOINT (raze + hollis). "a city reflected in still water."
+
+PROVENANCE: random_direction roll ("night skyline/cityscape" + technique constraint
+"use canvas.mirror() for bilateral symmetry" + palette lean "high contrast, mostly black
+with bright accents"). The tension between an asymmetric skyline and a symmetric mirror()
+resolves into the classic ACiD image -- a NEON CITY SKYLINE REFLECTED IN STILL WATER.
+mirror(axis='v') gives the city its bilateral symmetry; the lower half is the reflection.
+
+FAMILY PLACEMENT: COLD INVERSE sibling to EMBERWATCH v2 (warm bonfire in a draft, "lit out
+of the dark"). Same register -- sparse lit-out-of-the-dark night scene on black -- but frozen
+blue/cyan/white neon instead of amber/red fire. Together they make pack45 a real 2-piece batch:
+warm bonfire / cold city. EMBERWATCH v2 is already accepted into gallery/unpacked/.
+
+JOINT PROVENANCE (real, not decorative):
+  hollis -- P1/P2 block-in: building silhouettes + lit-window neon grid + moon + stars,
+            MIRROR(axis='v') for bilateral symmetry, straight dimmed reflection into lower half.
+  raze   -- P3 light-source shading: one moon source (MOON_X,MOON_Y) -> cold_shade() ramp
+            (white/cyan near the moon cooling to dim blue then void on the far side), so the
+            city GLOWS OUT OF THE DARK with falloff instead of reading as flat blue blocks.
+            Windows re-stamped as crisp point-light accents on top of the shading. Moon given a
+            white core + cyan halo. P4 water distortion: horizontal ripple (amplitude grows with
+            depth) + depth-dim toward gray + progressive cell break-up, so the reflection shimmers
+            and dissolves into the dark instead of reading as a twin city; thin waterline shimmer
+            at the horizon. P5 frame + title card (magenta rules top/bottom, sig block).
+
+COLOR CALIBRATION: art content is COLD-ONLY -- {34 blue, 36 cyan, 37 white, 90 gray} + bright
+{94,96,97}. Verified by byte scan: ZERO warm SGR codes (1/3/9/11) anywhere in the file. Magenta
+(5/13) appears ONLY on the frame rules + title-card chrome (rows 0/55/57/60), not art content.
+This is the precise inverse-pair claim vs EMBERWATCH v2's warm {1,7,8,9,11,15}.
+
+INSPECT NOTES (both deliberate, verified by eye -- NOT bugs):
+  LOW BACKGROUND TEXTURE (51% flat rows): same lit-out-of-the-dark void register as its warm
+    sibling EMBERWATCH v2 (hollis confirmed that one against shipped DEMON/ABYSS). The sky is
+    sparse stars; the lower third is the reflection dissolving into water by design. Deliberate
+    minimal composition, not a skipped texture_fill pass.
+  POSSIBLE INTERNAL GAPS: rows 1-8 = sparse star field (sky), 42-53 = reflection breaking up
+    into water (P4 depth break-up), 58-59 = below the sig block. All legitimate.
+
+BUILD: cd scratch && python3 _reflex.py -> writes scratch/_reflex.ans (hygiene green).

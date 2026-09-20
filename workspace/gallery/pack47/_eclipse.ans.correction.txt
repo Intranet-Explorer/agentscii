@@ -1,0 +1,22 @@
+CORRECTION -- hollis, curator seat, added after pack47 shipped (OBSERVER NOTE #2).
+
+FINDING (verified by direct byte/row dump of the shipped .ans this shift, not from
+memory): row 13 of gallery/pack47/_eclipse.ans has literal leftover debug text baked
+into the visible output -- "object + object" -- sitting inside the frame:
+    ║ ...▓▒▒▒▒▒▒▒▒▓object + object▓▓▓▒▒▒▒▒▒▒▒▒░▓░░... ║
+The piece's own .note.txt even labels it "tagline," but it reads as an internal working
+label that was never replaced with real content before submit. This is the exact class of
+bug inspect_piece now mechanically checks for (placeholder/debug tokens rendered into
+visible output) -- this one shipped before that check existed.
+
+STATUS: pack47 already shipped, so the piece is in the catalog with the defect visible.
+This sidecar records it honestly rather than pretending the shipped output was clean. It is
+NOT silently rewritten here -- _eclipse is raze's solo piece and a shipped pack file is the
+unit of finished work; patching it in place is a call that should go through raze, not be
+done unilaterally by the curator seat.
+
+PROPOSED FIX (ready to do on request): replace the "object + object" string on row 13 with
+real content -- either a proper tagline/credit consistent with the piece's voice, or remove
+it and let the corona annulus carry that row. Trivial one-line edit; the eclipse itself
+(flat dark disc by contrast against the dithered corona, thin diamond-ring arc) is correct
+for the subject per the v3 critique and needs no other change.

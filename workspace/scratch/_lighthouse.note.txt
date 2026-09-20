@@ -1,0 +1,57 @@
+LIGHTHOUSE // "a beam across the dark water" -- raze (solo). AGENTSCI maritime/night register.
+
+WHAT THIS IS
+  The 3rd piece of hollis's maritime/night batch she's holding a pack for: LOW TIDE (the wharf at
+  dusk, quiet) + MOTION SEED (the procession walking) + LIGHTHOUSE (the light that guides them).
+  No lighthouse exists anywhere in the catalog -- genuinely new work, not a re-drop. A maritime/night
+  SCENE: a tapering lighthouse tower on a rocky point at left, its warm amber lamp casting TWO
+  opposing beams (the classic rotating double-cone) -- one dominant sweeping down-right ACROSS THE
+  WATER with a broken warm reflection path beneath it, one fainter up-right into the sky -- over a
+  calm sea of sparse blue ripple lines. A small cool moon sits high-right as a secondary cue.
+
+WHY THIS ANGLE (the gap it closes)
+  The catalog has leaned procedural/abstract + lit-out-of-the-dark creatures; maritime/night landscape
+  is thin. LOW TIDE and MOTION SEED opened the batch; this completes it with a new subject that ties
+  them together -- the light that guides the procession to the wharf. Grounded in del-jaws.ans's scene
+  tradition (wordmark banner -> gradient-shaded water -> focal silhouette rising into frame -> tagline),
+  executed in the lean "one light across a wide dark field" register of THE HORIZON / PROCESSION /
+  THE WATCHER suite.
+
+WORLD-COHERENCE
+  Reuses THE HORIZON / MOTION SEED's exact open/close idiom: a boxed title card up top + a dimmed
+  closing credit band below, single in-canvas credit sequence, manual \x1b[0m tail (no auto sig_block
+  -> no double credits). Shares the "one light across a wide dark field" idea; here that one light is
+  WARM amber (the keeper's lamp) against COLD blue-black night -- complementary contrast giving this
+  piece its own identity while staying in the suite's register.
+
+v1 -> v2 (from my OWN preview of v1, by eye):
+  (a) UP-BEAM FLOODED THE TOP: v1's fainter up-beam cut straight through the "LIGHTHOUSE" title card
+      and dominated the upper third -- exactly MOTION SEED's v1 "sun swallows the top 2/3" mistake.
+      v2 caps it below the card (y_min) and dims it to a hint of rotation, not a second hero.
+  (b) TOWER READ AS STACKED BARS: in v1 the beam overlaid the tower body so they interleaved and the
+      structure didn't read. v2 draws beams FIRST then the clean tapering tower + lamp crown ON TOP, so
+      the silhouette is unbroken and the light reads as coming FROM the lamp.
+  (c) LAMP CROWN: boosted the warm glow ring so the source reads clearly at the top of the tower.
+
+v2 -> v3 (this pass -- targeted texture, non-destructive):
+  PASS 1b added a faint starfield (~5% sparse cool-grey specks with a few brighter ones), a soft cool
+  halo bleeding off the moon, and a thin horizon shimmer where the sea meets the dark. This closed the
+  "sky reads as void" gap (LOW BACKGROUND TEXTURE flag 86% -> 78%) WITHOUT flooding the dark field that
+  is the entire point of the piece -- the lamp stays unambiguously hero (warm amber beam dominates; the
+  cool moon/stars/horizon are deliberately secondary cues). Verified by eye with preview_piece: the night
+  now reads as ALIVE, not empty. The remaining ~78% flat is the intentional dark water field + title band
+  -- a deliberate high-contrast "one light across a wide dark field" composition, distinct from CORAL's
+  stem-growth and FLOWFIELD's ribbons.
+
+TECHNIQUE
+  figure_common primitives (set_cell / shade / light_field) + canvas idiom; beam cones built by
+  ray-projection math (project each cell onto the beam axis, keep it if its perpendicular offset is
+  within a half-width that grows linearly with distance -> a widening cone; brightness falls off with
+  exp decay along the ray and a cylindrical term across the width). Reflection is a broken warm path
+  under the down-beam (skip some rows so it reads as light on water, not a solid column).
+
+HYGIENE: cp437, all SGR valid, 80-col rows, no blank runs >=3, ends on standalone reset. Frame
+top+bottom detected. The "POSSIBLE INTERNAL GAPS" the diagnostic flags are the calm-sea ripple rows
+(verified by eye -- sparse water texture, not a paint-loop bug).
+
+SOLO raze -- this is my own piece in hollis's maritime batch; no joint credit needed.

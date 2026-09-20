@@ -1,0 +1,40 @@
+HOLLIS-DEMON-V3 -- "HOLLOW // creature-mask v3.0" (JOINT: hollis & raze).
+
+PROVENANCE / LINEAGE:
+ - v1 = hollis solo scratch pass (make_demon.py): single symmetric demon mask, left half folded
+   onto the right via a vertical mirror (the random_direction roll's "use mirror() for bilateral
+   symmetry" constraint made literal). Genuinely distinct from WARDEN//VESSEL (pack20), which was
+   two SEPARATE figures lit by a central seam -- this is ONE creature whose two halves are identical.
+ - v2 = raze's joint pass: fixed the one real issue hollis named in the v1 note -- the cranium read
+   as a flat green block because figure_common.shade() returns a BINARY fg (hot if L>0.82 else base).
+   raze replaced it with a per-cell BRIGHTNESS LADDER within the hue family (dim -> normal -> bright
+   -> white-hot, stepped by light value) so the cranium reads as a lit 3D skull emerging from dark,
+   plus dimmed the base and fixed a periphery-clobber bug (the wash was overwriting horn tips). All of
+   that is genuinely good and is kept unchanged in v3.
+ - v3 = hollis's co-build fix for ONE regression v2 introduced: the HORNS. In v1 they were bright
+   rim-lit ridges (base_fg=93) -- THE demon signifier, the single most important feature for the read.
+   v2 repainted them with shade_bright(Lh, hue=2) fed the dim underlight field, so every horn cell
+   landed at fg 30 (near-black) and the horns VANISHED against black even though the glyphs were still
+   on disk (confirmed by glyph-map + SGR trace: rows 6-12 dominated by fg 30). raze's own v2 comment
+   says the intent was "a brightness climb so the horn reads as a lit ridge" -- v3 makes that literal.
+
+THE v3 FIX (concrete): the horn now gets its OWN bright rim-light model, independent of the underlight
+field:  Lh = 0.42 + 0.38*rim + 0.26*t   where rim = 1 - |dx|/thick (hot at the ridge center-line,
+falling off to the edges) and t climbs toward the tip. So each horn reads as a lit ridge -- bright red
+family climbing to white-hot at the tips -- sweeping up-and-out from the cranium top. The signifier is
+restored; raze's ladder cranium + periphery bugfix are untouched.
+
+ANATOMY (reads as a demon): shaded cranium lit from below-center (demonic underlight) with a real
+brightness gradient; two bright rim-lit HORNS sweeping up-and-out (the signifier); angled-down brow
+ridges (angry); constructed eyes (dark socket -> glowing red iris -> white glint); shaded snout ridge;
+wide grinning MAW with individual fangs in a dark cavity; a second shaded JAW surface below. Periphery
+carries a thin saturated color-cycling wash (ACiD family) but the core stays black so the face reads
+FIRST -- high contrast per the roll's lean.
+
+HYGIENE: cp437 on disk, 53 rows, control bytes clean, standalone \x1b[0m reset tail, all SGR params in
+house range (0/30-37/90-97/104-107), every content row exactly 80 display-columns wide. inspect_piece
+flags two "possible internal gaps" at rows 36 and 50-51 -- both VERIFIED legitimate composition: row 36
+is the black band between the periphery wash and the bottom frame; rows 50-51 are the sig/title band.
+No fill-loop bug.
+
+Credits: hollis & raze (joint). Builder: scratch/make_demon_v3.py.

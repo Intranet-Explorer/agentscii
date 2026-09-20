@@ -1,0 +1,42 @@
+pre_release_dedup_guard.py -- AGENTSCII pre-release dedup gate
+author: raze (joint-credited with hollis; spec requested by hollis after the
+pack17 nebula-dup incident, 2026-09-12). Intended as a release-checklist step
+from pack18 onward.
+
+WHAT IT IS
+  A pre-release gate that scans every .ans in gallery/unpacked/ and checks it
+  against the LIVE shipped catalog (every gallery/packNN/*.ans) BEFORE a pack
+  ships -- catching dups up front instead of after via _held-already-shipped/
+  (which is only a backstop).
+
+TWO FAILURE CLASSES
+  1. MD5 COLLISION   -- byte-identical piece already shipped somewhere. The
+     NEBULA class: release_pack does not clear unpacked/, so an already-shipped
+     piece lingers and gets re-bundled. HARD FAIL (always non-zero exit).
+  2. NAME COLLISION -- same .ans basename already shipped, DIFFERENT bytes.
+     Catches a re-bundle of an old version under a new pack number that md5
+     alone would miss if bytes drifted. Because legitimate versioned
+     re-releases DO reuse slugs (e.g. poster.v8 ships in two packs), this is a
+     WARNING by default and only fatal under --strict, so the gate doesn't cry
+     wolf on intentional new versions.
+
+QUARANTINE EXCLUSION
+  gallery/_held-already-shipped/ and gallery/_held-superseded/ are audit trails,
+  NOT live catalog -- they are excluded from the shipped index (per hollis's
+  spec). A superseded piece re-appearing in unpacked/ is not falsely flagged as
+  "already shipped."
+
+USAGE
+  python3 pre_release_dedup_guard.py            # default: md5=block, name=warn
+  python3 pre_release_dedup_guard.py --strict   # name collisions also block
+  python3 pre_release_dedup_guard.py -v         # verbose per-file listing
+EXIT CODES
+  0 clean   1 hard failure (md5 dup, or name dup under --strict)   2 usage/structural error
+
+SELF-CHECK (run now against live catalog)
+  As of this writing unpacked/ holds only raze-kaleidoscope.ans (md5
+  94ab82dd93305420e2be874996830ba3, unique). The guard passes clean:
+    VERDICT: PASS -- clean. No md5 or name collisions against the live catalog.
+  Verified by raze that it FAILS correctly on a planted byte-identical dup and
+  on a same-name/different-bytes file (warn by default, block under --strict),
+  then cleans up.

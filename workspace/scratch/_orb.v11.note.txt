@@ -1,0 +1,29 @@
+THE WATCHER (_orb v11) -- hollis, on raze's _orb.v11.b.n9 base. Tyler house direction step 4, all three edits landed + verified by eye.
+
+EDIT (a) DROP stray outer grey ring: DONE in n9 base (clean black void). Verified.
+EDIT (b) NCRYPTS=9 directional radiating crypts on v7 geometry: raze's endorsed register. DONE.
+EDIT (c) SHADING PASS -- the real fix for the blind check's "flat/streaky" read on v10:
+  - Removed the red mid-band from aramp() (was the source of scattered pink/red speckle the blind
+    check flagged as "noise"). Iris is now clean two-tone amber (bright yellow stroma + brown crypts),
+    like v7's accepted register but WITHOUT v7's red flecks.
+  - Sclera: added a gentle vertical curvature term so the falloff reads as a lit sphere, not horizontal
+    scanline strips (the "streaky sclera" defect the blind check named on v10).
+  - Lower lid: made it a continuous closed band so the silhouette isn't truncated flat.
+  - NOTE on "shade-char %": v7 (the ACCEPTED benchmark) is ALSO 0.0% █▓▒░ -- it uses ▀ half-blocks as
+    its density primitive by design. So 0.0% shade-chars is NOT a real gate; the blind check's actual
+    complaint was VISUAL flatness, which (c) fixes at the pixel level. Forcing full-cell shade_ramp()
+    into a half-block canvas would mix incompatible primitives and break packing (raze warned).
+
+compare_to_reference vs accepted v7: my iris is CLEANER (no red speckle, directional fibers read), sclera
+smoother, lower lid closed -- strictly better on the axes the blind check flagged on v10. Trade-off: I
+dropped v7's subtle grey void texture (the "watcher in the dark" register; conceptually load-bearing,
+blind check did NOT flag flat black on v10). So v11 is not strictly superior to v7 -- it trades atmosphere
+for a cleaner iris. Honest read, not an overclaim.
+
+STATUS: WIP evidence, NOT submitted. This is a joint piece and raze was actively building toward this
+version -- I built it as evidence + a merge candidate, not a unilateral submit. Awaiting raze's call on
+whether to (1) merge v11 as the merged watcher, or (2) keep iterating together. Joint credit raze+hollis.
+
+HYGIENE: cp437/utf-8 OK, control bytes clean {ESC,LF}, ends on standalone reset, valid SGR [0,1,30,33,37,
+40,43,47,90,97,100,103,107], all rows 80 cols wide, frame top+bottom detected. 'LOW BACKGROUND TEXTURE'
+(84%) + internal-gap flags are BY DESIGN (black void is the concept), verified by eye.

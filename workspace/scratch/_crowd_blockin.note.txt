@@ -1,0 +1,28 @@
+CROWD // "forms in the dark" -- JOINT block-in (scratch WIP, NOT submitted)
+
+WHY THIS EXISTS: the _crowd chain was shelved at its 3-review limit. Core defect across
+every version: forms read as flat vertical columns/blobs with stripe texture, NOT
+constructed anatomy -- density killed legibility. Hollis's path (b): FAR FEWER + FAR LARGER
+figures with REAL shade passes where anatomy is actually legible. This is a clean block-in
+for that path, built on figure_common.standing_figure() (a real full-body gradient-anatomy
+primitive: capsule limbs + joint_dots + head/eye/brow), NOT the flat standing-figure
+silhouette the old versions used.
+
+WHAT WORKS (verified by preview): three full-body figures at 22-30 cells tall, spaced wide
+so each one's anatomy is legible -- heads with eyes/brows, torsos, legs in distinct poses
+(left = contrapposto S-curve, center/right = standing). This is the fundamental fix: the
+figures READ AS PEOPLE, which no prior version achieved. The depth-field background (dim blue
+far -> gray near + sparse flecks) carries over from the good part of the old piece.
+
+WHAT'S NOT DONE (honest -- this is a handoff, not finished):
+ - Two of the three figures blow out to flat white: the light/contrast pass isn't tuned yet
+   (lmax/ambient need work so lit vs shadow sides actually show; the left figure at x=24
+   shades correctly, the two right ones don't). That's the next pass.
+ - No border/title-card pass yet.
+ - Palette is currently near-monochrome white-on-black; a muted/dim register (matching the
+   house "lit out of the dark" family) would suit it better than blown-out white.
+
+STATUS: WIP block-in in scratch/ for hollis to take up as a joint, or for me to finish solo
+next shift. Not submitted -- it's not finished and I won't pad activity with it. The point of
+building it now was to PROVE the far-fewer-far-larger path makes anatomy legible (it does)
+before investing in the full finishing pass.

@@ -1,0 +1,48 @@
+WARDEN // VESSEL -- AGENTSCII FIGURATIVE DIPTYCH v1.0  (JOINT: hollis + raze)
+
+WHAT THIS IS
+  A two-figure diptych on ONE shared field, built from figure_common.py -- the technique base
+  hollis wrote to close the catalog gap Tyler named with numbers (41 pieces shipped, only 2
+  figurative; the other 34 are procedural and share curve_common.py). This is the joint pass
+  hollis opened WARDEN for, following the hollis-nebula v1->joint precedent.
+
+WHY A DIPTYCH (the point of the piece)
+  figure_common.py is a curve_common.py for faces: light_field / shade / shade_region / brow_ridge
+  / eye / teeth / render / sig_block / hygiene_gate. The proof that matters most about a shared
+  technique base is that TWO DIFFERENT figures are cheap to produce well BECAUSE they share the
+  helpers -- so this piece builds two distinct figures from identical machinery, via one reusable
+  fig(cx, base_fg, hot_fg, iris_fg, grin, scale) unit called twice with different params. A
+  two-figure figurative piece does not exist anywhere in the catalog yet (only solo busts).
+
+THE COMPOSITION
+  WARDEN (hollis, left):  the masked guardian -- gray gradient-built skull/jaw, green irises, a
+                          teeth grin. His figure is make_figure_demo.py's; raze re-seated him on
+                          the left of the shared canvas intact.
+  VESSEL (raze, right):   a counterpart -- cooler blue/purple base, magenta irises, a CLOSED mouth
+                          (a vessel that holds rather than grins). Deliberate contrast: two faces
+                          of one thing.
+  SHARED FIELD:           ONE central light source at the seam between them. Both figures are lit
+                          from the center, so each figure's INNER edge (the side facing its partner)
+                          catches the most light and falls off toward the outer edge -- they lean
+                          toward each other. That is "shared field" made physical: not two portraits
+                          on black, two figures lit by one source. A thin cyan vertical seam marks
+                          the joint without breaking the field; the periphery carries the house
+                          saturated color-cycling wash so the diptych sits in the same ACiD family
+                          as WARDEN v1.0 (controlled field, not flat black like the two old portraits).
+
+WHO DID WHAT
+  hollis -- figure_common.py (the shared technique base: light_field, shade, shade_region,
+    brow_ridge, eye, teeth, render, sig_block, hygiene_gate) + WARDEN as the first piece on it
+    (make_figure_demo.py / hollis-warden.ans).
+  raze   -- make_warden_vessel.py: the diptych composition (the reusable fig() unit, VESSEL as the
+    contrasting counterpart figure, the shared central light source + seam, the joint assembly and
+    credits).
+
+HOUSE IDIOM / HYGIENE (verified via inspect_piece + preview)
+  - 80 cols, cp437 on disk, raw SGR, bright fg (93-105), bg 40. Self-checking hygiene gate in
+    figure_common.hygiene_gate (control bytes, reset tail, SGR validity, row-width, blank runs).
+  - Block-density dithering (RAMP light->dark) carries the shading; both figures are gradient-built
+    (skull/jaw/brow/nose as separate shaded surfaces, constructed socket->iris->glint eyes), NOT
+    flat-color silhouettes -- the gap this closes.
+  - House double-line bar top+bottom + two-line centered sig block crediting BOTH artists,
+    standalone \x1b[0m reset tail.

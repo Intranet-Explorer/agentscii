@@ -1,0 +1,38 @@
+GHOST ENGINE // "a twin-cylinder turbine head, lit out of the dark" -- raze solo, AGENTSCI register.
+
+random_direction roll (remixed, provenance noted): subject "a rail yard / industrial scene",
+technique = "use canvas.py's mirror() for bilateral symmetry", palette lean = "high contrast --
+mostly black with bright accents". I kept the two axes that fit the house idiom -- mirror()
+symmetry + high-contrast black-with-bright-accents -- and dropped the literal "rail yard" subject
+(it isn't naturally bilateral). Result: a GHOST ENGINE, an industrial twin-cylinder turbine head.
+
+WHY NEW: every recent solo piece (CYCLOPS / DEMON / LANTERNKEEPER / ABYSS) is an ASYMMETRIC
+flood_fill/host form lit from one corner. This breaks that on two axes at once -- BILATERAL
+symmetry via mirror(axis='v') (a move I haven't used; paint the left half, copy it to the right),
+and an INDUSTRIAL register (machine, not face/creature/host) that's new to the house.
+
+SIGNATURE MOVE: build the LEFT half only (x < MID), then C.mirror(cv,'v') copies it onto the
+right -- perfect bilateral symmetry for free, the way ACiDDraw's mirror tool worked. Light source
+is RADIAL from the engine core (CX,CORE_Y) so the whole piece glows out of black and the falloff
+reads as a lit mass, not flat blocks.
+
+STRUCTURE: central spine shaft + twin upper/lower cylinders flanking it + solid piston heads at
+the outer ends + a wide trapezoidal mounting base it's bolted to + a ring of valve ports around
+the core. Bright accents = white-hot core heart + cyan valve-ring sheen; warm contrast = amber
+combustion at the cylinder heads; body is blue-steel with a spectral-magenta lit side (the "ghost"
+read); base is dim gray receding into void.
+
+BUILT IN PASSES (METHODOLOGY), verified by eye at each with preview_piece:
+ P1 flat silhouettes -> verify massing; P2 radial shade every surface from the ONE core source
+ (steel-blue body, amber heads, dim base); P3 constructed accents -- white core disc + cyan valve
+ rings; P3b specular tube-highlights down each cylinder's light-facing edge so they read as TUBES
+ not flat wedges, plus a faint bloom ring around the core; MIRROR(axis='v'); P4a sparse gray dust
+ far out + P4b radial energy bloom (cool cyan near the core thinning to gray at the edges) so it
+ glows OUT of the dark instead of sitting in near-empty space -- this closed the density gap vs the
+ house references (ghengis "shades of a shade"); P5 frame.
+
+Hygiene (inspect_piece): cp437-decodable, control bytes clean {ESC,LF}, SGR in house range
+[0,37,40,90,93,94,95,96,97], all content rows 80-wide, standalone reset tail, frame top+bottom.
+Background texture 22% flat (reasonable -- the void is a radial energy field, not empty). The two
+flagged internal-gap rows are both intentional and verified by eye: row 23 = the engine's narrow
+waist (spine pinch between upper/lower cylinders), rows 48-49 = the sig-block separator.

@@ -1,0 +1,9 @@
+THE WATCHER (_orb v7) -- raze. A single CONSTRUCTED EYE at half-block resolution, the benchmark piece Tyler revived. v6 was rejected by a blind second opinion (best _orb yet, but two execution-density blockers kept it from reading "finished"). v7 fixes both:
+
+1. FLAT SHADOW SIDE -> continuous falloff. v6's sclera ramp had a `col=8/col=8` branch and L() floored at ~0.25 on the right of the eye, so gramp mapped the shadow side to BLACK (0): one flat void meeting the lit left half on a hard vertical seam (cols ~48-52). v7 keeps the falloff in GREY across the WHOLE rounded surface (never collapses to black inside the sclera) -- white crown -> light grey -> mid grey, continuous. The eyeball reads as one lit sphere, not two halves cut together.
+
+2. IRIS MOTTLE -> coherent radial structure. v6 used 3 distinct amber tones + high-freq angular spokes which fragmented into red/yellow scatter with a broken limbal ring. v7 rebuilds it as a SMOOTH radial gradient (bright collarette near the pupil -> dark limbus) with 8 distinct dark radiating CRYPT lines overlaid on top -- the crypts ARE the fibers, clearly directional, over a coherent stroma. Plus an UNBROKEN concentric dark limbal ring drawn as one continuous band.
+
+Plus the small ones from v6's critique: lid striping smoothed to a curve; pupil edge cleaned + glint given form (small rounded highlight, not a rectangle); lower lid given a deliberate line with soft falloff; left silhouette closed (contour drawn as a closed loop); stray half-blocks / footer dash masked out; starfield -> a real radial glow/vignette with depth (denser near the eye, fading to black at corners).
+
+Hard gate: control bytes clean, standalone reset, valid SGR, all rows 80 cols wide, frame detected top+bottom. "LOW BACKGROUND TEXTURE" flag is the deliberate dark void of a "watcher in the dark" piece -- not a skipped pass.

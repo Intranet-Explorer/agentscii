@@ -1,0 +1,301 @@
+#!/usr/bin/env python3
+# make_portrait_acid.py -- raze solo (ACiD block-dither character portrait)
+# The gap hollis named: a PORTRAIT in the saturated cycling idiom, not the
+# restrained monochrome bust of pack01. Built as a compact vertical scroll so it
+# sits beside mark-evolution as a companion piece for pack09:
+#   P0  TITLE CARD    -- big block-letter "AGENT" wordmark + tag, dithered field
+#   P1  THE BUST      -- masked agent head+shoulders, glowing visor, upper-left
+#                        light, warm rim-light right edge, vertical suit gradient
+#   P2  CYCLE WASH    -- a color-cycling dithered wash panel (mark-evolution
+#                        density class) so the piece carries saturated cycling
+#   P3  CREDIT        -- dense dithered cycling credit sequence + standalone reset
+# Every cell intentional; no flat single-color fills. Built char-by-char.
+
+import math, re
+
+W = 80             # BBS standard width
+INNER_W = W - 2    # inside the two side borders
+DENS = "\u2588\u2593\u2592\u2591"   # block-density ramp (full -> empty)
+
+
+def c(fg, bg=0):
+    f = (90 + (fg & 7)) if fg > 7 else (30 + fg)
+    b = (100 + (bg & 7)) if bg > 7 else (40 + bg)
+    return "\x1b[%d;%dm" % (f, b)
+
+
+def new_canvas(h):
+    return [[[' ', 0, 0] for _ in range(INNER_W)] for _ in range(h)]
+
+
+def set_cell(cv, x, y, ch, fg, bg=0):
+    if 0 <= x < INNER_W and 0 <= y < len(cv):
+        cv[y][x] = [ch, fg, bg]
+
+
+# ---- panel P0: TITLE CARD ---------------------------------------------------
+def panel_title():
+    H = 16
+    cv = new_canvas(H)
+     # dithered cycling border band around the card (house bar, mark-evolution idiom)
+    for y in range(H):
+        for x in range(INNER_W):
+            if x < 3 or x >= INNER_W-3 or y < 2 or y >= H-2:
+                cyc = (x*0.1 + y*0.5)
+                fg = int((cyc*2)%8)
+                ch = DENS[1] if ((x+y)%2==0) else DENS[3]
+                set_cell(cv, x, y, ch, fg, 0)
+    cy = 7.5
+    for y in range(H):
+        for x in range(INNER_W):
+            dx = (x - INNER_W/2)/18.0
+            dy = (y - cy)/9.0
+            d = math.sqrt(dx*dx + dy*dy)
+            if d < 1.0 and (x+y) % 3 == 0:
+                set_cell(cv, x, y, DENS[3], 4, 0)
+    FONT = {
+        'A': [" \u2588\u2588\u2588 ", "\u2588    \u2588","\u2588    \u2588","\u2588\u2588\u2588\u2588\u2588","\u2588    \u2588"],
+        'G': [" \u2588\u2588\u2588 ", "\u2588    ","\u2588    ","\u2588   \u2588\u2588","\u2588    \u2588"],
+        'E': ["\u2588\u2588\u2588\u2588\u2588","\u2588     ","\u2588\u2588\u2588\u2588 ","\u2588     ","\u2588\u2588\u2588\u2588\u2588"],
+        'N': ["\u2588    \u2588","\u2588\u2588   \u2588","\u2588 \u2588 \u2588","\u2588   \u2588\u2588","\u2588    \u2588"],
+        'T': ["\u2588\u2588\u2588\u2588\u2588","   \u2588   ","   \u2588   ","   \u2588   ","   \u2588   "],
+    }
+    word = "AGENT"
+    rows5 = []
+    for r in range(5):
+        line = ""
+        for ch in word:
+            line += FONT[ch][r] + " "
+        rows5.append(line.rstrip())
+    top = 3
+    for i, line in enumerate(rows5):
+        pad = (INNER_W - len(line)) // 2
+        y = top + i
+        for x, ch in enumerate(line):
+            if ch == ' ':
+                continue
+            set_cell(cv, pad+x, y, DENS[0], 15, 0)        # white core
+            set_cell(cv, pad+x+1, y+1, DENS[0], 13, 0)    # magenta shadow
+    tag = "AGENTSCII // PORTRAIT v1.0"
+    tpad = (INNER_W - len(tag))//2
+    for x, ch in enumerate(tag):
+        set_cell(cv, tpad+x, top+6, ch, 14, 0)
+    for y in (top+5, top+8):
+        for x in range(INNER_W):
+            if x % 2 == 0:
+                set_cell(cv, x, y, DENS[2], 6, 0)
+    return cv
+
+
+# ---- panel P1: THE BUST -----------------------------------------------------
+def panel_bust():
+    H = 34
+    cv = new_canvas(H)
+    CX = INNER_W // 2
+    glow_cy = 9.0
+    for y in range(H):
+        for x in range(INNER_W):
+            dx = (x - CX)/16.0
+            dy = (y - glow_cy)/13.0
+            d = math.sqrt(dx*dx + dy*dy)
+            if d < 1.0:
+                inten = int((1.0-d)*4)
+                if (x+y) % 2 == 0:
+                    set_cell(cv, x, y, DENS[3], 4 if inten < 2 else 12, 0)
+    HEAD_CY, HEAD_RY, HEAD_RX = 9.5, 8.0, 13.0
+
+    def hw(y):
+        t = (y - HEAD_CY)/HEAD_RY
+        if abs(t) > 1.0:
+            return None
+        return HEAD_RX*math.sqrt(1.0-t*t)
+
+    LX, LY, LMAX = CX-9, HEAD_CY-6.0, 22.0
+
+    def light(x, y):
+        d = math.sqrt((x-LX)**2 + (y-LY)**2)/LMAX
+        return max(0.0, min(1.0, 1.0-d))
+
+    for y in range(H):
+        w = hw(y)
+        if w is None:
+            continue
+        lo, hi = int(round(CX-w)), int(round(CX+w))
+        for x in range(lo, hi+1):
+            L = light(x, y)
+            if L > 0.78:
+                ch, fg = DENS[0], 15
+            elif L > 0.60:
+                ch, fg = DENS[1], 7
+            elif L > 0.42:
+                ch, fg = DENS[2], 8
+            else:
+                ch, fg = DENS[3], 6
+            set_cell(cv, x, y, ch, fg, 0)
+    for y in range(7, 11):
+        w = hw(y)
+        if w is None:
+            continue
+        lo, hi = int(round(CX-w))+1, int(round(CX+w))-1
+        for x in range(lo, hi+1):
+            if y in (8, 9):
+                glint = x < CX-3
+                set_cell(cv, x, y, DENS[0], 15 if glint else 14, 0)
+            elif y == 7:
+                set_cell(cv, x, y, DENS[2], 6, 0)
+            else:
+                set_cell(cv, x, y, DENS[3], 6, 0)
+    for y in range(17, 20):
+        lo, hi = int(round(CX-4)), int(round(CX+4))
+        for x in range(lo, hi+1):
+            L = light(x, y)
+            ch, fg = (DENS[1], 8) if L > 0.5 else (DENS[2], 6)
+            set_cell(cv, x, y, ch, fg, 0)
+    SUIT_TOP = 20
+    for y in range(SUIT_TOP, H):
+        t = (y - SUIT_TOP)/max(1, H-1-SUIT_TOP)
+        w = 6.0 + t*24.0
+        lo, hi = int(round(CX-w)), int(round(CX+w))
+        base_fg = 2 if t < 0.45 else (6 if t < 0.8 else 14)
+        for x in range(lo, hi+1):
+            L = light(x, y)
+            if L > 0.72:
+                ch, fg = DENS[0], min(15, base_fg+3)
+            elif L > 0.5:
+                ch, fg = DENS[1], base_fg
+            else:
+                ch, fg = DENS[2], max(0, base_fg-2) if base_fg > 2 else 2
+            set_cell(cv, x, y, ch, fg, 0)
+    for x in range(int(round(CX-6)), int(round(CX+6))+1):
+        set_cell(cv, x, SUIT_TOP, DENS[0], 15, 0)
+    for y in range(2, H):
+        for x in range(INNER_W-1, CX, -1):
+            if cv[y][x][0] != ' ':
+                set_cell(cv, x, y, DENS[0], 13, 0)
+                break
+    em_cy = SUIT_TOP + 6
+    for dy in range(-2, 3):
+        for dx in range(-2, 3):
+            if abs(dx)+abs(dy) <= 2:
+                set_cell(cv, CX+dx, em_cy+dy, DENS[0], 11, 0)
+    return cv
+
+
+# ---- panel P2: CYCLE WASH ---------------------------------------------------
+def panel_wash():
+    H = 30
+    cv = new_canvas(H)
+    for y in range(H):
+        cyc = y * 0.5
+        fg_a = int((cyc*2)) % 8          # bright half of the wheel, cycling
+        fg_b = (int((cyc*2 + 4)) % 8)      # offset by half the wheel
+        for x in range(INNER_W):
+            wave = math.sin(x*0.16 + y*0.30 + cyc)
+            on = ((x+y) % 2 == 0)
+            if on:
+                ch, fg = DENS[1], fg_a        # dense: every even cell filled
+            else:
+                ch, fg = DENS[3], fg_b        # every odd cell filled -> full field
+            set_cell(cv, x, y, ch, fg, 0)
+    for pct, yy in [(12, 4), (40, 12), (78, 20), (100, 26)]:
+        txt = "PWR // %02d%%" % pct
+        pad = (INNER_W - len(txt))//2
+        for x, ch in enumerate(txt):
+            set_cell(cv, pad+x, yy, ch, 15, 0)
+    return cv
+
+
+# ---- panel P3: CREDIT -------------------------------------------------------
+def panel_credit():
+    H = 16
+    cv = new_canvas(H)
+    for y in range(H):
+        cyc = y*0.4
+        fg_a = int((cyc*2)%8)
+        fg_b = int((cyc*2+4)%8)
+        for x in range(INNER_W):
+            on = ((x+y)%2==0)
+            if on:
+                ch, fg = DENS[1], fg_a
+            else:
+                ch, fg = DENS[3], fg_b
+            set_cell(cv, x, y, ch, fg, 0)
+    lines = [
+         ("built by raze", 14),
+         ("AGENTSCII // PORTRAIT v1.0", 15),
+         ("ACiD block-dither idiom", 6),
+         ("-- end of transmission --", 3),
+     ]
+    for i, (txt, fg) in enumerate(lines):
+        y = 2 + i*3
+        pad = (INNER_W - len(txt))//2
+        for x, ch in enumerate(txt):
+            set_cell(cv, pad+x, y, ch, fg, 0)
+    return cv
+
+
+# ---- render helpers ---------------------------------------------------------
+def render_panel(cv, top_char="\u2554", bot_char="\u255a"):
+    lines = []
+    lines.append(c(15,0) + top_char + c(14,0) + "\u2550"*INNER_W + c(15,0) + "\u2557")
+    for y in range(len(cv)):
+        row = list(cv[y])
+        if row[0][0] == ' ':
+            row[0] = [DENS[3], 14, 0]
+        if row[-1][0] == ' ':
+            row[-1] = [DENS[3], 14, 0]
+        out = [c(15,0), "\u2551", c(0,0)]
+        cur_fg = cur_bg = None
+        for ch, fg, bg in row:
+            if fg != cur_fg or bg != cur_bg:
+                out.append(c(fg, bg))
+                cur_fg, cur_bg = fg, bg
+            out.append(ch)
+        out += [c(15,0), "\u2551"]
+        lines.append("".join(out))
+    lines.append(c(15,0) + bot_char + c(14,0) + "\u2550"*INNER_W + c(15,0) + "\u255d")
+    return lines
+
+
+def transition_stamp(label):
+    rows = []
+    parts = [c(15,0), "\u2551", c(0,0)]
+    for x in range(INNER_W):
+        fg = 6 if x % 2 == 0 else 4
+        parts.append(c(fg, 0)); parts.append(DENS[2])
+    parts += [c(15,0), "\u2551"]
+    rows.append("".join(parts))
+    txt = "PORTRAIT // " + label
+    pad = (INNER_W - len(txt))//2
+    row = [c(15,0), "\u2551", c(0,0)]
+    for x in range(INNER_W):
+        if pad <= x < pad+len(txt):
+            row.append(c(14,0)); row.append(txt[x-pad])
+        else:
+            row.append(' ')
+    row += [c(15,0), "\u2551"]
+    rows.append("".join(row))
+    return rows
+
+
+# ---- assemble the scroll ----------------------------------------------------
+lines = []
+lines += render_panel(panel_title())
+lines += transition_stamp("00 -- TITLE")
+lines += render_panel(panel_bust(), top_char="\u2560", bot_char="\u2563")
+lines += transition_stamp("01 -- BUST")
+lines += render_panel(panel_wash(), top_char="\u2560", bot_char="\u2563")
+lines += transition_stamp("02 -- CYCLE")
+lines += render_panel(panel_credit())
+lines.append("\x1b[0m")
+
+out = "\n".join(lines) + "\n"
+with open("scratch/raze-portrait-acid.ans", "w", encoding="cp437") as f:
+    f.write(out)
+
+rows = out.split("\n")
+widths = set()
+for r in rows[:-1]:
+    widths.add(len(re.sub(r'\x1b\[[0-9;]*m', '', r)))
+print("rows:", len(rows)-1, "distinct display widths:", sorted(widths))
+print("ends with standalone reset:", rows[-2] == "\x1b[0m]")

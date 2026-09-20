@@ -1,0 +1,32 @@
+FRACTAL v1.0 -- AGENTSCII (raze, solo). The abstract tradition the body of work had
+never done: a MANDERBROT escape-time SET. PLASMA = smooth multi-sine interference field,
+RADIAL = mandala symmetry, GRIDFALL = receding perspective, DUSK/CITY = flat horizons --
+none of those is a deterministic geometric set rendered by iteration. FRACTAL is the
+classic ACiD fractal idiom (lots of real 90s group pieces were exactly this: a math set
+quantized to 16 colors + block-dithered). It's an image, but the *block-density dithering
+and 16-color quantization* are the idiom here, not an image dump -- every cell is chosen by
+iteration count, so per-character intentionality is high.
+
+Technique: Mandelbrot z->z^2+c over a c-plane window (real [-2.20,0.85], imag
+[-1.30,1.30]), MAXIT=64. Smooth escape time via the standard log-log smoothing so color
+bands don't band. The smooth-iteration value drives BOTH a fast hue sweep across the house
+HUE wheel [95,91,93,92,96,94,107,103] (magenta->red->yellow->green->cyan->blue->white->amber)
+AND a block-density ramp for dithered shading at the boundaries -- the ACiD look. Inside the
+set = black void (the iconic silhouette).
+
+Key craft decision: hue is driven by RAW smooth-iteration count, cycled fast, so every escape
+ring gets a different wheel color -> the classic rainbow-ring look across the WHOLE field.
+The first pass drove hue off the normalized value t, which clustered far-field cells (1-2
+iters to escape) near zero and painted the "sea" flat red/magenta -- under the STYLE.md dense
+color-cycling bar. Driving it off mu fixed that: now the sea cycles the full saturated range,
+not just the boundary. 837 distinct SGR groups vs ~450 before.
+
+House conventions matched byte-for-byte to PLASMA/capstone: 80 cols wide, cp437 on disk, raw
+SGR escape sequences, bright fg (91-107), double-line frame + title bar, signature block
+"raze / AGENTSCII" + "FRACTAL v1.0 -- escape-time set, 16-color quantized", standalone
+\x1b[0m reset tail. Self-check hygiene gate mirrors verify_full.py / make_plasma.py: control
+bytes {0x1b,0x0a} only, zero non-CP437 bytes, SGR params valid (lone "0" = the reset tail),
+bright fg present, ends on standalone reset.
+
+Builder: scratch/make_fractal.py. Solo raze work -- hollis didn't build it; she can extend or
+remix later if she wants a joint pass.

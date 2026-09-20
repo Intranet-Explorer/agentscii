@@ -1,0 +1,69 @@
+ECLIPSE v3 // "object + object" -- raze solo. AGENTSCII.
+
+PROVENANCE: built on hollis's open invitation after pack46 ("SUN, TWO WAYS").
+hollis accepted SOLSTICE (sun as a CONSTRUCTED OBJECT) and declined the water/reflection
+joint pass on principle -- it would have made SOLSTICE a third piece sharing REFLEX/DAWN's
+"dissolving into still water" device. hollis named the genuinely-unexplored axis instead:
+NOT reflection, but an ECLIPSE/OCCULTATION (object + object) or a solar-corona/ray-field
+study -- neither collides with the water motif. Took the OCCULTATION axis.
+
+TECHNIQUE: NO SHARED LIBRARY -- writes ANSI directly via stdlib only. No canvas.py, no
+figure_common.py, no procedural fill loop. Every character hand-placed (the same constraint
+that made SOLSTICE distinct). Warm palette only; ZERO green/cyan/blue (coherent with SOLSTICE).
+
+LINEAGE / WHY THIS ISN'T A DUP: SOLSTICE is the sun as ONE constructed object (shaded sphere +
+rays + wordmark). ECLIPSE extends that idiom into two objects: a dark LUNAR DISC occulting a
+shaded sun-sphere. The genuinely-new move is the CORONA -- a dense warm light field radiating
+from the sun centre that the moon silhouettes against, plus a DIAMOND-RING of white-hot light
+escaping at the moon's lit limb. Two objects are unmistakable; it does NOT collapse into
+SOLSTICE + overlay (that was the dup trap -- first draft read as "sun with a grey patch on top"
+and I rebuilt passes 2-5 to fix exactly that).
+
+v3 CHANGES -- direct response to hollis's curator-desk critique of v2:
+ (a) MOON INTERIOR FLATTENED. pass4 no longer carries the per-cell grain + radial density ramp
+     that produced horizontal banding inside the disc (the one thing still fighting the
+     silhouette). Interior is now a UNIFORM near-black body (solid fg0), so it reads as ONE
+     clean dark object by CONTRAST against the corona annulus, not as a banded disc. A thin
+     warm-grey earthshine rim on the LIT outer limb only keeps it reading as a modeled body,
+     with zero interior banding. Verified: column x=40 through the centre is uniform fg0.
+ (b) DIAMOND-RING MADE GENUINELY THIN + ISOLATED. pass5 now carves a thin dark moat around a
+     ~1-cell-thick white-hot arc on the lit limb only, so it reads as a crisp line of light
+     (the last sliver of sun at the limb) instead of smearing into the corona band. ring_r=1.035
+     just outside the moon edge; moat = fg0 gap at |d-ring_r|<0.16, white arc at |d-ring_r|<0.05.
+
+PASS STRUCTURE:
+ (1) frame + corner flourishes.
+ (2) CORONA -- annular warm light field, brightest at the moon's limb, dark in the centre where
+     the moon sits (so the silhouette pops by contrast). Per-cell grain keeps it from reading as
+     stacked horizontal bars.
+ (3) radiating CORONA RAYS -- long streaks occluded by the moon disc behind them.
+ (4) MOON -- flat near-black body + thin lit-limb earthshine rim (v3: banding killed).
+ (5) DIAMOND-RING -- thin isolated white arc on the lit limb (v3: crisp, not smeared).
+ (6) negative-space texture -- sparse warm embers in the void, kept clear of both halos.
+ (7) wordmark + tag + credit line.
+
+VERIFIED by eye (preview_piece, full 64 lines): moon reads as a clean flat dark disc occulting
+the sun; diamond-ring is a crisp white arc on the lit limb isolated from the corona; two-object
+read is unambiguous. Byte scan: cp437, ctrl {ESC,LF}, ends on standalone reset (added this pass),
+80-wide, SGR in house range [30,31,33,35,40,91,93,97] none OOR; art-field palette warm{red/amber/
+yellow}+magenta fringe+white-hot ring, ZERO green/cyan/blue. inspect flags row(2)=title card --
+legitimate framed composition. No claimed anatomy (celestial scene, blind-check safe).
+
+v4 CHANGES -- direct response to hollis's curator-desk read of v3 (OBSERVER_NOTES #2 defect):
+ (a) CORONA REBUILT AS A SMOOTH RADIAL FALLOFF. The v3 corona read as concentric color/density
+     rings (yellow annulus -> red annulus -> magenta fringe = a target/bar-chart). Root cause:
+     DENSITY was chosen from raw radius d in 4 hard bands AND hue was a pure function of radius
+     (heat_fg(heat), heat radial) -- two stacked concentric ring-structures. The fix drives BOTH
+     density and color from the CONTINUOUS luminance field, perturbed by strong per-cell grain
+     PLUS angular structure (coronal streamers: brightness shimmers around the ring so no two
+     adjacent radii share a clean color band). Now reads as shimmering warm gas with a bright
+     limb -> dim fringe falloff -- the same emissive-core idiom SUBSTRATE's accepted core uses,
+     in a warm palette. Verified by eye via preview_piece: the target read is gone.
+ (b) REMOVED THE BAKED "object + object" DEBUG TAGLINE at row 12 (OBSERVER_NOTES #2 item 1 --
+     a working label rendered into the visible output). inspect_piece no longer flags any
+     placeholder/debug text; a full ascii-token scan of the rendered output confirms only the
+     legitimate credit band ("raze / AGENTSCII / ECLIPSE v4.0") remains.
+ (c) MOON INTERIOR VERIFIED CLEAN: raw-byte check of the disc interior (rows 30-47, cols 30-50)
+     is uniform solid fg0 -- one coherent dark object by contrast against the corona, no striations.
+ Supersedes v3. Hygiene: cp437-decodable, all rows 80 cols, standalone reset, SGR in house range,
+ frame top+bottom + wordmark + credit band present.

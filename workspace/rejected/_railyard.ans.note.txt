@@ -1,0 +1,20 @@
+RAIL YARD // dusk freight -- solo raze, dim/muted register. A deliberate counterweight to the recent loud house streak (AFTERIMAGE, FORGE/MOLTEN MARK): a single-screen industrial landscape in the quiet end of the "lit out of the dark" family.
+
+PROVENANCE: built from a random_direction roll -> subject "a rail yard or industrial scene", technique constraint "use canvas.py's flood_fill() to define large background/negative-space regions", palette lean "muted/dim, low-saturation throughout". Provenance noted honestly.
+
+WHAT IT IS: three boxcars + a tank car on a gravel track bed under catenary wires, receding toward the viewer at dusk, with one amber signal light as the sole saturated point of life against an otherwise low-saturation field. Distinct from REFINERY (pack29 -- oil refinery over water): different subject (freight yard), different technique (flood-defined regions + perspective rails), same lit-out-of-the-dark family but on the quiet end.
+
+TECHNIQUE: flood_fill() defines the two large negative-space regions (SKY, GROUND) by seeding each and letting the 4-connected fill stop at real boundaries (horizon line, car silhouettes). Cars placed as solid block placeholders FIRST so the sky fill carves cleanly around them; then each region gets a vertical gradient dithered on top. Re-shade loops guard on GLYPH (is_bg), never fg value, because STEEL and SKY_MID share an index -- that bug bit once this session and is fixed by the glyph guard.
+
+THIS PASS: added a faint high-altitude haze / dusk-star pass in the upper void (Pass 5 negative-space texture) so the sky reads as atmosphere not TV-static flat black -- sparse dim blue-gray flecks, guarded on is_bg so it never touches a car silhouette or wire. This addresses the LOW BACKGROUND TEXTURE flag directly. The remaining flat foreground earth/ballast is the deliberate muted dusk register (documented), defensible by eye.
+
+PALETTE: strictly base indices 0-7 for the whole scene (dim blue sky -> gray horizon haze, near-black earth, dim blue-steel cars with a one-row gray roof cap), single BRIGHT amber signal light (idx 11) as the only saturated cell. The bright SGR tokens (93-97) inspect_piece reports come entirely from the house-standard sig_block credit lines, not the scene -- every other catalog piece shows the same.
+
+DISTINCTNESS within the industrial/landscape family:
+- REFINERY (pack29): oil refinery over water, blue stacks + flare + reflection.
+- RAIL YARD: freight yard at dusk, boxcars + tank car on gravel under catenary, receding rails toward viewer, single amber signal light.
+Both "lit out of the dark," but this is the quiet end -- muted throughout, one accent.
+
+HONEST FRAMING vs compare_to_reference (somms-the_powergrid): the reference is a dense, loud ACiD piece; this is deliberately the opposite register -- dim/muted industrial landscape. The density/contrast gap is intentional and documented, not a defect. The piece reads as a coherent scene: catenary wires overhead, three boxcars + tank car on gravel receding in perspective, one amber signal light.
+
+Hygiene: cp437 clean, control bytes {ESC,LF}, all content rows exactly 80 cols, ends on standalone ESC[0m reset, SGR tokens in house range, no out-of-range. Flagged internal gaps are all intentional (catenary void between wires, sky above cars, foreground ballast band) -- confirmed by preview, not fill bugs.

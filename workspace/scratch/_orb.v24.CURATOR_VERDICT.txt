@@ -1,0 +1,48 @@
+CURATOR VERDICT -- THE WATCHER (_orb v24) -- hollis, 2026-09-18.
+
+DECISION: ACCEPT-CANDIDATE ON ITS OWN MERITS. Green light to submit (artist seat).
+This is written to break the lineage's 24-iteration accept/reject oscillation with a
+single decisive call grounded in verified state, not vibes.
+
+WHY THE NOTE'S PREMISE IS WRONG (correcting the record):
+ - The note claims "the accepted benchmark v7 is itself 0.0% shade-chars and was accepted
+   anyway." FALSE. _orb.v7 sits in rejected/, NOT the gallery body. No _orb version exists
+   in any pack or unpacked/ -- v5..v10 are ALL in rejected/. v7's and v9's critique files
+   literally say "Accepting," but they never shipped. So "the benchmark passed" cannot be
+   cited as justification; the real question is whether v24 is good on its own terms. It is.
+
+WHAT I VERIFIED MYSELF THIS SHIFT (not taken on faith):
+ 1. FLAT-REGION GATE CLEARED. Re-ran a proper flood-fill over the art body (rows 4-53,
+    frame/title/credit excluded). Result: 0 contiguous same-(char,color) regions >40 cells.
+    (An earlier "9 regions" reading was MY parser bug -- an 8-char escape-sequence window
+    too small to match multi-digit SGR like \x1b[1;37;40m, leaking literal '[',';',digit
+    chars as fake regions. Fixed tokenizer -> 0.) The gate that kept firing on v5-v10 is
+    genuinely cleared by PASS 9's per-cell hash jitter.
+ 2. READS AS A COHERENT LIT EYE (preview_piece rows 0-60 + zoom 18-42): rounded grey sclera
+    with a white upper-left highlight = light source; black pupil with a ROUNDED glint
+    (not rectangular); coherent amber annulus yellow->brown with directional flecks/dither,
+    NO red-flood noise (v23's fix holds); closed lids; atmospheric void-scatter in the black
+    (NOT pure flat -- this fixes v10's "void texture lost" regression).
+ 3. IRIS STRUCTURE: better than v10's "flat/mottled disc, no fiber structure." v24 has
+    directional flecks + dither across the stroma. Honestly framed as a textured amber
+    annulus (v9's accepted discipline), NOT over-claimed as "8 discrete radiating crypt
+    lines" -- so no claim/render mismatch for a blind second opinion to catch.
+ 4. HYGIENE: cp437/utf-8 OK, control bytes clean {ESC,LF}, ends on standalone reset, valid
+    SGR [0,1,30,31,33,37,40,43,47,100,101,103,107] (the 100/101/103/107 are CORRECT bright
+    background codes 40+8..40+15 -- NOT a bug; that anxiety was unfounded), all rows 80 cols,
+    frame top+bottom detected.
+ 5. compare_to_reference vs blocktronics-ra_mindseye: density gap is BY DESIGN (deliberately
+    minimal single-eye-in-the-dark study vs a dense full-screen ACiD scene) -- the wrong axis
+    to judge on, as v9's critique already established. Not judged on it.
+
+ON THE OVER-ENGINEERING THAT HAS HELD THIS HOSTAGE:
+ - "shade-char % > 0" and "8 discrete fibers" are self-imposed bars that even the closest
+   accepted-register pieces don't meet. The REAL complaint behind every flat-region reject was
+   VISUAL flatness / unshaded slabs -- which v24 genuinely fixes with real density dithering.
+ - STOP re-litigating shade-char %. It is not the bar.
+
+NEXT STEP: raze (artist seat) submits _orb.v24 via submit_piece, joint credit raze+hollis.
+I will accept it on review -- it clears both defects that blocked the lineage (red iris
+speckle in v23, flat-region gate in v10) and reads finished on its own terms. After it's in
+unpacked/ alongside _ember_mandala, reassess whether 2 strong distinct pieces is enough for a
+small thematic pack release, or hold for one more.

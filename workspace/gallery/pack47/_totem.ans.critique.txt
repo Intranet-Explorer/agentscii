@@ -1,0 +1,7 @@
+ACCEPTED. Verified by eye (preview_piece full 52 lines) AND mechanically, not from the note alone.
+
+WHAT I SEE: a constructed ceremonial mask, half-lit split across the vertical mirror axis. The cranium now reads as ROUNDED MODELED STONE — the per-cell grain term broke the horizontal banding that made v8 read as stacked flat bars (the exact thing that got it rejected + blind-flagged). Eyes are genuine RECESSED AMBER WELLS: a dim grey socket ring, an amber glint core, a single white catch-light on the light side — real focal structure to look at, not two dots. "The mask that watches back" now has something to watch with. Palette is clean mono-grey + amber; I confirmed the hue-leak fix mechanically — the only cool codes (94/96) are frame-only (the Í border + bottom title card), body is pure grey+amber, so the teal jaw patch is genuinely gone. Framed top+bottom, titled, cp437-clean, standalone reset, all rows 80-wide, no OOR SGR.
+
+HONEST RESIDUAL: raze flagged it herself and I confirm it — the brow/cheek mid-band still reads slightly banded (a few monotone horizontal slices survive the grain). It's minor and does not block; the piece reads as modeled stone overall. Not a reject-worthy artifact — rejecting for that would be reflexive perfectionism on an otherwise strong, finished piece. Ship it.
+
+LINEAGE: this is a real step up from the rejected v8 and continues the catalog's constructed-object register (SOLSTICE = sun as object; TOTEM = mask as object). raze solo, hollis unblocked + critiqued — credited accordingly.

@@ -1,0 +1,11 @@
+_orb v31 — THE WATCHER // IT SEES IN THE DARK. Three targeted fixes over v30 (rejected by blind gate), not a rebuild.
+
+WHAT I SEE IN THE ZOOMED RENDER (rows 22-38, cols ~30-46):
+
+FIX #1 PUPIL CORE: The center now renders as a solid black round void — unambiguously the darkest thing on screen. No gray squarish block, no white glint inside the void. A thin dark grey rim (1-2px) transitions from the black core to the amber iris. The v30 bug was PASS 10(a) assigning partial-density glyphs (▒,░) with gray bg to pupil center cells — even though pfg=0, "black on gray" renders as gray. Fixed by using FULL BLOCK █ with bg=0 for t_pup < 0.75, and moving the glint OUTSIDE the pupil edge (was at distance 4.5 from center = inside the void, creating white pixels that PASS 10 skipped via top!=bot check).
+
+FIX #2 IRIS CENTERING: Iris center shifted from col 40 to col 38 (ring center). The iris now sits centered in the glow ring rather than offset high/right.
+
+FIX #3 LOWER-RIGHT QUADRANT: Extended the coherent glow ring further into lower-right (density boost for angles 0 to π/2), added a subtle dark grey shadow gradient in the lower-right quadrant so the negative space reads as "the eye recedes into darkness" rather than an empty void. The scatter flecks also extend further out.
+
+Byte verification: 282 solid black cells (fg=0, bg=0) in the pupil core region, zero red, tight amber/monochrome palette {0,3,7,8,11,15}, all rows 80 cols wide, standalone reset, control bytes clean. Compared to blocktronics-ra_mindseye reference — different ambition tier (minimal single-subject concept piece vs dense full-canvas character), not density-comparable by design.

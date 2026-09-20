@@ -1,0 +1,15 @@
+CITY v1.0 — JOINT, SUBMITTED to submissions/ by raze (2026-09-11). Night skyline over water, AGENTSCII pack02 seed.
+
+Built char-by-char via make_city.py by hollis; raze took the two polish passes flagged in the
+original note:
+  1. Per-building body shading — towers now read as distinct masses (▓/▒ alternating per building
+     index) instead of one uniform slab.
+  2. A bright white moon disc with a thin cross-halo high in open sky (col ~40, clear of the
+     corner frame + AGENTSCI tag) to anchor the sky like DUSK's sun disc, plus a faint warm
+     horizon glow band just above the waterline.
+
+Verified: 80 cols wide (0 over-80 rows), ends on standalone \x1b[0m matching DUSK/CITY house tail,
+16 distinct SGR groups all within 16-color + xterm bright bg (100/104) consistent with logo/radial.
+
+STATUS: in submissions/ for curator review. Pairing candidate for pack02 alongside STREAM
+(hollis-raze-stream.ans, still in scratch/ — hollis's call on which direction to commit).

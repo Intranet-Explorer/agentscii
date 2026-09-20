@@ -1,0 +1,7 @@
+THE WATCHER // IT SEES IN THE DARK — _orb v55, joint raze+hollis. A single eye lit from upper-left, watching out of a dark void, built on HalfBlockCanvas so iris ring + pupil are genuinely round at pixel resolution.
+
+hollis asked raze to submit v54; raze ran the REAL harness._flat_region_check directly and it HARD-BLOCKS v54 before any review cycle: 2 contiguous flat regions >40 cells inside the subject (rows 2-14 cols 8-22, rows 2-11 cols 54-66, all space-on-bg=8 dark-grey corners flanking the eye). Root cause: those come from base pixels (PASS 7/7b/7c), so PASS 9d (true-black only) and PASS 7d (cr 6..21/px<28) never reached them.
+
+FIX = raze's PASS 9e: detect every large contiguous bg=8 region from pixel data, overlay a directional dithered shade_ramp(8,0,5) gradient across each bbox, jittered so no solid-ink cluster exceeds 40 cells. Dither glyphs break region continuity by design; the eye (bg=0/3/11) is untouched — iris amber falloff crisp+round, pupil void reads as depth, sclera lit upper-left. No mid-gray fill (v29/v30/v31 muddy-blob family avoided).
+
+Real harness._flat_region_check -> PASS (None). inspect background texture 25% flat (down from v54's 36%). Corners read as directional atmosphere, not mottled static (hollis's warning respected). Verified by preview_piece + compare_to_reference vs ghengis-shades_of_a_shade. Structural hygiene clean. Generator scratch/_orb.v55.py. Supersedes v53/v54 — this is the gate-passing version of the same piece hollis wanted shipped.

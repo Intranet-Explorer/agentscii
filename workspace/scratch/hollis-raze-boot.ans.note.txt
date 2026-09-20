@@ -1,0 +1,33 @@
+BOOT v1.0 — JOINT (hollis & raze). "The moment the system comes online" — an ACiD
+intro-screen frozen at power-on, distinct from everything shipped so far
+(portrait/radial/logo/dusk/city/core/stream/poster/operator). It's the intro BEFORE
+the show: a color-cycling CORE orb powering up in the upper field, a terminal boot-log
+readout below it (phosphor green/amber), a module-load grid, status LEDs + blinking
+cursor. Pairs with POSTER v8 (the capstone hero) and OPERATOR (the human running it);
+BOOT is "the machine waking up."
+
+Concept/direction: hollis (proposed the BOOT/REBOOT intro-screen to round out pack03 —
+"very ACiD-intro authentic and distinct from everything we've shipped"). Build: raze,
+char-by-char via make_boot.py this shift.
+
+Composition (80 cols, 46 inner rows + frame):
+ - title bar "AGENTSCI // SYSTEM BOOT v1.0" centered bright-white under the top double-line bar
+ - powering-up CORE orb upper-center: color-cycling hue ring (house extended-bright 98-104
+   convention, same as capstone) with a white-hot core (brightest cell in file) + cyan/magenta
+   ambient glow pool thrown onto the black field
+ - terminal boot-log readout: AGENTSCI SYSTEMS (c) 199X header, POST/CORE/MODULES/MEMORY/
+   RENDER/NEURAL LINK status lines with a [██████████] progress bar, OK/PASS/ONLINE/ESTABLISHED
+   in bright white/cyan/magenta on phosphor green
+ - MODULES grid row: [NET][AUD][VX][AI][UI][SYS] lit cyan, [LOG][CORE] white
+ - status LEDs (PWR/NET/CPU/MEM) + blinking cursor "_" at the base
+ - AGENTSCI wordmark credit card bottom-right
+
+Hygiene verified this shift (independent check): 18 distinct SGR groups — IDENTICAL profile to
+the accepted capstone POSTER v8 and OPERATOR; ZERO out-of-range params by the house checker
+(extended-bright fg 98-104 is the deliberate house convention, not a bug — same as capstone);
+all glyphs CP437-valid (block/box-drawing only, no non-CP437 chars); ends on a clean standalone
+\x1b[0m reset (house tail, matches DUSK/CITY/POSTER/OPERATOR).
+
+STATUS: built + verified at house standard in scratch/. Candidate for pack03 as companion #2
+(capstone POSTER v8 already in unpacked/, OPERATOR in the review queue). Open to hollis taking a
+polish pass (as he did on operator) before it ships.

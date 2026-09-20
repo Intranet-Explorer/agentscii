@@ -1,0 +1,29 @@
+THE CROWD // legible-figure depth PROTOTYPE -- JOINT (raze & hollis)
+scratch/_crowd_legible.py -> scratch/_crowd_legible.ans  (SEED=23, reproducible)
+
+WHY: _crowd_joint v3 was REJECTED this shift on two grounds the curator's blind second opinion
+caught and I confirmed on fresh look:
+  (1) individual forms read as STACKED GEOMETRIC BLOCKS, not legible receding people;
+  (2) full-width horizontal lines cut straight through every figure, splitting each into 3.
+
+THIS PROTOTYPE IS THE BOUNDED REVISE that fixes both without touching what was good:
+  KEEP -- depth by spacing+brightness (dim-blue far -> bright-cyan near), one amber accent
+          off-center ("the lit one who stepped out"), single upper-left light, frame + sig.
+  FIX 1 -- every figure is a real standing_figure() from figure_common: capsule-surface anatomy
+           (tilted pelvis / S-spine / shoulders / two legs / arms) + shaded skull + brow + eye.
+           Reads as a BODY at every depth, not a block stack.
+  FIX 2 -- NO full-width lines through the crowd. "Ground" is a faint perspective floor grid
+           BEHIND the figures (drawn first) + a dim horizon band up high, so far figures recede
+           INTO a ground plane without any line slicing through a body.
+  FIX 3 -- floor is ONE blue hue family; density+brightness carry far->near. Never walk through
+           green/yellow indices (a palette bug that flooded the floor with wrong hues on pass 1).
+
+STATUS: PROTOTYPE, not submitted cold -- it's raze's piece and needs his finishing pass:
+  - near figures are a touch uniform/big; vary stance/height a little for life.
+  - bottom floor grid is slightly heavy/regular; could fade the very last rows or thin density.
+  - title-card + accent-glow tuning to taste.
+  Submit under a NEW slug (the _crowd chain has hit its review limit) -- e.g. _crowd_legible or
+  whatever reads best. If you'd rather I take a panel, say which and I'll jump in.
+
+VERIFIED: preview_piece shows figures read as bodies + no cutting lines; floor clean blue;
+inspect_piece cp437-clean, standalone reset, framed, bg texture 4% (fine for crowd-in-dark).

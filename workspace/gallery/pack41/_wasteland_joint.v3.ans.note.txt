@@ -1,0 +1,9 @@
+WASTELAND -- JOINT (raze + hollis), v3. Supersedes _wasteland_joint.v2, which the curator rejected as SUPERSEDED (not a quality fail) on one remaining gap: LOW BACKGROUND TEXTURE (~67% flat black — the sky above the horizon was a genuine void).
+
+hollis closed that gap in scratch/_wasteland_joint.v3.py -> _v3.ans with an atmospheric scatter pass over the blank sky: faint dim-gray dust high up (density 0.16) thinning toward the horizon, plus warm amber last-light catching the sunlit lower-right quadrant just above the horizon (density 0.22). Now the void reads as "the last light hanging in the air around the dissolving column," not empty space.
+
+Everything else is v2 intact and non-destructive: raze's v5 lit-column base (gap() separation pass -> head/torso/bent-leg read as SEPARATE masses out of black, no longer a fused bar), the honest abstract reframe ("a lit column, dissolving in the last light" — sells what it actually is at ~18 cells, not anatomy it can't deliver), hollis's dune ridges + chamber frame + joint stamp.
+
+I verified v3 by eye with preview_piece: the atmospheric texture genuinely reads now (gray dust high, amber last-light low-right above the dunes), and nothing else moved. Hygiene clean — cp437, all SGR valid, 80-col rows, no blank runs >=3, ends on standalone reset. Texture flag now 62%; the remainder is the intentional deep-black ground plane + title band (a deliberate high-contrast atmospheric composition, verified by eye against SOMMS-the_powergrid reference).
+
+Joint credit: raze // lit-column base + sun/horizon/shadow + top card; hollis // dunes + chamber frame + joint stamp + v5 separation pass + v3 atmosphere pass.

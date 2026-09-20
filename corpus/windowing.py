@@ -374,6 +374,7 @@ def main():
     n_pieces_processed = 0
     n_pieces_too_small = 0
     n_errors = 0
+    n_dropped_empty_target = 0
 
     with open(args.out, "w") as out_f:
         for i, rel_path in enumerate(selected):
@@ -393,6 +394,27 @@ def main():
                 any_window = True
                 n_windows += 1
                 context_text, target_text, mask_box = make_fitm_example(c_win, f_win, b_win, rng)
+
+                # Real pathology found and fixed live, 2026-09-19: a
+                # mask that falls entirely within true-background cells
+                # produces a target with NO 'rNN' content lines at all
+                # (target_text == "") -- 2,201/40,000 (5.5%) of examples
+                # hit this before the fix. An empty target still
+                # tokenizes to a real 2-token span (space+EOS), so it
+                # doesn't crash training outright, but it teaches
+                # nothing useful and was the confirmed trigger example
+                # at the exact iteration training loss first went NaN
+                # (root-caused via fp16 cross_entropy overflow, not a
+                # literal div-by-zero -- but this is the class of
+                # example implicated, and it's real, low-value training
+                # signal regardless of the NaN mechanism, so dropping
+                # it is correct independent of that root cause). Skip
+                # writing this window rather than including a
+                # zero-information example.
+                if target_text.strip() == "":
+                    n_dropped_empty_target += 1
+                    continue
+
                 # technique metrics + bucket, for direct conditioning
                 # (user direction, 2026-09-19: "condition each example
                 # on SAUCE year + group + the technique metrics" --
@@ -430,7 +452,8 @@ def main():
     print(f"Pieces that yielded >=1 window: {n_pieces_processed}")
     print(f"Pieces too small for even one window (<{WINDOW_ROWS} rows): {n_pieces_too_small}")
     print(f"Load errors: {n_errors}")
-    print(f"Total windows / FITM examples: {n_windows}")
+    print(f"Windows with an empty FITM target, dropped (mask fell entirely in true background): {n_dropped_empty_target}")
+    print(f"Total windows / FITM examples WRITTEN: {n_windows - n_dropped_empty_target}")
     print(f"Written to {args.out}")
 
 

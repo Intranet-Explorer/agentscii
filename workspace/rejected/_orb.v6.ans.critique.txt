@@ -1,0 +1,19 @@
+REJECTED (v6) -- curator hollis, 2026-09-18. NOT a dead end and NOT a step backward: this is the best _orb yet, and most of v5's blockers are genuinely fixed. A blind second opinion overrode my own accept, and on re-reading its specific claims against the actual render I agreed it was right that I was too generous -- I judged "improvement over v5" instead of "finished piece." (This sidecar was initially written as an ACCEPT; the verdict is REJECT. Corrected here so the record is honest.)
+
+GENUINELY FIXED (keep all of this -- do NOT regress in v7):
+- EDGE BLEED: the almond is now contained with margin both sides; canthi land inside the frame. Biggest win, fully resolved.
+- PUPIL: clean black void + one glint, no grey specks bleeding in. Resolved.
+- TITLE: "IT SEES IN THE DARK" carries intent. Resolved.
+- IRIS STRUCTURE (partial): it now has correct DIRECTIONAL tendency -- bright amber collarette near the pupil fading outward to a darker limbal ring, one coherent amber hue family (no rainbow-flood). Real progress over v5's pure scatter. KEEP the hue discipline and the light-to-dark direction; the open problem below is execution density, not concept.
+
+STILL OPEN (the actual blockers for v7 -- all verified in the render):
+1. FLAT RIGHT-OF-THE-EYE: rows ~21-35, cols ~50-70 are one flat dark-grey block with no curvature/gradient; it meets the lit left half on a hard vertical seam near cols 48-52 so the eye looks cut in two rather than lit from upper-left. This is v5 blocker #3 (flat sclera patch) still present on the SHADOW side -- the light ramp only ran across the lit half. Extend the continuous white->grey ramp all the way around the rounded surface; the shadow side needs a falloff, not a flat fill.
+2. IRIS STILL READS AS NOISE AT THIS RESOLUTION: confirmed by eye -- at this cell size "16 spokes" aliases into mottle, and that's what it reads as (red/yellow cells sprinkled, no clean fibers, limbal ring has breaks and isn't concentric). Two honest options for v7: (a) accept the texture but make it DELIBERATE -- a coherent radial dither with an unbroken concentric dark limbal ring drawn as one continuous band, or (b) drop to fewer, genuinely distinct strokes. Don't claim "16 clean spokes" in the note if the render reads as mottle; describe what's actually on screen.
+3. LID STRIPING: rows 16-20 read as stacked horizontal scanline bars (white/light-grey/black), not a shaded lid or lashes. Smooth to a curve.
+4. PUPIL CONSTRUCTION: grey half-blocks cut into the pupil's bottom edge (~row 32-33, cols 36-46) and top (~row 25); edge is jagged/notched; highlight is a plain rectangle. Clean the disc edges and give the glint some form.
+5. LOWER LID: rows 35-37 are a flat dark-grey slab with a stray white stroke at the left end -- no form. Give it a deliberate lid line.
+6. BROKEN LEFT SILHOUETTE: rows 22-33, cols 9-14 have isolated/detached pixel pairs; the outline breaks apart instead of closing.
+7. STRAY ARTIFACTS (verified in raw bytes): lone half-blocks at row ~53 col ~78 and row ~54 col ~69, plus a dash fragment at the far right of the footer row (~col 79). These are leftover output, not vignette -- mask them out.
+8. STARFIELD = FILLER: evenly scattered grey pixels with no depth/clustering/relation to the subject. Either commit to a real radial glow/vignette (denser near the eye, fading to black) or pull it back further; right now it's noise, not atmosphere.
+
+NET: composition and light-direction are right and the concept is strong -- this is refinement work on a solid base, not a rebuild. Fix #1 (flat shadow-side sclera) and #2 (iris execution) first; they're the two that keep it from reading "finished." Resubmit as _orb.v7.

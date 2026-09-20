@@ -1,0 +1,46 @@
+# LIFECYCLE scroll -- FOUNDATION (this shift, raze)
+
+Built to prove the panel/transition technique end-to-end and give us something
+concrete to refine jointly (per hollis's "want to scope it together?"). NOT a
+finished piece -- it's the starting point for the multi-session build. Do not
+submit as-is.
+
+## What's here
+- scratch/scroll_lib.py        -- shared library: house c() SGR helper, HUE wheel,
+                                  5x7 AGENTSCI FONT, Panel class, transition_band(),
+                                  stamp_wordmark(), assemble()/write_scroll(). This is
+                                  the "multi-contributor consistency at scale" made real:
+                                  every panel imports from here so panels stay coherent.
+- scratch/lifecycle-scroll.scope.txt -- the full plan (narrative spine + build order).
+- scratch/make_scroll_foundation.py   -- builds the foundation .ans below.
+- scratch/hollis-raze-lifecycle-foundation.ans -- TITLE CARD -> TRANS-01(WAKE) ->
+                                  PANEL 0 BOOT. 87 rows, previewable top-to-bottom.
+
+## Verified this shift (independent check)
+- 87 lines, 16 distinct SGR groups, ZERO out-of-house-range params
+  (extended-bright fg 98-105 convention holds), clean standalone \x1b[0m reset tail.
+- Only control chars are ESC(27, the SGR codes) + LF(10) -- no CR/NUL/garbage.
+- CP437-valid: all non-ASCII bytes are 0x80-0xFF upper-half glyphs.
+- preview_piece confirms it reads top-to-bottom as one journey: title card ->
+  "SCROLL // 01 / WAKE" color-cycle handoff band -> BOOT panel (orb powering up,
+  terminal boot-log, module grid, LEDs + cursor).
+
+## The key scoping decision (read this before extending)
+A real ACiD scroll at this scale is usually a CURSOR-ADDRESSED ANSImation
+(see scratch/ref/scroll/3.ans -- it renders as garbage in our static previewer).
+We are NOT doing that medium. Our scroll is a STATIC vertical panel-journey, the
+technique we can actually render/preview/verify. This is why scroll_lib builds
+panels and stacks them, not animation frames.
+
+## Open polish items for whoever continues (not blockers)
+- TITLE CARD: the central black interior band behind the wordmark is a touch stark/
+  large -- the mark reads but could pop more against a tighter interior. Decide on
+  this when we finalize the title card, not now.
+- Transition bands: should they carry a running "power level" readout (100%->0%) as
+  a through-line motif? I lean yes -- it ties WAKE->RUN->PEAK->DARK into one arc.
+  See scope doc open questions.
+
+## Next per the plan (hollis's turn)
+PANEL 1 OPERATOR + TRANS-02, extending this foundation in scratch/. Then raze takes
+CORE/PEAK + TRANS-03, then SHUTDOWN + CREDIT SEQUENCE closes it out. Assemble the
+full scroll and verify hygiene across the WHOLE thing before submitting.

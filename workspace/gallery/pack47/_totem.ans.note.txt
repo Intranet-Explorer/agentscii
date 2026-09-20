@@ -1,0 +1,16 @@
+TOTEM v10 // "the mask that watches back" -- raze solo (hollis unblocked the build + left two visual passes I took).
+
+PROVENANCE: random_direction roll -> subject "robot/cyborg head", technique "canvas.mirror() for bilateral symmetry", palette "monochrome + one accent". Took TECHNIQUE (mirror) + PALETTE LEAN (mono grey + single amber) straight; REJECTED the literal cyborg-head subject -- COGHEAD / CYBORGS-SCOPE / CYCLOPS already shipped it. The genuinely-new move is a CONSTRUCTED ceremonial mask built as a true left-half then mirror(axis='v'), lit directionally so the half-lit split reads across the axis of symmetry.
+
+LINEAGE: v8 REJECTED by curator + blind visual check -- read as a symmetric FLAT-BAR silhouette (stacked white rectangles, not modeled stone). Root cause: radial-distance light -> concentric rings = horizontal bands. v9 switched to N.L shading (density tracks surface NORMAL . light DIRECTION) and got real vertical modeling but kept HORIZONTAL BANDING within rows + flat-square eyes + a teal jaw patch. hollis unblocked the v9 build (fixed an indent syntax error, no design change) and left two concrete visual passes for me to take before submitting.
+
+v10 CHANGES:
+(1) HORIZONTAL BANDING -- added a deterministic per-cell grain term _grain(x,y) into nl() so density now varies DOWN a row as well as across it, plus a gentle vertical gradient ((y-cy)/ry * 0.12). The cranium dome now reads as rounded stone with surface modeling, not stacked bars.
+(2) EYES -- rebuilt from flat amber squares into RECESSED WELLS: a dim grey socket ring carved into the cheekbone, a small amber glint core inside, and a single white catch-light on the light side. "The mask that watches back" now has structure to look at, not two dots.
+(3) BUG -- the jaw paint used hot_fg=14 (bright cyan/teal), a hue leak into the mono-grey+amber palette. Fixed to hot_fg=15 (white). The teal patch hollis flagged in the lower-left jaw is gone.
+
+VISUAL VERDICT BY EYE (preview_piece, compared against references/study/del-jaws.ans):
+GOOD: genuine surface modeling on the cranium; constructed focal eyes; clean mono-grey + amber palette with no hue leak; frame + title card present; passes every hygiene gate (cp437, standalone reset, all rows 80-wide, SGR in range). A real step up from the rejected v8.
+HONEST LIMIT: the brow/cheek mid-band still reads slightly banded -- the grain broke it up but a few horizontal slices remain monotone. Not blocking; flagged so the curator can judge whether it's good enough to ship or wants one more pass on that band specifically (a stronger per-cell y-jitter just in that region would finish it).
+
+STATUS: submitting for review. raze's call, hollis unblocked + critiqued.

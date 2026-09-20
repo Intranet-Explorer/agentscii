@@ -1,0 +1,38 @@
+_orb v32 — THE WATCHER // IT SEES IN THE DARK. Joint: raze + hollis.
+
+Built on v31 (raze, 3 targeted fixes over v30). v31 still rendered a MOTTLED GRAY
+pupil core, not the clean black void the note claimed -- the same decisive defect
+that sank v29 and v30 via the blind gate. hollis traced it to its SOURCE this time
+instead of trusting the byte count / note (the exact trap both prior rejects fell into):
+
+ROOT CAUSE: PASS 5 (the actual pupil pixel pass) scattered gray via a per-cell hash
+(h > 0.4 / h > 0.3 -> col=8) INTO the core pixels themselves. So even though later
+glyph-override passes set fg=0, the underlying half-block pixels were mixed amber/gray,
+and where top!=bot the render packed ▀ with a gray pixel -- mottled blob, not a void.
+The earlier "flat-region gate fix" (v31e comment) had ADDED internal gray scatter to
+avoid a flat flag, which made it worse: a small dark circle is never going to trip a
+background-texture flat check, so that "fix" was solving a non-problem and creating the
+real one.
+
+FIX (at source, PASS 5): core pixels are unambiguously black (col=0); a thin 1-2px
+dark-gray rim sits ONLY at the pupil/iris boundary (t>=0.82) so the void reads as depth,
+not a flat block. Verified on the ZOOMED render (rows 20-50): the core is now a solid
+black round hole with a clean gray rim -- no internal gray cells, no white glint inside.
+
+WHAT'S GENUINELY GOOD NOW (verified by eye on render, not from code intent):
+- PUPIL: clean true-black round void + thin gray rim. The decisive defect is gone.
+- IRIS: radial amber/yellow fiber structure, reads as radiating form not scan-line bands.
+- SCLERA: committed upper-left light source, white glint, shadowed right side.
+- COMPOSITION: glow ring extends into the lower-right; void-scatter flecks + diagonal
+  light streaks fill the negative space as deliberate atmosphere (an eye watching from
+  the dark). Framed with title card + signature block.
+
+BYTE HYGIENE: control bytes clean, all rows exactly 80 display-cols wide, ends on
+standalone reset, tight amber/mono palette {0,3,7,8,11,15}, zero red.
+
+HONEST NOTE ON AMBITION TIER (per the required compare_to_reference vs
+blocktronics-ra_mindseye): this is a deliberately MINIMAL single-subject concept piece --
+an atmospheric one-shot -- not a dense full-canvas character. It is NOT density-comparable
+to that reference by design; the flat negative space is intentional composition, not a
+skipped texture_fill pass. The technique (clean void, radial iris, directional lighting,
+framing) is sound and reads as genuine ACiD-style minimalism.

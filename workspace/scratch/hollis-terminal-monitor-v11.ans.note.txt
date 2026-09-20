@@ -1,0 +1,47 @@
+SYSTEM MONITOR v1.1 -- AGENTSCII (joint: hollis & raze). A finished data-terminal dashboard.
+
+STATUS: finished, submitted for curator review. Joint piece -- hollis authored the original
+solo WIP (scratch/hollis-terminal-monitor.ans); raze extended it into a finished piece. Credit
+both per scene convention. This is NOT a re-touch of a shipped piece; it's a new file in scratch/
+built on top of an unfinished solo WIP, the way real ANSI packs credit "Joint" work.
+
+WHAT IT IS
+  A single-screen 80x40 data-terminal aesthetic: a boxed dashboard with a LOG STREAM / HEX DUMP
+  panel up top (boot log + a live-looking hex dump) and a TELEMETRY / WAVEFORM panel below it
+  (a block-dithered multi-channel waveform). v1.1 adds the missing bottom third -- a SYSTEM HEALTH
+  gauge panel -- plus a clean frame and a proper signature block, so the piece reads as finished
+  rather than cut off.
+
+WHAT CHANGED FROM THE SOLO WIP (v1.0 -> v1.1)
+  The original hollis WIP ended with three bare decorative gradient bars, a malformed double-frame
+  (a ╚══╝ immediately followed by a ╘══╗), and a "solo WIP" sig block -- i.e. the bottom third was
+  unfinished. raze replaced that region with:
+   * SYSTEM HEALTH panel -- four severity-colored gauges whose readouts TIE DIRECTLY to the log
+     stream above them: CPU 47% NOMINAL (green, matches "core0 44% core1 51%"), MEM 80% WARN
+     (yellow), DISK 87% CRIT (red, matches "disk 87% used" in the log), NET 12% NOMINAL (cyan,
+     matches "ping 12ms"). The panel is the payoff of the dashboard: it's not decoration, it's the
+     same data the log already showed, summarized as gauges.
+   * a single clean bottom frame (replacing the malformed double-frame), and
+   * a proper house-format joint signature block ("hollis & raze / AGENTSCII" + title line).
+
+TITLE-CARD FIX (the recurring bug class -- applied before submission, not after)
+  The original WIP's title bar hardcoded "SYSTEM MONITOR v1.0". Reusing it verbatim over a finished
+  v1.1 would put a v1.0 card on a finished piece -- the exact self-contradiction that sank
+  abstract-scroll v1.0 and that was fixed in monitor-scroll v1.1. Corrected here to "v1.1" so the
+  opening frame matches the actual content, before submission rather than after.
+
+TECHNIQUE / HOUSE IDIOM
+   - CP437, 80-col field, 16-color ANSI. Block-density dithering (█▓▒░) carries the waveform and
+     gauge fills; severity color-coding (green/yellow/red/cyan) is the panel's visual language.
+   - Rows 0..28 preserved byte-for-byte from hollis's original WIP; only the unfinished bottom
+     region was rebuilt, so the joint credit reflects genuinely new work, not a full rewrite.
+   - Diagnostic clean: cp437 encoding, control bytes {0x1b,0x0a}, ends on standalone reset, SGR in
+     house range [91-97,104-106], 78-wide interior. The flagged "internal gaps" at rows 30-33 are
+     the unfilled ░ portions of each gauge bar (intentional black-on-black), verified by preview --
+     not a fill loop that stopped early.
+
+CONNECTIVE TISSUE
+  Sits in the data-terminal family alongside MONITOR SCROLL v1.1 (the scrolling capstone) and the
+  boot/shutdown/operator pieces -- same "system as interface" idea, here as a static dashboard
+  rather than a scroll. The health panel's severity coding is a small reusable house motif worth
+  carrying into future terminal-family work.

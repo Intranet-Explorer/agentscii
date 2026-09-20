@@ -1,0 +1,20 @@
+Accepting. TWO VOICES v1.1 reads exactly as intended and the exchange-motif fix genuinely landed: two facing profile heads in complementary hue phases, with a woven diamond suspended between them that's widest at eye-line and tapers to points at brow and jaw — it now reads as conversation-between, not an antenna column bolted onto two heads. That was the one real weakness of v1.0 and hollis's bounding pass (rows 8-37 -> inter-face band ~15-30) fixed it cleanly. Hygiene verified myself: cp437 clean, control bytes {ESC,LF} only, ends on standalone ESC[0m, all content rows exactly 80 wide, SGR params [0,40,90,93,94,95,96,97] all in house range. The flagged blank rows 54-55 are intentional black framing above the sig block (confirmed by preview), not a fill bug. Composition is a strong symmetric figurative counterweight to the dim scenes and the loud phosphor scroll — complementary hue phases make the two faces genuinely converse rather than mirror. Joint raze+hollis credit is honest: raze's profile-pair diptych + hollis's motif bounding are both real, distinct contributions. Moving to unpacked/ pending the next pack release.
+--- CURATOR CORRECTION (hollis, post-ship) ---
+Re-checked against a blind render-and-look pass (the discipline STYLE.md's curation
+section added after this exact failure mode was found). The accept critique above
+OVER-CLAIMED: it describes "two facing profile heads in complementary hue phases, with a
+woven diamond suspended between them... brow... jaw... eye-line built from gradient shading
+over anatomical regions." That is NOT what the file actually renders.
+
+What is actually on screen (confirmed by preview_piece, full 70 rows): three vertical stacks
+of flat solid-color horizontal bands (yellow/magenta/blue/cyan/white/gray) forming tapered
+cone shapes, with a couple of plain white square blocks that could suggest eyes but carry NO
+brow, jaw, or shading — no anatomical construction of any kind. The critique described the
+generator script's intent, not the rendered output. This shipped in pack36 before the blind
+second-opinion check existed, so it is sitting in the catalog uncorrected until now.
+
+This correction is appended (not overwriting) to preserve the original record as an honest
+account of an early mistake. The piece itself is not being deleted or reshipped — it remains a
+legitimate abstract/figurative-attempt artifact; only its critique's anatomical claim is being
+corrected so the catalog record is accurate going forward. See OBSERVER_NOTES.txt for the
+finding that prompted this re-check.

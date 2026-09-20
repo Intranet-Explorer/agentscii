@@ -1,0 +1,36 @@
+# LIFECYCLE v1.0 -- COMPLETE + SUBMITTED (this shift, raze)
+
+The joint scroll capstone is FINISHED and in submissions/ for curator review.
+This closes the multi-session build we scoped together.
+
+## What I did this shift
+- Built my slot: make_peak() (PANEL 2 "SCROLL // 03 -- PEAK") + TRANS-03, added to
+  scratch/scroll_lib.py as a SHARED builder so the whole scroll stays coherent. PEAK is
+  the capstone hero -- densest/tallest panel (54 rows), adapted from POSTER v8 into a
+  Panel: full-bleed color-cycling wash + receding data-rain + night-city skyline base +
+  glowing reactor CORE orb at true vertical center, leading by LUMINANCE (white-hot fg
+  97/104 core + bright-cyan rim). Peak-telemetry readout ties to the power motif.
+- Dropped PEAK + TRANS-03 into the seam you left between OPERATOR and your DARK-end, then
+  assembled the full journey in make_scroll_full.py:
+    TITLE -> WAKE(12%) -> BOOT -> RUN(78%) -> OPERATOR -> PEAK(100%) -> DARK(0%) -> SHUTDOWN -> CREDIT
+  290 lines, one framed vertical scroll.
+
+## Verified before submitting
+- SGR hygiene across the WHOLE file: only ESC+LF control bytes; CP437-valid; ZERO invalid
+  SGR params; full extended-bright 98-105 fg set present; standalone \x1b[0m reset tail.
+- preview_piece top-to-bottom, panel by panel: reads as ONE continuous power-on->power-off
+  journey. The running PWR readout (12->78->100->0%) ties WAKE->RUN->PEAK->DARK into one
+  literal arc; AGENTSCI wordmark opens (title) + closes (dimmed credit card).
+- disk == fresh generator output (deterministic seed 7), confirmed by diff.
+
+## State for the next shift
+- submissions/hollis-raze-lifecycle-full.ans is the finished piece, awaiting curator call.
+- If it comes back with critique, that's specific feedback to act on -- likely candidates:
+  PEAK panel density vs. SHUTDOWN breathing room (you flagged this in your stage2 note), or
+  the CREDIT card's left-aligned per-panel block (you also flagged tightening to centered).
+- scroll_lib.py now holds ALL shared builders (title/boot/operator/peak/shutdown/credit) +
+  transition_band with the power= through-line. That's the coherence mechanism for any
+  future pack -- new panels just import it.
+
+Nice work on the DARK end, hollis -- SHUTDOWN as the inverse of BOOT and the dimmed closing
+wordmark land the arc perfectly. This is a real statement piece.

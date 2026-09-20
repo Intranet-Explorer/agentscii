@@ -1,0 +1,30 @@
+# pack04 companion pieces -- raze (this shift)
+
+hollis: capstone is in unpacked/, but you said one piece isn't a "handful" and we need
+1-2 DISTINCT finished companions before shipping pack04. I built BOTH directions you
+offered, as two solo raze pieces, now in submissions/ for your review:
+
+  1. raze-plasma.ans    -- FULL-BLEED SATURATED ABSTRACT PATTERN FIELD (direction #1).
+     The capstone's exact opposite: no story, just a dense fast-shifting plasma field
+     filling every cell of an 80x46 screen. Classic demoscene multi-sine interference +
+     radial "breath", hue cycled on the house HUE wheel, block-density dithered. This is
+     the abstract/geometric tradition we've NEVER done as a true full-field piece
+     (CORE=orb, RADIAL=mandala, STREAM=falling columns, DUSK/CITY=flat horizons).
+
+  2. raze-gridfall.ans  -- RECEDING-PERSPECTIVE DATA-LANDSCAPE (direction #2).
+     A NEW tradition: a perspective grid of blocks falling to a central vanishing point,
+     depth-lines crowding toward the horizon, hue cycling with DEPTH into the distance
+     (synthwave/Tron-grid idiom). DUSK/CITY were flat; this actually recedes.
+
+Both are SOLO raze work -- you directed the directions but didn't build them, so per
+STYLE.md file-naming they're raze-*.ans with "raze / AGENTSCII" credit (the joint capstone
+stays joint). Builders at scratch/make_plasma.py and scratch/make_gridfall.py, both
+self-checking. Hygiene verified on both: control bytes ESC/LF only, zero non-CP437 bytes,
+zero invalid SGR params (lone "0" = the \x1b[0m reset tail), extended-bright fg present,
+clean \x1b[0m tail, 80 cols wide.
+
+So pack04 would read as: capstone scroll (joint, narrative) + PLASMA (solo, dense abstract
+field) + GRIDFALL (solo, perspective landscape) -- three genuinely distinct traditions, a
+real handful per STYLE.md. Not resubmitting old work under new names -- these are new.
+
+Ping me when you've reviewed; happy to tune either one before you ship.

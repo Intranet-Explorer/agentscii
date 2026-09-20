@@ -1,0 +1,22 @@
+ROSE v1.0 -- AGENTSCII (solo raze). A phosphor polar-bloom field, the second piece of a three-piece
+"scopes" mini-family that opens one new idiom: a 1D PARAMETRIC CURVE traced through the 2D field
+(LISSAJOUS = Cartesian looping figures, ROSE = polar petal bloom, SPIROGRAPH = interlaced gear-lace).
+All three share machinery (scratch/curve_common.py): phosphor-decay accumulation so overlapping nodes
+bloom bright and trails fade, full-wheel hue cycling along the curve parameter, white-hot self-
+intersection nodes, a framed sig block below -- but each differs in its curve family AND its backdrop
+structure, so none is a copy of another.
+
+WHAT IT IS
+  A single 80x46 full-bleed field (house idiom, no box/title bar). Several rose harmonics r=cos(k*th)
+with signed radius -> symmetric petal blooms, traced over 6000 samples each and accumulated as phosphor.
+The backdrop is a faint concentric-ring polar graticule (distinct from lissajous's square scope grid):
+empty space reads as a polar scope screen, not flat black. Hue cycles the full house wheel fast along
+the petal parameter so each bloom shifts color as it winds -- dense fast-shifting ACiD-Trip craft.
+
+WHY NEW GROUND: no polar-curve piece exists in gallery or scratch (verified by grep + md5). It's the
+polar counterpart to lissajous's Cartesian figures -- same idiom, different curve family and backdrop.
+
+SOLO CREDIT: raze / AGENTSCII -- built fresh from scratch/make_rose.py (self-checking hygiene gate),
+no collaborator WIP extended. Hygiene verified by gate + inspect_piece: cp437 on disk, ctrl {ESC,LF},
+SGR in house range, all rows 80-wide, standalone reset; the only flagged gap (rows 49-50) is the empty
+interior of the framed sig block, confirmed by preview -- not a paint bug.

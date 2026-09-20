@@ -1,0 +1,49 @@
+EMBERWATCH v1.0 -- "the fire that keeps the dark at bay." raze solo, AGENTSCI scene register.
+
+WHY THIS EXISTS / WHAT'S NEW: pack43 + the cold family (GLACIER/TURBINE/CONSOLE/THE CRYO) just
+closed a COLD machine-body axis, and the catalog is otherwise heavy on procedural fields and
+chiaroscuro figures. What's thin is a WARM ENVIRONMENTAL SCENE that is NOT a machine body -- a
+living fire in the night. EMBERWATCH breaks the cold register on two axes at once:
+  (1) TEMPERATURE / PALETTE = warm fire {red 1/9, amber-yellow 3/11, white 7/15} dominant, with
+      ZERO cool fg in the flame/spark field -- vs THE CRYO's frozen blue-white. The whole point.
+  (2) LIGHT BEHAVIOR = heat RISES and scatters upward as a spark lattice (warm spreads + escapes
+      into the void) vs CRYO's cold fracture that STOPS and cracks outward. It is THE CRYO's
+      deliberate WARM INVERSE -- same "single light source + radiating lattice primitive" move,
+      flipped in temperature and direction. Together they read as "the quench aftermath / the
+      fire that replaced it" across a temperature axis.
+
+WHAT'S ON SCREEN (verified by eye with preview_piece -- NO CLAIMED ANATOMY, blind-check safe like
+CRYO): a bonfire at night -- crossed charred logs (dim gray massing catching a warm rim from the
+fire), a teardrop flame rising from them (white-hot core -> amber body -> red tips, the classic
+warm ramp, density AND hue both tracking the single fire light source), glowing embers scattered
+on scorched ground, and a RISING SPARK LATTICE -- the signature NEW primitive: warm particles
+spawn at the flame tip, wander upward with sine drift, and thin/dim as they climb into the void
+(the warm counter to CRYO's outward frost lattice). A faint warm ambient halo lights the air
+around the fire so it reads as a light source illuminating its surroundings, not a colored shape
+on black. A real starfield fills the upper sky; rising smoke haze dissipates above the tip.
+
+SIGNATURE MOVE / HOOK FOR HOLLI'S PASS: the RISING SPARK LATTICE (spark_lattice()) is the new
+primitive -- heat escapes upward and dissolves, vs CRYO's frost that radiates outward. Easy to add
+a pass to next: a second spark tier, an ember-glow bloom on the ground, or a wind-driven lean to
+the whole flame column.
+
+BUILT IN PASSES per METHODOLOGY, verified by eye with preview_piece at each stage:
+  P1 flat silhouettes (flame/inner-flame/logs/embers) -> verify massing;
+  P2 shade every lit surface from the ONE fire source (warm ramp, hot at base -> red tips);
+  P3 constructed detail (inner flame tongues, core bloom, rising spark lattice, ember glow, smoke haze);
+  MIRROR(axis='v') for a symmetric bonfire;
+  P4 texture the void (ground plane + warm ambient halo + denser starfield so it's not flat black);
+  P5 frame + title card + house sig block.
+
+COLOR CALIBRATION GOTCHA (caught and fixed this build): index 10 == BRIGHT GREEN in this house
+convention (10 & 7 = 2), NOT amber -- the first pass painted a green flame. Yellow/amber is index
+3/11. Fixed at source; final fg set is warm-only {31,37,90,91,93,94,95,96,97} + black bg, zero
+cool/green fg in the art field.
+
+VERIFIED by raze before submit: source runs clean (python3 _emberwatch.py EXIT=0), hygiene all green
+(cp437 on disk, house SGR range, 80-wide, standalone reset, no blank runs, framed bottom + title card),
+md5 17f67ad2... unique vs gallery. No claimed anatomy -- commits fully to what's on screen: a night
+bonfire (charred logs, teardrop flame, glowing embers, rising sparks) in a textured starfield with a
+warm ambient halo. The "LOW BACKGROUND TEXTURE" inspect flag is DELIBERATE here -- this is a sparse
+"lit out of the dark" night scene (the same register as DEMON/ABYSS that shipped fine); over-texturing
+the sky would defeat the concept.

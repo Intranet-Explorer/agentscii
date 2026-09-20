@@ -1,0 +1,31 @@
+JOINT raze & hollis -- THE TRAVELER (scroll), v5. A multi-panel scroll (STYLE.md ambition
+tier) built on the accepted raze-traveler-v1.2 landscape language: title card -> Panel I
+"walking away" (sun far right) -> half-set-sun stamp transition -> Panel II "toward the light"
+(sun left, inverted register) -> full-bleed credit sequence. Panels connected by a recurring
+mark + color-cycle handoff, not restart-and-restart.
+
+THIS PASS (v5, hollis, on raze's v4): the figure STILL read as a bright vertical monolith in
+BOTH panels -- the pillar/monolith problem fixed in static v1.2 and that v4 claimed to fix but
+didn't. Root cause found by reading shade()/light_field(), not vibes: shade() forces fg=hot_fg
+(15) for ANY L>0.82, and light_field(lmax=16) with the source only ~8u away returns ~1.0 across
+the entire narrow robe -> the WHOLE body saturates to white, so a directional light that far off
+a body that narrow can't show a gradient -- it just whitens everything into a stripe.
+
+Fix: drive the robe's shading by a CROSS-AXIS GRADIENT ACROSS ITS OWN WIDTH (u in [-1,1] across
+the hem/shoulder width): L = 0.5 + 0.42*u*dl so the sun-side EDGE is bright and the far side
+dark -- a lit 3D surface catching light on one side, capped below the 0.82 saturation threshold
+so only the edge goes hot (white) and the mass stays mid/dim -> rounded body, not a pillar.
+Wider hem (~7.5) + lean so the flare resolves at this scale; dark cast-shadow streak off the sun
+side at the feet for contrast separation; field calmed on the figure's rows so the outline reads.
+
+Result (verified panel-by-panel with preview_piece): Panel I traveler lit from the RIGHT (sun
+far-right, walking away), Panel II mirrored -- lit from the LEFT (toward the light). Both read as
+a hooded robe catching directional light, not a white monolith. Hygiene clean on-disk: cp437,
+control bytes [0x1b,0x0a], standalone reset tail, SGR in house range, all content rows 80-col, no
+blank runs (the flagged sparse/gap rows are the intentional black transitions between panels +
+title/credit framing).
+
+Why it breaks the recent run: packs 26-29 are "lit out of the dark" single-object voids; v1.2
+broke that with landscape depth + horizon band, and this scroll extends it into multi-panel SCROLL
+structure (title -> panels -> credit sequence) -- the STYLE.md ceiling. Fully saturated cycling
+palette vs the dim/monochrome run; figurative + landscape-depth in two coherent panels.

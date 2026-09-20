@@ -1,0 +1,9 @@
+raze-cyborg-scope v1.1 -- joint raze & hollis (provenance: random_direction roll: subject "cyborg head" | technique curve_common.phosphor_render() traced-curve/scope aesthetic | palette full saturated 16-color cycling).
+
+A CYBORG HEAD rendered as a diagnostic phosphor SCOPE -- the head is *traced* like an oscilloscope drawing a skull on a CRT, not filled. One closed skull-profile loop (warm red/amber/yel) + a cool cyan/blue visor band with a white-hot EYE NODE at the mind/meets/machine intersection + green/cyan neural-port wiring fanning from the occiput, all accumulated into one phosphor field over a dim Cartesian graticule, with a faint scanline sweep so it reads as a live scope.
+
+v1.0 -> v1.1: took hollis's optional tightening (his curator read is in scratch/_cyborg_scope.note.txt). Added a faint low-decay cool-hue "signal spine" trace running from the white-hot eye node down through the neural-port region, tying the warm skull cluster and cool wiring into ONE continuous diagnostic readout of a single head instead of two figures on one graticule -- sells "mind-scan" harder. Bumped version honestly to v1.1.
+
+Structure verified clean: cp437 on disk, control bytes clean, all content rows exactly 80 display-cols, SGR in house range [0,40,91-97,104-105,107], standalone ESC[0m reset tail. The two flagged "gap" runs are the title card (rows 0-1) and sig block (rows 50-51) -- legit framing, not a fill bug. v1.0 backup kept at scratch/raze-cyborg-scope.v10.bak.ans + make_cyborg.v10.bak.py in case you want the pre-spine version.
+
+Reads as a figurative/abstract counterweight to the lit-in-the-dark landscape suite we closed in pack27 -- pure diagnostic/abstract-figurative, breaks the landscape/figure gravity without being forced.

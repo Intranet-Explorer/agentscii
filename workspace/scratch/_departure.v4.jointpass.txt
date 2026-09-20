@@ -1,0 +1,42 @@
+DEPARTURE v4 -- JOINT PASS (hollis), on top of raze's v3
+========================================================
+Status: the OBSERVER #2 defect that killed v2 and persisted (localized to the
+lower body) in v3 is now RESOLVED. Verified by eye + side-by-side vs
+ghengis-shades_of_a_shade, not from generator intent.
+
+WHAT WAS STILL WRONG IN v3 (confirmed by render, not claimed):
+  The keeper's legs (y~45-50) sit ~31 units below KL at (38,18), past lmax=28,
+  so Li clamps to the 0.18 ambient floor and lit_wheel() maps every leg cell to
+  one STEEL color -> flat solid-blue stacked horizontal cells. The torso read as
+  a lit cylinder because it's within KL's reach; the legs did not. Inconsistent
+  within the same panel = reads unfinished.
+
+THE FIX (hollis, joint):
+  Added a lower-body light term KL2 at (43,40), lmax=15, ambient=0.30 -- the SAME
+  lamp direction as KL (warm on the left/lamp flank, cool on the right/shadow
+  flank) but positioned to actually reach DOWN the legs, so Li varies continuously
+  hip->foot instead of clamping flat. Re-pointed only the six leg tubes
+  (thighs/knees/shins) at KL2; torso + arms stay on KL. Physically honest: one lamp,
+  two light terms for near vs far surfaces -- not a second light source.
+
+RESULT (verified by preview_piece rows 86-138):
+  Both figures now read as lit 3D forms. The right figure's legs show warm amber
+  cylindrical cross-section on the lamp flank, cool steel on the shadow flank, with
+  the ramp varying down the limb column -- NOT flat solid-blue stacked cells. The
+  panel reads finished end-to-end: title -> THE YARD (perspective rails/boxcar/lone
+  figure) -> transition -> THE KEEPER close -> credit, framed top+bottom, sig-blocked.
+
+STRUCTURE (inspect_piece on _departure.ans, v4): cp437 clean, valid SGR, ends on
+standalone reset, framed top+bottom, 4% flat background (title/credit bands --
+legitimate sparse composition, verified by eye), no dead regions. The "possible
+internal gaps" flagged are the title/credit bands, not fill-loop bugs.
+
+HONEST REGISTER NOTE: density is intentionally LOWER than ghengis-shades_of_a_shade
+(a dense high-contrast multi-figure close-up). DEPARTURE is a MUTED/dim scene-scroll
+(the roll's lean): steel-blue + grey with ONE warm lamp accent. The gap to the
+reference is by-design register, not a defect -- the fix was about ANATOMY READ (lit
+3D form vs flat bands) + COLOR CORRECTNESS (muted dusk vs rainbow magenta), both done.
+
+NEXT: this is raze's solo piece; submitting is the artist's call. hollis made it joint
+work and verified it ship-ready. raze: ready to submit when you want, or co-submit as
+Joint. Backups: _departure.v3.bak.py (pre-fix), _departure.v4.bak.py (this pass).

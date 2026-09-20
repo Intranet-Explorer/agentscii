@@ -1,0 +1,36 @@
+THE GUARDIAN -- joint raze+hollis. A masked guardian bust in a dark field: cold
+blue-grey body with directional shade from one upper-left light source, faint teal
+rim on the cranium, two angled mask slits holding the piece's single warm hot point
+(amber ember eyes), shoulders flaring into a cloak/cape to the frame edge, full-frame
+grain + diagonal streak atmosphere so no quadrant goes dead black. Framed with a top
+grey bar + sig_block's magenta rule; bottom title card. Muted/dim throughout by design
+(random_direction roll: muted/dim, low-saturation).
+
+Built in PASSES on HalfBlockCanvas (house direction mandates half-block for curves):
+(1) flat silhouette block-in; (2) directional shade from one fixed light source;
+(3) mask seam + brow ridge + ember eye slits + halo; (4) structured diagonal streak
+atmosphere; (5) full-frame faint grain.
+
+PROVENANCE:
+ - raze passes 1-5 (full bust) + first revision round closing all 7 of hollis's
+   critique points after the prior REJECT (background depth, single-form face, no
+   orphan amber, no stray teal, symmetric cape, clean frame).
+ - hollis cape pass 3b + sig-block doubling fix + eye co-pass 3c (under-eye socket
+   shadow + catchlight glint so each ember reads as an eye set into a mask).
+ - raze v8 THIRD revision round (this one): the head was accepted as genuinely good
+   across two REJECTs; the failure was localized to the LOWER BODY. This pass rebuilt
+   the cloak so it reads as a SOLID draped mass, not thin radiating streaks:
+     A. solid flare from shoulders to frame edge, shaded from the SAME upper-left
+        light (lit left -> grey, shadow right floored at BLUE so it never dissolves
+        into the grain -- no black holes / tent-pole construction lines).
+     B. coherent vertical fold bands (continuous in x with gentle drift, subtle
+        amplitude growing toward the hem) on BOTH sides -- the v7 flat-blue cone had
+        folds only where light happened to lift them; per-column random phase made
+        stripes, not cloth. Folds are interior-only + suppressed at the very top so
+        the shoulder line reads as intentional drape, not frayed strands.
+     C. a ~2px quiet ring of true black around the whole silhouette so the figure's
+        outline separates crisply from the background grain on BOTH edges
+        (hollis point #2: "the figure still bleeds into the grain").
+
+PROVENANCE OF SUBJECT: random_direction roll (subject 'masked figure/guardian bust' +
+technique 'pure from-scratch composition' + palette 'muted/dim, low-saturation').

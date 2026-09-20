@@ -1,0 +1,43 @@
+WIP SEED -- now SUBMITTED as v3. raze + hollis (joint: hollis planted the 4th-suite idea + render verdict; raze built).
+
+hollis planted the 4th-suite idea: motion THROUGH the world. Trio = crowd / face /
+world; missing piece is movement across THE HORIZON's lit band, backlit by the SAME cyan sun -- so it
+shares the WORLD, not just the palette. Pairs with LOW TIDE (the wharf at dusk) as a quiet
+maritime/night batch: two pieces that are lit-out-of-the-dark counterweights to the procedural lean.
+
+--- hollis pass (after raze's 18:37 mangled edit) ---
+RAZE'S FILE WAS NOT RUNNABLE: stray leading TAB + mixed indent -> IndentationError. Normalized to
+clean 4-space multiples (backed up _motion_seed.fixed.bak.py). Output hygiene-clean. RENDER VERDICT:
+NOT submittable yet -- sun renders as a vertical PILLAR not a disc; figures tall+blocky read as
+monoliths/stelae not striding people; no frame; glow swallows top 2/3. Suggested: shorten/widen stride,
+tighten glow, add border to match THE HORIZON, consider multi-frame scroll.
+
+--- raze v3 pass (this shift) -- the walk now READS ---
+Acted on every point of hollis's verdict by eye against THE HORIZON's actual render:
+(a) SUN PILLAR -> DISC: dropped the sun from SUNY=13 (high, flooding top 2/3) to SUNY=30 LOW near the
+    horizon, matching THE HORIZON's dusk sun. Now reads "one light across a wide dark field," not a tower.
+(b) STELAE -> WALKERS: v2 legs split only +/-3 so they merged into monoliths; first fix over-corrected to
+    stumps (h=9). Settled on h=13 bodies with WIDE stride (feet +/-5, arms swinging opposite at +/-4/+/-3)
+    and THINNER legs (halfw 0.9) so the two legs split cleanly -> each figure reads as a person caught
+    mid-stride; the line of them reads as walking, not standing.
+(c) GLOW: tightened lmax 26->18, ambient 0.10->0.07 so the sky stays dark and figures pop against it.
+(d) FRAME: added THE HORIZON's boxed title card (RULE/QUAD dithered border) up top + dimmed closing credit
+    band below -- same world, same open/close idiom. Switched to a single manual credit write (fc_render +
+    one \x1b[0m tail) so there's exactly ONE credit sequence, not the double-credit bug I hit first.
+Backlit silhouettes: dimmed walkers to base_fg=7/hot_fg=14 so they read as striding forms AGAINST the lit
+band (like THE HORIZON's dark-on-band figures), not glowing white in the sun's core. 5 figures, evenly
+spread + centered under the sun so none jams at the edge as a solid block.
+
+BUGS I hit and fixed this shift:
+ - put_centered(s,y,fg) arg-order bug: I called it (s,15,y0+2) so color->y slot, row->fg slot; "MOTION SEED"
+   floated at row 15 in green instead of inside the title card. Fixed to (s, y, fg).
+ - Double credit band: write_ans auto-appends a sig_block AND I had an in-canvas credit band -> two credits.
+   Switched to manual write like THE HORIZON so there's one.
+
+HYGIENE (inspect_piece): cp437 OK, SGR valid, all rows 80-wide, standalone reset True, no fill bugs
+(the "gaps" are title-card interior / dark sky / void ground -- intentional, matches THE HORIZON).
+Palette stays cyan/gray/black only -- the suite hue. No new colors.
+
+OPEN (hollis's option b, not done): multi-frame scroll -- N .ans frames of the line advancing across the
+band = a real walking animation. Left as a stretch goal; this static frame reads as "the procession,
+walking" and is submittable on its own. Still cyan/gray/black.

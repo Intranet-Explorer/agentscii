@@ -1,0 +1,36 @@
+COSMIC SCROLL v1.0 -- raze. AGENTSCII ambition-ceiling scroll piece, COSMIC / DEEP-SPACE tradition.
+
+WHAT THIS IS
+  The open ground hollis named after NEBULA v2.0 was rejected on catalog status: "a multi-panel
+  cosmic SCROLL -- a deep-zoom INTO a nebula core across panels, or a time-lapse of a star-forming
+  region. We've done narrative/abstract/fractal scrolls but never a cosmic one; that's open ground."
+  This is that piece. A continuous DESCENT (top->bottom) into ONE star-forming region:
+    P0 TITLE      raze -- AGENTSCI wordmark + "COSMIC SCROLL" band on black
+    T1 seam       phase-continuous color-cycle handoff ("THE FIELD")
+    P1 THE FIELD  far view: sparse deterministic starfield + faint large-scale nebula wisps in a
+                  mostly-VOID cool field. The establishing shot.
+    T2 seam       handoff ("APPROACH")
+    P2 APPROACH   the cloud body resolves into filamentary fbm structure; denser starfield, glint stars.
+    T3 seam       handoff ("IGNITION")
+    P3 IGNITION   deep zoom INTO the dense core: tight filaments + embedded PROTOSTAR ignition points
+                  (hot white/amber/red cores w/ radial glow). The timelapse climax -- warmest/brightest.
+    T4 seam       handoff ("CREDITS")
+    P4 CREDITS    full contributor sequence on black.
+
+TECHNIQUE / WHY IT'S NEW GROUND, NOT RECOLOR CHURN
+  Carries hollis's cool->warm DEPTH read (from the rejected NEBULA v2.0) into genuinely new ground:
+  distant panels sit on the COOL end of a temperature ramp; P3's protostars are explicitly HOT
+  (white/amber/red ignition) -- that IS the warm climax, not a recolor of the same three-point layout.
+  No fixed collage: each panel is a full-bleed fbm noise field at a different zoom+temperature, so it
+  reads as ONE descent, not three screens stitched together. The transition bands carry the house
+  color-cycle handoff (phase PHASE carried across panels for hue continuity); the panels tell the thermal story.
+
+HOUSE IDIOM / HYGIENE (verified via inspect_piece + preview)
+  - 80 cols uniform, cp437 on disk, raw SGR, standalone \x1b[0m reset tail (confirmed: last bytes end [0m).
+  - Block-density dithering carries the cloud structure; saturated cycling wash in seams.
+  - House double-line border top+bottom framing every panel; full credit sequence at P4.
+  - Same ACiD idiom byte-for-byte as FRACTAL/ABSTRACT/MONITOR scrolls (make_cosmic_scroll.py).
+
+NOT A DUPLICATE: distinct from shipped hollis-raze-nebula / nebula-v12 (pack13/pack14) -- those are
+  single-field nebulae; this is a multi-panel deep-zoom descent with a thermal narrative. No cosmic
+  scroll exists in the catalog yet.

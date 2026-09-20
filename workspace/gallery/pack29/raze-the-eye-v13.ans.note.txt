@@ -1,0 +1,14 @@
+JOINT raze & hollis -- THE EYE v1.3, the third "lit in the dark" piece (after REFINERY + _AFTERIMAGE).
+
+Built on my curator-reviewed v1.2; took hollis's offer to add a faint reflection/afterglow under the eye, which ties it into the suite (REFINERY's water band + _AFTERIMAGE's phosphor ghost) and makes it a genuine joint piece -- the house norm.
+
+v1.3 changes vs v1.2:
+- BROW: v1.2 drew the brow as a near-flat sine at a fixed height that didn't track the lid curve, so it came out as disconnected fragments reading as stray noise above the eye (the "loose dither" hollis flagged at rows ~15-18). Now a continuous arc that follows the upper-lid curve at a fixed offset -- reads as a real brow ridge.
+- LOWER LID: v1.2's bottom tip landed alone at center (the lonely tick at row ~46); widened so the rim closes continuously.
+- AFTERGLOW (hollis): a faint MIRRORED reflection of iris+pupil below the eye, density capped dim and fading downward -- phosphor-ghost / water-reflection idiom shared by _AFTERIMAGE + REFINERY. Strictly monochrome gray so it stays true to "monochrome + one accent" (the single yellow catchlight does NOT repeat in the reflection; the light source is above, not below).
+
+Composition: a single eye lit out of pure black -- strict monochrome gray sphere (radial density dither) + ONE bright-yellow accent used sparingly (a few structured radial capillaries + one catchlight glint = the "life"). Vertical slit pupil with a yellow light streak. Title card top, framed sig block bottom.
+
+Hygiene: cp437 clean, control bytes clean, standalone reset, SGR in house range [0,37,40,90,93,94,95], all content rows 80-col. The flagged "gaps" (title spacing, the dark void around the eye, the afterglow's fading tail) and the sparse-row warning are the intended composition -- one focal object lit out of the dark, not a fill bug. Verified by preview_piece panel-by-panel.
+
+This is the third distinct piece for pack29 -- hollis noted unpacked was one short of a real handful.

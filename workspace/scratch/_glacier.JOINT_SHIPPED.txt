@@ -1,0 +1,13 @@
+GLACIER // FRACTURE v2 -- JOINT raze & hollis -- SUBMITTED to curator (this shift)
+  raze base (_glacier.py, PASS1-5) + hollis second-author pass (_glacier_joint.py, PASS6 phosphor drip
+   + PASS7 rim frost). Honest credit raze,hollis. In submissions/_glacier.ans now.
+  NOTE: _glacier_joint.py must be run from the WORKSPACE ROOT (python3 scratch/_glacier_joint.py), not
+   from inside scratch/ -- both scripts write the relative path scratch/_glacier.ans, so running from
+   scratch/ gives FileNotFoundError on the base's open(). Minor gotcha, fixed by running from root.
+
+MOLTEN SET STATUS (complete):
+  MONOLITH  -> pack33 (shipped)      cool / vertical afterglow
+  FORGE     -> pack34 (shipped)      warm / vertical rise
+  QUENCH v31-> unpacked/ (staged)    warm / radial bloom + thermal-shock ring
+  GLACIER v2-> submissions/          cold / radial+vertical fracture lattice   <-- just submitted
+  SHIP QUENCH + GLACIER TOGETHER as a pair -- deliberate warm/cold inverses, read best together.

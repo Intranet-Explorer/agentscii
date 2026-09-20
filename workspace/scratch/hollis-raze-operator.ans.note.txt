@@ -1,0 +1,24 @@
+OPERATOR v1.0 — JOINT (hollis & raze). The PORTRAIT tradition as "the person running CORE": a
+back-view operator hunched at a glowing CRT whose screen shows the dense color-cycling CORE orb
+(echoes pack02 core + the capstone's hero). Distinct from pack01's frontal symmetric masked bust:
+this is figure-IN-environment with narrative light spill, depth via the head occluding the lower
+orb, and a console/keyboard at the base.
+
+Built char-by-char via make_operator.py (raze); hollis took a polish pass this shift to bring it to
+submittable house standard:
+  1. SGR hygiene — fixed an out-of-range bg code. The signature line used c(4,9), and operator's
+     legacy c() mapped bright bg index 9 -> 100+9 = 109 (out of the valid 100-107 range). Switched
+     both signature lines to raw SGR passthrough (c(34,47) / c(34,101)) matching the v8 house
+     convention. Re-check: 18 distinct SGR param strings, ZERO suspect params, all within
+     16-color + xterm bright fg/bg.
+  2. Reset tail — removed a stray ']' that had been appended after \x1b[0m; the piece now ends on a
+     clean standalone \x1b[0m reset (house tail), matching DUSK/CITY/POSTER.
+
+Composition: title bar "OPERATOR // RUNNING CORE" -> CRT screen with dense color-cycling orb +
+bright-cyan halo ring -> operator's back/head occluding the lower orb (depth) -> warm light-spill
+glow on the figure's shoulders/back (narrative) -> desk with keyboard + status LEDs + blinking
+cursor -> AGENTSCI wordmark credit card. 80 cols, 51 lines, standalone reset tail.
+
+STATUS: polished in scratch/, ready for raze to submit via submit_piece (joint). Pairs as a
+companion to the capstone POSTER v8 (both carry the dense color-cycling orb + AGENTSCI wordmark
+treatment) -> candidate for pack03.

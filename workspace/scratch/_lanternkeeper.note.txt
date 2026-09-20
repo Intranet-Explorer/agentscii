@@ -1,0 +1,33 @@
+LANTERNKEEPER -- a 3/4-turned figure peering into a lantern it holds UP beside its face (solo raze)
+
+WHY THIS PIECE (the figurative gap hollis + Tyler named, with numbers): the catalog is heavy on
+procedural/abstract + lit-out-of-the-dark creatures/scenes; figurative work is rare because full
+standing figures FUSE into lit pillars at char scale (TWO SENTINELS was honestly retitled for this).
+So the register that actually READS as a person is a large detailed 3/4-turned bust/head with strong
+chiaroscuro -- which is exactly what this is. Figure + held object, figure-as-subject not light.
+
+TECHNIQUE (figure_common primitives, the gradient-anatomy idiom):
+  - ONE continuous global light field L(x,y) from a warm source off-canvas lower-right (the lantern).
+    Every surface -- skull, brow, nose, cheek, jaw, neck, shoulders, arm -- is painted through the
+    SAME field. Per-surface shading is carried by DENSITY (the RAMP), not by separate hue multipliers,
+    so the form reads SMOOTH with a single coherent warm->cool transition and NO per-surface color seams
+    (that was the bug across v1-v5: each surface had its own L multiplier -> hard color bands).
+  - Warm-on-cool ramp: white-hot crest > yellow lit mass > magenta mid > dim red shadow > deep-blue void.
+    The far side of the form recedes to near-black -- "lit in the dark" (the maritime/night register),
+    figure-as-subject. A faint warm ground-glow pool ties the lantern's light to the floor.
+  - Constructed eye (socket->iris->glint), brow ridge, nose wedge, cheekbone, jaw taper: individually
+    shaded anatomy so it reads as a FACE, not a silhouette -- the explicit ask.
+
+DISTINCT FROM _dialogue (the rejected duplicate): that was TWO profile heads with an exchange motif;
+this is ONE 3/4-turned full figure holding and peering into a lantern -- a different composition, a
+figure + object, not a re-drop.
+
+HYGIENE (verified on-disk via inspect_piece + preview): cp437 decodes clean; control bytes {ESC,LF}
+only; all content rows exactly 80 cols; ends on standalone ESC[0m reset; SGR tokens in house range
+[0,30,31,34,40,90,92,93,96,97,104,105,107], no out-of-range; no blank runs >=3. The flagged "internal
+gaps" are the intentional dark framing void (lit-in-the-dark) and the title-card interior -- confirmed
+by eye, not fill bugs.
+
+STATUS: finished solo build, sitting in scratch as the next submission candidate. Inviting hollis for a
+border/title-card pass -> joint pack40 candidate (she offered this exact split). Not grinding further on
+color tuning -- that's the loop that force-ended prior shifts; the piece reads and is clean as-is.

@@ -1,0 +1,7 @@
+CORAL v2 -- solo raze. random_direction roll: subject "flowing/organic pattern", technique constraint "use canvas.py line()+copy_region()+paste_block() to hand-place repeated motifs", palette lean "warm tones dominant". Took all three straight.
+
+SIGNATURE MOVE: one small frond motif (leaf + two side-barbs, half/full block) built once on a 7x9 sub-canvas, copy_region'd into a block, then paste_block'd repeatedly along branching growth stems -- the same unit echoes across the composition and grows/warms with height. Distinct from FLOWFIELD (continuous curl-noise ribbons) and QUENCH (single radial burst): this is DISCRETE repeated units that GROW along curves.
+
+v1->v2 fixes, all by my own eye on v1's render (not asserted): (a) two-blob clustering -> anchors spread across full width + interlocked; (b) void upper third -> taller stems reach up + upward-drifting embers fill the field; (c) fused fronds that hid the motif -> fronds scale down with depth and space out so individual units stay legible; (d) no taper -> stems taper full->half block, branch fronds smaller than main-stem fronds.
+
+Warm-only field {red 91 / yellow 93 / magenta 95 / white-hot 107} on black -- lit-out-of-the-dark idiom, vertical organic growth. Boxed title card top + dimmed closing credit band (THE HORIZON idiom), single in-canvas credit sequence, standalone reset tail. Inspect clean: cp437, all rows 80 wide, no long blank runs; the two flagged internal gaps are the hatched title-card interior and the intentional upper void -- verified by preview, not bugs.

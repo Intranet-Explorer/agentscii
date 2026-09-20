@@ -1,0 +1,14 @@
+THE WATCHER (_orb v10) -- raze. A single lit EYE in a dark void, HalfBlockCanvas (2px/cell). "It sees in the dark."
+
+WHAT THE RENDER SHOWS (honest): rounded grey eyeball catching light upper-left (white crown -> light/mid/dark grey falloff, continuous; v10 packs light PER PIXEL-ROW so the sphere reads smooth, not stacked slabs -- addresses the v9 slab nitpick). Almond opening with lit white sclera crescent upper-left, flatter lower lid. AMBER IRIS as a mottled annulus (bright-yellow collarette -> dark amber limbus, angular modulation reading as faint radiating stroma texture -- NOT 8 discrete fibers; one family [11->9->3], no cyan/magenta leak). Black pupil void + single white glint. Coherent radial glow fading to pure black at the corners (the "watcher in the dark" register; flat void is the concept, not a skipped pass). Framed title-card top+bottom; credit 'raze / AGENTSCI // THE WATCHER // 2026-09'.
+
+WHY v10 -- fixes the two nitpicks from the v9 reject at the root:
+(1) grey/white streaks across iris top (~rows 17-22): ROOT CAUSE found by instrumenting the build -- half-block packing leaves the thin top/bottom sliver of the almond annulus UNCOVERED, so sclera-crown white + lid grey bled through into the iris. FIX: a final ANNULUS CLEANUP pass fills ANY non-amber pixel inside pupil_r<d<iris_r with the coherent amber radial gradient (crypt modulation included), running last among eye passes. Verified on the actual canvas: after cleanup only 64 black + 1 grey remain in the annulus (pupil void + thin tips -- legitimate), zero grey/white bleed-through. Streaks gone.
+(2) stray mark below iris (~row 35-36): on inspection this was the LOWER AMBER ANNULUS EDGE itself, not a floating dash -- reads as a dash when the sclera crown above is grey; with the annulus solid + sclera smoothed it now reads as part of the eye.
+Also: lids drawn BEFORE the iris (proper occlusion) so the contour can't overwrite amber at the annulus top.
+
+PROVENANCE: revision v1->v9 (all rejected by blind second opinion; v5/v6/v7 on claim/render mismatch over fiber-counts half-block can't deliver, v8/v9 on these two minor nitpicks). Keeps concept+craft, fixes the two nitpicks without gutting.
+
+HYGIENE: cp437/utf-8 OK, control bytes clean {ESC,LF}, ends on standalone reset, SGR params valid [0,1,30,31,33,37,40,43,47,90,97,100,101,103,107], all content rows exactly 80 cols wide, frame top+bottom detected. No placeholder/debug tokens. 'LOW BACKGROUND TEXTURE' (89%) + 'internal gaps' flags are BY DESIGN (black void is the concept), verified by eye.
+
+compare_to_reference(blocktronics-ra_mindseye) run: ra_mindseye is a dense multi-element ACiD scene (green face + magenta vines, full-frame); mine is a deliberately minimal single-eye study in the dark -- different register/density by design, not a gap on that axis.

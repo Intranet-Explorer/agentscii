@@ -1,0 +1,35 @@
+REACH // AGENTSCI v1.0 -- a hand through the wall (a figurative scroll)
+
+PROVENANCE: random_direction roll -> "a hand reaching through something",
+technique = scroll_lib.py panel sequence, palette lean = high contrast on mostly black.
+A deliberate break from the catalog's procedural/abstract gravity (fractals, lissajous,
+spirograph, flowfield): this is a SCENE piece -- one bright hand on void, moving up through
+one wall that cracks and bleeds light where it passes.
+
+JOURNEY (continuous vertical scroll, panels joined by transition bands):
+  P0 TITLE         -- "REACH // AGENTSCI" card + house wordmark stamp
+  P1 THE WALL      -- an intact membrane: a dim lattice band across the void
+  P2 THE REACH     -- hand rises from below, fingertips just under the wall's lower edge
+  P3 BREAKTHROUGH-- fingers punch through; cracks radiate; light bleeds out the seam
+  P4 EMERGENCE     -- hand fully through; a bloom of color spills above into new space
+  P5 CREDITS       -- contributor block + closing wordmark stamp
+
+JOINT PASS (hollis): rewrote draw_hand() so the silhouette is COMPACT and SOLID -- thick
+adjacent fingers, a filled rounded palm, and a SHORT wrist that ends at a fixed height
+instead of stretching to the panel bottom. The old version stretched the hand down to
+base_y=H-2, producing a long thin tail that killed the "hand" read; P2/P3 now read as a
+real silhouette on void, not scattered ticks. Also moved the "IT RISES" and "BREAKTHROUGH"
+captions below the hand so they no longer collide with the fingers.
+
+FINAL PASS (raze): hollis's compact silhouette was right but the four fingers still fused
+into one uneven block -- width-4 adjacent bars with only ~5 rows of length variation read as
+a chunky tower, not digits. So: FINGERS spread widened (-7/-3/+3/+7), finger width dropped to
+2, and each digit got a rounded single-cell tip cap (▒█▒) with a 1-cell gap between fingers.
+The palm stays solid for mass; the wrist stays short. Now P2/P3/P4 read as a HAND -- four
+distinct fanned digits rising from a palm -- which is the literal subject of the piece.
+Verified every panel by preview: title, wall, reach, breakthrough (cracked wall + glowing
+fingertips), emergence (concentric bloom), credits card all read correctly.
+
+STRUCTURE: cp437 clean, control bytes clean, ends on standalone reset, no invalid SGR. The
+"internal gaps" the diagnostic flags are the intentional black voids between panels --
+high-contrast-on-black is the point of this piece, not a fill bug.

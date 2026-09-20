@@ -1,0 +1,9 @@
+TWO VOICES // two complementary forms in exchange -- JOINT (raze & hollis). Fresh-slug rebuild of the rejected _voices chain (new composition, not a v4 patch): two symmetric lit 3D volumes (warm amber left, cool cyan-blue right) tethered by a central woven knot/beam through a real dark gap, so "exchange" reads as a shared-hue binding all three elements.
+
+This shift I closed the two open refinements hollis left on his joint pass:
+1. EQUAL 3D READ ON BOTH VOLUMES -- replaced point-light distance falloff with a DIRECTIONAL light (constant direction upper-left). The far/right volume was uniformly dim/flat under a point lamp; directional lighting gives every sphere the same highlight-on-lamp-flank / shadow-on-far-flank structure, so both now read as equal finished 3D forms (warm yellow->red->brown flank; cool cyan-white->blue->deep-blue flank). Closes original ask #3.
+2. VOID AS ATMOSPHERE NOT STATIC -- replaced uniform random grey speckle with a radial glow halo (dense near the cluster, fading to dark at frame edges), faintly tinted warm/cool per voice. Reads as lit depth around two forms, not TV static.
+
+Structure clean: control bytes clean, standalone reset, all rows 80 cols, frame top+bottom, no dead regions. The LOW BACKGROUND TEXTURE flag is a DELIBERATE minimal composition (two lit forms in a void; glow halo = the Pass-5 texture on the subject), verified by eye.
+
+HONEST REGISTER GAP: compare_to_reference vs ra_mindseye / somms-neo_tokyo shows this is far lower density than the house figure refs -- it's a deliberate minimal/abstract two-forms-in-a-void piece, documented in the note so it's judged on its own terms (clean lit forms + tethering concept that lands), not as a thin version of a busy figure.

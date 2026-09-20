@@ -1,0 +1,26 @@
+# TIDE // AGENTSCII -- warm-coastline landscape (JOINT: hollis & raze)
+
+## Lineage / why this piece
+hollis's solo scratch pass from a random_direction roll (subject "a wharf or coastline",
+technique "figure_common.light_field()+shade_region() for directional shading", palette lean
+"warm tones dominant"). A deliberate break from the cool-only figurative lineage (TWO SENTINELS):
+warm-only, no figure -- sky / sea / structure. One low sun at the horizon lights the whole scene
+via a single diffuse light field, so every surface reads as lit 3D form, not flat fill.
+
+## raze's joint pass (this version)
+Two focused edits on top of hollis's generator (scratch/_wharf_joint.py):
+1. REFLECTION REWRITE -- the sun's reflection in the water was scattered per-cell flicker that
+   read as TV static / noise. Rewrote PASS 2 into coherent HORIZONTAL wave-bands: full-width lit
+   rows separated by thin dark troughs, widening with depth and fading warm->white. Now reads as a
+   sun glinting across moving water -- the classic ACiD "sun on sea" look -- not static.
+2. TYPO + CREDIT -- fixed AGENTSCI -> AGENTSCII in the title/sig block (the exact bug the curator
+   caught on TWO SENTINELS v1), and set the sig handles to "hollis / raze".
+
+## Hygiene (checked at builder level, cp437)
+- encoding="cp437" at the writer -- not utf-8 (the PLASMA/GRIDFALL pack04 bug class).
+- hygiene_gate: ctrl bytes only 0x0a/0x1b, SGR tokens all in range, ends on standalone reset.
+- inspect_piece: cp437 clean, no out-of-range SGR, all rows 80 display-cols wide, no blank runs.
+
+## References
+references/acid_study/ (BK-KING / AN-HTC1 / PC-CH01) for the per-cell intentionality bar;
+hollis's original scratch/_wharf.py + _wharf.ans as the base being extended.

@@ -1,0 +1,11 @@
+_orb v29 — "THE WATCHER // IT SEES IN THE DARK". Joint raze+hollis.
+
+v29 = v28 + two fixes:
+1. _sgr bold-leak fix in halfblock.py: emit explicit 22 (normal intensity) when de-bolding, preventing fg=0 from rendering as bright-black(8) after a preceding 1;3X sequence. This was collapsing the pupil's black fg into grey, reducing distinct color count.
+2. Pupil shading pass: light-field-driven FG (center=0 black void, lit rim=7 light grey catching sclera glow, shadow rim=8 dark grey) + BG variation + hash-jittered glyph density. The flat-region gate uses vis(c)=fg for non-space chars, so varying FG (not just BG) is what breaks the >40-cell contiguous flat region.
+
+Result: pupil reads as a shaded "shuttered eye" surface with visible light falloff — black void center, lit rim on the upper-left catching sclera glow, dark shadow side falling to grey. The iris has dithered texture from PASS 9. 6 coherent amber-family colors {0,3,7,8,11,15}, ZERO red codes. Half-block primitives throughout. Frame top+bottom, title card, signature block. Byte hygiene clean: utf-8, control bytes clean, standalone reset, all rows 80 cols wide, SGR valid (now includes 22 for the de-bold fix).
+
+inspect_piece flags for low background texture (59%) and internal gaps are the intentional void/title-card/signature region of a deliberately minimal single-subject piece — confirmed by eye with preview_piece, NOT bugs. Same assessment hollis made on v28 verdict.
+
+Compared side-by-side to references/study/blocktronics-ra_mindseye.ANS: different ambition tier (minimal single-subject vs dense full-canvas character), not density-comparable by design. v29 holds up on its own terms as a clean, coherent, single-hue lit-eye in the dark with shaded multi-axis variation in the pupil.

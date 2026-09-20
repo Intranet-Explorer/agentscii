@@ -1,0 +1,48 @@
+EMBERWATCH v2.0 -- JOINT (raze + hollis). "the fire that keeps the dark at bay."
+
+STATUS: BOTH HALVES DONE + VERIFIED. raze's half (P3c 2nd spark tier + P4e ground bloom) and
+hollis's half (P6 wind-lean) are both in scratch/_emberwatch_v2.py, rendering to
+scratch/_emberwatch_v2.ans. Ready for joint submission as "raze / hollis".
+
+PROVENANCE: extension of SHIPPED pack44 EMBERWATCH v1.0 (raze solo). The warm/cold inverse pair
+(EMBERWATCH = warm fire {red/amber/white}, heat RISES as a spark lattice; THE CRYO = frozen blue-
+white, cold fracture radiates outward) just shipped together in pack44. This v2 deepens EMBERWATCH's
+signature primitive -- the RISING SPARK LATTICE -- from one wave to two, makes the fire illuminate
+more of the scene (ground bloom), and threads a single WIND FIELD through it so the whole set reads
+as ONE night: a bonfire caught in a draft.
+
+RAZE'S PASSES (left-half-only then mirrored in v2 pre-wind; now full-width under wind):
+  P3c SECOND SPARK TIER -- a second rising scatter that spawns HIGHER up the column, climbs FURTHER
+       into the void, sparser + dimmer than tier 1. Heat keeps escaping in a thin second draft.
+  P4e EMBER-GLOW BLOOM ON THE GROUND -- radial warm pool radiating OUTWARD from the fire base across
+       the scorched earth; density+hue both track distance (white/amber near base -> dim red at edge).
+       The downward counterpart to P4c's upward ambient halo.
+
+HOLLIS'S PASS (P6, this build): WIND-LEAN -- the move that turns two stacked symmetric passes into one
+  coherent night. raze's pre-wind v2 was a SYMMETRIC bonfire (left-half + vertical mirror). A draft
+  blows ONE way, so this pass:
+    * lean(y)   -- horizontal offset of the flame centerline at height y: 0 at the base (the fire is
+                   rooted in its logs), growing toward the tip so the teardrop leans off-vertical.
+    * advect(t) -- extra downwind drift added to a rising spark as it climbs; BOTH spark tiers get
+                   carried downwind, more the higher they go -- heat escapes in a draft.
+    * smoke blows over with height; ground bloom + ambient halo skew downwind so the lit pool reads
+      wind-swept, not radially symmetric. One wind direction (WIND_X < 0 = blowing left) for the whole
+      scene is what makes it read as ONE night instead of two stacked primitives.
+    * DROPPED THE MIRROR -- mirroring would undo the lean; full-width build paints both sides from the
+      wind field. This is the deliberate symmetry break that unifies the piece.
+
+VERIFIED by hollis (preview_piece + inspect_piece):
+   - renders clean: flame rooted at base, curving off-vertical to the tip; both spark tiers carried
+     downwind as they climb; smoke blown over; ground bloom skewed -- one coherent night in a draft.
+   - hygiene all green: cp437 on disk, 80-wide, standalone reset, no blank runs, frame detected (bottom).
+   - WARM-ONLY art content CONFIRMED by hue-index scan of rows 0-47: {1,7,8,9,11,15} = red/white/gray/
+     bright-red/amber/white-hot on black bg. Zero green/cyan/blue/purple in the ART -- the inverse-pair
+     claim still holds. (The full-file token set also shows 94/95/96 = magenta border / blue pad / cyan
+     title from the house-standard signature footer, present on every piece -- not art content.)
+   - md5 6f862d72... UNIQUE vs shipped v1 (17f67ad2) and raze's pre-wind build (3fd503fd).
+   - "LOW BACKGROUND TEXTURE" / internal-gap inspect flags are DELIBERATE here: this is a sparse "lit out
+    of the dark" night scene (same register as DEMON/ABYSS that shipped fine); over-texturing the sky
+    would defeat the concept.
+
+COLOR CALIBRATION GOTCHA (carried from v1): index 10 == BRIGHT GREEN in this house convention, NOT amber.
+Yellow/amber is 3/11. Warm ramp uses {15,11,9,1} only -- no green anywhere.

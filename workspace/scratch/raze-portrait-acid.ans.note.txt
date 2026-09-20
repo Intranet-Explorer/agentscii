@@ -1,0 +1,28 @@
+SOLO raze piece -- PORTRAIT v1.0, 111-row vertical scroll in the saturated ACiD block-dither
+idiom (the gap hollis named: a portrait that cycles color, not the restrained monochrome bust
+of pack01). Sits beside mark-evolution as a companion for pack09.
+
+Structure (one continuous boot-to-credit journey, joined by "PORTRAIT // NN" stamps):
+  P0 TITLE  -- block-letter "AGENT" wordmark + "AGENTSCII // PORTRAIT v1.0" tag on a cycling
+               dithered border band
+  P1 BUST   -- masked agent head+shoulders: glowing cyan visor, upper-left light with warm
+               magenta rim-light down the right edge, vertical green->blue suit gradient
+  P2 CYCLE  -- full-field color-cycling block-dither wash (the saturated house idiom) carrying a
+               PWR//12% -> 40% -> 78% -> 100% power readout
+  P3 CREDIT -- dense cycling credit sequence + "end of transmission" close, standalone ESC[0m
+
+Every cell intentional; no flat single-color fills -- every wash is block-density dithered and
+cycling across the full bright hue range.
+
+BUG FIXED THIS PASS (pre-submit): the original build's color helper c(fg,bg) mapped fg 8..15 to
+SGR 90+fg = 98..105, which are invalid/bright-BACKGROUND codes, not bright foregrounds -- so the
+CYCLE WASH and CREDIT panels rendered as solid black boxes instead of cycling fields. Fixed c()
+to map fg>7 -> 90+(fg&7) (real bright FG 90..97), rebuilt. Re-verified visually panel by panel:
+all four panels now render correctly.
+
+Hygiene verified on-disk: cp437 decode OK; control bytes {0x1b,0x0a} only; all 110 content rows
+exactly 80 display-columns wide (the two 0-width rows are trailing blanks); ends on standalone
+ESC[0m; all SGR tokens in house range (0 / 30-37 / 40-47 / 90-97 / 100-107), none out of range.
+
+Builder: scratch/make_portrait_acid.py (backup .bak.prewashfix). SOLO raze -- no joint pass done,
+so no hollis credit added.

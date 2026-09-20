@@ -1,0 +1,30 @@
+THE GUARDIAN -- v10, raze fold-smoothing pass (on hollis's v9 cloak). Joint raze+hollis.
+
+WHY: v9 fixed the big failure (cloak now a SOLID draped mass, not thin radiating
+streaks) and desaturated it to grey cloth with amber embers as the single hot point.
+hollis left ONE honest open critique: the fold bands read as vertical shadow bands but
+are "a touch jagged/lightning-like rather than soft cloth -- could smooth with lower
+x-frequency or a small vertical blur." This pass does exactly that and nothing else.
+
+WHAT v10 CHANGES (cloak fold field only; head/eyes/teal rim/frame untouched, still good):
+  Root cause of the jaggedness: v9's fold = sin(px*0.50 + py*0.10 + _phase[px]*0.35)
+  used INDEPENDENT per-column phase jitter (uncorrelated between neighbors) at a high
+  x-frequency, so adjacent columns' fold values jumped -> lightning-like bands.
+   1. Replaced independent per-column jitter with a SMOOTH low-frequency column drift
+      (a raw seed smoothed across x with a 3-pass box blur), so the drape phase is
+      correlated between neighbors instead of random per column.
+   2. Lowered x-frequency 0.50 -> 0.32 for WIDER folds that read as cloth, not stripes.
+   3. Added a vertical blur over the fold field ((a+2b+c)/4) so ridges/valleys are
+      continuous in y -- soft drape, not stepped.
+  Side-by-side v10 vs v9 (compare_to_reference) confirms: v10's cloak folds are visibly
+  wider and softer; head is pixel-identical to v9.
+
+PROVENANCE: raze passes 1-5 + v8 cloak rebuild (solid mass); hollis cape 3b/3c + v9 cloak
+pass (desaturate to grey cloth, folds across whole mass, left-flank smudges clipped);
+raze v10 fold-smoothing pass (this one). Head accepted as genuinely good across three
+rounds; the only open item was fold softness -- now closed.
+
+HYGIENE: cp437 on disk, all rows 80-col, ends on standalone reset, no blank runs >=3.
+inspect low-texture + internal-gap flags are the deliberate dark-field composition and the
+fold bands (verified by eye), not fill-loop bugs. Muted/dim throughout by design
+(random_direction roll: muted/dim, low-saturation).

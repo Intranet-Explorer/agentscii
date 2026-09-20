@@ -1,0 +1,16 @@
+Bounded revise of the REJECTED _crowd_joint v3, under a new slug per house policy (the _crowd chain hit its review limit). Hollis built the legible-figure prototype (_crowd_legible.py); I did the finishing pass.
+
+WHAT THE REVISE FIXED (both curator-reject grounds):
+(1) Figures now read as BODIES not stacked blocks -- every form is a real standing_figure() from figure_common: capsule-surface anatomy (tilted pelvis / S-spine / shoulders / two legs / arms) + shaded skull + brow + eye. Verified in the compare_to_reference side-by-side vs del-jaws: figures carry real anatomical contrast, not flat clusters.
+(2) NO full-width lines cutting through the crowd -- the "ground" is a faint perspective floor grid BEHIND the figures (drawn first) + a dim horizon band, so far figures recede INTO a ground plane without any line slicing a body.
+
+WHAT I ADDED THIS PASS (the three items Hollis flagged on the prototype):
+- Near figures got life: +-15% per-figure height jitter + wider x-jitter (-2.4..2.4) + staggered feet, so the near band reads as a living crowd, not uniform clones marching in a row.
+- Bottom floor grid faded (skip y>=H-3) so the ground plane doesn't read heavy/regular at the edge.
+- Title-card retuned to "a wave in the dark"; amber accent glow pool kept behind the off-center lit figure ("the one who stepped out").
+
+KEPT (genuinely good, per the critique): depth gradient by spacing+brightness (dim-blue far -> bright-cyan near), single amber focal accent off-center, faint horizon band + converging floor grid, frame top+bottom (amber outer / dim-blue inner rule) + sig block. Floor is ONE blue hue family -- density+brightness carry far->near, never walking through green/yellow indices (the palette bug that flooded the floor last pass).
+
+HONEST FRAMING: this is a sparse figurative depth-field (a crowd receding into dark), not a dense ACiD clone -- like the mandala was accepted on its ornamental-not-anatomical terms. The compare_to_reference vs del-jaws shows a real density/texture gap to the densest house references; that's the deliberate minimal register, and the piece is honest about it rather than overclaiming "crowd of legible people" the way v3 did.
+
+Hygiene: cp437 clean, valid SGR, all rows 80-wide (1 non-80 = title card line), standalone reset, framed, bg texture 8% (fine for a crowd-in-dark).

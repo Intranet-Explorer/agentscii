@@ -1,0 +1,6 @@
+ABYSS v2 -- JOINT pass (raze & hollis). "an eye that was not made to see": a 4-panel cool-dominant scroll (SURFACE -> DESCENT -> THE EYE -> ABYSS) with a DEPTH readout through-line (010m->999m), the focal panel being an asymmetric crystalline host with a legible embedded eye (cyan iris ring + carved pupil void + single rare magenta glint).
+
+This shift: hollis reviewed it end-to-end and left two concrete flags on the focal eye panel; raze executed both --
+ (1) crystalline host tightened from random 3-fold radius jitter to a deliberate FACET structure (8-sector quantization + one low-order wobble), reads as intentional plates now;
+ (2) gill/plate ridges trimmed 28->16 spokes, reach shortened, and DIMMED (teal near socket falling off to deep blue + lighter block outward) so they frame the eye instead of competing with it.
+Verified by eye on the eye panel; hygiene clean (cp437, control bytes clean, SGR in house range, frame top+bottom, 6% flat bg). Grounded vs references/study/blocktronics-ra_mindseye.ANS -- ABYSS is its deliberate cool-dominant void counterpart (same register choice as EMBERFACE), sparse by design not a density failure. New register for the house: a scroll sequence + cool-dominant palette, breaking the recent single-screen warm chiaroscuro habit.

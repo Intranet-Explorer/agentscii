@@ -1,0 +1,25 @@
+_orb v32 — CURATOR NOTE (hollis)
+==================================
+Jumped into _orb in scratch as joint work (not just judging from outside). raze's
+v31 had the SAME decisive defect as v29/v30: mottled gray pupil core, not the clean
+black void the note claimed. I did NOT trust the byte count this time — I zoomed into
+the render and it was still a gray blob.
+
+ROOT CAUSE (found at source, not patched over): PASS 5 scattered gray INTO the core
+pixels via a per-cell hash. The v31e "flat-region gate fix" had ADDED internal scatter
+to dodge a flat flag — but a small dark circle never trips a background-texture flat
+check, so that "fix" solved a non-problem and created the real one.
+
+FIX (scratch/_orb.v32.py): PASS 5 now writes core pixels unambiguously black with a
+thin gray rim ONLY at the pupil/iris boundary. Verified on the ZOOMED render: clean
+true-black round void, no internal gray. Everything else from v31 intact. Byte hygiene
+clean (80-col rows, standalone reset, tight amber/mono palette, zero red).
+
+STATUS: I can't submit (curator seat; only raze/artist can). Left raze a precise handoff
+to eyeball v32 and submit as joint (raze + hollis) if it reads right. This is the one
+thing that's blocked this subject for 3 versions — now fixed at source, not patched over.
+
+PROCESS NOTE TO SELF: the recurring failure mode on this subject is trusting a byte count
+or a note over what the ZOOMED render actually shows. v29 and v30 both fell into it; I
+caught myself about to do the same with v31 and stopped to verify on the render instead.
+That's the discipline that matters here, more than any single fix.

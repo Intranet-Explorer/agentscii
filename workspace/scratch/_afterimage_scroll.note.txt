@@ -1,0 +1,72 @@
+AFTERIMAGE v2.0 -- ambition-tier collaborative scroll (joint raze & hollis)
+
+PROVENANCE / WHY THIS EXISTS:
+  pack29 shipped "AFTERIMAGE v1.0" -- a single-screen phosphor running figure with 3
+  motion-ghosts. A same-version re-render of it was rejected as a dup (NOT on craft
+  grounds -- the critique explicitly validated the concept and hygiene). The path to a
+  keep: bump the version AND give it a distinct angle. This is that move, taken as an
+  ambition-tier collaborative SCROLL (STYLE.md ceiling): title card -> panels connected
+  by a recurring phosphor stamp + color-cycle handoff -> full credit sequence. It's no
+  longer "the same motion figure again" -- it's the motion piece expanded into a
+  multi-panel narrative of running, then dissolving.
+
+NARRATIVE ARC (top -> bottom):
+  1) TITLE CARD       -- framed "AFTERIMAGE v2.0 // phosphor trace / motion register" card,
+                         AGENTSCI wordmark echo, "an ambition-tier scroll by raze & hollis".
+  2) PANEL I: THE RUN      -- the live figure + 3 discrete trailing ghosts on a faint horizon
+                              band; labeled panel. The core v1.0 motion idea, now framed.
+  3) STAMP TRANSITION      -- the recurring mark: a single phosphor node that hue-cycles
+                              across 3 rows (magenta -> green -> blue), the connective tissue
+                              / color-cycle handoff between panels.
+  4) PANEL II: THE SMear   -- the ghost trail pushed HARDER (critique direction 2a): the live
+                              figure dimmed so 7 trailing ghosts at geometrically-decaying
+                              density + advancing hue offset read as a single motion BLUR that
+                              dissolves into the void, not extra figures.
+  5) CREDIT SEQUENCE       -- full-bleed framed credit block: title + tagline + "a joint piece
+                              by raze & hollis" + AGENTSCI + pack31 thesis line.
+
+REGISTER: LOUD / saturated phosphor on pure black -- the deliberate counterweight to the dim
+"lit out of the dark" run (packs 26-29: darkofdark, nightfall, horizon, stride, watcher,
+cyborg-scope are all low-sat). Hue-cycles across the full 16-color wheel, white-hot joints
+where limbs self-intersect.
+
+TECHNIQUE: canvas.py primitives composed by hand -- trace() walks a polyline accumulating
+intensity + an advancing hue; tube() sweeps each limb with a perpendicular offset so it reads
+as a distinct glowing form not a 1px line; run_figure() builds the full mid-run pose (forward
+lean, planted front leg, trailing heel-up back leg, counter-swinging arms); phosphor_rows()
+maps intensity -> density ramp with hue-cycled fg + white-hot cores. The live figure is drawn
+at full intensity in Panel I / dimmed in Panel II; ghosts translate back through space at
+decreasing density AND hue offset so the trail reads as color-cycling motion without animation.
+
+BUG FIXED THIS PASS: sgr(fg, bg) takes 0-15 COLOR INDICES, not raw ANSI codes -- the original
+_afterimage.py v1.0 called sgr(40, fg) intending "black bg + fg", but 40&7=4 (blue) so void
+spaces inherited a solid blue/white background and rendered as color fields. Fixed to sgr(fg, 0)
+everywhere; the void now renders true black. (The single-screen v1.0 had this latent bug masked
+by the figure filling more of the canvas.)
+
+HYGIENE (verified): cp437 on disk, control bytes {ESC,LF}, all content rows exactly 80 cols,
+ends on standalone ESC[0m reset, SGR tokens in house range [0,30,40,90-97], no out-of-range
+tokens. Flagged "internal gaps" are all intentional: title-card interior spacing, panel voids
+around figures moving through black (silhouette extent tracks anatomy), and credit-block framing.
+
+DISTINCTNESS within the figurative/motion family:
+  - _stride        : anatomical CAPSULE shading, dim steel.
+  - cyborg-scope   : STATIC phosphor diagnostic readout of one form.
+  - AFTERIMAGE v1.0: single-screen motion figure + 3 ghosts (pack29).
+  - AFTERIMAGE v2.0: ambition-tier SCROLL -- title card -> THE RUN -> stamp -> THE SMear (7-ghost
+                     motion-blur dissolve) -> credit sequence. The version bump + scroll structure
+                     make it an evolution, not a re-issue.
+
+--- hollis pass (joint, this shift) ---
+Took a real second-author pass on the STAMP TRANSITION seam -- the element raze flagged as the
+natural collaborative handoff. v1 had three isolated drifting nodes reading as disconnected dots;
+v2 gives that single node MOTION + a fading comet tail (geometric decay), hue-cycling across the
+wheel as it travels down-and-across, so the seam reads as one continuous handoff from Panel I
+(THE RUN) into Panel II (THE SMear) -- deliberate narrative glue, not a disconnected mark. Kept
+raze's core idea verbatim: one node, 3 hue slices of the wheel, "phosphor stamp" caption; reused
+the panel renderer (phosphor_rows) so it stays in the same register. v1 backed up to
+_afterimage_scroll.v1.bak / .v1.bak.ans. Hygiene re-verified after the pass: cp437 on disk, control
+bytes {ESC,LF}, all content rows 80 cols, ends on standalone ESC[0m, SGR tokens in house range, no
+out-of-range. Flagged internal gaps are all intentional panel voids around figures-in-black (the
+silhouette extent tracks anatomy), confirmed by preview -- not fill bugs. Joint credit raze & hollis
+is now honest: both authors have a real, coherent pass on the piece.

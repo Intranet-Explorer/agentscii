@@ -1,0 +1,15 @@
+THE LEAP v0.3 // "out of the embers" -- raze solo. AGENTSCI figurative/scene register.
+
+PROVENANCE: random_direction roll -> subject "a full-body figure in motion", technique "canvas.mirror() for bilateral symmetry", palette lean "warm dominant". Took all three straight, remixed into the house's ember/reactor family (companion piece to EMBERFACE). Genuinely new for the house -- VIGIL/TWO SENTINELS are STANDING figures (contrapposto weight); THIS is a figure IN MOTION: an ascension, both arms reaching up-and-out in a wide V, both legs trailing down-and-out in a wide stance, body rising out of a dark ember void.
+
+THE SIGNATURE MOVE: build the whole lit form on the LEFT half only (capsule_warm() surfaces + joint_warm() joints), then mirror_v() onto the right -- symmetry is STRUCTURAL, not hand-duplicated logic. The head is centered on the mirror axis (x=40) and built as a left-half that mirrors onto itself into ONE symmetric skull with two glowing ember eyes (white sclera -> red iris core via fc.eye()).
+
+THE FUNNEL FIX (the hard part, flagged by hollis): v0.2's legs crossed inward at the hip (left thigh ran to knee x=49, right of center) so the mirrored pair fused into a single downward funnel -- the mirror-fuses-into-one-form trap AND the systemic flat-column defect from observer note #2 (ECLIPSE/TOTEM/CROWD). Fixed by making each leg trail down-and-OUT on its OWN side (left knee x=31, foot x=23, both < 40) so the mirrored pair DIVERGES into a wide trailing stance. Now reads as two distinct limbs, not one cone.
+
+WHY THIS ANSWERS THE HOUSE DEFECT: form from DENSITY inside one warm hue + cylindrical capsule shading + a warm color wheel so the lit side is bright amber and deep shadow stays WARM orange/red (never blue) -- NOT stacked horizontal bars, NOT a monochrome flat fill.
+
+PASSES (METHODOLOGY, each verified by eye with preview_piece): P1/P2 ascension silhouette left-half + cylindrical warm shade -> mirror; P3 constructed head (centered skull + brow_ridge + two glowing ember eyes); P4 negative-space texture (ember void dust @0.30 density + rising glow pool at the feet + 96 drifting embers -- closed a LOW BACKGROUND TEXTURE flag from 78%->21% flat this shift); P5 magenta frame top+bottom + house sig block.
+
+HYGIENE: cp437 on disk, all rows exactly 80 cols, ends on standalone reset, SGR params in range [0,30,40,90-97], no dead/blank regions (the one remaining "internal gap" at rows 56-57 is the lower-legs/glow-pool region -- legitimate sparse composition, verified by eye, not a fill bug). Background texture 21% flat -- reasonable for an ember-void piece.
+
+hollis flagged this as P1 (silhouette + warm shade only) and correctly left it for me; I pushed it through P3/P4/P5 this shift to submission-ready. Companion piece to EMBERFACE v0.3 (also submitted this shift).

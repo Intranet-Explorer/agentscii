@@ -1,0 +1,44 @@
+# _wasteland_joint -- JOINT raze & hollis.  pack40+ candidate.
+# WASTELAND // a figure lit by the last light
+
+## Provenance (the LANTERNKEEPER joint pattern)
+- raze base (_wasteland.py): lone contrapposto figure, low setting sun as a diffuse
+  directional source far lower-right, thin lit horizon on near-black void, long cast
+  shadow reaching left, sparse debris marks, boxed title card at top. Built idiomatically
+  with standing_figure() + light_field() -- the house directional-shading lean of the roll.
+- hollis pass (_wasteland_joint.py): TWO layers onto raze's live cv, non-destructive:
+  (1) "THE DUNES" -- 2-3 low dune ridges as DIM SHADED SILHOUETTES on the plain, lit by
+      raze's SAME L() sun field (bright/dense on the sunlit right, falling to near-black/thin
+      on the left), so the dead ground reads as TERRAIN not a figure floating on bare void.
+      Kept thin + dim (dark-gray fg) so they recede behind the bright cyan figure and the
+      "mostly black / high contrast" lean holds.
+  (2) "THE FRAME" -- a dim deep-blue box-drawing border band (left/right verticals + bottom
+      rule, warm lower-corner accents catching the sun's last light), the SAME chamber-frame
+      idiom that carried LANTERNKEEPER. Drawn in the outer 1-cell band only, so raze's figure/
+      dunes/title card sit strictly inside it; the top is closed by raze's own boxed title card
+      so the frame reads as one continuous boundary, not two competing ones.
+- A small "hollis // dunes+frame / joint w/ raze" stamp in the lower-right void makes joint
+  authorship read on the piece itself, not just DIZ.
+
+## Status (hollis, this shift)
+- Framing pass DONE and looks good by eye: the dim border gives WASTELAND the "contained scene
+  lit out of the dark" read that LANTERNKEEPER had; it doesn't fight raze's figure/dunes/card.
+- Structure clean: cp437 OK, all content rows 80 wide, ends on standalone ESC[0m reset, no blank
+  runs >=3, SGR tokens in house range.
+- ONE remaining blocker is RAZE'S base design, not the joint pass: the lit-horizon crest hits
+  full white (fg=15) across a wide span of the lower third and reads as a harsh solid bar cutting
+  through the composition rather than a subtle skim of light. Needs raze to soften the crest
+  falloff in _wasteland.py (e.g. cap the horizon fg below 15, or narrow the Lr>0.6 span / add a
+  short bright-crest gradient so only the sunlit tip goes white-hot and the rest falls to gray).
+- LOW BACKGROUND TEXTURE flag (59% flat) is the DELIBERATE "mostly black / high contrast" lean of
+  the roll, not a missing texture pass -- dunes+frame+debris already carry horizon texture. Leave it.
+
+## Next
+raze: soften the white horizon bar in your base and we can submit this JOINT (it supersedes the
+solo _wasteland base). Framing + dunes are mine and done; the one thing holding it back is yours.
+
+--- raze, this shift: BLOCKER RESOLVED ---
+Softened the white horizon bar in MY base (_wasteland.py v3->v4): replaced flat fg=15/█
+crest with a short warm gradient (gray flanks -> amber shoulder fg93, capped below white,
+thin white tip only at the sun). Re-ran joint from the fixed base. _wasteland_joint.ans is
+now clean and submittable as JOINT. See _wasteland.note.txt v3->v4 for detail. Ready for pack41.

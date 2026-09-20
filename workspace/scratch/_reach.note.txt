@@ -1,0 +1,49 @@
+REACH // "a hand reaching through something" -- solo raze.
+
+PROVENANCE: built from a random_direction roll -> subject "a hand reaching through
+something", technique constraint "use curve_common.py's phosphor_render() for a
+traced-curve / scope aesthetic", palette lean "cool tones (blues/cyans/greens) dominant".
+Provenance noted honestly.
+
+CONCEPT: a single hand reaches up out of the dark, passing THROUGH a faint scope graticule
+(a Cartesian lattice). The grid lines continue ACROSS the hand's body -- it is reaching through
+a mesh/lattice, not in front of one. One light source (upper-right) falls across the form so the
+lit side is bright+full and the shadowed side falls to near-black via ambient -- the "lit out of
+the dark" idiom. Cool palette: blue -> cyan -> white hot crest, ONE hue family varying brightness.
+
+TECHNIQUE / PASSES (real ANSI art built in passes, not one shot):
+ 1. block-in the hand silhouette on a standard cell canvas, verify composition reads as a hand
+    BEFORE any shading (a quick halfblock proto confirmed hands DO read at this scale -- novel for
+    the catalog; no hands anywhere in the 52 shipped packs).
+ 2. shade from ONE light source via a per-cell light_field(x,y,LX,LY) -> cool ramp [4,6,12,15]
+    (dark blue -> blue -> bright cyan -> white). Uniform per-cell shading so the surface reads as
+    lit 3D volume, not a flat wash.
+ 3. sparse + DIM background graticule (faint scope lattice) -- gives the void structure instead of
+    dead-flat black.
+ 4. the "through" pass: grid lines continue ACROSS the hand body, BRIGHTER than the bg lattice, so
+    the contrast (dim bg grid vs bright grid-on-hand) IS the "reaching through" read.
+ 5. tight specular crest where the light hits hardest (white node).
+ 6. faint phosphor DUST in the void (deterministic scatter, denser near the light -- phosphor glow
+    falloff) so the negative space has life without competing with the hand. This is what killed
+    the LOW BACKGROUND TEXTURE flag (was 43% flat, now 5%).
+ 7. frame + title-card + credit line (house standard).
+
+KNOWN LIMITATION (honest): at this cell resolution the three upper fingers (index/middle/ring)
+merge somewhat into one chunky crown and the thumb reads as a small protrusion rather than a
+distinct digit -- inherent to whole-cell shading of thin separated forms. The piece still reads
+clearly as "a hand reaching up through a lattice," which is the concept; it's not attempting
+anatomical precision.
+
+BUGS FIXED THIS BUILD (all caught by preview + inspect, not notes):
+ - half-block cross-hue: top pixel=cyan + bottom=blue emitted fg=96 (bright-magenta) at silhouette
+   edges -- a warm artifact in an otherwise cool piece. Switched to the standard Canvas (uniform
+   per-cell shading); hand is large enough that whole-cell is clean.
+ - palette-index bug x2: raw value 14 was assumed bright-cyan but halfblock/_sgr computes
+   90+(14&7)=96 = bright-MAGENTA; and title text used SGR 114 (out of range). Both fixed to the
+   real cool indices (12=bright-cyan, 94=SGR for title). This is the exact index-vs-SGR confusion
+   the house style spec warns about -- caught directly.
+
+STRUCTURE: encoding clean, ends on standalone reset, no invalid SGR params, background texture 5%
+flat, frame detected top+bottom. compare_to_reference(somms-neo_tokyo) run before submit: mine is a
+deliberately different register (single clean cool figurative form in a scope/lattice field vs the
+reference's dense grayscale figure), coherent and legible as intended.

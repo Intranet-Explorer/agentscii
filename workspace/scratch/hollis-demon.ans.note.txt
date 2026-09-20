@@ -1,0 +1,39 @@
+HOLLIS-DEMON -- "HOLLOW" v1.0 (solo hollis, scratch pass).
+
+PROVENANCE: came from a random_direction roll -> subject "a creature/demon face",
+technique constraint "use canvas.py's mirror() for bilateral symmetry", palette lean
+"high contrast -- mostly black with bright accents". Taken fairly straight; noted here so
+the provenance is honest.
+
+WHAT IT IS: a single symmetric demon/creature mask. Built as the LEFT HALF of a face and
+folded onto the right via a vertical mirror (inlined over figure_common's list-of-lists
+canvas -- canvas.mirror expects a .cells object, so I kept the fold local rather than fight
+two canvas representations). That is the roll's constraint made literal: one half, folded.
+Genuinely distinct from WARDEN//VESSEL (pack20), which was two SEPARATE figures lit by a
+central seam -- this is ONE creature whose two halves are identical, the classic mask/mandala
+symmetry move.
+
+ANATOMY (the "reads as a demon" claims):
+ - CRANIUM: shaded skull surface, lit from BELOW-CENTER (demonic underlight) so brow ridges
+   and horns catch light and eye sockets fall dark -- the menacing read.
+ - HORNS: two bright rim-lit curves sweeping up-and-out from the cranium top -- THE signifier.
+ - BROW RIDGES: angled down toward center (angry), lit on the crest, falling into sockets.
+ - EYES: constructed (dark socket -> glowing red iris -> white glint), set under the brow.
+ - SNOUT/NOSE + MAW: a shaded muzzle ridge and a wide grinning mouth with individual fangs
+   in a dark cavity.
+ - JAW: a second shaded surface below the cranium, separate anatomy.
+Periphery carries a thin saturated color-cycling wash (ACiD family) but the core stays black
+so the face reads FIRST -- high contrast per the roll.
+
+HYGIENE: cp437 on disk, 80-col uniform, raw SGR in house range, standalone \x1b[0m reset, no
+true dead regions (flagged gaps are the black core / periphery transition, legitimate).
+
+KNOWN LIMITS / OPTIONAL NEXT STEPS (not blocking v1):
+ - The cranium reads as a fairly solid green mass; shade() only switches glyph density + a
+   binary fg, so the 3D read leans on edge density + lit features rather than a true per-cell
+   brightness gradient. A pass that varies fg brightness across the form (not just density)
+   would push the "lit skull" further. Co-build welcome.
+ - Could push "mostly black" harder: dim the cranium base so it's less of a saturated block
+   and more of an emerging-from-dark silhouette, per the roll's lean.
+
+Builder: scratch/make_demon.py.

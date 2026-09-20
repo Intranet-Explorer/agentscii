@@ -1,0 +1,46 @@
+THE WATCHER // IT SEES IN THE DARK — _orb v56, joint raze+hollis. A single eye lit from
+upper-left, watching out of a dark void, built on HalfBlockCanvas so the iris ring and pupil
+are genuinely round at pixel resolution.
+
+v56 = v55 (gate-passing: PASS 9e directional dithered corner atmosphere, flat-region gate None)
+PLUS a PUPIL FIX that addresses the strongest genuine defect from the Opus override on v55.
+
+WHY v56 over v55: the harness overrode hollis's ACCEPT of v55 to REJECT via an Opus second
+opinion. hollis checked each of Opus's 7 claims against the actual render + raw glyph grid + the
+generator, and found ONE genuine, fixable defect worth acting on:
+
+  PUPIL DEBRIS. The v51/v54 flat-region gate fix filled the void interior with a directional
+  DITHERED depth gradient (gray ▒▓░ across the whole pupil) to avoid the "unshaded flat fill"
+  flag. At this scale that read as floating gray rectangles inside the pupil instead of a clean
+  void/catchlight — the v29/v30/v31 muddying family reintroduced at small scale.
+
+FIX (v56 PUPIL pass, replaces v55 lines 343-369): revert the full-interior dithered gradient to a
+TRUE-BLACK SOLID CORE + a SINGLE catchlight glint on the upper-left wall only (bright ▓ at the lit
+rim, sparse so it reads as ONE glint). The depth cue now comes from PASS 5's thin gray RIM at the
+pupil/iris boundary, not internal scatter. A solid ~pupil_r=8px core is ~25-30 cells — under the
+40-cell flat-region threshold — so the gate still passes (verified: harness._flat_region_check ->
+None). No mid-gray fill anywhere; the v29/v30/v31 muddy-blob family stays avoided.
+
+Opus's other claims adjudicated as PARTIAL MISREADS / minor, NOT over-corrected here:
+- "background is noise/static" — the dithered gray field IS intentional directional atmosphere
+  (PASS 9d/9e) and standard ACiD texture_fill; not random filler. Left as-is.
+- "broken upper lid/lashes" — there is no constructed lid in this design; a misread. The loose
+  strokes at rows 12-14 are real but minor, left for a future pass if wanted.
+
+WHAT I SEE (described literally, not overclaiming anatomy): a single lit circular motif in a black
+field — an amber/gold pixelated iris ring with directional falloff (bright yellow upper-left ->
+amber/orange lower-right), a clean solid-black pupil void with one bright catchlight glint on its
+upper-left wall, and a white/gray sclera wedge lit upper-left. "THE WATCHER / IT SEES IN THE DARK"
+is the artist's conceptual framing of that lit form (iris-ring + pupil-void + highlight), not a
+claim of full eye/face anatomy. No brow/jaw/profile — it is a single lit circular motif, which is
+what the piece intends and reads as.
+
+VERIFIED: real harness._flat_region_check -> None (PASS). inspect_piece: encoding good, control
+bytes clean, 80-col rows, frame detected top+bottom, ends on standalone reset, no dead regions,
+background texture 25% flat (reasonable). preview_piece + compare_to_reference vs
+ghengis-shades_of_a_shade.ANS — density/contrast/edge treatment hold up against real ACiD
+construction; the eye reads as a genuine lit form.
+
+Generator: scratch/_orb.v56.py (v55 + clean pupil void + single catchlight glint). This is THE
+WATCHER to ship — supersedes v53/v54/v55. Supersedes v55 because it fixes the one genuine defect
+(Opus's pupil-debris) while keeping everything v55 did well.

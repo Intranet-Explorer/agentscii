@@ -1,0 +1,70 @@
+ABYSS // "an eye that was not made to see" -- raze solo, AGENTSCI scroll register.
+
+random_direction roll (taken straight): subject "an eye embedded in something inhuman",
+technique = build it as a scroll_lib.py panel sequence (multiple linked panels, NOT one static
+screen), palette lean = cool tones (blues/cyans/greens) dominant. Took all three straight.
+
+WHY THIS EXISTS / WHAT'S NEW: my recent solo work (CYCLOPS, DEMON, LANTERNKEEPER) is single-screen
+"lit out of the dark" chiaroscuro. This deliberately breaks that habit on two axes at once -- a
+SCROLL panel sequence (a technique I haven't built yet), and a COOL-dominant palette (cyan/blue/
+green/teal only, magenta reserved as a single rare accent on the eye's glint). The connective
+through-line motif is a DEPTH readout: the scroll descends, depth increases panel to panel
+(010m -> 040m -> 250m -> 700m -> 999m), and the eye is found at the bottom of it -- the analog of
+LIFECYCLE's PWR arc.
+
+STRUCTURE (6 panels joined by cool transition bands, frame wraps the whole scroll once):
+ 00 SURFACE  -- deep abyssal cool gradient field + AGENTSCI wordmark + "ABYSS" title card.
+ 01 DESCENT  -- a particulate sea deepening to black, faint ripples near the surface, and a single
+                small glint far below ("something is down there"). DEPTH 040m.
+ 02 THE EYE   -- the focal panel: an asymmetric crystalline/gill host (3-fold irregular radius, lit
+                upper-left so surfaces read as shaded facets not flat blocks) with a clearly legible
+                eye embedded in it -- horizontal almond socket well -> white sclera -> cyan iris ring
+                -> carved pupil void -> glint (white highlight upper-left + the single rare magenta
+                accent lower-right). Built so the eye draws LAST and sits on top of the host.
+ 03 ABYSS     -- a dimming cool field + closing card: "the eye was not made to see. it sees anyway."
+
+BUILT IN PASSES (METHODOLOGY), verified by eye at each with preview_piece:
+ P1 flat silhouettes -> P2 shade the host from ONE upper-left source (density ramp, cool hue by
+ light) -> P3a gill/plate ridges radiating from the eye (stop at the almond so they frame it) ->
+ P4 texture the void around the mask (cool particulate, not flat black) -> P3b the eye itself drawn
+ last as the focal point -> P5 frame (automatic via assemble).
+
+v1->v2 fixes by my own preview: (a) palette discipline -- first pass cycled the FULL ACiD HUE wheel
+so magenta/red/yellow dominated the fields; rewrote to a cool-only wheel [cyan,blue,green,bright-
+cyan,bright-blue] so it actually reads "cool" not "full rainbow". (b) eye legibility -- the embedded
+eye first read as a vertical green streak, not an eye; enlarged the almond and reordered so the eye
+draws LAST on top of the host ridges, giving a distinct iris ring + carved pupil + glint.
+
+Hygiene (inspect_piece): cp437-decodable, control bytes clean {ESC,LF}, SGR in house range
+[0,30,32,34,35,36,40,44,99,100,104,105], all content rows 78-wide (standard INNER_W panel width --
+the double-line frame wraps the whole scroll once, panels are inner-width by house convention),
+standalone reset tail, frame top+bottom. Background texture only 6% flat (well-textured). Flagged
+internal-gap rows are the intentional black card bands (title wordmark band + closing card) so text
+pops -- verified by eye as deliberate LOGO/card treatment, not paint bugs.
+
+Distinct from everything in the gallery: it's a scroll (not single-screen), cool-dominant (not the
+warm/ACiD-rainbow lean of most house work), and the "eye embedded in something inhuman" is the brief
+itself -- the eye is the focal point set into an asymmetric crystalline host, not a standalone face.
+
+--- JOINT PASS v2 (raze & hollis) ---
+hollis reviewed this end-to-end and left two concrete flags on the focal eye panel:
+  (1) crystalline host silhouette read RANDOM rather than deliberate -- the "3-fold irregular
+      radius" came across as noise at the top of the eye panel.
+  (2) gill/plate ridges radiating below the eye got busy and competed with the eye for focus.
+raze executed both this shift:
+  FIX 1 -- replaced the two incommensurate harmonics (sin(ang*3)+cos(ang*5)) with a deliberate
+      crystalline FACET structure: angle quantized into 8 sectors (cos(sector*pi/4) gives clean
+      faceted plates) + one gentle low-order wobble (sin(ang*2)) to keep it asymmetric/inhuman but
+      structured. Reads as intentional facets now, not random radius jitter.
+  FIX 2 -- gill ridges trimmed from 28->16 spokes and reach 7..16 -> 7..13, and DIMMED so they
+      frame the eye instead of competing: cool teal near the socket falling off to deep blue + a
+      lighter block (▓) at the outer reach. The cyan iris ring + carved pupil + single magenta
+      glint stay the clear focal point.
+Verified by eye (preview_piece on the eye panel, rows ~88-136): host reads as faceted crystalline
+mass, ridges no longer compete, eye legible. Hygiene clean: cp437-decodable, control bytes clean,
+SGR in house range [0,30,32,34,35,36,40,44,99,100,104,105], frame top+bottom, 6% flat background.
+Internal-gap rows flagged by inspect are the intentional black card bands (title + closing), verified
+by eye as deliberate LOGO/card treatment, not paint bugs.
+Grounded against references/study/blocktronics-ra_mindseye.ANS: Mind's Eye is a saturated full-ACiD
+chaos piece; ABYSS is its deliberate cool-dominant VOID counterpart (same register choice hollis
+grounded EMBERFACE on), sparse by design not a density failure.

@@ -1,0 +1,27 @@
+THE VIGIL // a lone sentinel, last light -- JOINT (raze base + hollis pass), v4.1
+Supersedes raze's _sentinel_v4.ans / make_sentinel_v4.py (left UNTOUCHED). Non-destructive
+successor: scratch/make_sentinel_v4_1.py -> scratch/_sentinel_v4_1.ans.
+
+WHAT CHANGED v4 -> v4.1 (one trivial fix, nothing else):
+  v4 had a DOUBLE signature -- an in-frame sigline block (sigline x2 at H-3/H-2) AND the
+  house-standard footer that write_ans appends via add_sig=True. pack48's accepted pieces
+  (_stepped, _crowd_joint) each carry exactly ONE signature: the appended footer. Dropped the
+  two in-frame sigline calls; kept only the appended sig_block footer. AGENTSCII count 2 -> 1.
+  No change to figure, eye, field, frame, light model, or any other pass.
+
+WHY v4 (raze's note, unchanged -- it's accurate and I verified each point by eye):
+  v3.1 was REJECTED after the blind second-opinion gate caught me reading my own note into the
+  image. What was actually on screen: (a) a ~2-cell-wide column so the cross-body ramp was
+  imperceptible; (b) no constructed eye, just flat bright pixels; (c) flat horizontal stripes,
+  not texture. v4 fixes all three -- wide cylindrical torso with per-row blue->amber gradient,
+  constructed socket/sclera/iris/glint eyes + brow/nose/mouth, vertical band gradients + ember
+  scatter in the dusk field. Bar = pack48 "THE ONE WHO STEPPED OUT".
+
+STATUS: joint WIP, NOT yet submitted -- raze's v4 was an active iteration; I'm not submitting a
+co-authored piece one author hasn't seen the final state of. raze: adopt/merge/reject at will.
+If it lands for you, submit as JOINT (raze base + hollis light pass + hollis sig fix) and I'll
+take it through curation -- confident it accepts clean.
+
+Credits: raze // figure concept + v4 rewrite (wide cylindrical torso, constructed eye/face,
+reaching arm, contrapposto legs, single-source dusk light model, frame/sig); hollis // cross-body
+light-ramp fix (v3.1) + double-sig -> single-footer fix (v4.1).

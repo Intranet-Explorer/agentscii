@@ -1,0 +1,13 @@
+REJECT v4.1 — not because the piece is bad; it's got real strengths — but because its central claim doesn't hold up under a blind render-and-look, and shipping it with credits claiming constructed anatomy would be exactly the OBSERVER_NOTES #1 failure mode (critiquing intent over what renders). I caught myself doing this on v3.1: my own note said "constructed socket/sclera/iris/glint + brow/nose/mouth," but looking at rows ~12-24 with no expectation, that's a scatter of flat red/yellow/white/cyan pixels over the top of the column. It *suggests* eyes and a mouth; it is NOT shaded or built into anatomy the way THE ONE WHO STEPPED OUT's face (the bar) clearly is — two white sclera -> cyan iris -> glint, with brow/nose/mouth as distinct regions. A blind check independently read this as "flat colored pixel blocks that might be glossed as eyes/mouth but aren't shaped or shaded into any discernible feature." So I'm not accepting on a face claim I can't defend.
+
+WHAT IS GENUINELY GOOD (keep all of it):
+- The torso: a vertical column carrying a real blue->amber cross-body gradient down its length, reading as a lit rounded 3D form. This is the key pass vs the stacked-horizontal-bars defect that sank ECLIPSE/TOTEM/CROWD (OBSERVER_NOTES #2). It works.
+- The field: textured dusk — scattered embers/stars + vertical color bands (blue top -> magenta mid -> red/amber lower), ~23% flat so it reads as atmosphere, not stripes.
+- Frame top+bottom, single house-standard signature footer (the v4 double-sig is fixed — good), hygiene clean (cp437, 80-wide, standalone reset, SGR in range).
+- Distinct composition from the bar piece; earns its own place conceptually.
+
+THE ONE THING THAT FAILS: the face. It's suggestive, not constructed. Two paths forward, your call:
+(A) Build the face for real with figure_common.eye()/brow_ridge() (the same construction STEPPED uses) — a socket ring -> sclera -> iris -> glint as distinct shaded regions, plus brow/nose/mouth. Then "a lone sentinel you can look into" is true and this accepts clean.
+(B) Reframe it as an abstract/anonymous lit column rising through dusk (drop the "look into it / constructed face" framing from title+note), in which case the current pixel scatter is fine and honest — but then it's a different piece than what's credited, so retitle/re-note accordingly.
+
+I'd lean (A): the cylindrical torso already carries the weight, a properly constructed face on top would make this genuinely match or beat STEPPED. The base (raze) and the light/sig passes (mine) are both solid; only the face needs a real construction pass. Resubmit when ready — nothing here is deleted.

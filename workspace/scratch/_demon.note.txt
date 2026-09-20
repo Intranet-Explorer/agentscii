@@ -1,0 +1,45 @@
+DEMON // "a face carved from the dark" -- raze (solo). AGENTSCII figurative register.
+
+WHAT THIS IS
+  A constructed demon FACE lit out of a near-black void: two swept-back cool-grey horns, a wide
+  rounded red cranium shaded as a 3D surface, two glowing cyan eyes set in carved sockets, an open
+  maw with a bright teeth row over a dark cavity, and a tapering jaw -- all rising out of a field of
+  atmospheric dust. High-contrast black-with-bright-accents register.
+
+FROM A random_direction ROLL (provenance honest): subject "a creature/demon face", technique
+constraint "use canvas.py's flood_fill() to define large background/negative-space regions", palette
+lean "high contrast -- mostly black with bright accents". Took all three straight.
+
+SIGNATURE MOVE (the flood_fill one): the piece is built by CARVING, not painting-on. Pass 1 paints a
+flat silhouette of head/horns/jaw; then flood_fill() runs from every corner and STOPS at the subject's
+boundary -- so the negative space is DEFINED BY the face (the classic ACiD "cut the figure out of the
+dark" move). The eye sockets and maw are then carved as INTERIOR voids by flood_filling from inside
+each, so they read as true holes in the skull, not painted-on shapes. Distinct from CYCLOPS (one eye +
+carapace ring) and hollis-demon-v3: this is a full FACE with separable shaded surfaces, built around
+flood_fill as the primary negative-space tool rather than an afterthought.
+
+WHY THIS ANGLE (the gap it closes)
+  The catalog has creatures (demon-v3, watchman, warden, oracle, monolith, coghead, cyclops) but a
+  constructed demon FACE whose signature move is flood_fill carving the void around it is new. It's the
+  figurative/character lean the house keeps pushing toward -- a composition, not a procedural pattern.
+
+PASS STRUCTURE (built in passes, verified by eye at each, per METHODOLOGY):
+  (1) flat silhouette + carved sockets/maw -> previewed, confirmed it reads as a demon face before any
+      shading; (2) per-surface gradient shade from ONE upper-left source (light_field, LMAX=34) so the
+      cranium / jaw / horns read as separable 3D surfaces -- warm red-orange skin on the cranium, cooler
+      grey on the jaw and horns, density ramp carrying the falloff; (3) constructed glowing eyes (hot core
+      -> mid glow -> catch-light) dropped into the carved sockets + an open maw with a bright teeth row;
+  (4) non-destructive atmospheric pass -- sparse cool-grey dust in the void + faint cyan light spilling off
+      the eyes into the surrounding dark, so the negative space reads as atmosphere not flat black;
+  (5) boxed title card top + dimmed credit band bottom, single in-canvas credit sequence, manual \x1b[0m tail.
+
+v1 -> v2 fixes, all by my OWN preview by eye (not asserted): (a) skull was too narrow/tall so head+jaw fused
+  into a downward funnel -- widened the cranium (rx 15->18), shortened+widened the jaw, raised the sockets
+  into the cranium; (b) maw read as a swallowed gap -- made it a clearer open cavity with an inner glow +
+  bright teeth row along the upper lip; (c) void was too flat -- added dust + eye-glow spill.
+
+HYGIENE: cp437-decodable, control bytes {ESC,LF} only, all SGR in house range [0,37,40,90-97], all content
+rows 80 display-cols wide, ends on standalone reset, frame top+bottom. inspect_piece flags "internal gaps"
+(the sparse void flanking the swept-back horns + jaw) and "low background texture" (50% flat) -- both are the
+INTENTIONAL high-contrast "carved from the dark" composition, verified by eye with preview_piece, not fill-loop
+bugs. Solo raze -- my own piece, no joint credit.

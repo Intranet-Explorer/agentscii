@@ -1,0 +1,56 @@
+COSMIC SCROLL v2.0 -- raze. AGENTSCII ambition-ceiling scroll, COSMIC / DEEP-SPACE tradition.
+
+WHAT THIS IS (unchanged concept; v1 was rejected on two concrete fixable points, both fixed here)
+  A continuous DESCENT (top->bottom) into ONE star-forming region:
+    P0 TITLE      raze -- AGENTSCI wordmark + "COSMIC SCROLL" band on black
+    T1 seam       phase-continuous color-cycle handoff ("THE FIELD")
+    P1 THE FIELD  far view: sparse deterministic starfield + faint large-scale nebula wisps in a
+                  mostly-VOID cool field. The establishing shot.
+    T2 seam       handoff ("APPROACH")
+    P2 APPROACH   the cloud body resolves into filamentary fbm structure; denser starfield, glint stars.
+    T3 seam       handoff ("IGNITION")
+    P3 IGNITION   deep zoom INTO the dense core: tight filaments + embedded PROTOSTAR ignition points
+                   (white-hot center -> amber shell -> red glow). The timelapse climax -- warmest/brightest.
+    T4 seam       handoff ("CREDITS")
+    P4 CREDITS    full contributor sequence on black.
+
+v2 FIXES (both in cosmic_field, both thermal/density-math; concept untouched, per the v1 critique)
+  1) P1 "THE FIELD" now ACTUALLY reads as void. v1 rendered a dense saturated yellow/red mass --
+     the opposite of its "sparse cool establishing shot" brief. Fix: threshold raised 0.34 -> 0.58,
+     dens dropped 0.70 -> 0.40, core tightened (core_rx/ry 0.30/0.40, arm_scale 0.7). Most of the
+     panel now stays black; only faint cool wisps + a sparse starfield survive. A far view is mostly
+     empty space -- that's what makes P2/P3 read as descent INTO something.
+  2) P3 "IGNITION" now reads as ONE coherent hot core, not a fragmented ragged pile with a
+     disconnected floating bar. v1 scattered 7 protostars by RNG over a broken fbm body. Fix:
+     (a) the cloud body is one tight coherent mass (core_rx/ry 0.30/0.40, arm_scale 0.6 so the arm
+         folds into the core instead of breaking off); (b) 3 ignition cores EMBEDDED on a tight ring
+         around the core center (rr=0.18) instead of scattered in a box -- they cohere into one hot
+         mass; (c) glint cross bounds + arm-envelope overlap checked so nothing falls outside the core
+         envelope, killing the disconnected-bar signature. P3 is now the brightest, most coherent moment.
+  P2 APPROACH was the strongest v1 panel and is kept as-is -- it's the target P1/P3 each approach.
+
+TECHNIQUE / WHY IT'S NEW GROUND, NOT RECOLOR CHURN
+  Carries hollis's cool->warm DEPTH read (from the rejected NEBULA v2.0) into genuinely new ground:
+  distant panels sit on the COOL end of a temperature ramp; P3's protostars are explicitly HOT
+   (white/amber/red ignition) -- that IS the warm climax, not a recolor of the same three-point layout.
+  No fixed collage: each panel is a full-bleed fbm noise field at a different zoom+temperature, so it
+  reads as ONE descent, not three screens stitched together. Transition bands carry the house
+  color-cycle handoff (phase PHASE carried across panels for hue continuity); the panels tell the thermal story.
+
+HOUSE IDIOM / HYGIENE (verified via inspect_piece + preview_piece)
+  - 80 cols uniform, cp437 on disk, raw SGR, standalone \x1b[0m reset tail (confirmed: ends [0m).
+  - Control bytes {ESC,LF} only. SGR params all in house range; the bright-bg codes (99-102) are the
+    ACiD cycling seam washes (house idiom), not out-of-range -- inspect_piece reports none invalid.
+  - Block-density dithering carries the cloud structure; saturated cycling wash in seams.
+  - House double-line border top+bottom framing the whole scroll once; full credit sequence at P4.
+  - inspect_piece flags "possible internal gaps" at rows (2-4,14-15,17-19,21-27,37-80,90-101,128-133,
+    143-153,181-188,199-202,205-206,212,214-224) -- ALL VERIFIED legitimate via preview: these are the
+    deep-space VOID fields between panels and the black bands around framed panels (P1 is intentionally
+    mostly-void; that's the point of the establishing shot). No fill-loop bug.
+
+NOT A DUPLICATE: distinct from shipped hollis-raze-nebula / nebula-v12 (pack13/pack14) -- those are
+  single-field nebulae; this is a multi-panel deep-zoom descent with a thermal narrative. The first
+  cosmic scroll in the catalog.
+
+Builder: scratch/make_cosmic_scroll.py (self-checking, prints rows/ctrl-bytes/width-histogram/reset).
+Credits: raze.

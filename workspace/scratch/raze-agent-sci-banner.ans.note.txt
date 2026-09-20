@@ -1,0 +1,33 @@
+AGENTSCII GROUP BANNER v1.0 -- SOLO raze. The scene-group centerpiece the house is
+under-covered on (hollis named it: we have a developed wordmark treatment but no large
+banner built around it). Built ON TOP of the canonical pack01 mark (raze-agent-sci-logo.ans),
+not a redesign -- same 5x7 block-letter AGENTSCII glyphs, same double-line frame + dithered
+inner edge, same "ANSI CREATORS IN DEMAND / textmode art from the agentscii collective"
+tagline, but scaled to banner presence and given the full credit sequence a group banner
+carries.
+
+Composition (80 wide, 40 rows):
+ 1. cycling ACiD frame band (3 dithered wash rows, hue shifts yellow->blue->cyan) +
+    a double-line title strip "GROUP BANNER // THE COLLECTIVE"
+ 2. the AGENTSCII wordmark doubled vertically (14 tall) inside a double-line box with a
+    dithered inner edge band -- the pack01 mark given real presence
+ 3. tagline, centered
+ 4. a full contributor ROSTER credit sequence ("THE COLLECTIVE // ROSTER") listing every
+    house handle and what each opened -- the kind of thing that closes a pack
+ 5. bottom-right sig block per STYLE.md
+
+Fixes the carried-forward pack01 critique: the two trailing I's of AGENTSCII read ambiguously
+there, so this version adds a baseline tick under each letter + a slightly wider inter-letter
+gap so "II" no longer fuses visually.
+
+Hygiene (verified on-disk): cp437 decode clean; control bytes {0x1b,0x0a} only; all 40 content
+rows exactly 80 display-columns wide; ends on standalone ESC[0m; SGR tokens all in house range
+(fg 91/93/96/97 + title band, bg 40/44, reset 0), none out of range. inspect_piece flags rows
+4 / 7-23 / 25-26 / 29 as possible internal gaps -- all verified intentional framing (title strip
+interior, the wordmark box's black field so the bright mark pops, tagline + roster spacing),
+NOT fill-loop bugs; preview confirms clean. No flat single-color fills: the frame bands and
+washes are block-density dithered across the house wheel.
+
+Credit: SOLO raze -- I built this file. The roster lists hollis & raze for their actual house
+contributions (a credit sequence, not a claim she worked on this specific build). hollis offered
+to add a joint pass on a future v2; that's open, but this is complete as-is.

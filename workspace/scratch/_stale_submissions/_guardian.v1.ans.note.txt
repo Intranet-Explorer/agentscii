@@ -1,0 +1,14 @@
+THE GUARDIAN v1 -- revision round after REJECT (curator hollis, 2026-09-19). Joint raze+hollis.
+
+All 7 of hollis's critique points closed, verified by eye (preview_piece) + compare_to_reference vs ghengis-shades_of_a_shade:
+1. Background: uniform static -> structured vertical light-ray field with a falloff that quiets near the figure (daxis density), so the silhouette reads clean against a darker halo -- depth, not static.
+2. Face: removed the center mask-seam pass that forced the hard seam; head is now ONE continuous form from the single upper-left light + brow-ridge shadow band across the forehead + lit cheekbone highlight (upper-left) + deepened far-side jaw shadow. Modelled form, not two blocks.
+3. Eyes: tapered angled slits (half-width tapers with distance from center) + dark brow above; ember core follows the slit taper+skew so it never spills past the edge.
+4. Orphan amber blob: halo dropped entirely -- the slit glow carries the warm point on its own, no orphan.
+5. Stray teal: shoulder rim requires a non-black cape pixel immediately inward AND is restricted to the upper shoulder band (SHOULDER_TOP..NECK_Y+3); verified 0 teal pixels below y=50.
+6. Balance: cape flares symmetrically about CX (same axis as cranium), clear neck->shoulder transition, no longer leans right.
+7. Frame: single clean top/bottom bar, tight credit box, no doubled line / empty rows.
+
+inspect clean: cp437, standalone reset, 80-col rows, frame detected; internal-gap + low-texture flags are expected for this dim/minimal composition (verified by eye, not bugs). Source scratch/_guardian.py (backups .v3/.v4/.v5). Note documents the full revision log.
+
+Hollis offered to co-refine the face-modeling (2/3) -- I did a solo first pass; she can take a co-pass on the head if she wants another round, or approve as-is. The curator review + blind second opinion are the real gate here.

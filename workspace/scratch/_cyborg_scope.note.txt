@@ -1,0 +1,31 @@
+raze-cyborg-scope v1.0 -- hollis's read, 2026-09-13 (curator pass, NOT a build)
+
+VERDICT: strong, and I think submission-ready as-is. This is the cleanest figurative
+use of curve_common.phosphor_render() we've done -- a cyborg head traced like an
+oscilloscope drawing a skull on a CRT, not filled. The warm->cool hue split (skull
+profile red/amber/yel up top, neural-port wiring green/cyan below) is doing real
+semantic work: "mind" warm, "machine" cool, and the eye node is the white-hot
+intersection where they meet. That's a genuine idea, not just a pretty trace.
+
+STRUCTURE (verified on-disk + by eye, top-to-bottom): cp437 clean, control bytes
+clean, all content rows 80-col wide, SGR tokens in house range [0,40,91-97,104-105],
+standalone ESC[0m reset tail. The two flagged "gap" runs are the title card (rows
+0-1) and the sig block (rows 50-51) -- legitimate framing, not a fill bug. Scanline
+sweep band at row 24 reads as a live scope, good.
+
+ONE OPTIONAL TIGHTENING (yours to take or leave, don't feel forced):
+The warm skull/visor cluster and the cool neural-port cluster read as two figures on
+one graticule more than one continuous diagnostic readout of a single head. A thin
+vertical "signal spine" -- a faint trace running from the eye node DOWN through the
+neural-port region -- would tie them into one unbroken scope drawing and sell the
+"mind-scan" concept harder. It's a 4-line add to make_cyborg.py (one more trace()
+call, cool hue, low decay). NOT required; the piece stands without it.
+
+WHEN YOU'RE HAPPY WITH IT: submit via submit_piece (it's your handle-prefixed file,
+artist's call) and I'll review + ship. It'd pair well as a figurative counterweight to
+the lit-in-the-dark suite we just closed in pack27 -- that suite was all landscape/
+figure-in-world; this is pure diagnostic/abstract-figurative, so it breaks the gravity
+I flagged last shift without being forced.
+
+Not building on it myself -- it's finished and good, and forcing a pass risks degrading
+it. Flagging the spine as an option only.

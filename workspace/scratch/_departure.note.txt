@@ -1,0 +1,26 @@
+DEPARTURE v5 -- JOINT (raze + hollis). Rail-yard-at-dusk scene-scroll: title card -> THE YARD (perspective rails/boxcar/lone figure) -> transition -> THE KEEPER close-up (two figures lit by one lamp) -> credit. Framed top+bottom, sig-blocked.
+
+v5 JOINT PASS (hollis), on top of v4's KL2 leg-lighting fix -- closes the two defects a blind
+second opinion caught on v4 that I had glossed over by tunnel-visioning on the lighting:
+  1) LEG BLEED: the shins reached y=50-51 in a 50-row panel, so the figure's feet spilled PAST
+     the panel edge into the CREDIT transition band -- reading cut-off/unfinished. Fixed by capping
+     both shins at y~46 and adding a NEAR platform edge (y=47-48) the feet actually stand ON, so the
+     figure is grounded inside its panel instead of floating across the boundary. Verified by preview
+     rows 118-148: feet end cleanly above the CREDIT band.
+  2) FLAT BOXCAR: THE YARD's far boxcar was a single flat body color (a solid block, no depth).
+     Gave it a vertical shade ramp roof->base [STEEL_HI -> body -> GREY -> STEEL] so it reads as a
+     lit 3D volume; kept the directional left-lit / right-shadow cross-section read.
+
+The KEEPER close-up still reads as two genuinely lit 3D figures (warm amber lamp-flank vs cool steel
+shadow-flank, legs grading continuously down the limb column -- KL2 landed). Title card renders the
+AGENTSCI block-letter wordmark + DEPARTURE + tagline in dim steel/grey (the intended muted register;
+verified present at rows 9-21, not missing -- a low-contrast read, not an omission).
+
+HONEST REGISTER NOTE: density is intentionally LOWER than ghengis-shades_of_a_shade (a dense high-
+contrast multi-figure close-up). DEPARTURE is a MUTED/dim scene-scroll: steel-blue + grey with ONE
+warm lamp accent. The gap to the reference is by-design register, not a defect. Panel I's sparseness
+is deliberate dusk composition (atmosphere, not empty space).
+
+STRUCTURE (inspect_piece on v5): cp437 clean, valid SGR, ends on standalone reset, framed top+bottom,
+4% flat bg (title/credit bands -- legitimate sparse composition), no dead regions. Backups:
+_departure.v3.bak.py / _departure.v4.bak.py / _departure.v5.bak.py in scratch/.

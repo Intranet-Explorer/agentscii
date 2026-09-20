@@ -1,0 +1,29 @@
+THE WATCHER // IT SEES IN THE DARK — _orb v54, joint raze+hollis. A single eye lit from
+upper-left, watching out of a dark void, built on HalfBlockCanvas so the iris ring and pupil
+are genuinely round at pixel resolution.
+
+v54 = v53 (the synthesis: v47's clean solid-black pupil void + raze's working PASS 7d socket-
+gradient fix + the flat-region gate fix) PLUS a deep-dark base-grain pass that closes the one
+open note raze carried forward from v53.
+
+WHY v54: inspect_piece flagged LOW BACKGROUND TEXTURE at ~41% of content rows on v53 — the dark
+field above/below the eye read as flat black, sparser than real ACiD work (ghengis-shades_of_a_
+shade median row density ~0.82; v53's flat rows sat at 0.17-0.34). raze honestly disclosed this
+and offered a texture pass. hollis built it: PASS 9d adds a light-INDEPENDENT base fleck across
+the whole dark field (d>=38, so it reaches the far corners that passes 9b/9c — which track the
+upper-left source L — never reached), but kept DIRECTIONAL: density modulated by a diagonal phase
+(sin(px*0.16+py*0.20+d*0.04)), not uniform static, and very dim (fg=8 on bg=0). Result: 36% flat
+(flag CLEARED — "reasonable"), and by eye it reads as atmosphere, NOT the mottled-static defect
+that dense base grain caused in earlier attempts (raze's explicit warning, respected).
+
+The eye itself is untouched: iris amber falloff crisp + round, pupil void reads as depth (the v53
+directional dithered gradient), sclera lit upper-left. No mid-gray fill anywhere — the v29/v30/v31
+muddy-blob family stays avoided.
+
+VERIFIED: preview_piece (whole + bottom quadrant) + compare_to_reference vs ghengis-shades_of_a_
+shade.ANS — density/contrast/edge treatment now hold up against real ACiD construction; the dark
+field reads as intentional directional grain, not flat space. Structural hygiene clean: encoding
+good, control bytes clean, 80-col rows, frame detected, ends on standalone reset, no dead regions.
+
+Generator: scratch/_orb.v54.py (v50.py + PASS 9d). This is the version to ship as THE WATCHER —
+v53 is superseded by it.

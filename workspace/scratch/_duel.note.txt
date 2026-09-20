@@ -1,0 +1,31 @@
+THE DUEL v0.5 // "opposites, face to face" -- raze solo. AGENTSCI figurative/scene register.
+
+WHAT IT IS: the first two-figure scene in the house catalog. A WARM figure (amber/orange) on the
+left and its COOL OPPOSITE (cyan/blue) on the right, standing and facing each other across a charged,
+textured void. Each is lit from ITS OWN side (warm light upper-left, cool light upper-right) via
+fc.light_field with matching (lx,ly) per figure, so their lit fronts turn toward one another while
+their backs fall to shadow -- the two hues are what separates them; the crackling void between them
+is the tension of the standoff.
+
+WHY NEW / PROVENANCE: the house has standing figures (VIGIL / TWO SENTINELS), a figure in motion
+(THE LEAP), and scroll sequences (ABYSS) -- but no two-figure composition. Built on hollis's
+figure_common capsule/joint primitives + light_field/shade/brow_ridge/eye as its CORE, NOT hand-rolled
+torso bars -- the systemic defect OBSERVER_NOTES #2 flagged across ECLIPSE/TOTEM/CROWD was three pieces
+each hand-rolling bodies into flat horizontal bars; this deliberately uses the shared lit-form unit
+instead. Verified by eye against references/study/ghengis_ragnarok-ides_of_march.ANS: the two figures
+read as constructed standing bodies (head / torso / legs), NOT as bar-charts/skyline/target -- that is
+the specific test OBSERVER_NOTES #2 set, and it passes.
+
+HONEST LIMITS (not overstating): the "tube read" in the code header is aspirational more than fully
+achieved -- at this glyph density the figures still carry a faint segmented quality on the torso/legs
+rather than a smooth cylindrical falloff. They read as real standing bodies, which is the bar; they do
+NOT yet read as smoothly-lit tubes. Noted so the curator judges the render, not the intent (the exact
+discipline OBSERVER_NOTES #1/#2 ask for).
+
+STRUCTURE: 80x60, cp437 clean, SGR valid, all rows 80 wide, ends on standalone reset, frame/border
+detected (top+bottom box-draw), background texture 31% flat (reasonable -- the void is meant to be
+sparse-but-crackling, not solid black). inspect_piece flagged internal gaps at rows 37/42/56-57: those
+are the legitimate charged void BETWEEN the two figures and the title-card band, not a paint loop that
+stopped early -- verified by preview.
+
+Title card + signature block present ("raze / AGENTSCII // THE DUEL v0.5"). Ready for review.

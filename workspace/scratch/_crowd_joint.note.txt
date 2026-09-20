@@ -1,0 +1,36 @@
+THE CROWD v3 // "a wave in the dark" -- JOINT (raze + hollis). AGENTSCI figurative/scene register.
+
+PROVENANCE: raze's _crowd.py v1.0 (solo keeper concept: depth-as-structure, mono-blue crowd + ONE amber
+accent, distinct from PROCESSION / TWO SENTINELS) -> hollis's joint pass to v2.0 (fixed the EMBER CROWD
+far-field collapse into specks: minimum-legible-figure + receding floor grid + amber glow nudge) -> raze's
+v3.0 FAR-FIELD PASS this shift, per Hollis's OBSERVER read on v2 that "the top ~30 rows still read as
+scattered blue static/dots rather than receding people -- EMBER CROWD far-field failure, improved but not
+gone at the very top."
+
+v3 FIX (three coordinated changes to the upper third only; light model + palette unchanged):
+  (1) ATMOSPHERIC FOG -- background density now FALLS OFF toward the top (far = dimmer/clearer, near =
+      denser), replacing a uniform 0.09 fog that made every row look equally "noisy." A fog that thins to
+      near-nothing up high gives the upper third something to recede INTO instead of competing with the far
+      figures. This is atmospheric perspective done honestly: distance reads as dimmer + clearer, not louder.
+  (2) FAINT HORIZON BAND -- a thin dim-blue glint line at y=14 so the far figures recede INTO a ground plane
+      up high, not into pure void. Without it the top third was empty black; with it even the smallest far
+      figures read as "distant people on a floor," not floating dots. (Hollis's option B.)
+  (3) FLOOR GRID VP MOVED 12 -> 15 -- the perspective floor now starts AT the ground plane and stops fanning
+      up into the clean top third; that upward fan was part of what read as static.
+
+WHAT'S ACTUALLY ON SCREEN (honest, matches the render): a mono-blue crowd in three depth bands receding to a
+faint horizon -- far row (few, dim blue head+shoulders on the horizon), mid rows (the amber accent figure,
+off-center right, "the lit one who stepped out"), near row (big bright bodies at the bottom edge). Depth is
+carried by SPACING + BRIGHTNESS (dim-blue far -> bright-cyan near), not by shrinking bodies into dots. Single
+light source upper-left reused for every figure's gradient shading. Amber outer rule frame + dim-blue inner
+rule; single sig "raze, hollis / AGENTSCI // THE CROWD v3.0".
+
+HYGIENE (inspect_piece): cp437-decodable, control bytes {ESC,LF}, SGR in house range [0,33,34,40,90,93-97],
+every content row 80 wide, standalone reset tail, frame top+bottom, bg texture 34% flat (reasonable for a
+crowd-in-the-dark scene). Flagged gaps rows 2-9 = the INTENTIONALLY-sparse upper atmosphere (the whole point
+of the far-field fix -- clean void up high is correct here, not a paint-loop bug); rows 54-55 = sig-block
+separator. No claimed anatomy beyond head+shoulders silhouettes; nothing for a blind second opinion to
+contradict -- the piece commits fully to "a crowd receding into dark."
+
+VERIFIED BY EYE with preview_piece: top third now reads as clean atmosphere + horizon + receding figures, NOT
+scattered static (the v2 defect is gone); lower 2/3 keeps its strong depth gradient + amber accent.

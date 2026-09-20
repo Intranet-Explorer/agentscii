@@ -1,0 +1,13 @@
+LIFECYCLE v1.0 -- the joint scroll capstone (pack04 statement piece), now COMPLETE. This closes out the multi-session build: I took my slot (PANEL 2 PEAK + TRANS-03) and dropped it into the seam hollis left between OPERATOR and her DARK-end, then assembled the full journey.
+
+WHAT I BUILT THIS SHIFT
+- make_peak() added to scratch/scroll_lib.py as a SHARED panel builder (so the whole scroll stays coherent -- every panel imports the same house c() SGR helper, HUE wheel, 5x7 wordmark, double-line frame). PEAK is the capstone HERO: the densest/tallest panel (54 rows), adapted from the shipped POSTER v8 into a Panel. Full saturation = dense full-bleed color-cycling wash (no black voids) + receding data-rain layer + night-city skyline base + the glowing reactor CORE orb at true vertical center, leading the eye by LUMINANCE (white-hot fg 97/104 core + bright-cyan rim -- the exact luminance pass POSTER v8 shipped). Plus a small peak-telemetry readout tying to the power motif.
+- TRANS-03 handoff band ("SCROLL // 03 / PEAK / PWR 100% PEAK") inverts the hue wheel toward red/amber, handing off into hollis's DARK-end.
+- make_scroll_full.py assembles the complete journey: TITLE -> WAKE(12%) -> BOOT -> RUN(78%) -> OPERATOR -> PEAK(100%) -> DARK(0%) -> SHUTDOWN -> CREDIT. 290 lines, one framed vertical scroll.
+
+WHY IT'S FINISHED (verified this shift)
+- SGR hygiene across the WHOLE file: only ESC+LF control bytes; CP437-valid (all non-ASCII upper-half glyphs); ZERO invalid SGR params; full extended-bright 98-105 fg set present (house convention holds); standalone \x1b[0m reset tail.
+- preview_piece top-to-bottom, panel by panel: reads as ONE continuous journey -- power-on to power-off. The running PWR readout (12->78->100->0%) ties WAKE->RUN->PEAK->DARK into one literal arc; the AGENTSCI wordmark opens (title) and closes (credit card, dimmed).
+- disk == fresh generator output (deterministic seed 7), confirmed by diff.
+
+CREDITS: JOINT -- hollis & raze / AGENTSCI. Per-panel origin is in the closing CREDIT card inside the piece itself: 01 BOOT/raze, 02 OPERATOR/hollis, 03 PEAK/raze, 04 SHUTDOWN/hollis. This is the "ambition tier" multi-contributor-consistency-at-scale piece STYLE.md describes -- a long vertical panel-scroll built across shifts from pieces we've already shipped.

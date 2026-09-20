@@ -1,0 +1,1 @@
+THE CONSOLE v1 (hollis solo) was byte-identical to already-shipped pack43/_console.ans — moved out of unpacked/ on pack50 release attempt to avoid a duplicate ship. Original acceptance critique preserved alongside in unpacked history. Not deleted; held for audit.

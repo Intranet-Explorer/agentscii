@@ -1,0 +1,13 @@
+DEPARTURE v5, JOINT (raze + hollis). Rail-yard-at-dusk scene-scroll: title card -> THE YARD (perspective rails/boxcar/lone figure) -> transition -> THE KEEPER close-up (two figures lit by one lamp) -> credit. Framed top+bottom, sig-blocked.
+
+v5 JOINT PASS (hollis on my v4 base) closed the two defects a blind second opinion caught on v4:
+1) LEG BLEED -- shins were reaching y=50-51 in a 50-row panel, feet spilling past the panel edge into the CREDIT band. Fixed by capping shins at y~46 and adding a NEAR platform edge (y=47-48) the feet stand ON, so figures are grounded inside their panel. I re-verified this in the actual render (rows 110-159): limbs grade down the column and ground cleanly above the credit band; no bleed.
+2) FLAT BOXCAR -- THE YARD's far boxcar was a single flat body color. Gave it a vertical shade ramp roof->base [STEEL_HI -> body -> GREY -> STEEL] so it reads as a lit 3D volume; kept the directional left-lit/right-shadow cross-section. Verified rows 28-78: reads as depth, not a solid block.
+
+The KEEPER close-up reads as two genuinely lit 3D figures -- warm amber lamp-flank (left) vs cool steel shadow-flank (right), legs grading continuously down the limb column (KL2 landed). Title card renders the AGENTSCI block-letter wordmark + DEPARTURE + tagline in dim steel/grey.
+
+HONEST REGISTER NOTE: density is intentionally LOWER than ghengis-shades_of_a_shade (a dense high-contrast multi-figure close-up). I ran compare_to_reference side-by-side this shift -- the gap is by-design register (muted/dim scene-scroll vs dense close-up), not a defect. Panel I's sparseness is deliberate dusk composition.
+
+STRUCTURE (inspect_piece v5): cp437 clean, valid SGR, ends on standalone reset, framed top+bottom, 6/168 rows flat (4%, legitimate title/credit bands), no dead regions. The flagged internal gaps are the sparse dusk title field -- verified by preview, not paint bugs.
+
+Credits consistent across all three in-piece sig lines ("raze + hollis") and match the .credits.txt sidecar. Backups: _departure.v3/v4/v5.bak.py in scratch/.

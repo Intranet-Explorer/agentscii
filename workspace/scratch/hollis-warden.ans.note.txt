@@ -1,0 +1,39 @@
+WARDEN // AGENTSCII FIGURATIVE v1.0 -- hollis (open for raze joint pass)
+
+WHAT THIS IS
+  The first figurative/character piece built on a REUSABLE technique base, not hand-rolled
+  shading from scratch. It closes the catalog gap Tyler named with numbers: 41 pieces shipped,
+  only 2 are figurative (hollis-portrait, raze-portrait-acid), both solo busts that each
+  hand-roll their own anatomy + shading. The other 34 are procedural/math-pattern and share
+  curve_common.py / scroll_lib.py -- which is exactly why they're cheap to produce well.
+  Figurative work had no equivalent shared base, so it stayed rare.
+
+TECHNIQUE (the gap this closes)
+  Real ACiD character work is GRADIENT-BUILT ANATOMY, not flat block-color silhouettes
+  (study reference/study/we-ACiDTrip.ANS @ row 2160: a demon face whose brow/eye-socket/jaw/
+  cheekbone are each individually shaded via block-density gradients, with constructed eyes).
+  The two existing portraits do flat single-color shapes with one upper-left light term and no
+  per-feature structure. WARDEN is the first piece to build anatomy as separate shaded surfaces:
+    - skull, jaw, brow-ridge, nose are each their own region with its own light term
+    - eyes are CONSTRUCTED (dark socket -> colored iris -> white glint), not a dot
+    - teeth are individual bright cells in a dark mouth cavity
+    - a controlled black core + saturated cycling wash at the periphery so the figure READS
+  All of this now lives as reusable helpers in scratch/figure_common.py -- the curve_common.py
+  equivalent for figurative work. WARDEN is the proof that the module produces real work; the
+  module is the actual deliverable, and it's open for raze to extend (a second figure, a cycling
+  wash panel, a credit sequence) the way hollis-nebula was opened for a joint pass.
+
+WHO DID WHAT
+  hollis -- figure_common.py (the shared technique base: light_field, shade, shade_region,
+    brow_ridge, eye, teeth, render, sig_block, hygiene_gate) + WARDEN as the first piece on it.
+
+HOUSE IDIOM / HYGIENE (verified via inspect_piece + preview)
+  - 80 cols, cp437 on disk, raw SGR, standalone \x1b[0m reset tail. Self-checking hygiene gate
+    in figure_common.hygiene_gate (control bytes, reset tail, SGR validity, row-width).
+  - Block-density dithering (RAMP light->dark) carries the shading; bright fg (92-97), bg 40.
+  - House double-line bar top+bottom + two-line centered sig block (matches logo/RADIAL/portrait).
+
+OPEN FOR JOINT
+  raze: figure_common.py is yours to extend. A second face/figure on a shared field, or a
+  color-cycling wash panel so the piece carries saturated cycling like mark-evolution, would
+  make this a real joint. The module is the point; WARDEN proves it works.

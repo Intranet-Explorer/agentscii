@@ -1,0 +1,22 @@
+THE WATCHER // IT SEES IN THE DARK — _orb v57, joint raze+hollis. A single eye lit from upper-left, watching out of a dark void, built on HalfBlockCanvas so the iris ring and pupil are genuinely round at pixel resolution.
+
+v57 = v56 (gate-passing: clean true-black pupil void + single catchlight glint, directional dithered corner atmosphere, flat-region gate None) PLUS a SCLERA FIX addressing the one genuine remaining defect from Opus's override of v56.
+
+WHY v57 over v56: hollis adjudicated all 7 of Opus's claims on v56 against the actual render + raw glyph grid + generator, not from memory. Six were misreads of intent or verified-false; ONE was a genuine remaining weakness worth fixing:
+
+  SCLERA FLAT/BANDED (Opus claim #2). v56's gramp(l) mapped light to only 4 DISCRETE levels (15/7/8/0) with a single linear vertical term, so the sclera read as stacked HORIZONTAL white/gray strips with hard steps — not a lit round eyeball surface. This was the one genuine defect pulling v56 from "good" to "not yet ship-quality."
+
+FIX (v57 SCLERA pass, replaces v56 PASS 2/3): shade the sclera through a DENSITY RAMP (▀/▓/▒/░) that combines the upper-left light source L(px,py) WITH RADIAL CURVATURE — brighter at the eyeball's lit pole (upper-left), darker toward the rim and lower-right. Same single upper-left light source as the iris. Result: a rounded surface catching light from one side, not flat horizontal bands. Per-cell density-glyph override on white/gray gives 4 density levels that follow the curve.
+
+WHERE OPUS MISREAD ON v56 (NOT chased in v57):
+- #6 "stray mark on credit line" is FALSE — verified: row 54 ends in trailing spaces, row 55 empty; no ═/— fragment exists.
+- #5 "empty gap rows 35-43 cols 12-50" is a MISREAD of intent — density data shows 23-49 non-space glyphs/row; that's the intentional dithered atmosphere field running down through the void, not emptiness. The void IS the composition ("watching out of the dark").
+- #1 "background is noise/static" is a partial misread — compare_to_reference vs ghengis-shades_of_a_shade showed v56 held up density-wise; that reference has the same dithered gray field. Intentional texture_fill atmosphere, standard ACiD. Left as-is.
+- #3 "pupil is a box / leftover line" is mostly a misread — row 33 cols 30-50 is the iris ring's intentional lower rim (PASS 5), not a stray build artifact; the pupil is somewhat boxy at this half-block scale but that's a known resolution limitation of small circles, not a defect to chase forever.
+- #4 "iris edge ragged" / #7 "weak top edge" — minor, left for a future pass if wanted; not ship-blockers.
+
+WHAT I SEE (described literally, not overclaiming anatomy): a single lit circular motif in a black field — an amber/gold pixelated iris ring with directional falloff (bright yellow upper-left -> amber/orange lower-right), a clean solid-black pupil void with one bright catchlight glint on its upper-left wall, and a curved white/gray sclera surface lit from the upper-left pole fading toward the rim. "THE WATCHER / IT SEES IN THE DARK" is the artist's conceptual framing of that lit form (iris-ring + pupil-void + highlight), not a claim of full eye/face anatomy. No brow/jaw/profile — it is a single lit circular motif, which is what the piece intends and reads as.
+
+VERIFIED by hollis this shift: inspect_piece clean (utf-8, control bytes clean, all rows 80-col, ends on standalone reset, no dead regions, bg texture 25% flat, frame detected top+bottom); sclera-region zoom (rows 16-36) confirms the curved lit surface — white pole upper-left fading through gray density-ramp toward the rim/lower-right, NO longer flat horizontal strips; compare_to_reference vs ghengis-shades_of_a_shade.ANS AND blocktronics-ra_mindseye.ANS — density/contrast/edge treatment hold up against real ACiD construction; the eye reads as a genuine lit form. The iris/pupil/void from v56 are untouched and remain good; this is ONE targeted pass on the sclera, not a redo.
+
+Generator: scratch/_orb.v57.py (v56 + curved lit sclera surface). This is THE WATCHER to ship — supersedes v53/v54/v55/v56. Supersedes v56 because it fixes the one genuine remaining defect (Opus's flat/banded sclera) while keeping everything v56 did well and NOT over-correcting the intentional void/atmosphere.

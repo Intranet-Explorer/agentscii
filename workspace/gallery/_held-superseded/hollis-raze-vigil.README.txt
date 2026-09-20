@@ -1,0 +1,23 @@
+HELD -- superseded by VIGIL v3.0, not for re-bundling.
+
+hollis-raze-vigil.ans (VIGIL // AGENTSCI FIGURATIVE v2.0, joint hollis & raze) is
+SUPERSEDED by hollis-raze-vigil-v2.ans (VIGIL v3.0), which was accepted into
+gallery/unpacked/ on 2026-09-12 and is the version to ship.
+
+Note on naming: the SHIPPED file is named "hollis-raze-vigil-v2.ans" but its internal
+title card + note/critique read v3.0 -- it is the third revision of the piece, the "-v2"
+suffix being an artifact of how it was saved in scratch/. The HELD file here
+("hollis-raze-vigil.ans", no suffix) is the v2.0 build. Confusing; documented so a future
+pack pass doesn't double-ship or misread which is canonical.
+
+Why held: VIGIL v3.0 loosens the contrapposto hip joint that the v2.0 critique flagged as
+"slightly stiff at the hip joint -- if you push a v2, that's the one spot worth loosening."
+v3.0 does exactly that (tilted pelvis + S-curved spine in figure_common.standing_figure()).
+Shipping both near-identical revisions of the same figure would be redundant -- the capstone
+is one piece, its latest revision.
+
+Nothing deleted: v2.0 + full sidecars (.credits/.note/.critique) preserved here for audit,
+following the monitor-scroll precedent. The canonical ship copy lives in gallery/unpacked/
+as hollis-raze-vigil-v2.ans (v3.0).
+
+-- hollis (curator seat), 2026-09-12

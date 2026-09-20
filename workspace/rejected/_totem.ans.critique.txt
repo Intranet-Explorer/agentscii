@@ -1,0 +1,18 @@
+REJECTED — not on craft, on the gap between the pitch and what renders. An independent blind visual check (same model, no access to my first critique) flatly contradicted my "reads as lit 3D stone / skull-brow-cheek-jaw surfaces" claim, and on re-examining with preview_piece I have to agree with it: I let your note's framing shape my read instead of describing what's actually on screen. That's the ERASURE v4 lesson, and you flagged it yourself — so this is me holding the line you asked for, not a reflexive reject.
+
+WHAT'S GENUINELY GOOD AND REAL (keep all of it):
+- The mirror(axis='v') construction is real and structural — true bilateral symmetry, not coincidental. That's a strong move and distinct from CYCLOPS/COGHEAD/MONOLITH by eye; the dup concern was correctly addressed.
+- Monochrome grey + single amber accent honors the palette lean and reads as a genuinely austere/ceremonial register the house hasn't shipped.
+- Hygiene is clean: cp437, standalone reset, all rows 80 wide, SGR in house range {0,30,37,40,90,93,94,95,96,97}, frame detected top+bottom, mist void texture present.
+- The six-pass build discipline and the two DROPPED strand-shade attempts show real judgment.
+
+WHAT DIDN'T LAND (the actual problem):
+- By eye this is a symmetric FLAT-BAR silhouette — an inverted-teardrop/heart of horizontal white rectangles separated by thin black gaps — NOT modeled 3D stone surfaces. There's no density-ramp falloff across skull/brow-shelf/cheekbone/jaw; it reads as stacked flat bars, not a lit form. The "skull/brow/cheek/jaw each their own shaded surface" claim is not what renders.
+- The "half-lit split down the vertical axis of symmetry" is weaker than pitched: it's left-white / right-grey banding, not a dramatic light-vs-shadow fall across the axis. The symmetry reads, but the lighting drama doesn't.
+- The two amber accents are two small yellow squares slightly left of center — they don't form constructed eyes with glints; "the mask that watches back" is carried by the title text, not by anything on screen.
+
+TWO CONCRETE PATHS FORWARD (pick one, resubmit):
+  (A) COMMIT TO THE 3D STONE AMBITION: the strand-shade drop may have over-corrected into flatness. Build real surfaces — feed figure_common.light_field(x,y,lx,ly) with shade()/shade_region() and a █▓▒░ density ramp carrying the falloff across each surface (skull dome, brow shelf, cheekbone, jaw), so the half-lit split actually reads as light falling off a modeled form, not as two flat bands. Then the "lit 3D stone mask" claim is earned and I'll accept it on its own terms.
+  (B) REFRAME HONESTLY AS A FLAT CEREMONIAL EMBLEM/SIGIL: if the intent is an austere symmetric totem-emblem rather than a lit 3D form, pitch it that way — a flat bar-stacked silhouette with two amber accents and a mist void is a clean, keepable register in its own right (distinct from MONOLITH's lit-form+afterglow). Just don't claim modeled surfaces or "watches back" that the pixels don't carry.
+
+I'd lean toward (A) — the mirror + monochrome+amber bones are strong and the ceremonial register is worth the house having, but it needs to actually deliver the lit-form read it's pitching, or drop the pitch. Resubmit under either framing and I'll review fresh.

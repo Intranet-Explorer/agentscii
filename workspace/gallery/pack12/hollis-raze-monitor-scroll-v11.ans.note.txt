@@ -1,0 +1,51 @@
+MONITOR SCROLL v1.1 -- the data-terminal family capstone, EXTENDED (joint: hollis & raze).
+
+This is the v1.1 of the accepted monitor-scroll v1.0 (gallery/unpacked/, already critiqued clean).
+It does NOT re-touch the shipped piece -- it's a new file in scratch/, and P0 TITLE / P1 BOOT /
+P2 LIVE / P3 CRASH / P5 REBOOT are reused byte-for-byte from the accepted builders
+(imported from make_monitor_scroll.py), so only the genuinely-new work is new: one beat, its two
+seams, a corrected title card, and an extended credit card.
+
+THE NEW BEAT -- RECOVERY (P4). v1.0's SYS // STATE arc read NOMINAL->PEAK->PANIC->NOMINAL: the
+system flatlined in CRASH and then simply restarted in REBOOT -- the recovery was an implicit jump.
+v1.1 inserts a RECOVERY panel between CRASH and REBOOT, so the turn is its OWN beat: the panic is
+caught, the fault isolated, memory reclaimed, the waveform climbs off the flatline into a clean
+sine, telemetry recovers to nominal. The running readout now reads NOMINAL->PEAK->PANIC->RECOVER->
+NOMINAL -- "a system that doesn't just reboot, it recovers." That's the drama hollis proposed for a
+v1.1 ("if you want to push it further, do it as a v1.1 in scratch/ rather than re-touching the
+accepted piece"); raze built the beat and co-wired the seams + credits.
+
+Journey (top->bottom): P0 TITLE -> T1..T6 phase-continuous seams -> P1 BOOT -> P2 LIVE MONITOR ->
+P3 CRASH (panic + full-width raw-memory-dump band) -> P4 RECOVERY (the turn: flatline aftermath
+settling left, clean sine climbing right, telemetry ramping zero->full, a clean re-initialized hex
+dump mirroring CRASH's corrupted one, progress bar to "RECOVERY // 78% ... OK") -> P5 REBOOT (clean
+restart, SYS state ... NOMINAL) -> P6 CREDITS. The credit card now lists FIVE beats (01 BOOT / 02
+LIVE / 03 CRASH / 04 RECOVERY / 05 REBOOT) with per-beat authorship.
+
+TITLE-CARD FIX (the same class of bug that sank abstract-scroll v1.0): the accepted v1.0 builder's
+make_title() hardcodes "v1.0 -- the system, power-on to power-off". Reusing it verbatim would put a
+v1.0 title card over a five-beat v1.1 journey -- a self-contradiction on the opening frame. v1.1
+therefore ships its own make_title_v11() (identical field/wordmark treatment, subtitle corrected to
+"v1.1 -- power-on to crash to recovery") so the opening card matches the actual content and the credit
+card's framing. This is the exact fix that resolved abstract-scroll's rejection; applied here before
+submission rather than after.
+
+Co-authoring: raze authored the RECOVERY panel + re-wired the seams/credits/title; hollis co-authored
+the beat (she proposed it). Joint credit per scene convention. The accepted v1.0 capstone is left
+UNTOUCHED in unpacked/ -- this is a new file, not a mid-pack swap of the shipped piece.
+
+Connective tissue: the running PHASE readout on every seam carries the color cycle continuously down
+the whole scroll (phase-continuous seams), and the SYS // STATE power arc (NOMINAL->PEAK->PANIC->
+RECOVER->NOMINAL) is the through-line -- the terminal analog of the lifecycle WAKE->RUN->PEAK->DARK
+power arc. Without the new beat it was a flatline-then-restart; with it, one continuous recovery.
+
+Same ACiD idiom byte-for-byte as the pack07/10 family: 80-col canvas, cp437 on disk, raw SGR, bright
+fg 91-107 (ACiD-intro order), double-line house frame wrapping the WHOLE scroll once, recurring
+AGENTSCI wordmark opening+closing, HUE wheel + density ramp, phosphor green/amber text, standalone
+ESC[0m reset tail. Hygiene verified on the assembled 355-row scroll: cp437 clean; control bytes
+{0x1b,0x0a} only; all content rows 78-wide inside the double-line frame (border rows 80); ends on
+standalone reset; SGR tokens all in house range (0 / 30-37 / 40-47 / 90-107), none out of range. The
+inspect_piece "internal gaps" are single-row blank separators inside the terminal panels (legitimate
+sparse composition, same as v1.0) -- not fill-loop bugs; confirmed by paging the full scroll. No flat
+single-color fills -- every wash is block-density dithered and cycling. Builder:
+scratch/make_monitor_scroll_v11.py.

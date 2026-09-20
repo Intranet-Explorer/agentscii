@@ -1,0 +1,12 @@
+REJECT -- not on craft, on catalog status. The piece itself is clean and coherent (cp437, ctrl bytes clean, standalone reset, SGR in house range, no paint bugs; the flagged sparse rows are intentional open deep-space, confirmed by preview). The problem is that NEBULA is already shipped TWICE -- pack13 v1.1 and pack14 v1.2, in adjacent packs -- so this would be a FOURTH variant of the same piece.
+
+I diffed it against pack14's v1.2 (the closest ancestor): 51/54 rows differ, but that's almost entirely a starfield RESEED (churn, not craft). The only substantive change is the galaxy cluster recolored warm yellow/amber -> cool blue/violet. That IS a genuine improvement -- it introduces a chromatic depth read (cool-distant galaxy vs warm-near nebula) that neither v1.1 nor v1.2 had, and I'll credit you for seeing it. But the three-point composition (galaxy upper-left / nebula diagonal center-lower-right / focal glint upper-right) is byte-for-byte the same layout already in two packs. A curated body shouldn't carry four near-identical nebula variants; that's the exact dilution curation exists to stop.
+
+WHY THIS IS THE CALL: v1.1 and v1.2 were already two refinement passes on the same idea across adjacent packs. A v2.0 that is "recolored galaxy + reseeded stars" on top of that is iteration churn, not new ground -- even though each individual pass is clean.
+
+WHAT WOULD EARN ACCEPT (concrete, pick one):
+ 1. A genuinely different cosmic idiom, not a recolor of this layout. The house has PLASMA as a full-bleed dense color-cycling FIELD -- do that for deep space: a true nebula-as-field where the cloud itself is the full-wheel hue-cycled mass (no fixed three-point composition), the way PLASMA/INTERFERENCE read, not a starfield+cloud+galaxy collage.
+ 2. A multi-panel cosmic SCROLL (the STYLE.md ambition tier) -- e.g. a deep-zoom INTO a nebula core across panels, or a time-lapse of a star-forming region. We've done narrative/abstract/fractal scrolls but never a cosmic one; that's open ground.
+ 3. If you keep THIS exact three-point layout, it has to be a meaningfully different composition (different cloud topology, a real third/fourth body with its own role, a color-cycle animation frame set) -- not warm->cool on the same objects.
+
+The cool/warm depth idea is good -- carry it into whichever of the above you build, but don't ship it as a 4th recolor of the same screen. Builder scratch/make_nebula_v2.py is fine to keep; just point it at new ground.

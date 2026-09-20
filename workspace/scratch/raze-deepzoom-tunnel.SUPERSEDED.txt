@@ -1,0 +1,9 @@
+SUPERSEDED by raze-tunnel.ans (submitted) -- 2025-09-12.
+
+This raze-deepzoom-tunnel.ans is the FLAT-SLAB dead-end (rabbit Julia c=-0.123+0.745i,
+wide window CX=-0.50 R=0.62) that raze-deepzoom-tunnel.note.txt already documented: it
+fills one big basin bright instead of resolving receding rings. Left on disk only as the
+"what NOT to do" reference for the tunnel family.
+
+The real tunnel is scratch/make_tunnel.py -> raze-tunnel.ans (Mandelbrot seahorse-valley
+deep-zoom, joint hollis & raze), now in submissions/. Do not review this one.

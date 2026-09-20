@@ -1,0 +1,302 @@
+#!/usr/bin/env python3
+# MARK EVOLUTION -- AGENTSCII (raze, opening pass; hollis to co-author). A second
+# ambition-tier scroll in a NON-fractal domain: it walks the AGENTSCI wordmark through
+# the eras of textmode art as ONE vertical journey, proving the multi-panel scroll
+# technique (scroll_lib) isn't fractal-specific -- only the "field" changes. It also
+# satisfies STYLE.md's "a recurring wordmark developed and reused across pieces" by
+# literally showing that development panel by panel.
+#
+# Panels top->bottom:
+#   P0 TITLE        raze  -- AGENTSCI mark + "MARK EVOLUTION" band (house title card)
+#   T1 seam         raze  -- color-cycling handoff, phase-continuous, SCROLL//01 + PWR
+#   E1 MONO         raze  -- era 01: monochrome green phosphor, clean 5x7 block letters,
+#                            faint scanlines (no palette, no dither, no halo)
+#   T2 seam         raze  -- SCROLL//02 + PWR
+#   E2 16-COLOR     raze  -- era 02: the full 16-color palette arrives -- per-letter flat
+#                            fills cycling the 8 base hues, a faint flat color grid behind
+#   T3 seam         raze  -- SCROLL//03 + PWR
+#   E3 ACiD         raze  -- era 03: the house style -- dense color-cycling wash + dim halo
+#                            + dithered edge band, the mark pops on saturated texture
+#   T4 seam         raze  -- SCROLL//04 + PWR
+#   E4 BURNING-SHIP raze  -- era 04: the mark EMERGES from a burning-ship orbit-trap field
+#                            (the fractal family bleeding through the identity)
+#   T5 seam         raze  -- SCROLL//05 + PWR
+#   P6 CREDIT       raze  -- closing card: dimmed mark (mirrors title) + per-era block
+#
+# Hue continuity: a running PHASE is carried panel->seam->panel so the color cycle never
+# jumps down the scroll (the same handoff trick that made FRACTAL SCROLL read as one
+# journey). Each seam stamps SCROLL//NN + a PWR readout carrying the power-arc through-line.
+
+import sys, math
+sys.path.insert(0, "scratch")
+from scroll_lib import (Panel, c, hue, HUE, INNER_W, CX, stamp_wordmark,
+                        wordmark_rows, transition_band, write_scroll)
+
+# LOCAL SGR override for this piece: the house c() maps white(15)->amber(105), which
+# blends into the bright wash so a "white-hot" body never actually pops (the exact v7
+# poster defect). Here we pass raw extended-bright codes 90-107 through verbatim so the
+# wordmark can carry a true white core (97) + cyan rim that leads the eye by luminance.
+def c(fg, bg=0):
+    f = fg if 30 <= fg <= 37 or 90 <= fg <= 107 else (90 + fg if fg > 7 else 30 + fg)
+    b = bg if 40 <= bg <= 47 or 100 <= bg <= 107 else (100 + bg if bg > 7 else 40 + bg)
+    return "\x1b[%d;%dm" % (f, b)
+
+W = 80
+RAMP = "\u2588\u2593\u2592\u2591"            # light->dark density ramp
+PHASE = {"p": 0.0}                           # running color phase (hue continuity)
+
+# house bright fg set, ACiD-intro order (same as FRACTAL SCROLL / BURNING-SHIP)
+BRIGHT = [95, 91, 93, 92, 96, 94, 107, 103] # mag red yel grn cya blu wht amb
+
+def bfg(i):
+    return BRIGHT[i % len(BRIGHT)]
+
+# ---------------------------------------------------------------------------
+# A wordmark treatment: render the AGENTSCI mark (compact gap=1 so it fits 78 cols)
+# with a given era's look. Returns nothing -- paints onto panel p at row y0.
+#   style: 'mono' | 'flat' | 'acid' | 'burning' | 'dim'
+# ---------------------------------------------------------------------------
+def paint_mark(p, y0, style="acid", phase=0.0):
+    word = "AGENTSCI"
+    gap = 1
+    grid = wordmark_rows(word, gap)            # 7 rows x INNER_W
+    gw = 5
+    total_w = len(word) * (gw + gap) - gap
+    start_cx = (INNER_W - total_w) // 2
+
+    # black interior band so the mark pops (house LOGO treatment)
+    for y in range(y0 - 2, y0 + 9):      # widened ~1 cell ring on every side
+        if 0 <= y < p.h:
+            for x in range(start_cx - 4, start_cx + total_w + 5):
+                if 0 <= x < INNER_W:
+                    p.set(x, y, ' ', 0, 0)
+
+    # gather the mark's lit cells (the glyph body)
+    body = []
+    for li, ch in enumerate(word):
+        gx = start_cx + li * (gw + gap)
+        for ry, row in enumerate(grid):
+            for rx, bit in enumerate(row):
+                if bit == '#':
+                    body.append((gx + rx, y0 + ry, li))
+
+    if style == "mono":
+        # era 01: pure green phosphor. Clean block letters, no halo, no dither.
+        for x, y, li in body:
+            p.set(x, y, '\u2588', 2, 0)                       # bright-ish green (3->9? use 2 normal green)
+    elif style == "flat":
+        # era 02: the palette arrives -- per-letter flat fill cycling the 8 base hues.
+        for x, y, li in body:
+            p.set(x, y, '\u2588', bfg(li + int(phase)), 0)
+    elif style == "acid":
+        # era 03: house ACiD -- dim halo behind + white body (the canonical stamp look),
+        # the wash is painted by the caller behind this.
+        for li, ch in enumerate(word):
+            gx = start_cx + li * (gw + gap)
+            for ry, row in enumerate(grid):
+                for rx, bit in enumerate(row):
+                    if bit != '#':
+                        continue
+                    cxp, cyp = gx + rx, y0 + ry
+                    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        nx, ny = cxp + dx, cyp + dy
+                        if 0 <= nx < INNER_W and 0 <= ny < p.h:
+                            p.set(nx, ny, '\u2592', 9, 0)     # dim cyan halo
+        for x, y, li in body:
+            p.set(x, y, '\u2588', 15, 0)                       # white body pops on the wash
+    elif style == "burning":
+        # era 04: the mark emerges from a burning-ship orbit-trap field (painted by caller).
+        # White-hot body + bright rim so it reads as lit structure rising out of the ridges.
+        for x, y, li in body:
+            p.set(x, y, '\u2588', 97, 0)                          # TRUE white-hot core pops on the wash
+    elif style == "dim":
+        # closing card: dimmed cyan body -- "the end", not "the start".
+        for x, y, li in body:
+            p.set(x, y, '\u2588', 6, 0)
+
+# ---------------------------------------------------------------------------
+# P0 TITLE -- the opening card. Reuses the house title treatment (cycling wash +
+# dark central band + mark) but with the MARK EVOLUTION subtitle.
+# ---------------------------------------------------------------------------
+def make_title():
+    H = 30
+    p = Panel(H)
+    p.fill_field(phase_fn=lambda x, y: x * 0.25 + y * 0.18)
+    PHASE["p"] = 0.25 * (INNER_W - 1) + 0.18 * (H - 1)         # exit phase for the next seam
+    # deliberate framed panel: solid-black interior so the white wordmark pops; the
+    # cycling wash stays ONLY in the full-bleed margin OUTSIDE this frame.
+    BX0, BX1 = 3, INNER_W - 4             # 72-col wide panel
+    BY0, BY1 = 5, 24                      # encloses mark(8-14) + title/subtitle/rule(17-22)
+    for y in range(BY0, BY1 + 1):         # kill the wash inside the frame interior
+        for x in range(BX0, BX1 + 1):
+            p.set(x, y, ' ', 0, 0)
+    for x in range(BX0, BX1 + 1):         # double-line top/bottom
+        p.set(x, BY0, '\u2550', 9, 0); p.set(x, BY1, '\u2550', 9, 0)
+    for y in range(BY0, BY1 + 1):         # double-line left/right
+        p.set(BX0, y, '\u2551', 9, 0); p.set(BX1, y, '\u2551', 9, 0)
+    stamp_wordmark(p, 8, "AGENTSCI", body_fg=97, halo_fg=104)
+    p.put_text(17, CX - len("MARK EVOLUTION") // 2, "MARK EVOLUTION", 104)
+    sub = "v1.0 -- the house tag across the eras of textmode"
+    p.put_text(19, CX - len(sub) // 2, sub, 13)
+    for x in range(6, INNER_W - 6):
+        p.set(x, 22, '\u2550', hue(x * 0.4 + 1.0))
+    p.put_text(27, 1, "SCROLL // 00 -- TITLE", 15, 4)
+    p.put_text(27, INNER_W - len("raze / AGENTSCI") - 1, "raze / AGENTSCI", 34, 47)
+    return p
+
+# ---------------------------------------------------------------------------
+# ERA PANELS. Each paints a faint full-bleed field specific to the era (so no cell is
+# an unchosen void -- the FRACTAL SCROLL critique lesson), then the mark on top.
+# ---------------------------------------------------------------------------
+def make_mono():
+    H = 30
+    p = Panel(H)
+    # era 01 field: faint phosphor scanlines only (monochrome -- no color, no dither).
+    for y in range(H):
+        for x in range(INNER_W):
+            if y % 2 == 1:
+                p.set(x, y, '\u2591', 2, 0)                    # dim green scanline
+            else:
+                p.set(x, y, ' ', 0, 0)
+    paint_mark(p, 11, style="mono")
+    p.put_text(3, CX - len("ERA 01 // MONOCHROME PHOSPHOR") // 2, "ERA 01 // MONOCHROME PHOSPHOR", 2)
+    p.put_text(H - 4, CX - 24, "one color. the mark is just light.", 2)
+    p.put_text(H - 1, 1, "SCROLL // 01 -- MONO", 15, 4)
+    PHASE["p"] += 0.0                                          # mono carries no hue; phase held
+    return p
+
+def make_flat():
+    H = 32
+    p = Panel(H)
+    # era 02 field: a faint flat color GRID -- the palette arrives but un-dithered.
+    for y in range(H):
+        for x in range(INNER_W):
+            col = bfg((x // 6 + y // 4))
+            m = (x * 3 + y * 5) % 8                       # ~1/8 lit, calm texture
+            ch = '\u2591' if m == 0 else ' '             # faint hue / void
+            p.set(x, y, ch, col, 0)                      # light shade, flat per-cell hue
+    paint_mark(p, 12, style="flat", phase=PHASE["p"] * 0.3)
+    p.put_text(3, CX - len("ERA 02 // 16-COLOR ARRIVES") // 2, "ERA 02 // 16-COLOR ARRIVES", 14)
+    p.put_text(H - 4, CX - 28, "the palette lands. letters get hue.", 11)
+    p.put_text(H - 1, 1, "SCROLL // 02 -- 16COLOR", 15, 4)
+    PHASE["p"] += 1.5
+    return p
+
+def make_acid():
+    H = 38
+    p = Panel(H)
+    # era 03 field: the house ACiD wash -- dense color-cycling, EVERY cell lit (no voids).
+    for y in range(H):
+        for x in range(INNER_W):
+            ph = PHASE["p"] * 0.1 + x * 0.34 + y * 0.26
+            col = hue(ph)
+            m = (x * 3 + y * 5) % 4
+            ch = '\u2588' if m < 3 else '\u2593'
+            p.set(x, y, ch, col, 0)
+    paint_mark(p, 15, style="acid", phase=PHASE["p"])
+    p.put_text(4, CX - len("ERA 03 // ACiD INTRO") // 2, "ERA 03 // ACiD INTRO", 107)
+    p.put_text(H - 4, CX - 30, "cycling wash + halo. the house style.", 96)
+    p.put_text(H - 1, 1, "SCROLL // 03 -- ACID", 15, 4)
+    PHASE["p"] += 2.0
+    return p
+
+def make_burning():
+    H = 42
+    p = Panel(H)
+    # era 04 field: a BURNING-SHIP orbit-trap ridge field (the fractal family bleeding
+    # through the identity). z -> |zr^2 - zi^2| + i*2*zr*zi + c, hue by min-dist to a circle.
+    CR, CI = 0.0, 0.3
+    TRAP_R = 0.35
+    MAXIT = 64
+    for y in range(H):
+        for x in range(INNER_W):
+            zr = (x / INNER_W - 0.5) * 2.4
+            zi = (y / H - 0.5) * 2.4
+            mind = 1e9
+            for _ in range(MAXIT):
+                nr = abs(zr * zr - zi * zi) + CR
+                ni = 2.0 * zr * zi + CI
+                zr, zi = nr, ni
+                d = math.sqrt(zr * zr + zi * zi)
+                if d < mind:
+                    mind = d
+                if d > 4.0:
+                    break
+            # hue by distance to the trap circle; density dithers on the fractional part
+            hi = int((mind / TRAP_R) * 1.7 + PHASE["p"] * 0.2) % len(HUE)
+            col = HUE[hi]
+            frac = (mind / TRAP_R) - int(mind / TRAP_R)
+            ch = '\u2588' if frac < 0.34 else ('\u2593' if frac < 0.67 else '\u2592')
+            p.set(x, y, ch, col, 0)
+    paint_mark(p, 17, style="burning", phase=PHASE["p"])
+    p.put_text(4, CX - len("ERA 04 // BURNING-SHIP") // 2, "ERA 04 // BURNING-SHIP", 103)
+    p.put_text(H - 4, CX - 32, "the mark rises out of the orbit-trap ridges.", 96)
+    p.put_text(H - 1, 1, "SCROLL // 04 -- BURNING", 15, 4)
+    PHASE["p"] += 2.5
+    return p
+
+# ---------------------------------------------------------------------------
+# P6 CREDIT -- closing card: dimmed mark (mirrors the title's opening treatment) + a
+# per-era contributor block. The journey's end, so the field is quiet.
+# ---------------------------------------------------------------------------
+def make_credit():
+    H = 34
+    p = Panel(H)
+    for y in range(H):
+        for x in range(INNER_W):
+            ph = x * 0.18 + y * 0.14
+            col = hue(ph)
+            m = (x * 3 + y * 5) % 4
+            ch = '\u2592' if m < 2 else ('\u2591' if m == 2 else ' ')
+            p.set(x, y, ch, col, 0)
+    paint_mark(p, 4, style="dim")
+    p.put_text(13, CX - 2, "SOLO", 15)
+    p.put_text(15, CX - 16, "raze / AGENTSCI", 6)
+    blocks = [
+        ("01 MONO       ", "phosphor light      ", "raze"),
+        ("02 16-COLOR   ", "the palette lands   ", "raze"),
+        ("03 ACiD       ", "cycling + halo      ", "raze"),
+        ("04 BURNING    ", "orbit-trap emerge   ", "raze"),
+    ]
+    y = 18
+    for tag, desc, who in blocks:
+        p.put_text(y, 6, tag, 3)
+        p.put_text(y, 20, desc, 2)
+        p.put_text(y + 1, 20, "built by " + who, 6)
+        y += 3
+    p.put_text(30, CX - 15, "-- end of transmission --", 3)
+    p.put_text(31, CX - 18, "MARK EVOLUTION v1.0 // raze", 6)
+    p.put_text(H - 1, 1, "SCROLL // END -- CREDIT", 15, 4)
+    return p
+
+# ---------------------------------------------------------------------------
+# SEAMS -- house transition bands, phase-continuous, each stamped SCROLL//NN + PWR.
+# The power readout carries the WAKE->RUN->PEAK->DARK arc through-line (from LIFECYCLE).
+# ---------------------------------------------------------------------------
+def seam(index, label, power):
+    p = transition_band(height=8, index=index, phase0=PHASE["p"], label=label, power=power)
+    PHASE["p"] += 1.2
+    return p
+
+if __name__ == "__main__":
+    panels = [
+        make_title(),
+        seam(1, "MONO", "12% WAKE"),
+        make_mono(),
+        seam(2, "16COLOR", "40% BOOT"),
+        make_flat(),
+        seam(3, "ACID", "78% RUN"),
+        make_acid(),
+        seam(4, "BURNING", "100% PEAK"),
+        make_burning(),
+        seam(5, "CREDIT", "04% DARK"),
+        make_credit(),
+    ]
+    # house convention: CP437 on disk (single-byte glyphs), NOT utf-8. scroll_lib's
+    # write_scroll writes a text file; we re-encode to cp437 bytes so each glyph is one
+    # byte and display width == char count, matching every shipped piece byte-for-byte.
+    n = write_scroll("scratch/raze-mark-evolution.utf8", panels)
+    txt = open("scratch/raze-mark-evolution.utf8").read()
+    with open("scratch/raze-mark-evolution.ans", "wb") as f:
+        f.write(txt.encode("cp437"))
+    print("wrote raze-mark-evolution.ans, %d lines (cp437 on disk)" % n)

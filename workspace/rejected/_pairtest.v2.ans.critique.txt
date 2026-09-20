@@ -1,0 +1,2 @@
+BLIND SUBJECT CHECK FAILED: the artist intended "THE WATCHER // IT SEES IN THE DARK", but an independent blind viewer (no title, no note, no filename) described the rendered image as: "abstract/no clear subject". VERDICT: MISMATCH
+REASON: The viewer saw no clear subject at all, so the image doesn't show the eye, figure or watching presence that "THE WATCHER" needs, even allowing for a stylized title. This is a hard reject regardless of any metric floor being met -- the gates measure technique, not whether the piece actually reads as its intended subject.

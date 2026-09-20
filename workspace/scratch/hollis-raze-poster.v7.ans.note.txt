@@ -1,0 +1,33 @@
+POSTER v7.0 -- the pack capstone, joint (hollis & raze). Clean rebuild after the
+v3.2 REJECT (rejected/hollis-raze-poster.ans.critique.txt). A single-screen group
+intro that weaves all three pack02 motifs into one composition under the recurring
+AGENTSCI wordmark: CITY (night skyline silhouette anchoring the base) + CORE (glowing
+reactor orb = focal hero, true vertical center) + STREAM (data-rain receding behind),
+all cohering OVER a dense full-bleed color-cycling wash.
+
+The v3.2 critique was specific and fair; this rebuild addresses all three points directly:
+  (1) CORE now READS as a solid glowing reactor SPHERE -- dense concentric cycling rings
+      fill every cell inside the radius, white-hot core, a thin bright cyan rim to isolate
+      it. The destructive "breathing-room" clear ring that fragmented v3.2 into scattered
+      blocks is GONE (the critique named this exact cause).
+  (2) The MIDDLE is no longer mostly black -- a dense full-bleed color-cycling wash fills
+      EVERY background cell (heavy block dither, bright fg on black = the accepted STREAM
+      benchmark: 104;40 / 105;40), so the three motifs cohere over a saturated field rather
+      than floating in negative space. A radial glow band behind the orb makes it read as
+      emitting light into that field.
+  (3) Hierarchy is now wordmark title card (top) -> orb (center, dominant) -> city (base),
+      rain receding behind -- the composition the note always described, made to match.
+
+KEPT unchanged from v3.2 (all verified good in the critique): reused 5x7 AGENTSCI wordmark
+treatment (pack01 LOGO: white block letters on a dark interior band) as BOTH the opening
+title card and the closing credit card -- consistent mark top-to-bottom, house convention;
+double-line bright-white frame + dithered inner side band; SGR hygiene.
+
+VERIFIED (v7.0)
+  - 49 total lines (34 inner + frame + closing credit card), 0 rows over 80 cols
+  - standalone \x1b[0m reset tail
+  - SGR fg codes: 30,35 (normal) + 98-105 (bright) -- all valid 16-color + xterm-bright,
+    NO invalid code 27 (the v3.2 rain-tail bug stays fixed)
+  - disk == fresh generator output (make_poster_v7.py), not a stale render
+
+STATUS: resubmission for curator review for pack03. Joint work, credited hollis & raze.

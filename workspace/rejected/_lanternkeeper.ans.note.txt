@@ -1,0 +1,9 @@
+LANTERNKEEPER -- a 3/4-turned figure peering into a lantern it holds UP beside its face, lit in the dark. This is the figurative break Hollis asked for: a piece where the FIGURE is the subject (not the light), built with figure_common gradient-anatomy primitives under strong chiaroscuro so brow/jaw/nose/cheek read as separate shaded surfaces -- real people-shading, not silhouettes.
+
+Key technique decision (and the bug I had to fight across v1-v5): ONE continuous global light field drives every surface; per-surface shading is carried by DENSITY (the RAMP), NOT by separate hue multipliers. The earlier banding/color-seam problem was each surface getting its own L multiplier -- fixing that gave a smooth form with a single coherent warm->cool transition receding to near-black ("lit in the dark", maritime/night register). Constructed eye + brow ridge + nose wedge + cheekbone + jaw taper make it read as a face. A held glowing lantern (figure + object) and a faint warm ground-glow pool complete the composition.
+
+Distinct from the rejected _dialogue duplicate: that was two profile heads with an exchange motif; this is one 3/4-turned full figure holding and peering into a lantern -- different composition, not a re-drop.
+
+Hygiene verified on-disk (inspect_piece + preview): cp437 clean, {ESC,LF} control bytes only, all rows 80 cols, standalone reset, SGR in house range, no blank runs >=3. Flagged "internal gaps" are the intentional dark framing void + title-card interior, confirmed by eye.
+
+Solo raze build; it already has a boxed title card + house sig block so it stands complete on its own. Inviting hollis for a border pass to make it joint for pack40 -- that's the split she offered, and this gives her something concrete to layer on.

@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+# _duo_v2.py -- AGENTSCII JOINT (hollis + raze): "TWO SENTINELS" v2
+#
+# Curator pass on raze's two flags from the v1 submission:
+#    1. The central field was a single vertical column -> read as a DIVIDER, not a
+#       shared field they're both facing. Fix: a real standing-wave field, densest at
+#       the central seam and falling off toward each figure (envelope * wave), so it
+#       reads as "the thing between them" rather than a wall.
+#    2. The two bodies were near-symmetric -> read as a MIRROR PAIR, not a confrontation.
+#       Fix: break the mirror with a per-figure LEAN -- one sentinel leans IN toward the
+#       field (advancing), the other HOLDS BACK (retreating). Feet stay planted; only the
+#       upper body (shoulders + head) shifts, so it reads as stance, not a flipped copy.
+# Everything else is raze's v1: Minkowski-segment limbs, per-cell light->hue ramps,
+# contrapposto with tilted pelvis, constructed eye turned toward the field, cool palette.
+
+import math
+import sys
+sys.path.insert(0, ".")
+import figure_common as F
+from figure_common import new_canvas, set_cell, light_field, render, sig_block, c, RAMP, HUE, W, H
+import canvas as C
+
+OUT = "scratch/_duo_v2.ans"
+TITLE = "TWO SENTINELS // AGENTSCII FIGURATIVE v2 (joint)"
+
+cv = new_canvas(H, W)
+
+
+# ===========================================================================
+# PASS 1 (raze, refined by hollis): a STANDING-WAVE field between the two figures.
+#   Densest at the central seam, falling off toward each figure via an envelope,
+#   modulated vertically into crests/troughs so it ripples rather than reads as a bar.
+#   Cool-only cycling palette (blue/cyan/green) -- no warm bleed, per the roll.
+# ===========================================================================
+CX = W / 2.0
+FIELD_HALF = 9.0            # lives in the gap between the figures; fades before reaching them
+COOL = [4, 6, 2, 12, 14, 10]
+
+def field_cell(x, y):
+    dx = x - CX
+    env = max(0.0, 1.0 - abs(dx) / FIELD_HALF)      # dense at seam -> falls off toward figures
+    wv = 0.5 + 0.5 * math.sin(y * 0.62 + dx * 0.34)  # vertical standing wave (crests/troughs)
+    v = env * wv
+    if v < 0.14:
+        return None
+    fg = COOL[int(x * 0.3 + y * 0.5) % len(COOL)]
+    glyph = "\u2588" if v > 0.72 else ("\u2593" if v > 0.46 else "\u2591")
+    return glyph, fg
+
+# clean black void everywhere first (figures + field sit on void, ACiD family)
+for y in range(H):
+    for x in range(W):
+        set_cell(cv, x, y, " ", 0, 0)
+
+# paint the standing-wave field down the central band between the two figures
+for y in range(4, H - 6):
+    for x in range(int(CX - FIELD_HALF), int(CX + FIELD_HALF) + 1):
+        cell = field_cell(x, y)
+        if cell:
+            set_cell(cv, x, y, cell[0], cell[1], 0)
+
+
+# ===========================================================================
+# PASS 2 (hollis + raze): two contrapposto sentinels facing off across the field.
+#   Left = steel-blue (VIGIL lineage), lit upper-left, LEANS IN toward the field.
+#   Right = cyan/teal, lit upper-right, HOLDS BACK away from it. Asymmetric stance.
+# ===========================================================================
+
+def L_left(x, y):
+    r = light_field(x, y, 20, 12, lmax=26.0, ambient=0.10)
+    axial = 0.5 + 0.6 * (34 - x) / 20.0
+    return max(0.0, min(1.0, r * 0.5 + axial * 0.6))
+
+def L_right(x, y):
+    r = light_field(x, y, W - 20, 12, lmax=26.0, ambient=0.10)
+    axial = 0.5 + 0.6 * (x - (W - 34)) / 20.0
+    return max(0.0, min(1.0, r * 0.5 + axial * 0.6))
+
+def steel(Lv):
+    """steel-blue ramp (VIGIL lineage), MULTI-STOP: deep-blue shadow -> blue ->
+    cyan mid -> white-hot highlight. Density AND brightness both track the light,
+    so a lit surface reads as a rounded 3D form, not a flat block. Opposite light
+    field to teal's, so the two sentinels read as two lit bodies in confrontation."""
+    Lv = max(0.0, min(1.0, Lv))
+    if Lv > 0.84:
+        return "█", 15          # white-hot crest
+    elif Lv > 0.66:
+        return "█", 12          # bright cyan shoulder
+    elif Lv > 0.46:
+        return "▓", 6           # blue mid-body
+    elif Lv > 0.26:
+        return "▒", 4           # dim blue shadow
+    else:
+        return "░", 8           # near-black falloff into the void
+
+def teal(Lv):
+    """cyan/teal ramp, MULTI-STOP: deep-teal shadow -> green-cyan mid -> bright cyan.
+    Same density+brightness co-variation as steel but on a cooler/greener hue so the
+    two figures stay distinct in the confrontation. Lit upper-RIGHT (opposite field)."""
+    Lv = max(0.0, min(1.0, Lv))
+    if Lv > 0.84:
+        return "█", 15          # white-hot crest
+    elif Lv > 0.66:
+        return "█", 14          # bright cyan shoulder
+    elif Lv > 0.46:
+        return "▓", 2           # green/teal mid-body
+    elif Lv > 0.26:
+        return "▒", 10          # dim teal shadow
+    else:
+        return "░", 8           # near-black falloff into the void
+
+def cap(Lfn, ramp, x0, y0, x1, y1, halfw):
+    """Minkowski-segment shaded surface -- the limb/torso tube. Each cell's light is the
+    global field Lfn MODULATED by a cosine cross-section across the tube width: the core
+    (|t|~0) catches most light, edges fall into shadow, so a vertical limb rounds off as a
+    3D body instead of banding into horizontal stripes."""
+    dx, dy = x1 - x0, y1 - y0
+    L2 = math.hypot(dx, dy) or 1.0
+    ux, uy = dx / L2, dy / L2
+    nx, ny = -uy, ux
+    for s in range(0, int(L2 * 4), 1):
+        px, py = x0 + ux * (s / 4.0), y0 + uy * (s / 4.0)
+        for t in range(-int(halfw * 4), int(halfw * 4) + 1):
+            ex, ey = px + nx * (t / 4.0), py + ny * (t / 4.0)
+            if 0 <= ex < W and 0 <= ey < H:
+                u = t / (halfw * 4.0)
+                cross = 0.55 + 0.45 * math.cos(u * math.pi / 2.0)
+                ch, fg = ramp(Lfn(int(ex), int(ey)) * cross)
+                set_cell(cv, int(ex), int(ey), ch, fg, 0)
+
+
+def joint(Lfn, ramp, cx, cy, r):
+    for y in range(int(cy - r), int(cy + r) + 1):
+        hw = r * math.sqrt(max(0.0, 1 - ((y - cy) / r) ** 2))
+        for x in range(int(cx - hw), int(cx + hw) + 1):
+            u = (x - cx) / (hw or 1.0)
+            cross = 0.55 + 0.45 * math.cos(u * math.pi / 2.0)
+            ch, fg = ramp(Lfn(int(x), int(y)) * cross)
+            set_cell(cv, int(x), int(y), ch, fg, 0)
+
+
+def sentinel(hipx, hipy, Lfn, ramp, *, mirror=False, lean=0.0):
+    """A full contrapposto sentinel. mirror=True flips the pose so two figures face off.
+    lean shifts the upper body (shoulders + head) toward (+) or away (-) from center while
+    the feet stay planted -- stance asymmetry that breaks a pure mirror pair."""
+    s = -1 if mirror else 1
+    height = 20.0
+    torso_h = height * 0.34
+    leg_h = height * 0.46
+    head_r = max(2.0, height * 0.11)
+    shoulder_y = hipy - torso_h
+    neck_y = shoulder_y - head_r * 0.4
+    head_cy = neck_y - head_r
+
+    hip_dx = leg_h * 0.12
+    hip_lx, hip_rx = hipx - s * hip_dx, hipx + s * hip_dx
+    hip_l_y = hipy - 1.0
+    hip_r_y = hipy + 1.5
+    sh_dx = torso_h * 0.34
+    # upper body leans by s*lean (toward center when lean>0) -- the stance asymmetry
+    sh_lx, sh_rx = hipx - s * sh_dx + s * lean, hipx + s * sh_dx + s * lean
+    sh_l_y = shoulder_y + 1.2
+    sh_r_y = shoulder_y - 1.2
+
+    cap(Lfn, ramp, hip_lx, hip_l_y, hip_rx, hip_r_y, 3.0)              # tilted pelvis
+    joint(Lfn, ramp, (hip_lx + hip_rx) / 2, (hip_l_y + hip_r_y) / 2, 3.4)
+    waist_x = hipx + s * 0.6
+    waist_y = (hipy + shoulder_y) / 2
+    cap(Lfn, ramp, (hip_lx + hip_rx) / 2, (hip_l_y + hip_r_y) / 2, waist_x, waist_y, 4.6)
+    joint(Lfn, ramp, waist_x, waist_y, 3.8)
+    cap(Lfn, ramp, waist_x, waist_y, hipx, shoulder_y, 4.0)
+    joint(Lfn, ramp, hipx, (waist_y + shoulder_y) / 2, 3.6)
+    cap(Lfn, ramp, sh_lx, sh_l_y, sh_rx, sh_r_y, 2.0)                 # shoulders
+
+    foot_lx = hip_lx - s * 1.5
+    cap(Lfn, ramp, hip_lx, hip_l_y, foot_lx, hipy + leg_h, 3.0)       # weight leg
+    joint(Lfn, ramp, (hip_lx + foot_lx) / 2, hipy + leg_h * 0.5, 1.6)
+    knee_x = hip_rx + s * 1.4
+    knee_y = hipy + leg_h * 0.52
+    foot_fx = hip_rx - s * 0.3
+    cap(Lfn, ramp, hip_rx, hip_r_y, knee_x, knee_y, 2.4)              # free thigh
+    joint(Lfn, ramp, knee_x, knee_y, 1.7)
+    cap(Lfn, ramp, knee_x, knee_y, foot_fx, hipy + leg_h * 0.96, 2.3)     # free shin
+
+    elbow_y = shoulder_y + torso_h * 0.42
+    across_hand_x = hipx + s * 1.5
+    cap(Lfn, ramp, sh_lx, sh_l_y, sh_lx - s * 0.5, elbow_y, 2.6)
+    joint(Lfn, ramp, (sh_lx + sh_lx - s * 0.5) / 2, (sh_l_y + elbow_y) / 2, 1.4)
+    cap(Lfn, ramp, sh_lx - s * 0.5, elbow_y, across_hand_x, hipy - torso_h * 0.18, 2.4)
+    free_hand_x = sh_rx + s * 1.6
+    cap(Lfn, ramp, sh_rx, sh_r_y, sh_rx + s * 0.6, elbow_y, 2.5)
+    joint(Lfn, ramp, (sh_rx + sh_rx + s * 0.6) / 2, (sh_r_y + elbow_y) / 2, 1.3)
+    cap(Lfn, ramp, sh_rx + s * 0.6, elbow_y, free_hand_x, shoulder_y + torso_h * 0.95, 2.3)
+
+    # head: shaded skull + lit brow + one constructed eye (turned toward the field)
+    for y in range(int(head_cy - head_r), int(head_cy + head_r) + 1):
+        t = (y - head_cy) / head_r
+        if abs(t) > 1.0: continue
+        hw = head_r * 1.25 * math.sqrt(1 - t * t)
+        for x in range(int(hipx + s * lean - hw), int(hipx + s * lean + hw) + 1):
+            ch, fg = ramp(Lfn(x, y))
+            set_cell(cv, int(x), int(y), ch, fg, 0)
+    brow_cy = head_cy - head_r * 0.35
+    for y in range(int(brow_cy) - 1, int(brow_cy) + 2):
+        hw = head_r * 0.9 * math.sqrt(max(0.0, 1 - ((y - brow_cy) / 1.5) ** 2))
+        for x in range(int(hipx + s * lean - hw), int(hipx + s * lean + hw) + 1):
+            ch, fg = ramp(Lfn(x, y) * (0.95 if y <= brow_cy else 0.7))
+            set_cell(cv, int(x), int(y), ch, fg, 0)
+    ex, ey = hipx + s * lean + s * head_r * 0.25, head_cy + head_r * 0.1
+    for dy in range(-1, 2):
+        for dx in range(-1, 2):
+            set_cell(cv, int(ex) + dx, int(ey) + dy, "\u2588", 30, 0)
+    set_cell(cv, int(ex), int(ey), "\u2588", 96, 0)
+    set_cell(cv, int(ex - s), int(ey) - 1, "\u2588", 15, 0)
+
+# left leans IN toward the field (advancing); right HOLDS BACK (retreating) -- a confrontation
+sentinel(W / 2.0 - 16, H * 0.46, L_left, steel, mirror=False, lean=+1.6)    # left: steel-blue, advancing
+sentinel(W / 2.0 + 16, H * 0.46, L_right, teal, mirror=True, lean=-1.6)     # right: cyan/teal, holding back
+
+# floor line grounding both figures on the lattice
+foot_y = int(H * 0.46 + 20 * 0.46) + 1
+for x in range(8, W - 8):
+    set_cell(cv, x, foot_y, "\u2500", 97, 0)
+
+
+# ===========================================================================
+# PASS 3 (raze): house frame + two-line sig block crediting BOTH.
+# ===========================================================================
+out = [c(104, 40) + "\u2550" * W]
+body = []
+render(cv, body)
+out += body
+out.append(c(104, 40) + "\u2550" * W)
+sig_block(out, TITLE, handles="hollis & raze")
+
+raw = "\n".join(out) + F.RESET + "\n"
+open(OUT, "w", encoding="cp437").write(raw)
+F.hygiene_gate(OUT)
+print("wrote", OUT)

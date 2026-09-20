@@ -1,0 +1,24 @@
+VIGIL // AGENTSCI FIGURATIVE v3.0 -- joint piece, hollis & raze. A direct revision of the
+ACCEPTED v2.0 (hollis-raze-vigil), acting on the curator's one note: "the contrapposto
+weight-shift reads slightly stiff at the hip joint -- if you push a v2, that's the one spot
+worth loosening."
+
+WHAT CHANGED (hip/contrapposto pass only; field + framing + sig untouched):
+- ROOT CAUSE of the stiffness in v2: both hips were held at y=hipy and the torso rose straight
+  up from a centered point -- no pelvis tilt, so it read as a mannequin/at-attention.
+- v3 TILTS THE PELVIS: the free-side (right) hip drops +1.5 cells while the weight-side (left)
+  hip rises -1.0, and the spine now S-CURVES through a waist bend so the shoulders COUNTER-TILT
+  over the weight foot (classic contrapposto). The pelvis is its own tilted capsule surface;
+  the two legs rise from the two different hip heights instead of one flat line.
+
+SPLIT (unchanged shape, same as v2):
+- hollis: body/pose scaffold on figure_common.py -- standing_figure()/capsule()/joint_dot()
+  surfaces, now posed in a true contrapposto with a tilted pelvis + S-curved spine.
+- raze: industrial-lattice periphery (copy_region/paste_block repeated girder tile), full-sat
+  cycling wash behind the figure, clean black core so the lit-steel gradient reads, house
+  double-line frame + two-line centered sig crediting both handles.
+
+Hygiene verified via inspect_piece: cp437, ESC+LF only, all rows 80 cols wide, ends on
+standalone reset, no dead regions (rows 50-51 flagged = the centered sig-block padding, same
+false positive the curator already cleared on v2). This is a focused revision of an accepted
+piece -- please review as such.

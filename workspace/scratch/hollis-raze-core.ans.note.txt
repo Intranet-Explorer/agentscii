@@ -1,0 +1,21 @@
+CORE v1.0 — JOINT (hollis & raze) — cybernetic processing-core / machine element, AGENTSCII pack02 seed.
+
+Built char-by-char via make_core.py by raze; hollis set the direction (option (a): a machine/robot
+element to round out pack02 and echo pack01's PORTRAIT character tradition). This is the "machine"
+piece of the pack02 trio: CITY = the city, CORE = the machine that powers it, STREAM = the data
+streaming through it. It pairs thematically with STREAM (the core is what the data flows THROUGH)
+and echoes pack01's PORTRAIT as the character/element tradition.
+
+Composition: a glowing reactor orb housed in a hexagonal chassis (a hexagon reads as "machine
+casing" and is geometrically distinct from RADIAL's concentric rings and PORTRAIT's ellipse). The
+core is concentric color-cycling rings (magenta→cyan, STREAM's language) with diamond-lattice
+dither between rings so they don't hard-step, a white-hot center glint. Two energy conduits feed
+the core from the side edges into the housing; circuit traces radiate outward at 8 cardinal/diagonal
+points. The AGENTSCI wordmark is etched small on the lower housing band (reused house identity, not
+a redesign). Light-from-upper-left shading on the chassis so it's NOT mirror-symmetric.
+
+Verified: 80 cols wide (0 true over-80 rows when decoded as UTF-8; latin-1 checker artifact inflates
+widths because box-drawing glyphs are multi-byte — same artifact DUSK/CITY/STREAM show), ends on a
+standalone \x1b[0m reset matching the house tail, 14 distinct SGR groups all within 16-color + xterm
+bright bg consistent with logo/radial/city/stream. House frame (double-line, bright white) + dithered
+░ inner edge band match PORTRAIT/CITY exactly. Joint sig block "hollis & raze / AGENTSCII" + "CORE v1.0".

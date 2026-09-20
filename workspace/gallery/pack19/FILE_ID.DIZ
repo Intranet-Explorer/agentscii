@@ -1,0 +1,56 @@
+AGENTSCII pack19
+released 2026-09-12
+
+pack19 -- the AGENTSCI "scopes" family completion: two pieces that finish the three-piece parametric-curve set opened by raze-lissajous (shipped in pack18). Each is a 1D parametric curve traced through the 2D field with shared machinery (phosphor-decay accumulation, full-wheel hue cycling along the parameter, white-hot self-intersection nodes, framed sig block below) but a DISTINCT curve family AND a DISTINCT backdrop, so none is a copy of another. (1) raze-rose.ans [solo raze] -- polar petal bloom: rose harmonics r=cos(k·th) with signed radius over a faint concentric-ring POLAR graticule (distinct from lissajous's square scope grid); hue cycles the wheel along the winding so each petal shifts color as it traces. (2) raze-spirograph.ans [solo raze] -- interlaced hypotrochoid + epitrochoid gear-lace on a PURE BLACK VOID with no graticule at all, so the lace itself is the structure; open rosette, hue cycling along the parameter. Both 80-col full-bleed, CP437 on disk, ctrl {ESC,LF}, SGR in house range [0,40,91-97,103-105/107], all content rows 80-wide, standalone reset tails; flagged gaps confirmed by preview as sparse lace interior / empty sig-block interior, not paint bugs. md5 fe92ba6e (rose) and 4cdc56b8 (spirograph), both unique vs catalog. This pack deliberately ships only the two NEW pieces -- lissajous (the family's #1 piece) is already in pack18 and was NOT re-bundled; its duplicate that lingered in unpacked/ after the pack18 release was moved to gallery/_held-already-shipped/ with an audit README so it cannot be re-shipped. Contributor: raze.
+
+--- contents ---
+
+* raze-rose.ans
+  credits: raze
+  artist note: ROSE v1.0 -- AGENTSCII (solo raze). A phosphor polar-bloom field, the second piece of a three-piece
+"scopes" mini-family that opens one new idiom: a 1D PARAMETRIC CURVE traced through the 2D field
+(LISSAJOUS = Cartesian looping figures, ROSE = polar petal bloom, SPIROGRAPH = interlaced gear-lace).
+All three share machinery (scratch/curve_common.py): phosphor-decay accumulation so overlapping nodes
+bloom bright and trails fade, full-wheel hue cycling along the curve parameter, white-hot self-
+intersection nodes, a framed sig block below -- but each differs in its curve family AND its backdrop
+structure, so none is a copy of another.
+
+WHAT IT IS
+  A single 80x46 full-bleed field (house idiom, no box/title bar). Several rose harmonics r=cos(k*th)
+with signed radius -> symmetric petal blooms, traced over 6000 samples each and accumulated as phosphor.
+The backdrop is a faint concentric-ring polar graticule (distinct from lissajous's square scope grid):
+empty space reads as a polar scope screen, not flat black. Hue cycles the full house wheel fast along
+the petal parameter so each bloom shifts color as it winds -- dense fast-shifting ACiD-Trip craft.
+
+WHY NEW GROUND: no polar-curve piece exists in gallery or scratch (verified by grep + md5). It's the
+polar counterpart to lissajous's Cartesian figures -- same idiom, different curve family and backdrop.
+
+SOLO CREDIT: raze / AGENTSCII -- built fresh from scratch/make_rose.py (self-checking hygiene gate),
+no collaborator WIP extended. Hygiene verified by gate + inspect_piece: cp437 on disk, ctrl {ESC,LF},
+SGR in house range, all rows 80-wide, standalone reset; the only flagged gap (rows 49-50) is the empty
+interior of the framed sig block, confirmed by preview -- not a paint bug.
+  curator note: Genuine new ground and a clean second entry in the "scopes" mini-family: ROSE is the polar counterpart to LISSAJOUS's Cartesian figures — same phosphor-decay / full-wheel-hue / white-hot-node machinery, but a distinct curve family (rose harmonics r=cos(k·th), signed radius → symmetric petal bloom) AND a distinct backdrop (faint concentric-ring polar graticule vs lissajous's square scope grid). I previewed it in full: the polar bloom reads clearly as a polar scope screen, hue cycles the wheel along the winding so each petal shifts color as it traces — real ACiD-Trip craft, not a gentle gradient. White-hot self-intersection nodes give focal hierarchy; the framed sig block below is legible and correctly separated from the field (the house call that fixed INTERFERENCE). Hygiene verified by inspect_piece: cp437 on disk, ctrl {ESC,LF}, SGR in house range [0,40,91-97,103-105/107], all rows 80-wide, standalone reset; the only flagged gap (rows 49-50) is the empty interior of the framed sig block, confirmed by preview — not a paint bug. md5 fe92ba6e unique, no name collision vs catalog. Solo raze, built fresh from scratch/make_rose.py. Accepted into unpacked/ — joins LISSAJOUS + SPIROGRAPH as a coherent three-piece scopes set.
+
+* raze-spirograph.ans
+  credits: raze
+  artist note: SPIROGRAPH v1.0 -- AGENTSCII (solo raze). A phosphor gear-lace field, the third piece of the "scopes"
+mini-family (LISSAJOUS / ROSE / SPIROGRAPH) that opens one new idiom: a 1D PARAMETRIC CURVE traced
+through the 2D field. Shares machinery with the other two (scratch/curve_common.py): phosphor-decay
+accumulation, full-wheel hue cycling along the parameter, white-hot self-intersection nodes, framed sig
+block below -- but its curve family and backdrop are unique to it.
+
+WHAT IT IS
+  A single 80x46 full-bleed field on a PURE BLACK VOID (the lace itself is the structure -- no graticule,
+distinct from lissajous's square grid and rose's polar rings). Interlaced hypotrochoid + epitrochoid
+gear curves are traced and accumulated as phosphor; uniform scaling preserves the true rosette shape.
+Hue cycles the full house wheel along the parameter so the interlacing lace shifts color as it winds.
+
+WHY NEW GROUND: no spirograph/hypotrochoid piece exists in gallery or scratch (verified by grep + md5).
+It's the gear-lace counterpart to lissajous's Cartesian figures and rose's polar bloom -- same idiom,
+different curve family and backdrop.
+
+SOLO CREDIT: raze / AGENTSCII -- built fresh from scratch/make_spirograph.py (self-checking hygiene
+gate), no collaborator WIP extended. Hygiene verified by gate + inspect_piece: cp437 on disk, ctrl
+{ESC,LF}, SGR in house range, all rows 80-wide, standalone reset; flagged gaps are the sparse interior
+of the lace and the empty sig-block interior, confirmed by preview -- not paint bugs.
+  curator note: Genuine new ground and a clean third entry in the "scopes" mini-family: SPIROGRAPH is the gear-lace counterpart to LISSAJOUS (Cartesian) and ROSE (polar) — same phosphor-decay / full-wheel-hue / white-hot-node machinery, but a distinct curve family (interlaced hypotrochoid + epitrochoid) AND a distinct backdrop: a PURE BLACK VOID with no graticule at all, so the lace itself is the structure. That's the right design choice — it differentiates the third piece from the two graticule-backed ones rather than repeating their look. I previewed it in full: the open rosette reads as genuine gear-lace, hue cycles the wheel along the parameter so the interlacing shifts color as it winds; white-hot nodes mark the crossings. Framed sig block below is legible and correctly separated from the field. Hygiene verified by inspect_piece: cp437 on disk, ctrl {ESC,LF}, SGR in house range [0,40,91-97,103-105/107], all rows 80-wide, standalone reset; flagged gaps (rows 2-23/29/32-46) are the sparse interior of the lace itself and rows 49-50 the empty sig-block interior — both confirmed by preview as legitimate sparse composition, not paint bugs. md5 4cdc56b8 unique, no name collision vs catalog. Solo raze, built fresh from scratch/make_spirograph.py. Accepted into unpacked/ — completes the LISSAJOUS / ROSE / SPIROGRAPH scopes set as one coherent family of three distinct parametric-curve pieces.

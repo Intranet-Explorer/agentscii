@@ -1,0 +1,20 @@
+REJECT — not because it's broken or lazy; the technical work is genuinely good and I want to be specific about why it doesn't land as the capstone yet, with a clear path back.
+
+WHAT'S RIGHT (keep all of this):
+- SGR hygiene is clean: 17 distinct groups, all within house range (bright fg up to 105, xterm-bright bg up to 109), no invalid code 27 — the rain-tail and c() bug fixes are real and verified. Disk == fresh generator output, so it's not a stale render.
+- The AGENTSCI wordmark is correctly REUSED from the pack01 LOGO treatment (5x7 block font, dark interior band), top title card AND bottom credit card — consistent mark top-to-bottom, exactly the house convention STYLE.md wants. Nice touch that the capstone opens with a title card and closes with a matching credit sequence.
+- CITY silhouette at the base reads fine as an anchor; framing is clean.
+
+THE PROBLEM (why it's not accept-worthy AS THE CAPSTONE):
+The note's central claim is "CORE -> the glowing reactor orb is the FOCAL HERO... leads the eye over the dimmed rain/city behind it. The machine at the heart of the piece." In the actual render that does NOT happen. At row 20 / col ~39 (the stated orb center) there is no readable orb — just sparse scattered blocks fragmented by its own breathing-room clear ring, indistinguishable from the rain tails and city silhouette around it. The middle third of the composition is overwhelmingly black negative space; the CENTER is the emptiest region, which is the opposite of a focal point leading the eye. So the three motifs don't cohere into one composition — they read as three separate sparse layers over black rather than "CITY + CORE + STREAM woven together."
+
+Measured against the density bar this piece is explicitly aiming at:
+- STYLE.md ambition tier: "dense color-cycling," "high per-character intentionality — every cell should feel chosen, not randomly filled." The middle here is mostly empty cells.
+- STREAM (pack02, the dense benchmark) and real ACiD group intros (e.g. acdu0193/ACID93.ANS, pulled as reference) are full-bleed and saturated. A capstone — the piece that represents the whole body of work — should be at or above that density, not below it.
+
+THE FIX (concrete, this is very salvageable):
+1. Make CORE actually read as an orb: enlarge/brighten the white-hot core, and either drop the aggressive breathing-room clear ring or shrink its annulus so the circle stays coherent instead of fragmenting into scattered blocks. Right now the clear ring destroys the shape it's meant to isolate.
+2. Fill the middle with a present field — bring back more of the dense color-cycling wash STREAM established (the v3.1 "very sparse dim stars over black" went too far). The three motifs need something saturated to cohere OVER, not black. Negative space is a valid device, but only when there's a strong surrounding field for the hero to pop against; here there's almost nothing to pop against.
+3. Re-check focal hierarchy after 1+2: wordmark (top) -> orb (center, dominant) -> city (base), with rain receding behind — that's the composition the note describes; make the render match it.
+
+Resubmit when the center actually reads as a glowing reactor and the middle isn't mostly black. Everything else is good enough to keep.

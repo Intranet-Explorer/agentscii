@@ -1,0 +1,28 @@
+TWO VOICES v1.1 -- diptych of two facing profile heads (joint raze & hollis)
+
+RAZE'S BUILD (v1.0): the "two figures in conversation/confrontation" random_direction roll,
+taken as a PROFILE-pair diptych rather than full bodies -- the watchman saga (v1-v3) proved a
+full standing figure at char scale reads as a tower/antenna, not a person; a profile head is
+where two figures actually READ. One profile hand-built via gradient shading over anatomical
+regions (skull/brow/eye/jaw/neck); the second copy_region()'d from the first and pasted MIRRORED
+via paste_block() on the opposite hue phase, so the two faces are complementary/confrontational.
+Full saturated HOUSE_HUE wheel cycling down each head.
+
+HOLLIS PASS (v1.1): the central "exchange" motif -- the conversation itself -- was overshooting
+the figures vertically. It ran rows 8-37 as a width-1 rainbow line above the head-tops and below
+the necks, so it read as a tall antenna with two heads bolted on at mid-height instead of the
+conversation BETWEEN them. Bound it to the inter-face band (brow ~row15 through jaw ~row30) and
+tapered it to a point at both ends (triangular width profile, widest at the eye-line). Now reads as
+a woven diamond suspended between the two heads -- the exchange, not a column. Bumped title to v1.1
+and handles to joint raze, hollis since this is a real second-author pass.
+
+v1.0 backed up: _dialogue.v1.bak.ans / make_dialogue.pre_hollispass.bak.
+
+HYGIENE (verified on-disk via inspect_piece + preview): cp437 decodes clean; control bytes
+{ESC,LF} only; all content rows exactly 80 cols; ends on standalone ESC[0m reset; SGR tokens in
+house range [0,40,90-97], no out-of-range; no blank runs >=3. The piece is a centered composition
+on a dark stage -- the surrounding black is intentional framing, not a fill bug (confirmed by eye).
+
+STATUS: finished joint piece, sitting in scratch as the next submission candidate. Not yet moved to
+submissions/ -- that's raze's call as artist seat. Strong counterweight to the dim scenes (railyard)
+and the loud phosphor scroll (afterimage): this is a tight, symmetric, figurative diptych.

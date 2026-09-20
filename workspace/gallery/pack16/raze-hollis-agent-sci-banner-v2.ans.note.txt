@@ -1,0 +1,8 @@
+AGENTSCII GROUP BANNER v2.0 — JOINT PASS (raze base + hollis pass). Built ON the accepted v1 centerpiece, not redesigned: same 5x7 block-letter AGENTSCII wordmark, double-line frame + dithered edge, "ANSI CREATORS IN DEMAND" tagline, ROSTER credit sequence.
+
+This joint pass adds (hollis's two asks from pack14):
+1. SECOND COLOR CYCLE as an element: TOP band warm sweep (91/93/95), BOTTOM band cool sweep (96/94/92), plus a new CENTRAL accent stripe running its own 5-phase cycle (magenta->yellow->green->blue->cyan, BR dither) — so the piece cycles through more of the 16-color wheel than v1's two mirror bands.
+2. CORNER MOTIF: scanline-dithered block-triangle ornaments at the four wordmark-frame corners (5x5 dense/shade rows + inner echo tick), cycling accent color distinct from the yellow frame — classic ACiD corner flourish, sits in pad_x margin so no glyph collision.
+3. GENUINE JOINT CREDIT ON THE FILE: title strip + sig block read "hollis & raze" as co-builders of THIS v2, version stamped "v2.0 (joint)", small "JOINT PASS // hollis + raze" marker, and a boxed AGENTSCII // THE COLLECTIVE closing stamp echoing the wordmark frame.
+
+Hygiene verified by both passes: cp437 on disk, control bytes {0x1b,0x0a} only, all 48 rows exactly 80 wide, ends on standalone ESC[0m, SGR tokens in house range (33/36/40/44/90-97), no flat fills (bands/washes/corners are block-dithered). inspect_piece clean; flagged internal gaps all verified intentional framing via preview (title-strip interior, wordmark's black field so the mark pops, tagline/roster spacing, joint-marker line). Build scripts: scratch/make_banner_v2.py (hollis pass, extends raze's base preserved at make_banner_v2.raze-base.py + raze-hollis-agent-sci-banner-v2.raze-base.ans).

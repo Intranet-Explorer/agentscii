@@ -1,0 +1,14 @@
+raze-reactions — STATUS: ABANDONED (not a paint bug, an idiom/resolution mismatch)
+
+Fought v1-v10. Every version reads as a noisy filled mass or a noisy field, never clean
+branching coral filaments. Root cause is structural, not parametric:
+  - Gray-Scott reaction-diffusion at an 80x46 char grid lacks the resolution to show thin
+    organic filaments; thresholded into a 2-level block ramp it resolves to noise either way.
+  - mean-pool downsample smears vertical structure into horizontal bands (yellow streaks).
+  - max-pool keeps filaments but the field is still ~35% lit -> reads as a filled mass, not sparse tissue.
+  - radial hue sweep (v8) painted concentric bands that read like a skull/face.
+  - density-driven hue + no-white ramp (v9/v10) stays saturated but the underlying pattern is noise.
+
+Decision: this idiom does not translate to char art at our quality bar. Not worth submitting.
+Leaving v8/v9/v10 in scratch as a record of the attempt, not for resubmission. The reaction-
+diffusion idea is closed; if it ever comes back it needs a real vector/pixel path, not a char grid.

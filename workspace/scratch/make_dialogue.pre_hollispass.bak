@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+# make_dialogue.py -- AGENTSCII "TWO VOICES" diptych (raze)
+#
+# random_direction roll: subject "two figures in conversation or confrontation",
+# technique "use canvas.py's line()+copy_region()/paste_block() to hand-place
+# repeated motifs", palette lean "full saturated 16-color cycling".
+#
+# DESIGN DECISION (why profiles, not full bodies): the watchman saga (v1-v3) proved
+# a full standing figure at char scale reads as a vertical tower/antenna, not a person.
+# A PROFILE head is where two figures actually READ -- back of skull, brow overhang,
+# nose protrusion, jaw, one constructed eye looking toward the other. Two profiles facing
+# each other across a central gap = conversation/confrontation at a legible scale. New
+# territory: the house has ONE single PORTRAIT bust (pack01); two FACING profiles in
+# dialogue is untried and legible.
+#
+# TECHNIQUE HONESTY: one profile is hand-built via gradient shading over anatomical
+# regions (skull/brow/eye/jaw/neck). The SECOND figure is NOT re-derived -- it's
+# copy_region()'d from the first and pasted MIRRORED via paste_block(), exactly the
+# roll's "hand-place repeated motifs" move. The central gap between them holds a cycling
+# "exchange" motif (the conversation itself), full saturated HOUSE_HUE wheel, opposite
+# phase per side so the two faces read as complementary/confrontational.
+
+import sys, math
+sys.path.insert(0, 'scratch')
+import canvas as C
+
+W = 80
+H = 52                        # content rows; frame + title + sig added by write_ans
+
+RAMP = "\u2588\u2593\u2592\u2591"
+WHEEL = C.HOUSE_HUE           # [95,91,93,92,96,94,107,103] all bright/saturated
+
+def light_field(x, y, lx, ly, lmax=24.0, ambient=0.12):
+    d = math.hypot(x-lx, y-ly) / lmax
+    return max(ambient, min(1.0, 1.0 - d))
+
+def density(L):
+    """Light 0..1 -> block-density glyph ONLY (3D shading lives in the glyph)."""
+    L = max(0.0, min(1.0, L))
+    idx = int(L * (len(RAMP)-1) + 0.5) % len(RAMP)
+    return RAMP[idx]
+
+def shade_region(cv, region_fn, Lfn, fgfn):
+    """Paint region with density from light Lfn and COLOR from fgfn(x,y). Separating
+    the two is what gives saturated cycling faces: glyph carries the 3D form, color
+    cycles down the head on the full wheel."""
+    for y in range(cv.h):
+        for x in range(cv.w):
+            if region_fn(x, y):
+                ch = density(Lfn(x, y))
+                cv.set(x, y, ch, fgfn(x, y), 0)
+
+# ---------------------------------------------------------------- profile builder
+def eye(cv, cx, cy, r=1.3, iris_fg=96, glint=True):
+    for y in range(int(cy-r-1), int(cy+r+2)):
+        for x in range(int(cx-r-1), int(cx+r+2)):
+            d = math.hypot(x-cx, y-cy)
+            if r < d <= r+1.0:
+                cv.set(x, y, "\u2591", 8, 0)         # shadowed socket wall
+    rr = int(round(r))
+    for y in range(int(cy)-rr, int(cy)+rr+1):
+        for x in range(int(cx)-rr, int(cx)+rr+1):
+            if math.hypot(x-cx, y-cy) <= r:
+                cv.set(x, y, "\u2588", 15, 0)        # light sclera
+    for y in range(int(cy-r*0.6), int(cy+r*0.6+1)):
+        for x in range(int(cx-r*0.6), int(cx+r*0.6+1)):
+            if math.hypot(x-cx, y-cy) <= r*0.6:
+                cv.set(x, y, "\u2588", iris_fg, 0)   # colored iris
+    if glint:
+        cv.set(int(cx-r*0.4), int(cy-r*0.4), "\u2588", 15, 0)    # catch-light
+
+def build_profile(cv, cx, cy, facing, hue_phase):
+    """Hand-build a right-facing (facing=+1) or left-facing (-1) PROFILE head near
+    (cx,cy). Density = light from above-OUTER (inner side falls into shadow so the
+    central gap reads as a dark chasm). Color = full saturated wheel cycling DOWN the
+    head, offset by hue_phase so the two faces are complementary."""
+    f = facing
+    rx, ry = 7.0, 9.0                        # skull radii (taller for a real head)
+
+    def hw(y):
+        t = (y - cy) / ry
+        if abs(t) > 1.0: return None
+        return rx * math.sqrt(1.0 - t*t)
+
+    lx = cx - f*6.5                         # outer-top light source
+    ly = cy - 9.0
+    def L(x, y):
+        return light_field(x, y, lx, ly, lmax=14.0, ambient=0.12)
+
+    # color cycles down the head on the full wheel; phase offset per figure
+    def fgfn(x, y):
+        return WHEEL[int((y*0.7 + hue_phase)) % len(WHEEL)]
+
+    # PROFILE SILHOUETTE: rounded BACK of skull + flattened forehead + pronounced
+    # nose bump + chin notch on the FRONT edge. This is what makes it read as a face
+    # in profile rather than an egg -- the front edge is NOT smooth.
+    ny = cy + 2.0            # nose tip row
+    chin_y = cy + ry*0.75
+    def front_edge(y):
+        """Front (facing-side) x of the silhouette at row y, with a nose bump and
+        a chin notch carved into an otherwise rounded profile."""
+        t = (y - cy)/ry
+        base = cx + f*(rx*math.sqrt(max(0.0,1.0-t*t)) if abs(t)<=1.0 else rx*0.35)
+        # nose bump: a gaussian protrusion peaking at ny
+        nb = 2.6*math.exp(-((y-ny)/1.7)**2)
+        edge = base + f*nb
+        # chin notch: pull the front edge back just below the nose (mouth gap)
+        if ny+1 < y < chin_y:
+            edge = base - f*0.8
+        return edge
+    def skull(x, y):
+        t = (y - cy)/ry
+        if abs(t) > 1.0: return False
+        hback = rx*math.sqrt(1.0-t*t)          # rounded back half-width
+        fe = front_edge(y)
+        lo = cx - hback                         # back edge (rounded)
+        hi = fe                                 # front edge (profiled)
+        return min(lo,fe) <= x <= max(lo,fe)
+    shade_region(cv, skull, L, fgfn)
+
+    # brow ridge overhang on the front of the skull (a lit band above the socket)
+    brow_cy = cy - 1.0
+    for y in range(int(brow_cy-1), int(brow_cy+2)):
+        fe = front_edge(y)
+        x0 = cx + f*(rx*0.10); x1 = fe
+        for x in range(int(min(x0,x1)), int(max(x0,x1))+1):
+            Lb = L(x,y) * (1.0 if y <= brow_cy else 0.62)
+            cv.set(x, y, density(Lb), fgfn(x,y), 0)
+
+    # eye socket: dark recess on the front of the skull
+    ex = cx + f*3.4; ey = cy - 1.0
+    for y in range(int(ey-1.5), int(ey+1.6)):
+        for x in range(int(ex-1.7), int(ex+1.8)):
+            if math.hypot(x-ex, y-ey) <= 1.5:
+                cv.set(x, y, "\u2591", 8, 0)
+
+    # the constructed eye, looking toward center (toward the other figure)
+    eye(cv, int(ex), int(ey), r=1.3, iris_fg=WHEEL[(int(hue_phase)+4)%len(WHEEL)], glint=True)
+
+    # nose tip highlight: a bright catch on the protruding nose crest
+    for y in range(int(ny-1), int(ny+2)):
+        fe = front_edge(y)
+        cv.set(int(fe), y, "\u2588", 15, 0)
+
+    # chin: a small lit nub below the mouth gap
+    for y in range(int(chin_y), int(cy+ry+1)):
+        t = (y - cy)/ry
+        hback = rx*math.sqrt(max(0.0,1.0-t*t)) if abs(t)<=1.0 else rx*0.35
+        x0 = cx + f*(hback*0.20); x1 = cx + f*(hback*0.70)
+        for x in range(int(min(x0,x1)), int(max(x0,x1))+1):
+            Lj = L(x,y)*0.82
+            cv.set(x, y, density(Lj), fgfn(x,y), 0)
+
+    
+    # neck: a shaded column below the head
+    ny0 = int(cy+ry+0.5)
+    for y in range(ny0, ny0+6):
+        t = (y - ny0)/6.0
+        hwk = 2.4 - 0.6*t
+        for x in range(int(cx-hwk), int(cx+hwk)+1):
+            Ln = L(x,y)*0.7
+            cv.set(x, y, density(Ln), fgfn(x,y), 0)
+
+# ---------------------------------------------------------------- compose diptych
+def main():
+    cv = C.Canvas(W, H)
+    for y in range(H):
+        for x in range(W):
+            cv.set(x, y, "\u2591", 8, 0)           # dark stage
+
+    cy = 22
+    left_cx   = 23       # faces RIGHT (+1) toward center
+    right_cx = 57       # faces LEFT (-1) toward center
+
+    build_profile(cv, left_cx, cy, +1, hue_phase=0.0)
+
+    # copy the left figure's region and paste it MIRRORED for the right figure --
+    # the roll's "hand-place repeated motifs" move, not a re-derivation. The mirror
+    # flips the glyph AND we offset its color phase so the two are complementary.
+    x0, x1 = 6, 42
+    block = C.copy_region(cv, x0, 6, x1, 38)
+    mblock = [row[::-1] for row in block]
+    # recolor the mirrored copy on the opposite phase of the wheel
+    off = len(WHEEL)//2
+    for row in mblock:
+        for cell in row:
+            if isinstance(cell[1], int):
+                cell[1] = WHEEL[(WHEEL.index(cell[1]) + off) % len(WHEEL)] if cell[1] in WHEEL else cell[1]
+    C.paste_block(cv, mblock, (W-1-x1), 6, transparent_ch=None)
+
+    # central "exchange" motif: a vertical column of cycling glyphs between the two
+    # faces -- the conversation itself. Full saturated wheel, fast cycle down the
+    # column; a woven diamond that's widest at the eye-line.
+    cxm = W//2
+    for y in range(8, 38):
+        fg = WHEEL[int(y*0.9) % len(WHEEL)]
+        t = abs(y - (cy-1)) / max(1,(cy-1-8+1))
+        width = max(1, int(3.0*(1.0 - t*t)))
+        for dx in range(-width, width+1):
+            x = cxm + dx
+            ch = "\u2588" if (y+dx) % 2 == 0 else "\u2593"
+            cv.set(x, y, ch, fg, 0)
+
+    out = []
+    cv.render(out)
+    C.write_ans('scratch/_dialogue.ans', out, title='TWO VOICES v1.0', handles='raze')
+    print("wrote scratch/_dialogue.ans")
+
+if __name__ == '__main__':
+    main()

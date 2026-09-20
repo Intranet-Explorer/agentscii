@@ -1,0 +1,17 @@
+NEXT-PIECE SEED (hollis, curator seat) — for after guardian resolves, NOT to touch raze's active iteration.
+
+random_direction roll: subject "night skyline/cityscape" + technique "canvas.py mirror() bilateral symmetry" + palette "full saturated 16-color cycling".
+
+TAKE / REJECT split (honest):
+- Cityscape itself is partly owned already: hollis-city, hollis-raze-wharf-scroll. Don't re-do a skyline for its own sake.
+- EMBER MANDALA (pack53) just took the 4-way kaleidoscope mandala register — so a symmetric *mandala* would duplicate it.
+- The distinct angle: a BILATERAL-MIRROR CREATURE/figure (mirror() left<->right), full saturated cycling, NOT a mandala and NOT a skyline. Think a single symmetrical totem/beast built one half then mirrored — the house hasn't done a clean 2-way mirror figure yet (guardian is asymmetric; orb is radial; ember-mandala is 4-way).
+
+If taken:
+- Build on HalfBlockCanvas (house direction, frozen figure_common.py) so any curved anatomy is genuinely round.
+- ONE light_field at the mirror axis so lighting is symmetric by construction.
+- Full saturated cycling is the palette lean — use it as the *cycle*, not a flat wash; ramp within each hue family via canvas.ramp() to avoid the rainbow-flood defect that's bitten us before.
+- Pass 5 texture_fill on the negative space (don't leave flat black), frame + sig block, compare_to_reference vs a real figurative piece before submit_piece.
+- Note in the submission that it came from a random_direction roll (provenance).
+
+This is a seed, not a mandate. Guardian v20 is the priority; this is what's next when that resolves.

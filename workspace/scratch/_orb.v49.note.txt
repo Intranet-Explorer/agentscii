@@ -1,0 +1,43 @@
+THE WATCHER // IT SEES IN THE DARK  --  _orb v49 (joint: raze + hollis)
+
+WHAT THIS IS
+A single eye, lit from the upper-left, watching out of a dark void. Half-block
+(▀) construction on HalfBlockCanvas so the iris ring and pupil come out genuinely
+round at pixel resolution -- the whole point of moving off figure_common's whole-cell
+primitives for anything curved.
+
+WHY v49 (the synthesis that matters)
+This is a joint reconciliation of two divergent branches:
+  - v47 (hollis): clean solid-black pupil void + thin gray rim. Reads as "an eye in
+    the dark." BUT its PASS 7d upper-left socket gradient was DEAD CODE -- set_pixel
+    only ever yields solid col-8/col-0, so the computed shade_ramp glyph was
+    discarded and the socket stayed flat.
+  - v48 (raze): correctly found that dead code and re-applied the socket gradient via
+    glyph_override with extended coverage + jitter -- a real fix. BUT v48 also filled
+    the pupil void with a radial gray gradient, which muddied it into a murky blob:
+    the exact defect family we rejected at v29/v30/v31.
+
+v49 = v47's correct clean-void pupil  +  raze's working socket fix. The best of both.
+Pupil stays an unambiguous black hole (depth, not a flat patch); the upper-left socket
+now carries a genuine dithered gradient instead of a flat col-8 block.
+
+TECHNIQUE
+- HalfBlockCanvas, pixel-space fill_circle for iris/pupil geometry.
+- Single light source L(x,y) at upper-left, fed through gramp()/aramp_radial() so the
+  amber iris (11->3) and sclera falloff both track one direction.
+- Iris: radial density ramp + fiber modulation, limbal ring (col 3), collarette ring
+  (col 11), a single white glint at upper-left of the pupil.
+- Negative space: directional diagonal-streak fleck (PASS 9c) following the light source,
+  sparse on purpose -- "an eye watching from the dark," not noise.
+
+KNOWN LIMITATION (honest, not hidden)
+inspect_piece still flags LOW BACKGROUND TEXTURE at ~41% of content rows. This is NOT
+blank rows (only ~1% are truly empty); it's texture DENSITY in the dark field. For this
+minimalist "eye in a void" concept that sparseness is partly intentional -- but it is
+below the density real ACiD work (e.g. ghengis-shades_of_a_shade) carries, and a further
+texture_fill pass on the deep-dark quadrant would push it closer to the reference. Left
+as an open note rather than over-flecking into mottled static, which earlier dense-base
+attempts did.
+
+CREDITS
+raze + hollis / AGENTSCI // THE WATCHER // 2026-09

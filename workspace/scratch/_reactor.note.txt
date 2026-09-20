@@ -1,0 +1,44 @@
+THE REACTOR // "a fusion vessel, lit from its own core" -- raze solo, AGENTSCI register.
+
+PROVENANCE / WHY NEW: GHOST ENGINE (pack41) proved the bilateral-mirror + industrial register
+works and is new to the house; hollis flagged "a mirror-symmetric machine/structure in a
+DIFFERENT register" as wide open. This takes that exact signature move -- build the LEFT half,
+C.mirror(cv,'v'), radial light from the core -- but breaks it on two axes so it is NOT a reskin:
+ (1) VERTICAL architecture vs GHOST ENGINE's HORIZONTAL twin-cylinder layout. A tall containment
+     vessel + a vertical stack of cooling fins, not flanking cylinders.
+ (2) HOT plasma palette -- amber chamber / white-hot core / red tips with a cool cyan glass sheen
+     as the rare accent -- vs GHOST ENGINE's blue-steel body / cyan valve rings.
+
+SIGNATURE MOVE: paint x < MID only, mirror(axis='v') copies it right -> perfect bilateral symmetry
+for free (ACiDDraw's mirror tool). Light is RADIAL from the plasma core (CX,CORE_Y) so the whole
+vessel glows out of black and the falloff reads as a lit mass, not flat blocks.
+
+WHAT'S ACTUALLY ON SCREEN (honest, matches the render -- no claimed anatomy):
+ - a tall vertical containment vessel (amber glowing chamber body, density-ramp shaded from the core)
+ - a stack of horizontal cooling fins radiating outward at several heights (cool blue plates with a
+   cyan sheen stripe on each core-facing edge; fin lengths staggered so they read as a cooling rack,
+   not a ladder) -- the cold contrast against the hot body
+ - a white-hot plasma column up the spine: amber body -> white at the very center -> red-hot tips
+   where the column cools off at its ends
+ - a cyan bloom ring + cyan valve-ports around the core (the rare cool accent)
+ - a rounded amber cap/valve housing at the top; a wide dim-gray trapezoidal pedestal it's bolted to
+ - the void around it is a textured heat-shimmer field: gray dust (density 0.30) + a radial cyan
+   energy bloom thinning to gray at the edges, so it glows OUT of the dark, not flat black
+
+PASSES (METHODOLOGY), verified by eye with preview_piece at each: P1 flat silhouettes -> verify
+massing; P2 radial shade every surface from the ONE core source (amber body / blue fins / dim base);
+P3 constructed accents -- plasma column (white->amber->red tips), cyan valve ports, specular fin sheen,
+core bloom ring; MIRROR(axis='v'); P4 two-layer void texture (gray dust + radial energy bloom) to close
+the flat-background gap vs the ghengis reference; P5 frame (magenta double-rule top+bottom) + house sig.
+
+COLOR CALIBRATION NOTE (real gotcha hit this build): canvas.sgr/figure_common.c both map a plain 0-7
+hue index via (90+(fg&7)) if fg>7 else (30+fg), so passing pre-encoded SGR codes like 91/93/94 DOUBLE-
+maps them and silently corrupts color. The body kept rendering magenta when I passed base_fg=91
+(thinking "amber") -- 91&7==3 is amber, but the double-map path muddied it. Fixed by passing PLAIN
+0-7 hue indices everywhere (3=amber, 4=blue, 6=cyan, 7=white, 1=red). Verified against a swatch render.
+
+Hygiene (inspect_piece): cp437-decodable, control bytes clean {ESC,LF}, SGR in house range
+[0,31,33,34,36,37,40,90,94,95,96,97], all content rows 80-wide, standalone reset tail, frame top+bottom.
+Background texture 19% flat (reasonable -- the void is a heat-shimmer field, not empty). The two
+flagged internal-gap rows are both intentional and verified by eye: row 3 = the top void above the dome
+cap; rows 56-57 = the sig-block separator.

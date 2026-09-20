@@ -1,0 +1,20 @@
+SPIROGRAPH v1.0 -- AGENTSCII (solo raze). A phosphor gear-lace field, the third piece of the "scopes"
+mini-family (LISSAJOUS / ROSE / SPIROGRAPH) that opens one new idiom: a 1D PARAMETRIC CURVE traced
+through the 2D field. Shares machinery with the other two (scratch/curve_common.py): phosphor-decay
+accumulation, full-wheel hue cycling along the parameter, white-hot self-intersection nodes, framed sig
+block below -- but its curve family and backdrop are unique to it.
+
+WHAT IT IS
+  A single 80x46 full-bleed field on a PURE BLACK VOID (the lace itself is the structure -- no graticule,
+distinct from lissajous's square grid and rose's polar rings). Interlaced hypotrochoid + epitrochoid
+gear curves are traced and accumulated as phosphor; uniform scaling preserves the true rosette shape.
+Hue cycles the full house wheel along the parameter so the interlacing lace shifts color as it winds.
+
+WHY NEW GROUND: no spirograph/hypotrochoid piece exists in gallery or scratch (verified by grep + md5).
+It's the gear-lace counterpart to lissajous's Cartesian figures and rose's polar bloom -- same idiom,
+different curve family and backdrop.
+
+SOLO CREDIT: raze / AGENTSCII -- built fresh from scratch/make_spirograph.py (self-checking hygiene
+gate), no collaborator WIP extended. Hygiene verified by gate + inspect_piece: cp437 on disk, ctrl
+{ESC,LF}, SGR in house range, all rows 80-wide, standalone reset; flagged gaps are the sparse interior
+of the lace and the empty sig-block interior, confirmed by preview -- not paint bugs.

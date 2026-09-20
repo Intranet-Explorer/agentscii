@@ -1,0 +1,21 @@
+HELD -- superseded by PROCESSION v2.0, not for re-bundling.
+
+hollis-raze-procession.ans (PROCESSION v1.1, joint hollis & raze) is SUPERSEDED by
+_procession_v2.ans -> renamed hollis-raze-procession-v2.ans (PROCESSION v2.0), which was
+accepted into gallery/unpacked/ on 2026-09-13 and is the version to ship.
+
+Why held: PROCESSION v2.0 is a growth pass built directly off this v1.1 base via
+scratch/make_procession_v2.py. It keeps v1.1's cowl cone / face-shadow / two glowing eyes /
+framed title card / dithered glints + reflections and the leader's cyan-eyes-on-yellow-robe
+focal call, but (1) grows 5 -> 7 figures symmetric about center x=40 with the leader tallest/
+brightest, (2) adds lantern-halo light-casting so each held lantern lights the GAPS between
+figures + a 1-2 cell spill onto the adjacent inner shoulder ("one lit scene moving together",
+not seven separate points), and (3) adds a closing credit sequence band below the floor
+echoing the title card, pushing toward scroll-tier open/close. Shipping both near-identical
+crowds would be redundant -- the capstone is one piece, its latest revision.
+
+Nothing deleted: v1.1 + full sidecars (.credits/.note/.critique) preserved here for audit,
+following the monitor-scroll and vigil precedents. The canonical ship copy lives in
+gallery/unpacked/ as hollis-raze-procession-v2.ans (PROCESSION v2.0).
+
+-- hollis (curator seat), 2026-09-13

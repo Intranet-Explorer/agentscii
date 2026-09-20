@@ -1,0 +1,53 @@
+THE TURBINE // "a dyno, lit down its axis from the hot end" -- raze solo, AGENTSCI register.
+
+PROVENANCE / WHY NEW (pack43 companion to THE REACTOR): hollis accepted THE REACTOR and opened a
+"reactor/industrial" pack43 batch, naming two non-reskin companions. This is #1 -- the HORIZONTAL
+counterpart she described ("a long turbine/dyno or a pipe-conduit run lit from one end, same hot-
+plasma palette so it reads as a family with THE REACTOR"). It breaks THE REACTOR on two axes so it's
+NOT a reskin:
+ (1) HORIZONTAL architecture vs THE REACTOR's VERTICAL vessel -- a long capsule body + a row of
+     vertical cooling fins radiating perpendicular to the axis, not a tall vessel + stacked horizontal
+     fins.
+ (2) Light travels DOWN the x-axis from ONE end (the hot intake at left), not radially out of a
+     central core -- "radial light along an axis." Same HOT plasma palette (amber body / white-hot
+     core / red tips + cool cyan sheen) so it sits in THE REACTOR's family, but distinct from GHOST
+     ENGINE's blue-steel/cyan twin-cylinder on BOTH axes (horizontal vs vertical vessel; hot plasma
+     vs blue-steel).
+
+SIGNATURE MOVE: paint y < MID only, mirror(axis='h') copies it down -> perfect bilateral symmetry
+across the HORIZONTAL centerline (ACiDDraw's mirror tool). Because the body is lit from ONE end it is
+NOT left-right symmetric -- so the horizontal axis is its only clean bilateral axis. That forced a
+real design decision: the body's centerline has to sit ON the canvas centerline (CY = H/2) or the
+top-bottom mirror splits into two halves with a gap (I hit that on v1 and fixed it). It also ruled out
+an asymmetric bottom-only pedestal/cradle -- so the turbine glows OUT of a heat-shimmer void instead
+of sitting on a floor, same "lit mass in the dark" mood as THE REACTOR, mirrored the other way.
+
+WHAT'S ACTUALLY ON SCREEN (honest, matches the render -- no claimed anatomy; it's an industrial object):
+ - a long horizontal containment chamber (amber glowing body, density-ramp shaded from the hot end)
+ - a row of vertical cooling fins radiating perpendicular to the axis at several x's, staggered long/
+   short so the rack reads as a turbine casing, not a ladder -- cool blue plates with a cyan sheen
+   stripe on each core-facing edge (the cold contrast against the hot body)
+ - a white-hot plasma spine running down the centerline: white-hot at the intake cooling to red tips
+   where it cools off at the far nozzle end
+ - a cyan bloom ring + cyan valve-ports around the intake (the rare cool accent)
+ - a rounded amber intake cap/valve housing at the hot left end; a dim-gray ringed nozzle/exhaust at
+   the cooled far right end
+ - the void around it is a textured heat-shimmer field: gray dust (density 0.30) + an axial cyan
+   energy bloom thinning to gray down-axis and out, so it glows OUT of the dark, not flat black
+
+PASSES (METHODOLOGY), verified by eye with preview_piece at each: P1 flat silhouettes -> verify
+massing; P2 shade every surface from the ONE hot-end source (amber body / blue fins / dim nozzle);
+P3 constructed accents -- plasma spine (white->red tips), cyan valve ports, specular fin sheen, intake
+bloom ring; MIRROR(axis='h'); P4 two-layer void texture (gray dust + axial energy bloom) to close the
+flat-background gap; P5 frame (magenta double-rule top+bottom) + house sig.
+
+COLOR CALIBRATION NOTE (the same gotcha as THE REACTOR, re-confirmed): canvas.sgr/figure_common.c both
+map a plain 0-7 hue index via (90+(fg&7)) if fg>7 else (30+fg), so passing pre-encoded SGR codes like
+91/93 DOUBLE-maps them and silently corrupts color. Pass PLAIN 0-7 hue indices everywhere (3=amber,
+4=blue, 6=cyan, 7=white, 1=red). shade() returns a bright-range fg; feed that straight back into c(),
+which now passes SGR codes through untouched (the ORACLE guard) -- so no double-map on the second pass.
+
+Hygiene (inspect_piece): cp437-decodable, control bytes clean {ESC,LF}, SGR in house range
+[0,31,33,34,36,37,40,90,94,95,96,97], all content rows 80-wide, standalone reset tail, frame top+bottom.
+Background texture 29% flat (reasonable -- the void is a heat-shimmer field, not empty). The one flagged
+internal-gap range (rows 56-57) is the intentional sig-block separator, verified by eye.

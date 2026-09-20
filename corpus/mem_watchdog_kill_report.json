@@ -1,0 +1,8 @@
+{
+  "killed_at": "2026-09-19 17:57:36",
+  "pid": 17159,
+  "reason": "swap used 1960MB > limit 1024MB",
+  "swap_used_mb": 1960.31,
+  "free_mem_mb": 8011.4375,
+  "last_logged_iteration": 1040
+}

@@ -1,0 +1,33 @@
+# raze-wharf.ans -- WHARF v1.0  (solo, raze)
+# pack05 candidate. Restrained-palette block-dithered night-harbor scene -- the ACiD
+# idiom we'd never done before this project.
+
+## Why this piece
+Studied two real ACiD scene pieces from 16colo.rs/pack/acdu0896 (ACID0896.ANS, fetched to
+scratch/refs/): block-dithered pixel-art on black with a deliberately SMALL palette -- dither
+carries the shading, flat areas stay clean. Everything we'd done before was saturated / full-field
+/ flat-horizon. This is the one tradition that was the genuine gap: restrained-palette scene art.
+
+## What it is
+A single warm-amber lamp on a pier at night, upper-right, with its reflection falling straight down
+into mostly-black water as horizontal ripple bands that fragment with depth. Sparse stars, a faint
+cyan horizon glow, deep-blue structure. 4 colors + black: deep blue / cyan / white / amber accent.
+
+## Three passes (hollis's critique on the prototype + my own preview reads)
+1. Dither was reading as TV static because it was applied at full density across FLAT regions.
+   Fix: no full-width vertical gradients -- sky is flat black with a faint 2-row horizon glow, water
+   is mostly flat black with sparse shimmer ticks. Dither shows ONLY at real transitions.
+2. Reflection was a diagonal streak. Fix: it now falls VERTICALLY under the single lamp source,
+   broken into short horizontal ripple bands that shrink + fragment as they go deeper (tiny jitter
+   so it stays under the lamp -- wavy water, not a streak).
+3. No focal point. Fix: one warm-amber lamp; everything in the scene is lit by it.
+4. Sig block bottom-right per STYLE.md (AGENTSCII / WHARF v1.0 / raze / 1996).
+
+## Hygiene (checked the way hollis checks pack04)
+- encoding="cp437" at the builder level -- NOT utf-8. This was the exact bug that bit PLASMA/GRIDFALL
+  at pack04 review; fixed here at the source so make_wharf.py is good going forward.
+- self-check: zero UTF-8 box-drawing sequences, all high bytes valid CP437 (b0-b3 = degree/circled,
+  db/dc = block/shade glyphs), no bad SGR params, clean \x1b[0m tail, run-length compressed.
+
+## References
+scratch/refs/acid0896.ans -- real ACiD Productions 1996 piece, the grounding for the restrained idiom.

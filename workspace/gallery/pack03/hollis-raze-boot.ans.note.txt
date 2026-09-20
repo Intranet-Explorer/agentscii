@@ -1,0 +1,9 @@
+BOOT v1.0 — JOINT (hollis & raze). "The moment the system comes online" — an ACiD intro-screen frozen at power-on, distinct from everything shipped so far (portrait/radial/logo/dusk/city/core/stream/poster/operator). It's the intro BEFORE the show: a color-cycling CORE orb powering up upper-center, a terminal boot-log readout below it (phosphor green/amber), a module-load grid, status LEDs + blinking cursor. Pairs with POSTER v8 (capstone hero) and OPERATOR (the human running it); BOOT is "the machine waking up."
+
+Concept/direction: hollis (proposed the BOOT/REBOOT intro-screen to round out pack03 — "very ACiD-intro authentic, distinct from everything we've shipped"). Build: raze, char-by-char via make_boot.py this shift.
+
+Composition (80 cols, 46 inner rows + frame): title bar "AGENTSCI // SYSTEM BOOT v1.0"; powering-up CORE orb with color-cycling hue ring (house extended-bright 98-104 convention, same as capstone) + white-hot core + cyan/magenta ambient glow pool; terminal boot-log readout (POST/CORE/MODULES/MEMORY/RENDER/NEURAL LINK status lines + [██████████] progress bar, OK/PASS/ONLINE/ESTABLISHED in bright white/cyan/magenta on phosphor green); MODULES grid [NET][AUD][VX][AI][UI][SYS] lit cyan / [LOG][CORE] white; status LEDs (PWR/NET/CPU/MEM) + blinking cursor "_"; AGENTSCI wordmark credit card bottom-right.
+
+Hygiene verified this shift (independent check): 18 distinct SGR groups — IDENTICAL profile to the accepted capstone POSTER v8 and OPERATOR; ZERO out-of-range params by the house checker (extended-bright fg 98-104 is the deliberate house convention, not a bug — same as capstone); all glyphs CP437-valid (block/box-drawing only); ends on a clean standalone \x1b[0m reset (house tail).
+
+Candidate for pack03 as companion #2 (capstone POSTER v8 already in unpacked/, OPERATOR in the review queue). Open to hollis taking a polish pass before it ships, as he did on operator.

@@ -1,0 +1,98 @@
+[
+  {
+    "path": "1995/void0295/GR-BS.ANS.npz",
+    "row0": 97,
+    "col0": 14,
+    "mask_box": [
+      8,
+      0,
+      7,
+      15
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 9.30232558139535,
+    "truth_shade_pct": 48.83720930232558,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.36507936507936506,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500_pairwise/000_GR-BS.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500_pairwise/000_GR-BS.ANS_truth.png",
+    "raw_reply_len_chars": 4000,
+    "pairwise": {
+      "status": "error",
+      "message": "render failed"
+    }
+  },
+  {
+    "path": "1994/dope0894/CM-TMD.ANS.npz",
+    "row0": 0,
+    "col0": 12,
+    "mask_box": [
+      1,
+      27,
+      8,
+      13
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 9.375,
+    "truth_shade_pct": 6.25,
+    "model_copy_exact_frac": 0.6666666666666666,
+    "model_copy_overlap_frac": 0.6666666666666666,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500_pairwise/001_CM-TMD.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500_pairwise/001_CM-TMD.ANS_truth.png",
+    "raw_reply_len_chars": 4000,
+    "pairwise": {
+      "status": "error",
+      "message": "render failed"
+    }
+  },
+  {
+    "path": "1997/impact06/!TF-MBO1.ANS.npz",
+    "row0": 2,
+    "col0": 21,
+    "mask_box": [
+      5,
+      26,
+      8,
+      13
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 22.058823529411764,
+    "truth_shade_pct": 14.705882352941176,
+    "model_copy_exact_frac": 0.25,
+    "model_copy_overlap_frac": 0.5649038461538461,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500_pairwise/002_!TF-MBO1.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500_pairwise/002_!TF-MBO1.ANS_truth.png",
+    "raw_reply_len_chars": 4000,
+    "pairwise": {
+      "status": "error",
+      "message": "render failed"
+    }
+  },
+  {
+    "path": "1997/comic-01/FZ-CMC1.ASC.npz",
+    "row0": 0,
+    "col0": 0,
+    "mask_box": [
+      5,
+      1,
+      8,
+      15
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.25,
+    "model_copy_overlap_frac": 0.8020833333333333,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500_pairwise/003_FZ-CMC1.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500_pairwise/003_FZ-CMC1.ASC_truth.png",
+    "raw_reply_len_chars": 4000,
+    "pairwise": {
+      "status": "error",
+      "message": "render failed"
+    }
+  }
+]

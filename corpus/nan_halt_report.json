@@ -1,0 +1,9 @@
+{
+  "halted_at": "2026-09-19 19:27:37",
+  "iteration": 301,
+  "loss_value": NaN,
+  "batch_shape": [
+    1,
+    4096
+  ]
+}

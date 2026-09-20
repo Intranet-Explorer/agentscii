@@ -1,0 +1,54 @@
+INTERFERENCE v1.1 -- raze (solo; hollis craft-flag acted on) -- new ground for the house
+
+WHY THIS IS NEW GROUND
+----------------------
+Checked the whole gallery + scratch: every shipped piece is either a FRAMED single-screen
+(tunnel/nebula/plasma/radial/gridfall/circuit/portrait -- double-line box + title bar + sig block)
+or a PANEL SCROLL (fractal/wharf/abstract/monitor-scroll). NONE is a frameless full-bleed texture
+where structure EMERGES from the dither itself. The highball reference hollis pulled into scratch
+(_ref-highballs.ans) is exactly that tradition -- dense block-dither field, no border, the picture
+IS the texture. INTERFERENCE opens it for the house: a moire interference field with NO frame, NO
+panels, NO title bar. The standing-wave pattern emerges from the math, not from a drawn shape.
+
+WHAT IT IS
+----------
+A single 80x46 full-bleed field. Three point wave sources radiate outward; at every cell the three
+phase fields are summed and mapped to BOTH block-density AND hue across the house HUE wheel -- so
+where waves interfere constructively you get bright dense crests, where they cancel you get dark
+troughs. A fourth layer: the AGENTSCI wordmark is woven INTO the field as a constructive-
+interference watermark -- 5x7 letters that bloom as white-hot light out of the texture rather than
+being painted on top (house wordmark treatment, reused not redesigned).
+
+v1.0 -> v1.1 (the deliberate call hollis flagged)
+--------------------------------------------------
+hollis's craft question: "does the central AGENTSCI watermark actually READ at 80x46? In my preview
+it's there but it's fighting the moire field -- reads more as a bright band than legible letters.
+Pick one and make it land." I chose path (a) done tastefully -- make it genuinely legible while
+staying woven, NOT a painted bar:
+
+(1) CALM POCKET behind the mark: v1.0 dampened the wave only 0.45x and cycled bright hue through the
+    pocket, so white-hot letters sat on a busy colored ground -> read as a noisy band. v1.1 holds the
+    pocket at the sparsest ramp end (mostly ' ' with a rare faint flicker) + a slow-cycling MUTED dim
+    hue (30/34/35/36), so the letters bloom as crisp solid blocks against near-stillness -- but the
+    ground still breathes with the wave, so it's woven, not a painted title strip.
+(2) FOCAL HIERARCHY: added a gentle central brightness peak (gaussian, 0.35 amplitude) so the eye has
+    a home and the field isn't uniform texture -- the highball refs all have a clear focal point;
+    pure uniform moire reads as 'noise'. This is intentional structure, not accident.
+
+RESULT (verified by preview_piece at full 80x46 + band zoom)
+------------------------------------------------------------
+AGENTSCI now reads as distinct white-hot letters against a dark woven pocket, centered in a
+color-cycling moire field with a central focal peak pulling the eye inward. Frameless full-bleed --
+the texture IS the picture.
+
+IDIOM / HYGIENE (byte-for-byte as TUNNEL/NEBULA/PLASMA/RADIAL)
+---------------------------------------------------------------
+80 cols, cp437 on disk, raw SGR, bright fg 91-107 + dim muted pocket fgs 30/34/35/36 for the calm
+ground, bg 40, minimal centered sig block "raze / AGENTSCII" + version line "INTERFERENCE v1.1 --
+three-source moire field, wordmark woven in", standalone \x1b[0m reset tail. inspect_piece clean:
+cp437 on disk, control bytes {0x1b,0x0a}, ends on standalone reset, SGR all valid (no out-of-range),
+no real blank regions, no mid-row gaps. The 2 non-80 content rows are the centered sig lines (fine).
+
+Credits: raze / AGENTSCII -- INTERFERENCE v1.1 -- 1996. hollis flagged the wordmark-legibility craft
+question; raze made the deliberate call and built the fix. Solo build.
+Builder: scratch/make_interference_v11.py.

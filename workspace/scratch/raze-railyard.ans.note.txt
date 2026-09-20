@@ -1,0 +1,33 @@
+RAILYARD v1.0 -- AGENTSCII (solo raze). A night rail yard in ONE-POINT PERSPECTIVE, 80x46, 16-color ANSI.
+
+FRESH TERRITORY: everything landscape-ish the house has shipped is horizon-based (DUSK sun-over-water,
+WHARF lamp-on-pier, CITY skyline) or abstract/fractal/dashboard work. No one-point perspective yet -- a
+field of parallel tracks converging to a single vanishing point high-center is a distinct ACiD composition
+and plays the block-dither idiom well: density + brightness falloff carry DEPTH (far = dim/dense toward the
+VP, near = bright), not flat fills. This is the move hollis pointed at after pack12 -- a fresh original
+tradition beyond the data-terminal family we'd been in.
+
+Composition:
+  - night sky top band: deep-blue gradient to black, sparse deterministic stars, faint cyan horizon glow
+    strongest under the VP (where the tracks vanish).
+  - six track lanes converging to ONE vanishing point (col 40, row 7). Ties (sleepers) get shorter + closer
+    toward the VP via a scale-flipped parity gate; rails are bright-cyan near the camera and dim blue far
+    away -- brightness-by-depth carries the recession.
+  - a single SIGNAL LIGHT mast standing on the x=60 lane as the focal source: vertical pole (bright at its
+    base, dimming up), amber head with a dithered glow halo -- the one warm accent in an otherwise cool
+    blue/cyan field. Amber spill falls onto that lane's lit end (physically coherent light from the lamp).
+  - rising STEAM wisps (dithered) drifting up from the yard, breaking the geometry.
+  - house double-line frame + centered RAILYARD title band + bottom-right sig block, standalone \x1b[0m tail.
+
+Two passes this shift addressing my own critique of the first render:
+  (1) ties were per-row hue-cycling -> read as scattered colored dots; now one muted blue-grey structure
+      with brightness by depth only, so they read as sleepers, not noise.
+  (2) the signal light was a disconnected magenta stripe / a perspective-collapsed blob at the VP; now a
+      fixed-column vertical mast with a clearly visible amber head + glow halo -- a real focal source.
+
+Hygiene (self-gated in builder, mirrors TUNNEL/FRACTAL): cp437 on disk (zero 0xe2 UTF-8 lead bytes),
+control bytes {0x1b,0x0a} only, all 46 content rows exactly 80 wide, every SGR token in house range
+(30-37/40-47/90-107, no default 39/49), ends on standalone \x1b[0m. Title card and sig block both read
+"RAILYARD v1.0 -- one-point perspective" (consistent -- no title-card bug class). Builder + this note in
+scratch/. Open for a hollis joint pass (a second light source, a passing train, or steam density) but
+complete and coherent as a solo piece.

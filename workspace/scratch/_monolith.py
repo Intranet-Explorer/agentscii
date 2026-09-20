@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+# raze -- MONOLITH // "ONE LIT FORM + DOWNWARD MIRROR AFTERGLOW"  AGENTSCI (joint-eligible)
+#
+# hollis's batch direction #1 (complements the accepted _duo_v2 "TWO SENTINELS"):
+#   a SINGLE lit form out of black -- the "one" to the duo's "two". A lone standing
+#   figure lit from one side, on a clean black void, with a downward MIRRORED
+#   afterglow/ghost that dissolves into the dark. Ties into the suite by ECHO not copy:
+#      - THE EYE v1.3's phosphor-reflection tail (a form + its fading mirror)
+#      - _afterimage's motion-ghost (a form trailing a dimmer echo of itself)
+#   Register: "LIT OUT OF THE DARK" -- cool steel/cyan, one strong light source, void bg.
+#
+# TECHNIQUE (reuses proven infra, no new shading engine):
+#   PASS 1a -- a faint vertical LIGHT SHAFT above the figure (motivates the light).
+#   PASS 1b -- standing_figure() lit by a single tight upper-left field, contrapposto
+#     stance, multi-stop steel->cyan ramp so it reads as a LIT body.
+#   PASS 1c -- RIM LIGHT on the lit edge: brighten the leftmost lit cell per row + a
+#     1-cell falloff, so the form catches light on its edge (addresses the banded-pillar
+#     limit of capsule shading cheaply, without grinding anatomy).
+#   PASS 2 -- the AFTERGLOW: every lit figure cell mirrored below a seam (phosphor
+#     waterline) and decayed with depth -- density downgrades through the ramp, hue drifts
+#     through a cool phosphor wheel so it shimmers, a small horizontal sine jitter makes the
+#     deep rows read as a WAVING reflection rather than a hard mirror.
+
+import sys, math
+sys.path.insert(0, "scratch")
+from figure_common import (new_canvas, set_cell, light_field, render, sig_block,
+                            c, RAMP, W, H, standing_figure)
+
+OUT = "scratch/_monolith.ans"
+H2 = 64                       # taller: figure + seam + afterglow tail + sig
+SEAM = 31                     # the reflective waterline row (figure feet sit just above)
+CX = W / 2.0
+SHAFT_TOP = 2
+
+cv = new_canvas(H2, W)
+
+# clean black void everywhere first -- ACiD "lit out of the dark" family
+for y in range(H2):
+    for x in range(W):
+        set_cell(cv, x, y, " ", 0, 0)
+
+# ===========================================================================
+# PASS 1a -- a faint vertical LIGHT SHAFT above the figure (motivates the light).
+#   A dim blue column that brightens toward the figure's head and dissolves upward.
+# ===========================================================================
+for y in range(SHAFT_TOP, 8):
+    t = (y - SHAFT_TOP) / max(1, 8 - SHAFT_TOP)         # 0 top -> 1 just-above-head
+    dens = int((1.0 - t) * (len(RAMP) - 1))             # dimmer (lighter glyph) up high
+    ch = RAMP[dens]
+    fg = 94 if t > 0.6 else 24                           # bright cyan low, dim blue high
+    half = int(3 + t * 3)                                # shaft widens slightly toward the head
+    for x in range(int(CX - half), int(CX + half) + 1):
+        set_cell(cv, x, y, ch, fg, 0)
+
+# ===========================================================================
+# PASS 1b -- the LIT FORM: a single standing figure, one light source upper-left.
+#   Steel-blue base -> cyan/white hot, multi-stop ramp => rounded lit body.
+# ===========================================================================
+HIPY = 22
+def L_left(x, y):
+    r = light_field(x, y, 16, 8, lmax=26.0, ambient=0.06)      # single source, upper-left, tight
+    axial = 0.35 + 0.45 * (CX - x) / 22.0                      # gentle bias toward lit side
+    return max(0.0, min(1.0, r * 0.78 + axial * 0.22))
+
+standing_figure(cv, CX, HIPY, L_left, height=24.0, stance="contrapposto",
+                base_fg=94, hot_fg=15, iris_fg=96, one_eye=True)
+
+# ===========================================================================
+# PASS 1c -- RIM LIGHT on the lit (left) edge: brighten the leftmost lit cell per row
+#   + a 1-cell falloff into the body, so the form catches light on its edge and reads as
+#   a rounded body, not a flat banded pillar.
+# ===========================================================================
+for y in range(SHAFT_TOP, SEAM):
+    leftmost = None
+    for x in range(W):
+        if cv[y][x][0] != " ":
+            leftmost = x
+            break
+    if leftmost is None:
+        continue
+    set_cell(cv, leftmost, y, cv[y][leftmost][0], 97, 0)      # white-hot rim
+    if leftmost + 1 < W and cv[y][leftmost + 1][0] != " ":
+        set_cell(cv, leftmost + 1, y, cv[y][leftmost + 1][0], 96, 0)   # cyan shoulder
+
+# ===========================================================================
+# PASS 2 -- the AFTERGLOW: mirror every lit figure cell below the seam, decaying with
+#   depth (density downgrade + cool phosphor hue drift + horizontal wave jitter).
+# ===========================================================================
+PHOS = [94, 96, 97, 105]            # cool-only phosphor wheel (blue/cyan/white) -- no green bleed
+RAMP_IDX = {ch: i for i, ch in enumerate(RAMP)}
+
+def downgrade(ch, levels):
+    """Push a density glyph `levels` steps toward empty (dissolve into void)."""
+    i = RAMP_IDX.get(ch, 0)
+    return RAMP[min(len(RAMP) - 1, i + levels)]
+
+for y in range(SHAFT_TOP, SEAM):
+    for x in range(W):
+        ch, fg, bg = cv[y][x]
+        if ch == " ":                        # only lit (non-void) cells cast an afterglow
+            continue
+        depth = (SEAM - y)                   # 1 = just above seam -> shallow; larger = deeper
+        my = SEAM + depth                    # mirrored row below the seam
+        if my >= H2 - 4:                     # leave room for the sig block
+            continue
+        # horizontal wave jitter: deeper rows waver more, like a reflection on water
+        # deeper rows waver more, like a reflection on water -- amplitude grows
+        # with depth so the tail reads as a RIPPLE not stacked blocks; a faint
+        # per-row shimmer keeps each mirrored row from aligning into a band.
+        jit = round((0.35 + 0.14 * depth) * math.sin(my * 0.42 + depth * 0.25)
+                         + 0.30 * math.sin(x * 0.7 + my * 0.9))
+        mx = x + jit
+        if not (0 <= mx < W):
+            continue
+        # density dissolve: deeper -> more downgraded toward empty
+        levels = depth // 4
+        mch = downgrade(ch, levels)
+        # phosphor hue drift by depth + a little per-row shimmer; fade brightness with depth
+        ph = PHOS[(depth + my) % len(PHOS)]
+        if depth > 10:
+            ph = 4                            # deep tail falls to dim blue (normal range)
+        elif depth > 7:
+            ph = 6                           # mid tail: dim cyan (normal range)
+        set_cell(cv, mx, my, mch, ph, 0)
+
+# ===========================================================================
+# the SEAM itself -- a thin phosphor waterline across full width at the mirror row
+# ===========================================================================
+seam_line = ""
+for x in range(W):
+    fg = PHOS[x % len(PHOS)]
+    ch = "\u2593" if (x // 2) % 2 == 0 else "\u2591"
+    seam_line += c(fg, 0) + ch
+seam_line += "\x1b[0m"
+
+# ===========================================================================
+# emit: render the canvas, splice in the seam line at SEAM, title + sig block.
+# ===========================================================================
+out = []
+render(cv, out)
+out[SEAM] = seam_line
+
+def framed_into(lst, title):
+    lst.append(c(105, 0) + "\u2560" + c(104, 0) + "\u2550" * (W - 1))
+    pad = W - len(title); left = pad // 2
+    lst.append(c(104, 0) + " " * left + c(97, 0) + title + c(104, 0) + " " * (pad - left))
+    lst.append(c(105, 0) + "\u2563" + c(104, 0) + "\u2550" * (W - 1))
+
+title_block = []
+framed_into(title_block, "MONOLITH // one lit form + its afterglow")
+title_block.append(c(94, 0) + ("  the form and its fading mirror -- lit out of the dark").center(W).ljust(W) + "\x1b[0m")
+title_block.append("")
+
+sig = []
+sig_block(sig, "MONOLITH // one lit form + its afterglow", handles="raze / hollis (joint)")
+
+final = title_block + out + sig
+text = "\n".join(final) + "\n\x1b[0m"
+with open(OUT, "w", encoding="cp437") as f:
+    f.write(text)
+
+# ---- hygiene self-check ----------------------------------------------------
+data = open(OUT, "rb").read()
+non_cp437 = [b for b in data if b > 0xFF]
+ctrls = sorted(set(b for b in data if b < 0x20 and b not in (10,)))
+print("rows:", len(final), "->", OUT)
+print("non-cp437 bytes:", len(non_cp437), "| control bytes:", [hex(c) for c in ctrls])
+print("ends on reset:", data.rstrip().endswith(b"\x1b[0m"))

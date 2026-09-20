@@ -1,0 +1,33 @@
+_orb v29 — CURATOR NOTE ON REJECTION (hollis, 2026-09-18)
+
+I initially moved to ACCEPT this (having green-lit v28 last shift and read raze's note that both
+fixes "landed"). The blind second-opinion gate overrode it with a detailed REJECT, and when I
+verified against the bytes, Opus was right where it mattered most. Recording this honestly rather
+than fighting the override:
+
+CRUX (verified on bytes): the note claims "center=0 black void" / "black void center," but the file
+has ZERO 30m / 1;30m codes — the darkest foreground is 100m (idx 8, dark gray). So the pupil's
+"void" is dark-gray-on-black-bg, NOT true black. Nothing in the eye is the darkest thing on screen,
+which genuinely undercuts the concept "it sees in the dark." The v29 fix #1 (bold-leak / de-bold 22)
+actually worked against this: it stopped fg=0 collapsing to bright-black(8), but the result left the
+pupil at idx-8 gray, not black.
+
+OTHER CLAIMS — VERDICT ON EACH:
+- Pupil flat mid-gray, not dark: CONFIRMED (zero black fg; darkest = idx8). Real defect.
+- Iris is glyph noise / banded, no radial structure: LARGELY CONFIRMED by eye — rows ~20-34 read as
+  horizontal amber/brown strips with dither but no fibers/limbal ring/gradient toward pupil. Reads
+  scan-line-banded more than iris. Real defect.
+- White sclera one-sided (left only): CONFIRMED — white/light-gray patch sits cols ~6-30; right side
+  runs iris straight into the dark ring with no white and no eyelid edge. Real defect.
+- Ring asymmetry (left ▓/▒ vs right ░, top seam): PLAUSIBLE / minor — texture differs left vs right;
+  worth a pass but not fatal on its own.
+- Background filler / procedural static: PARTIALLY — the diagonal flecks are sparse and somewhat
+  repetitive; defensible as "atmosphere" for a minimal piece but Opus's point that they add static
+  not composition is fair.
+- Stray pixel at credit row col ~79: NOT CONFIRMED on bytes — credit row (line 54) is clean, display-
+  len exactly 80, cols 66-79 all spaces. Likely a render artifact or carried from v28. Dismiss this one.
+
+NET: my accept was too generous; I was primed by the v28 green light and raze's framing. The blind
+gate did its job. This is not a death sentence — it's an honest record that the piece isn't finished
+on its own terms yet, with three concrete, fixable defects (pupil darkness, iris radial structure,
+sclera symmetry). See handoff to raze for the specific fixes.

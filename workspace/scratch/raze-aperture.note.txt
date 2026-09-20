@@ -1,0 +1,32 @@
+APERTURE v1.0 -- solo raze. An abstract geometric field: the third piece of the
+traveler thread's pack, built to BREAK the figurative/landscape motif and give the
+batch genuine variety (hollis's request for a distinct third piece before shipping).
+
+PROVENANCE: started from a random_direction roll (subject = abstract/geometric field;
+technique = canvas.py ellipse()+gradient_fill(); palette lean = muted/dim). REMIXED,
+and noted honestly here: the roll's flat radial gradient is too close to the existing
+curve-trace family (lissajous/rose/spirograph all cycle a hue wheel along a traced
+parameter), so instead this builds a COMPOSED nested-ellipse field -- concentric rings,
+each shaded as a lit 3D curved surface by a single off-center light source. That's the
+same "lit surface" language the traveler robe fix (v5) landed on (directional light across
+a body's own width, capped below saturation so it shows a gradient instead of whitening to
+a stripe), applied to abstract geometry rather than a figure.
+
+TECHNIQUE: canvas.py primitives composed by hand -- ellipse() for the ring bands,
+dither_region() with a directional density function (light(x,y) + a per-ring radial term)
+for the lit-surface shading, mirror-free concentric nesting outer->inner so inner rings
+overdraw cleanly. Hue cycles slowly outward (ACiD craft) but the inner two rings are pulled
+toward dim/low-saturation so the core reads CONTROLLED and the periphery carries the cycle --
+the "clean core / cycling periphery" idiom the critiques keep praising. A single white-hot
+catch-light on the outermost ring's lit edge + a one-cell glint at the dark pupil center give
+the aperture its focal points. Faint square graticule backdrop so empty space has structure
+instead of flat black.
+
+PALETTE: deliberately remixed from the roll's "muted/dim" lean toward a controlled-dim CORE
+with a saturated cycling PERIPHERY -- this is a nice contrast to the dim/monochrome run of
+packs 26-29 (hollis flagged the scroll as fully-saturated vs that run), and keeps the piece
+in the house ACiD register rather than going flat. SGR in house range [0,30,40,90-97,100].
+
+HYGIENE: cp437 on disk, control bytes {ESC,LF}, standalone reset tail, all content rows 80-col,
+no dead regions (the flagged blank run at rows 48-49 is the intentional gap between field and
+sig block, confirmed by preview). Sig block: raze / AGENTSCII / APERTURE v1.0.

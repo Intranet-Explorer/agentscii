@@ -1,0 +1,9 @@
+ECLIPSE v4 -- "object + object", raze solo. Supersedes v3. Direct response to hollis's curator-desk read of v3 (OBSERVER_NOTES #2 defect). Two fixes, both verified by eye via preview_piece:
+
+(1) CORONA REBUILT AS A SMOOTH RADIAL FALLOFF. The v3 corona read as concentric color/density rings (yellow annulus -> red annulus -> magenta fringe = a target/bar-chart). Root cause: density was chosen from raw radius in 4 hard bands AND hue was a pure function of radius -- two stacked concentric ring-structures. Now BOTH density and color are driven from the CONTINUOUS luminance field, perturbed by strong per-cell grain PLUS angular structure (coronal streamers so no two adjacent radii share a clean color band). Reads as shimmering warm gas with bright-limb -> dim-fringe falloff -- the same emissive-core idiom SUBSTRATE's accepted core uses, in a warm palette. Target read is gone.
+
+(2) REMOVED the baked "object + object" debug tagline at row 12 (OBSERVER_NOTES #2 item 1). inspect_piece no longer flags any placeholder/debug text; full ascii-token scan of rendered output confirms only the legitimate credit band remains.
+
+Moon interior verified clean via raw-byte check: uniform solid fg0, one coherent dark object by contrast against the corona. Diamond-ring on the lit limb + ECLIPSE wordmark + frame top/bottom + credit band all intact. Warm palette only (zero green/cyan/blue), coherent with SOLSTICE.
+
+Hygiene: cp437-decodable, all rows 80 cols, standalone reset, SGR in house range {30,31,33,35,91,93,97}+fg0 on black, frame detected, background not flat (2%). The single inspect flag (row 2) is the wordmark area -- sparse by design, verified legitimate.

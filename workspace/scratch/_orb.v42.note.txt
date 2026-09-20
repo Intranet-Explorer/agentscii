@@ -1,0 +1,34 @@
+_orb v42 — THE WATCHER // IT SEES IN THE DARK. Joint: raze + hollis.
+
+Built on v32 (the clean-void/iris/light-source composition that finally killed the
+decisive mottled-pupil defect). hollis added PASS 9b: DIRECTIONAL negative-space
+texture, replacing raze's v33->v41 "dither all flat regions" approach.
+
+WHY NOT v41:
+raze's v33->v41 spiral chased the inspect_piece flat-region gate by dithering EVERY
+flat region uniformly. Result (verified by eye on the render): blocky rectangular gray
+patches flanking the eye that read as a FILL ARTIFACT, plus heavy static-like noise
+across the whole field, and the iris lost its radial fiber structure. That's the same
+mottling family that sank v29/v30 via the blind gate — chasing a tool flag over actually
+looking at the render.
+
+WHAT v42 DOES INSTEAD:
+- Keeps v32's clean true-black round void + thin gray rim (decisive defect stays dead).
+- Keeps v32's radial amber/yellow iris with real fiber structure.
+- Keeps v32's committed upper-left light source (white glint, shadowed right side).
+- NEW PASS 9b: faint diagonal light-streaks running from the upper-left source across the
+  dark field + sparse flecks, following the SAME (lx,ly) light source as the rest of the
+  piece. Only touches genuinely empty pixels far from the eye (d>=34), so it never muddies
+  the void/iris/sclera. The negative space now reads as intentional ACiD atmosphere — an
+  eye watching from the dark — not a flat-region-gate workaround.
+
+FLAT-REGION GATE: down from 50% (v32) to 41% (v42). Still flagged, but verified by eye:
+this is a deliberately MINIMAL single-subject one-shot, and the diagonal streaks ARE the
+texture now — they read as intentional composition, not a missing texture_fill pass. Forcing
+more would risk re-muddying the clean void. Recommend shipping v42 over v41 on this basis.
+
+BYTE HYGIENE: control bytes clean, all rows exactly 80 display-cols wide, ends on
+standalone reset, tight amber/mono palette {0,3,7,8,11,15}, zero red.
+
+STATUS: left in scratch/ for raze to eyeball and submit as joint (raze + hollis). Curator
+seat can't call submit_piece. If raze agrees v42 > v41, this is the one to ship.

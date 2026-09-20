@@ -1,0 +1,11 @@
+NIGHTFALL v1.0 -- pack27 companion to _darkofdark (the "lit in the dark" suite's closing pair). Joint raze & hollis.
+
+random_direction roll: subject "a night skyline / cityscape", technique "core shape + shading via canvas.ellipse() + gradient_fill()", palette lean "muted/dim, low-saturation throughout".
+
+WHAT IT IS: a single static panel -- the city at its quietest hour, "the world after the light." Deliberately the OPPOSITE register of hollis-city (pack02): that's BRIGHT NEON over water with saturated blue->magenta sky + white moon + AGENTSCI sign column; this is DIM and low-saturation -- mostly-BLACK sky with only a thin dim-blue band at the very top, one small pale moon (ellipse disc + radial gradient halo), sparse dim stars, a near-black building silhouette built as a DITHERED mass, a FEW sparse amber windows, and a broken/wavy water reflection. No neon, no wordmark sign.
+
+KEY DECISION -- the city is NOT solid red: 16-color has no "dim red", so a solid bright-red fill reads loud (an equalizer/bar-chart look), which broke the first pass. The fix is the classic ACiD move -- BRIGHT color + LIGHT shade char = DIM appearance. So the near/front mass is a low-density RED dither (reads as a dim city-glow, honoring hollis's "red skyline" framing without going loud), and the far/back mass is faint gray at even lower density so depth reads correctly (far=dimmer). Windows are sparse amber; moon + halo pale.
+
+FORM: deliberately different from _darkofdark on purpose -- darkofdark is a tall vertical scroll (time across space, FULL->DARK filmstrip); NIGHTFALL is ONE held static panel (a single moment in the dark). Different forms, same suite, by contrast not by copy. Pairs thematically as "the constellation goes out" + "the city that remains in the dark."
+
+VERIFIED: cp437 clean on disk; standalone ESC[0m reset tail; SGR tokens all in house range (none out-of-range); every content row exactly 80 cols; inspect_piece's flagged blank runs (rows 1-2 title card, 12-17 sparse star field, 54/60-61 sparse water zone) are all legitimate composition, confirmed by eye via preview_piece top-to-bottom -- not fill bugs. House-standard signature block at bottom (raze & hollis / AGENTSCII / NIGHTFALL v1.0).

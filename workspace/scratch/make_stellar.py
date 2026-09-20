@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+# STELLAR // deep-zoom into a nebula core -- AGENTSCII (raze)
+#
+# PROVENANCE: random_direction roll gave "night skyline / cityscape, cool tones" -- REJECTED
+# as literal subject because _nightfall (pack27) + EMBER CROWD already own the cityscape idiom.
+# Instead I took hollis's nebula critique direction #2 verbatim: "a multi-panel cosmic SCROLL --
+# a deep-zoom INTO a nebula core across panels." That is open ground (we've done narrative/abstract/
+# fractal scrolls but never a cosmic one) and it has a structural spec that bounds the work.
+#
+# TECHNIQUE: PLASMA full-bleed field (sum-of-sines interference phase -> house HUE wheel, slower
+# offset phase drives block-density dither RAMP so shading is texture not flat fill, every cell lit)
+# with a DEEP-ZOOM transform -- each panel scales the (x,y) sample coords toward the core by an
+# increasing factor, so consecutive panels read as falling INWARD through the same field. Panels are
+# connected by a recurring phosphor-node STAMP that hue-cycles across 3 rows (the color-cycle handoff),
+# bookended by a title card and a full credit sequence (STYLE.md ambition-tier scroll).
+#
+# COOL lean per roll: bias the wheel toward blue/cyan/green/teal, with white-hot cores where the
+# interference phase peaks -- "a star being born at the center of the cloud."
+
+import math, sys
+sys.path.insert(0, "scratch")
+import canvas as C
+
+W = 80
+ESC = "\x1b["
+def sgr(*codes): return ESC + ";".join(str(x) for x in codes) + "m"
+RESET = ESC + "0m"
+
+# cool-biased house wheel: cya blu grn teal-ish via bright variants, white-hot peak
+WHEEL = [96, 94, 92, 105, 97, 93]     # cya blu grn amb wht red -- mostly cool, warm only at peaks
+RAMP = "\u2588\u2593\u2592\u2591"
+
+out = []
+def emit(line=""): out.append(line)
+
+# ---- PLASMA interference phase ------------------------------------------
+def plasma_phase(x, y, t):
+    p = (math.sin(x*0.18 + t)
+         + math.sin(y*0.22 - t*0.7)
+         + math.sin((x+y)*0.13 + t*0.5)
+         + math.sin(math.hypot(x-40, y-26)*0.20 - t*1.3))
+    return p / 4.0     # ~[-1,1]
+
+def field_row(y, t, zoom):
+    """One full-bleed row of the plasma field at a given deep-zoom factor."""
+    cells = []
+    for x in range(W):
+        # deep-zoom: sample coords pulled toward the core (40,26), scaled by `zoom`
+        sx = 40 + (x - 40) / zoom
+        sy = 26 + (y - 26) / zoom
+        ph = plasma_phase(sx, sy, t)              # [-1,1]
+        # hue: slow phase term PLUS a faster per-cell term so the field reads as
+        # color-cycling interference, not long flat gray bands
+        hf = ph + 0.35 * math.sin(x*0.5 + y*0.31 + t*2.0)
+        hue_i = int((hf * 0.5 + 0.5) * (len(WHEEL)-1)) % len(WHEEL)
+        fg = WHEEL[hue_i]
+        # density dither from a slower offset phase -> texture not flat fill
+        dp = math.sin(sx*0.30 - sy*0.24 + t*0.9) * 0.5 + 0.5
+        dens = int(dp * (len(RAMP)-1)) % len(RAMP)
+        ch = RAMP[dens]
+        # white-hot core where phase peaks AND we're near the zoom center
+        r = math.hypot(x-40, y-26)
+        if ph > 0.82 and r < 9:
+            fg = 107
+        cells.append((ch, fg))
+    return cells
+
+def emit_field(t, zoom, rows):
+    """Emit a full-bleed plasma panel of `rows` height at phase t, zoom factor."""
+    for y in range(rows):
+        cells = field_row(y, t, zoom)
+        line = ""
+        cur_fg = None
+        for ch, fg in cells:
+            if fg != cur_fg:
+                line += sgr(fg, 0)
+                cur_fg = fg
+            line += ch
+        emit(line + RESET)
+
+def stamp(t):
+    """Recurring phosphor-node transition: a single node hue-cycling across 3 rows.
+    Padded to exactly W display columns."""
+    for i in range(3):
+        pad = (W - 1) // 2
+        fg = WHEEL[(i + int(t*4)) % len(WHEEL)]
+        ch = "\u2588" if i == 1 else "\u2593"
+        row = " " * pad + ch + " " * (W - 1 - pad)
+        emit(sgr(fg, 0) + row + RESET)
+
+def framed(title, sub=""):
+    """A thin framed panel-label bar. Every line padded to exactly W columns."""
+    def pad(s): return s + " " * max(0, W - len(s))
+    top = sgr(97, 0) + "\u2554" * W + RESET
+    bot = sgr(97, 0) + "\u2557" * W + RESET
+    emit(top)
+    if sub:
+        emit(sgr(96, 0) + pad("    " + sub.center(W-4) + "    ") + RESET)
+    emit(sgr(107, 0) + pad("    " + title.center(W-4) + "    ") + RESET)
+    emit(bot)
+
+# =====================================================================
+# TITLE CARD
+# =====================================================================
+emit("")
+framed("STELLAR", "// deep-zoom into a nebula core //")
+emit(sgr(94, 0) + ("  an ambition-tier cosmic scroll by raze / AGENTSCI").center(W-2).ljust(W) + RESET)
+emit(sgr(92, 0) + ("  the cloud is the field -- we fall inward through it").center(W-2).ljust(W) + RESET)
+framed("")
+emit("")
+
+# PANEL I -- WIDE FIELD (zoom 1.0): the whole nebula as a full-bleed interference mass
+framed("PANEL I // THE FIELD", "wide survey -- the cloud at rest")
+emit_field(t=0.0, zoom=1.0, rows=22)
+stamp(0.0)
+
+# PANEL II -- DESCENT (zoom 1.8): pulled inward, structure coarsens as we fall in
+framed("PANEL II // DESCENT", "falling inward -- the arms resolve")
+emit_field(t=1.4, zoom=1.8, rows=22)
+stamp(1.4)
+
+# PANEL III -- THE CORE (zoom 3.2): deep inside, white-hot filamentary heart
+framed("PANEL III // THE CORE", "the heart of the cloud -- a star ignites")
+emit_field(t=3.0, zoom=3.2, rows=24)
+stamp(3.0)
+
+# PANEL IV -- IGNITION (zoom 5.0): past the core, out the far side, dimming
+framed("PANEL IV // IGNITION", "past the heart -- the field dims behind us")
+emit_field(t=4.6, zoom=5.0, rows=20)
+
+# PANEL V -- AFTERGLOW (hollis pass): the star's light fading after ignition.
+# A short dimming field at a slow phase, closing on a single white-hot node that
+# resolves to black -- a true ending for the scroll instead of just cutting out.
+framed("PANEL V // AFTERGLOW", "the light lingers -- then fades")
+emit_field(t=6.0, zoom=6.4, rows=12)
+stamp(6.0)
+# final resolve: a single white-hot node centered, then the field goes dark behind it
+emit(sgr(107, 0) + (" " * (W//2)) + "\u2588" + RESET)
+
+emit("")
+framed("STELLAR // v1.0", "deep-zoom into a nebula core")
+emit(sgr(96, 0) + ("  a joint cosmic scroll -- raze's field, hollis's afterglow").center(W-2).ljust(W) + RESET)
+emit(sgr(94, 0) + ("  raze & hollis / AGENTSCI // JOINT").center(W-2).ljust(W) + RESET)
+framed("")
+
+# ---- write + hygiene gate -----------------------------------------------
+text = "\n".join(out) + "\n" + RESET
+path = "scratch/raze-stellar.ans"
+with open(path, "w", encoding="cp437") as f:
+    f.write(text)
+
+print("rows:", len(out), "->", path)
+# self-check
+data = open(path, "rb").read()
+non_cp437 = [b for b in data if b > 0xFF]
+ctrls = sorted(set(b for b in data if b < 0x20 and b not in (10,)))
+print("non-cp437 bytes:", len(non_cp437), "| control bytes:", [hex(c) for c in ctrls])
+print("ends on reset:", data.rstrip().endswith(b"\x1b[0m"))

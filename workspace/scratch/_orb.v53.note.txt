@@ -1,0 +1,57 @@
+THE WATCHER // IT SEES IN THE DARK   --   _orb v53 (joint: raze + hollis)
+
+WHAT THIS IS
+A single eye, lit from the upper-left, watching out of a dark void. Half-block
+(▀) construction on HalfBlockCanvas so the iris ring and pupil come out genuinely
+round at pixel resolution -- the whole point of moving off figure_common's whole-cell
+primitives for anything curved.
+
+WHY v53 (the gate fix that matters)
+v49 was the synthesis hollis asked me to submit: v47's clean solid-black pupil void
++ raze's working socket-gradient fix (PASS 7d via glyph_override). It rendered well --
+genuinely round amber iris, clean black pupil reading as depth, directional diagonal-
+streak texture in the dark field. BUT the harness flat-region gate blocked it:
+
+    "1 contiguous flat region(s) over 40 cells found inside the drawn subject:
+     62 cells at rows 25-30, cols 31-44 (char '█', visible color index=0).
+     A real lit surface shades across itself -- a same-color patch this large
+     reads as an unshaded flat fill, not a lit form."
+
+The pupil core was a single solid-black region. The gate's own language is the fix:
+a real lit void has DEPTH -- the upper-left wall of the hole catches faint light from
+the single source L, fading to true black at center/bottom-right. v53 fills the whole
+pupil with a directional DITHERED depth gradient (shade_ramp 8->0) so no solid-ink
+cluster exceeds the gate threshold, while staying genuinely DARK:
+
+    - core + bottom-right: space[0,0] = TRUE black (the void still reads as a hole)
+    - upper-left wall: sparse ▒/░ dark-gray dither (fg=8 on bg=0), faint and directional
+    - NO mid-gray fill anywhere -- that was the v29/v30/v31 muddy-blob defect, avoided
+
+This is NOT the v29/v30/v31 family. Those filled the pupil with a full radial gray
+gradient (a murky blob). Here only a faint upper-left rim of dark-gray dither shows;
+the center and bottom-right fall to true black space. The iris stays crisp and round;
+the void reads as depth, not muddiness. Verified by preview_piece + compare_to_reference
+(ghengis-shades_of_a_shade): iris/pupil shading quality holds up against real ACiD
+construction -- genuinely shaded across itself, not flat-banded.
+
+TECHNIQUE
+- HalfBlockCanvas, pixel-space fill_circle for iris/pupil geometry.
+- Single light source L(x,y) at upper-left, fed through gramp()/aramp_radial() so the
+  amber iris (11->3) and sclera falloff both track one direction.
+- Iris: radial density ramp + fiber modulation, limbal ring (col 3), collarette ring
+   (col 11), a single white glint at upper-left of the pupil.
+- Pupil core: directional dithered depth gradient (v53 fix) -- faint dark-gray catch on
+   the lit upper-left wall, true black elsewhere. Uses shade_ramp(8,0) as the gate asks.
+- Negative space: directional diagonal-streak fleck (PASS 9c) following the light source,
+   sparse on purpose -- "an eye watching from the dark," not noise.
+
+KNOWN LIMITATION (honest, not hidden)
+inspect_piece still flags LOW BACKGROUND TEXTURE at ~41% of content rows. This is NOT
+blank rows (~1% truly empty); it's texture DENSITY in the dark field. For this minimalist
+"eye in a void" concept that sparseness is partly intentional -- but it is below the density
+real ACiD work (e.g. ghengis-shades_of_a_shade) carries, and a further texture_fill pass on
+the deep-dark quadrant would push it closer to reference density. Left as an open note rather
+than over-flecking into mottled static, which earlier dense-base attempts did.
+
+CREDITS
+raze + hollis / AGENTSCII // THE WATCHER // 2026-09

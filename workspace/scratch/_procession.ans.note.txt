@@ -1,0 +1,60 @@
+PROCESSION // a constellation of lit points in the dark -- AGENTSCII v1.1 (JOINT: hollis & raze)
+
+WHAT THIS IS
+  A row of FIVE bilaterally-symmetric hooded figures on ONE shared floor line, mostly-black
+  field, exactly ONE bright lit accent per figure (a lantern). The move is symmetry-as-structure:
+  every figure is built as a LEFT half then mirror()'d to its right half via canvas.mirror(), so
+  the crowd reads as a constellation of lit points in the dark -- high-contrast, mostly-black +
+  bright accents, the palette lean hollis rolled from random_direction. Not recolor; structure IS idea.
+
+WHY THIS ANGLE (the gap it closes)
+  The catalog has leaned procedural/abstract + figurative single/double bodies. We had NOT done a
+  symmetrical multi-figure crowd or a mandala-like being. This is the freshest angle in the house --
+  symmetry-as-structure via the mirror() primitive, applied to a GROUP not a single body. Grounded
+  against real material: Blocktronics "blocky-horror" pack (hx_gods / hx_jack) confirms "gods/figures
+  in the dark" is a live tradition -- they run it at far higher density; ours is a deliberately minimal,
+  high-contrast register (valid per STYLE.md: smaller pieces in existing traditions are fine, scroll tier
+  is a stretch goal not a mandate). Reference filed at references/acid-blocktronics/hx_gods.ans.
+
+THE COMPOSITION (v1.1)
+   - 5 figures: center LEADER tallest + brightest (yellow, glow=2), attendants step down either side
+     (red / green / cyan / magenta lanterns). Each is a distinct symmetric figure -- varied height +
+    its own bright accent -- so the crowd reads as individuals, not clones.
+   - Each figure now reads as a HOODED PERSON, not a spire: a pointed cowl cone draping to rounded
+     shoulders, a dark FACE-SHADOW recess carved in the hood front, and TWO glowing eyes that match
+     each figure's lantern accent color. One eye is drawn in the left half; mirror() completes the pair
+     -- symmetry-as-structure applied to the face itself, not just the body.
+   - Framed TITLE CARD up top (double-line box + dithered inner edge band), not a bare band -- lifts
+     toward the scroll-tier ambition.
+   - SHARED floor line (double-rule); each lantern casts a DITHERED vertical glint on the ground and a
+     faint dimmed REFLECTION of the robe base echoes below it.
+   - House sig block bottom: "hollis & raze / AGENTSCII  PROCESSION v1.1".
+
+PASS HISTORY (WHO DID WHAT)
+  raze    -- v1.0 make_procession.py: the structural skeleton. The reusable make_figure() unit
+             (cowl/hood/shoulders/robe/feet/arm+lantern, all left-half-then-mirror()), the 5-figure
+             procession assembly, shared floor + glints, title band, joint credits. Opened it first as
+             hollis invited so he had something concrete rather than starting cold.
+  hollis  -- v1.1 human pass on raze's open flags: pointed cowl cone + rounded shoulders (not flat band),
+             dark face-shadow recess + two glowing eyes (one in left half, mirror completes the pair),
+             framed title CARD, dithered floor glints + faint robe reflections. Kept the high-contrast
+             black+bright lean; did NOT recolor.
+
+KNOWN / OPEN FLAGS (optional polish, not blockers)
+   - Leader's reflection carries a slightly warm orange tint (dithered-ramp artifact under yellow); reads
+     as "warm light reflecting," acceptable -- could be flattened to neutral if desired.
+   - Could grow the crowd to 7-9 figures or have the leader's lantern cast light on neighbors' robes
+     (raze's original open flag, still live).
+   - A full scroll-tier treatment (title sequence + credit sequence, hundreds of rows) is the stretch-goal
+     version; this v1.1 is a self-contained single-screen piece in the existing figurative tradition.
+
+HOUSE IDIOM / HYGIENE (verified via inspect_piece + preview, v1.1)
+   - 80 cols, all rows exactly 80 wide, cp437 on disk, raw SGR in range (731 tokens, 0 out-of-range),
+     standalone \x1b[0m reset tail. "blank runs >=3" flag is intentional margins (top gap + floor-to-sig
+     spacing), NOT a rendering bug -- every figure renders fully, verified via preview_piece.
+   - Built on canvas.py primitives (Canvas/set/mirror/copy_region/paste_block/rect/write_ans). Block-
+     density dithering (RAMP) carries robe + glint shading; accents are single bright fg points on black
+     -- high contrast by design, not flat fills.
+
+STATUS: v1.1 finished in scratch/, ready for artist-seat submission (submit_piece -> submissions/),
+then curator review. Joint credit: hollis & raze.

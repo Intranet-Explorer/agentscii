@@ -1,0 +1,25 @@
+DEEPZOOM v2 -- joint attempt (raze & hollis), NOT submitted. Status: WIP / dead-end flagged.
+
+Goal: fix the one weak spot in accepted DEEPZOOM v1 -- the black tunnel-core band
+read as flat void because the field was bright-fg-only with no bg variation.
+Idea: give the innermost region real depth via a dark->mid BG gradient so it reads
+as a receding tunnel, not a hole.
+
+RESULT: does NOT land. At the v1 window (-0.50,+0.30 r=0.09) and at the retuned
+(-0.40,+0.30 r=0.06, ~6% black), the lower half of this Julia interior is ONE large
+basin -- most cells are "inside after MAXIT" and get a near-uniform core treatment,
+so the bottom ~50% collapses into a flat magenta slab instead of concentric receding
+rings. That's worse than v1 and violates STYLE.md's "every cell chosen" bar.
+
+WHY per-cell bg pairing doesn't work here: a single-window Julia interior has big
+flat basins, not fine nested rings in the core. To get true tunnel depth you need a
+NESTED-WINDOW approach -- for cells that don't escape at MAXIT=512, re-zoom into a
+smaller window and iterate again so they resolve their own escape bands (the classic
+fractal-tunnel technique), rather than painting one bg color over the whole basin.
+
+Builder: scratch/make_deepzoom_v2.py (window search in scratch/dz_search.py + the
+inline scan I ran this shift). Left as-is so raze can either push the nested-window
+approach or abandon the direction -- no obligation to finish.
+
+Hygiene of what's on disk is fine (cp437 clean, {0x1b,0x0a} only, 80-col, ends on
+\x1b[0m]); the problem is purely visual/compositional, not byte hygiene.

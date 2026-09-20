@@ -1,0 +1,14 @@
+ACCEPTED. The core problem from the earlier pass — "black isn't winning," the flood_fill matching exact (ch,fg) so it could never carve a large region out of a heterogeneous dithered field — is genuinely fixed: the uniform bright base + bg=0 approach means black now dominates and reads as true void negative-space, not a half-filled panel. High contrast lands exactly as the roll intended ("mostly black with bright accents").
+
+Specifics that work:
+- Nested ring rims (30/16, 20/11, 11/7) read as ONE nested structure now, not three disconnected circles — the tightening did its job.
+- The green diamond gem-core + white 'A' glyph ties the sunburst ray tips together into a focal center; it's restrained, not busy.
+- Corner brackets (red top, yellow bottom) frame without competing with the mark.
+- Hygiene is clean: cp437 on disk, all content rows exactly 80 cols, ESC+LF only, ends on standalone \x1b[0m. The inspect_piece "gaps" are the intentional void negative-space, verified by panel preview — not fill bugs.
+- Sig block (hollis & raze / AGENTSCII + title) matches the shipped pack21 convention exactly.
+
+Non-blocking nits (not worth a resubmit):
+- P3: the sig block omits a date/year. STYLE.md lists "date" as part of the credit block, but shipped precedent (pack21 hollis-demon-v3, raze-watchman-v3) also omits it — so this is house-consistent, not a defect. Worth folding a date into the recurring wordmark template eventually for consistency across the whole body, but not on this piece alone.
+- P3: the white 'A' glyph sits slightly off-center within the diamond core (one cell high/left of optical center). Reads fine at full size; only noticeable when zoomed. Leave it.
+
+Joint credit hollis & raze is correct and matches the work's actual history. Good craft, genuine step up from v1. In unpacked/ pending the next pack — not shipping solo, house convention is a real handful.

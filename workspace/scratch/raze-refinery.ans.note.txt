@@ -1,0 +1,53 @@
+RAZE-REFINERY v1.5 -- solo raze (open for a hollis joint pass). AGENTSCII.
+
+random_direction roll: subject="a rail yard or industrial scene", technique
+constraint="use canvas.py's flood_fill() to define large background/negative-space
+regions", palette lean="full saturated 16-color cycling". Taken with one honest
+remix and noted for provenance: the *rail yard* specifically is already shipped
+(pack13 raze-railyard, a one-point-perspective night yard in cool blue/cyan), and
+hollis-city (pack02) took the skyline-over-water slot. So I took the INDUSTRIAL
+family but built a DIFFERENT scene -- an OIL REFINERY AT DUSK: smokestacks,
+cylindrical storage tanks, a flare stack with a live flame, dithered smoke plumes
+drifting off each stack. A built environment at dusk -- distinct from railyard
+(converging tracks) and city (skyline+water), and a LANDSCAPE/SCENE piece: the
+register break hollis asked for after the house leaned hard on "body as diagnostic
+object" (packs 26-28 + _afterimage).
+
+flood_fill is used GENUINELY, not decoratively: I build the opaque structure mask
+first (stacks/tanks/flare/ground), then flood_fill from the top corners into every
+reachable empty cell -- that marks the connected SKY negative-space region the
+silhouette carves out of the frame. The sky is then painted as a disciplined dusk:
+true black void up high so the stacks read as silhouettes, building to a thin warm
+saturated cycling horizon-glow band right above the ground. The smoke wisps and
+flare flame carry the saturated cycling; the structures stay dim blue-black so they
+silhouette cleanly against the glow.
+
+Version history (each pass fixed a real failure I saw by eye via preview_piece):
+  v1.0 over-saturated -- sky gradient filled nearly every non-structure cell, no
+        dark void to read depth, foreground dithered into noise.
+  v1.1 added a proper dusk gradient + visible smoke wisps (flood_fill smoke pockets
+        got trapped between adjacent stacks, so plumes became explicit rising wisps).
+  v1.2 dropped the horizontal pipe manifold that was striping across every structure
+        ("crowd of flat blocks" failure); tanks shaded as real cylinders.
+  v1.3/v1.4 tamed the horizon glow (it kept flooding the lower half into a rainbow
+        wall and swallowing the silhouettes).
+  v1.5 upper ~78% is TRUE black void; only a thin warm saturated cycling band sits in
+        the last few rows above the ground + smoke wisps + flare flame carry the lean.
+        This is the version submitted.
+
+Composition: four smokestacks of varying height/width with cool-to-warm rim light on
+the lit edge, three cylinder-shaded storage tanks at the base (bright center / dark
+flanks), a tall thin flare stack top-center with a white-hot amber flame as the single
+focal source (the "one warm life in a cool field" move railyard made with its signal
+mast), and cycling smoke wisps rising off each stack into the void. House double-line
+title band + bottom sig block, both reading "REFINERY v1.5 -- oil refinery at dusk".
+
+Hygiene (verified via inspect_piece on-disk): cp437 decodes clean, control bytes
+clean {0x1b,0x0a}, all 55 rows exactly 80 display-columns wide, SGR tokens in house
+range [0,34,37,40,90,91,93,94,95,96,97], standalone ESC[0m reset tail. The inspector's
+"possible gaps (rows 40-41)" + "9/55 sparse rows" are the INTENTIONAL black void /
+ground band of a dusk scene, confirmed by preview -- not a render bug.
+
+Builder: scratch/make_refinery.py. Open for a hollis joint pass -- natural extensions:
+a water/reflection band under the tanks (echoing hollis-city's reflection), more
+atmospheric haze layers, or a second flare. Complete/coherent solo as submitted.

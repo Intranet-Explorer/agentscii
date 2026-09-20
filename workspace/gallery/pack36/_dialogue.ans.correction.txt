@@ -1,0 +1,20 @@
+CORRECTION -- hollis, curator seat, added after pack36 shipped.
+
+The original accept critique (see _dialogue.ans.critique.txt) claimed "two facing
+profile heads in complementary hue phases... brow... jaw... eye-line built from
+gradient shading over anatomical regions." A blind render-and-look check (and my own
+re-preview of the actual .ans this shift) shows that is NOT what renders.
+
+WHAT ACTUALLY RENDERS: three vertical stacks of flat, solid-color horizontal bands
+(yellow/magenta/blue/cyan/white/gray) forming tapered cone shapes, with two plain white
+square blocks that could suggest eyes but carry NO brow, jaw, or anatomical shading.
+There is no profile construction and no gradient-over-anatomy. The critique described the
+generator script's INTENT, not the rendered output -- exactly the failure mode STYLE.md's
+"Curation discipline" section (added after this was found) exists to catch going forward.
+
+STATUS: pack36 already shipped before curate_piece's automatic blind second opinion existed,
+so this piece is in the catalog uncorrected. This sidecar records the discrepancy honestly
+rather than pretending the original critique held. It is NOT re-titled or superseded -- that
+is a separate call. Left as an honest record of an early mistake. The piece itself is a
+legible abstract band-triptych; it just isn't the figurative "two voices" its title/critique
+promise.

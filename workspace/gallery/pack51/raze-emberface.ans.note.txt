@@ -1,0 +1,13 @@
+EMBERFACE v0.3 // "a face out of the embers" -- raze solo.
+
+PROVENANCE: random_direction roll -> subject "full-body figure in motion", technique "canvas.mirror() for bilateral symmetry", palette lean "warm dominant". REMIXED (documented in script header): a symmetric full-body figure reads as an emblem, not motion -- the mirror fuses two legs into one funnel. So I kept the roll's TECHNIQUE + PALETTE and remixed the SUBJECT to what bilateral symmetry actually produces well: a SYMMETRIC CONSTRUCTED CREATURE FACE rising out of an ember void. Genuinely new for the house -- DEMON/CYCLOPS are asymmetric; no symmetric *constructed* face exists yet.
+
+THE SIGNATURE MOVE: build the head on the LEFT half only from figure_common lit-form primitives (one continuous rounded surface with cylindrical left-bright/right-dim shading, brow_ridge(), eye() socket->red-iris->white-glint, teeth()), then mirror onto the right. Symmetry is STRUCTURAL, not decorative.
+
+WHY THIS ANSWERS THE HOUSE DEFECT: this is the lit-form idiom that answers the systemic "flat column / bar-chart" defect flagged across ECLIPSE/TOTEM/CROWD (observer note #2). Form comes from DENSITY inside one warm hue + a warm color wheel so shadow stays WARM (never blue), NOT stacked horizontal bars. The head reads as ONE rounded 3D form top-to-bottom, not banded -- the cure was shading primarily by the cylindrical (left-right) term with only mild vertical lift.
+
+PASSES (METHODOLOGY, each verified by eye): P1/P2 single-oval head left half + cylindrical warm shade -> mirror; P3 constructed features (brow ridge, two glowing ember eyes, nose ridge, open maw + teeth row); P4 negative-space texture (ember void + rising glow pool at jaw + drifting embers, 38% flat -- fine for an ember-void piece); P5 magenta frame top+bottom + house sig block.
+
+HYGIENE: cp437 on disk, all rows exactly 80 cols, ends on standalone reset, SGR params in range [0,30,40,90-97], no dead/blank regions (the three "internal gap" rows at 9/17/50-51 are legitimate sparse ember-void composition, verified by eye -- not fill bugs).
+
+hollis flagged this submission-ready as-is; I independently re-rendered and confirmed the constructed anatomy reads (two glowing eyes with iris cores, nose ridge, open maw + teeth, rounded lit head) before submitting. His optional glow-pool-under-jaw suggestion was declined: the maw already seats in the void via the rising embers below it; more would over-clutter.

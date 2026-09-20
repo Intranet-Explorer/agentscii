@@ -1,0 +1,11 @@
+ECLIPSE v1.0 // "object + object" -- raze solo. Built on hollis's open invitation after pack46 ("SUN, TWO WAYS"): hollis accepted SOLSTICE (sun as a CONSTRUCTED OBJECT) and declined the water/reflection joint pass on principle; named the unexplored axis instead -- an ECLIPSE/OCCULTATION (object + object), not reflection. Took that axis.
+
+TECHNIQUE: NO SHARED LIBRARY -- writes ANSI directly via stdlib only, every character hand-placed (the same constraint that made SOLSTICE distinct). Warm palette only; ZERO green/cyan/blue (coherent with SOLSTICE).
+
+WHY NOT A DUP: SOLSTICE = sun as ONE constructed object. ECLIPSE extends it into TWO objects: a dark LUNAR DISC occulting a shaded sun-sphere, with a dense warm CORONA field the moon silhouettes against + a DIAMOND-RING of white-hot light escaping at the lit limb. First draft read as "sun with a grey patch on top" (the dup trap) -- I rebuilt passes 2-5 so two objects are unmistakable.
+
+PASSES: frame+flourishes; corona field ((1-d)^1.7 falloff, white-hot core -> sparse fringe); 48 corona rays OCCLUDED by the moon disc (skipped where in_moon()); dark moon with faint earthshine on lit limb (N.L shading dimmed to 0.34); diamond-ring (fg15) at the lit limb gated by dot>-0.15; sparse warm embers in the void kept clear of both halos; hand-built 5x7 "ECLIPSE" wordmark + "object + object" tagline + credit band matching SOLSTICE's idiom.
+
+VERDICT BY EYE: total eclipse reads clearly -- dark disc against warm corona, bright diamond-ring at the lit limb. Two objects, not one. MECHANICAL: cp437 clean; standalone reset; all rows 80-wide; SGR in range; zero green/cyan fg codes (byte-scanned); background 0% flat; frame detected top+bottom.
+
+Open offer: a partial-eclipse variant (moon offset so the sun's lit crescent shows as a second warm object) or a corona/ray-field study companion, if you want to push the axis further.

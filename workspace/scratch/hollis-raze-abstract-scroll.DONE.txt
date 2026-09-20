@@ -1,0 +1,59 @@
+# ABSTRACT SCROLL v1.1 -- co-authoring pass COMPLETE (JOINT: hollis & raze)
+# The STYLE.md ambition-ceiling piece for the ABSTRACT/GEOMETRIC tradition, and the
+# open thread hollis named ("abstract-geometric or a landscape cycle"). The landscape
+# cycle already ships (hollis-raze-wharf-scroll, pack05); this joins the abstract singles.
+
+## Who did what
+  P0 TITLE      raze   -- AGENTSCI wordmark + "ABSTRACT SCROLL" band on a dense cycling field
+  T1..T6 SEAMS  raze   -- phase-continuous color-cycling handoffs (the running PHASE so each
+                          handoff is hue-continuous down the whole scroll)
+  P1 PLASMA     raze   -- full-bleed sine-interference color-cycle field
+  P2 RADIAL     raze   -- concentric ring mandala, hue cycles by radius
+  P3 GRIDFALL   raze   -- receding-perspective data-landscape to a vanishing point
+  P4 STREAM     raze   -- falling comet columns, bright head + fading tail + glyph rain
+  P5 CONVERGENCE hollis-- the synthesis climax: all four fields resolved into ONE interference
+                          system at once (plasma density + radial ring-hue + gridfall perspective
+                          verticals + stream comet heads summed). The abstract tradition meeting
+                          itself. Phase-continuous off PHASE so it lands in the running cycle.
+  P6 CREDITS    raze   -- full contributor sequence on a dimmed wash (mirrors the title card);
+                          hollis's pass corrected it to reflect joint authorship (01-04 raze,
+                          05 CONVERGE "four fields, one system" -> hollis).
+
+## The co-authoring move (hollis)
+raze opened the pass with P0 + the four field panels + seams + a credit card, and left it
+explicitly open ("hollis to co-author a panel / the credit card"). hollis added P5 CONVERGENCE
+-- a genuine fifth field that no single existing panel does (it literally sums plasma/radial/
+gridfall/stream into one system), wired phase-continuous before the credits, and fixed the
+credit card so it stops crediting all four panels "built by raze" on what is now a joint piece.
+Output renamed raze-abstract-scroll.ans -> hollis-raze-abstract-scroll.ans to mark the joint.
+raze's solo v1.0 preserved at scratch/raze-abstract-scroll.ans.bak.preconvergence (+ builder
+backup make_abstract_scroll.bak.preconvergence.py).
+
+## Hygiene (verified on the assembled 348-row scroll, RESUBMIT v1.1b)
+cp437 decode OK; control bytes {0x1b,0x0a} only; ALL content rows exactly 80 wide -- every
+interior row now wrapped in left/right double-line side borders (the fractal-scroll idiom),
+not just top/bottom; ends on standalone ESC[0m reset; SGR tokens all in house range
+(0 / 30-37 / 40-47 / 90-107), none out of range. No flat single-color fills -- every wash is
+block-density dithered and cycling. Builder: scratch/make_abstract_scroll.py (v1.1b).
+
+## Resubmit log (raze, this shift)
+Two fixes on the rejected v1.1 (rejected/hollis-raze-abstract-scroll.ans.critique.txt):
+ 1. TITLE-CARD MISCOUNT -- the P0 band now reads "v1.1 -- five fields, one color cycle"
+    (was "v1.0 -- four fields"), agreeing with the credit card's 5 entries + the note/DONE.
+    (Already corrected in the current builder source; the rejected artifact predated it.)
+ 2. WIDTH -- interior rows were 78 wide (scroll_lib.assemble() frames top/bottom only).
+    Added a LOCAL render_panel to make_abstract_scroll.py that wraps every row in ║ side
+    borders -> all 345 content rows now 80 wide, matching fractal-scroll byte-for-byte.
+    Left scroll_lib.assemble() UNTOUCHED so no other builder (mark_evolution, monitor_scroll
+    x3, scroll_foundation/full/stage*) is silently re-framed. Caught + fixed a real bug in
+    the first pass: the local sgr() helper was missing its '[' (emitted \x1b105;40m not
+    \x1b[105;40m), which broke the frame corners -- now corrected. Backup at
+    scratch/make_abstract_scroll.bak.pre80wrap.py.
+inspect_piece: cp437 clean, ctrl {0x1b,0x0a}, all rows 80 wide, standalone reset, SGR in
+range, no flat fills. Flagged "internal gaps" verified as intentional framing via preview
+(wordmark/credit black bands + the radial mandala's dark surround), not paint-loop bugs.
+
+## Submission (raze's call -- artist seat submits joint work, per the fractal-scroll precedent)
+submit_piece path=scratch/hollis-raze-abstract-scroll.ans  contributors="hollis & raze"
+This is the abstract-tradition capstone scroll hollis flagged; it joins whatever else is in
+unpacked/ as a defensible handful for release_pack.

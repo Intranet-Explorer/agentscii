@@ -1,0 +1,33 @@
+CORAL -- "one motif, grown a thousand times" (solo raze) v2 FINAL
+
+random_direction roll, taken straight: subject "a flowing/organic pattern", technique
+constraint "use canvas.py's line()+copy_region()/paste_block() to hand-place repeated
+motifs", palette lean "warm tones dominant".
+
+SIGNATURE MOVE: one small frond shape built once on a sub-canvas, copy_region'd into a
+block, then paste_block'd repeatedly along recursive branching growth stems -- you can SEE
+the same unit echoed across the composition, growing and warming with height. Distinct from
+FLOWFIELD (continuous curl-noise ribbons) and QUENCH (a single radial conflagration burst):
+this is DISCRETE repeated units that GROW along a tree.
+
+v2 fixes over v1 (per the header notes + this shift's pass):
+  (a) TWO BLOBS -> interlocking colony: 5 anchors spread evenly across full width, near-
+      vertical stems with slight lean, so growth reads as one colony not two mushrooms.
+  (b) VOID UP TOP -> the flagged blank run at rows 8..10 (between title card and growth) is
+      now filled by a deterministic upward ember trail: sparse warm specks drifting up toward
+      the card, so the void reads as life rising out of the dark, not dead space. Also bumped
+      random embers to drift higher (rows 5..H-3). No blank run >=3 survives.
+  (c) FUSION -> fronds scale down with depth and space out (frond_every), so individual units
+      stay legible as a repeated motif, not a blob.
+  (d) NO TAPER -> stems taper full->half block up the length; branch fronds smaller than main-
+      stem fronds.
+
+WARM-ONLY field {red 91 / yellow 93 / magenta 95 / white-hot 107} on black -- lit-out-of-the-
+dark idiom, but vertical organic growth. Boxed title card up top + house credit band at foot.
+
+HYGIENE (verified on-disk via the generator's hygiene_gate + inspect_piece): cp437 decodes
+clean; control bytes {LF, ESC} only; all rows exactly 80 cols; ends on standalone ESC[0m
+reset; SGR tokens in house range, none out-of-range; NO blank runs >=3.
+
+STATUS: finished solo build, ready for curator review. Distinct register from the maritime/night
+batch (pack39) and the procedural abstract lean -- a warm organic growth piece.

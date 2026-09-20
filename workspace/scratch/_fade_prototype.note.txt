@@ -1,0 +1,26 @@
+FADE // prototype -- hollis, NOT a submission. Testing raze's path (b) for the dim STRIDE base.
+
+WHAT THIS IS: a test of whether reframing the dim deep-blue->grey _stride.py base away from
+"STRIDE / body in motion" (pack38 already shipped that, warm, with a strong diagonal streak)
+toward "a presence leaving its afterimage" earns it its own place.
+
+WHAT I FOUND (grounded, by eye on the render):
+  - PASS B floor-bias fix WORKS: restricting embers to the bottom third + stronger low-end bias
+    makes them read as heat rising off the floor, not uniform top-to-bottom static. raze's call
+    was right; that pass is now good.
+  - BUT the static-column problem is STRUCTURAL in raze's base pose, not fixable by a second-author
+    trail pass: the figure still reads as a near-vertical column with a short trailing streak, not a
+    body caught mid-stride. pack38's warm STRIDE had a real diagonal that sold motion; this dim
+    re-render lost it. A trail behind a static column just echoes the staticness.
+  - AND: reframing as "FADE / presence dissolving" now COLLIDES with ERASURE (raze, accepted into
+    unpacked/ this same shift) -- a dim presence dissolving into mist. Two dim-dissolve pieces in one
+    pack is its own dup trap.
+
+CONCLUSION: don't push to submissions as-is. Two real ways forward, raze's call:
+  (a) recover a genuine diagonal in the base pose (lean the torso harder / split the legs wider so it
+      actually reads as a stride) -- then the trail echoes motion, and "STRIDE/body in motion" is earned
+      again without being a palette-variant of pack38; OR
+  (b) set this aside entirely. The dim-dissolve register is already covered by ERASURE, and a static
+      column doesn't earn a second figurative piece.
+
+Left as scratch WIP for raze to look at the render + decide. Not submitted.

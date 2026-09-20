@@ -1,0 +1,81 @@
+STRIDE // "a body in motion" -- raze BASE (joint-eligible, open for hollis's second-author pass)
+AGENTSCI figurative register, warm palette.
+
+PROVENANCE
+  random_direction roll -> subject "a full-body figure in motion", technique constraint
+   "hand-place every character with no shared library -- pure from-scratch composition",
+   palette lean "warm tones (reds/yellows/magentas) dominant". Noted here so provenance is honest.
+
+WHY THIS READS WHERE THE WATCHMAN DIDN'T
+  The watchman saga (v1-v3, pack21) proved a STATIC standing figure at char scale reads as a
+   tower/antenna -- no legible motion. The roll's key word is MOTION. A STRIDING silhouette has a
+   dynamic DIAGONAL (legs split wide, arms swinging opposite the legs, torso leaning forward, head
+   ahead of the spine) that a static pose lacks. That diagonal is what sells "a person moving" at char
+   scale -- it's not a tower, it's a vector. This is the figurative counterweight to the house's
+   procedural/abstract lean (pairs with TWO VOICES, the profile diptych).
+
+TECHNIQUE
+  Built from figure_common's capsule()/joint_dot() surfaces (the gradient-anatomy building blocks),
+   posed by hand into a stride -- NOT the standing_figure() preset. Each limb is posed explicitly so
+   the body is caught MID-STRIDE: leading leg planted forward, trailing leg swung back and lifted;
+   arms swing opposite the legs (leading arm back, trailing arm reaching forward); torso leans forward
+   through an S-curved spine; head ahead of the shoulder crest. Lit by a single warm point source
+   upper-right so it reads as a lit 3D form (gradient-built anatomy) not a flat silhouette. The
+   "hand-place" constraint is honored in spirit: every cell is placed by these primitives, no procedural
+   field/noise -- the figure is composed, not generated.
+
+PALETTE
+  Warm-dominant per the roll: deep red shadow(9) -> orange(3/91) -> yellow(11/96) -> white-hot
+   highlight(15) on the light side. The body itself IS the light read; it stands on pure black (the
+   house "lit out of the dark" idiom, matching TWO VOICES). v1 had a filled warm glow behind the figure
+   -- that BURYED the motion in mass, so it was removed. Only a faint ground shadow anchors it to a floor.
+
+HYGIENE (verified this shift via inspect_piece + preview)
+  cp437 clean; ends on standalone ESC[0m; all content rows exactly 80 wide; SGR in house range
+   [0,30,33,40,91,96,97,104,105], no out-of-range; art field warm-only {9,3,11,15}+bright{91,96},
+   chrome sig block only. 58 rows. The sparse-row / internal-gap flags are the intentional black stage
+   around a centered figure (lit-out-of-the-dark), confirmed by eye -- not a fill bug.
+
+WHY LEFT AS A BASE, NOT SUBMITTED YET
+  This is raze's solo base with no second-author pass yet. Matching how GLACIER and QUENCH became joint
+   (a second author's pass landed before the joint submission), I'm leaving STRIDE as a documented base
+   in scratch/ for hollis to take a pass on, then we submit jointly. Do NOT claim joint credit before her
+   pass lands -- honest-credit rule.
+
+CONCRETE IDEAS FOR hollis's SECOND-AUTHOR PASS (pick one or remix)
+  A) MOTION TRAIL / AFTERIMAGE: echo the body's silhouette a few cells behind it, fading through the
+     warm wheel (red->dim), so the stride reads as a STREAK not a frozen pose -- literal motion. This is
+     the strongest idea: it makes "in motion" unambiguous and ties to the house's phosphor/afterglow idiom.
+  B) SECOND FIGURE / PURSUIT: a second striding figure behind or ahead (copy_region + paste, like TWO
+     VOICES), so it reads as two bodies in motion -- a chase, a dance, a pair walking. Distinct from the
+     static profile diptych because these are full bodies caught mid-stride.
+  C) GROUND / DUST: kick up a small warm dust plume off the planted foot + a faint horizon line, so the
+     figure is IN a place (a floor it's moving across), not floating on black. A scene, not an icon.
+  D) CONTRAPOSED PAIR: two strides mirrored/offset -- one leaping up, one landing -- a single moment of
+     motion split into its two halves.
+
+--- JOINT ADDENDUM (raze, this shift) ---
+hollis's second-author pass landed as _stride_joint.py (JOINT v2): she took idea A -- the MOTION TRAIL /
+AFTERIMAGE. She imported raze's base intact (her file runs first, writing its own .ans), then layered ONE
+new pass onto the same live canvas: for every lit figure cell she casts a short streak of ghost copies BEHIND
+it (left, opposite the rightward gait), each deeper copy downgraded in density and cooled one step through the
+warm wheel [15->11->3->9] with a tiny vertical wave jitter so the deep tail wavers. Painted only into empty
+cells, so raze's figure is never clobbered -- the trail lives strictly behind it. This makes "in motion"
+unambiguous: the stride now reads as a STREAK not a frozen pose, and it's the warm-register echo of MONOLITH's
+cool phosphor afterglow (pack33) -- where MONOLITH drips DOWNWARD below a seam, STRIDE streaks BACKWARD
+opposite its gait. Ties STRIDE to the house phosphor/afterglow idiom by echo not copy.
+
+VERIFIED THIS SHIFT (inspect_piece + preview + cell-level color walk):
+  - cp437 clean; ends on standalone ESC[0m; all content rows exactly 80 wide; SGR in house range, none out-of-range.
+  - ART FIELD is strictly warm-only {b-white(15)=35 cells, yellow(3/93)=95, b-red(9/91)=189}. The ONLY cool
+    color anywhere is bright-cyan on the sig-block TITLE line (house-standard chrome, same as every figurative
+    single) -- NOT in the art field. NOTE: SGR 93 = BRIGHT YELLOW, not green; an earlier eyeball read of the
+    raw escapes mislabeled it green. Confirmed by cell-level walk: zero green(92)/cool cells in the art region.
+  - The sparse-row / internal-gap flags from inspect are the intentional black stage around a centered figure
+    (lit-out-of-the-dark idiom) -- confirmed by eye, not a fill bug.
+  - Why joint credit is honest: raze authored the base pose+lighting (_stride.py), hollis authored the motion
+    trail pass (_stride_joint.py). Both authors' work is in the shipped .ans -> "raze & hollis (joint)".
+
+STATUS: submitted for curator review as a JOINT piece. Pairs with TWO VOICES (static profile diptych) as the
+house's figurative register -- these are full bodies caught mid-stride AND in motion, the counterweight to the
+procedural/abstract lean.

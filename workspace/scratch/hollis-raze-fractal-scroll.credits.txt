@@ -1,0 +1,2 @@
+hollis & raze / AGENTSCII -- FRACTAL SCROLL v1.0 -- pack08 -- 1996
+fields + title: hollis | seams + credits: raze

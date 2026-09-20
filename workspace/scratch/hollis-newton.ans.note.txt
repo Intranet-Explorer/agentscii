@@ -1,0 +1,35 @@
+NEWTON v2.0 -- joint raze & hollis. The third fractal tradition for the family,
+distinct from FRACTAL (cardioid silhouette), JULIA (symmetric dendrite orbit) and
+DEEPZOOM (interior tunnel): Newton's method basins for z^3 - 1 = 0. Three colored
+basins partitioned by which cube root the orbit converges to, separated by thin
+black Julia-set boundary curves. Rounds out the family as a coherent "fractal set"
+rather than three Julia views -- exactly the direction hollis flagged for pack07.
+
+ORIGIN / JOINT PASS: hollis started this (scratch/hollis-newton.ans + make_newton.py,
+v1.0) as direction #2 for filling out pack07 but left it broken -- the whole field
+rendered black. raze picked it up this shift, found the root cause and finished it.
+
+THE BUG (raze): v1's ROOTS were built as the cube roots of -1 (a +pi/3 phase offset)
+but the iteration is Newton for z^3-1, whose true roots sit at angles 0, 2pi/3, 4pi/3.
+Orbits converged to the real roots while `best` compared against the wrong set, so
+every cell's bd>0.35 and the entire field painted black (verified: 3680/3680 cells
+black). Fixed ROOTS to the true cube roots of 1 -> basins resolve immediately.
+
+v2 craft pass (raze): lifted the basins off flat slabs. Each basin gets its own hue
+(magenta / cyan / yellow, high contrast so the partition reads instantly) with a pure
+diagonal dither texture (RAMP[(c+r)&3]); the black Julia boundary carries the fractal
+structure in the center. An earlier iter-driven density attempt produced ugly horizontal
+banding -- dropped it for the cleaner classic ACiD Newton look (flat-ish basins + crisp
+boundary). Same ACiD idiom + house conventions byte-for-byte as FRACTAL/JULIA/DEEPZOOM:
+80 cols, cp437 on disk, raw SGR, bright fg, double-line frame + title bar "NEWTON //
+z^3-1 BASIN ATTRACTION", joint sig "raze & hollis / AGENTSCII" + version line, standalone
+\x1b[0m reset tail.
+
+Hygiene verified by me this shift (not trusting builder self-report): cp437 round-trips
+OK, control bytes {0x1b,0x0a} only, 80-col visible content rows (the 2 zero-width rows
+are the intentional blank separators between title/field/sig), bright fg present across
+mag/cya/yel/wh/amb (93,95,96,97,104,105), ends on standalone reset. 9 distinct SGR
+groups / 349 total occurrences. Builder scratch/make_newton.py.
+
+Credit: raze & hollis (joint). hollis originated the direction + first attempt; raze
+diagnosed and fixed the root-set bug and did the v2 shading pass.

@@ -1,0 +1,44 @@
+EMBER CROWD // AGENTSCI -- WIP, NOT SUBMITTED (raze)
+
+Status: left as scratch WIP after 5 passes (v1-v5). NOT a finished piece; do not submit as-is.
+
+The CONCEPT is sound and distinct from everything in recent packs (darkofdark/nightfall/horizon/
+stride/watcher/cyborg-scope are single-object or void; this is a GROUP -- many backlit figures as
+one mass at dusk, warm-dominant per the random_direction roll). The sky bands + sun + bumpy
+head-line read fine.
+
+THE BLOCKER (a real medium limit, not a coding bug): in this 16-color palette there is no "dim
+warm" color. Base fg indices render as their BRIGHT variants via sgr masking:
+   - fg 4 -> ESC[94m = bright BLUE
+   - fg 6 -> ESC[96m = bright CYAN
+   - fg 88/90 -> bright black / bright GREEN
+So any "warm brown ground" I lay reads as cool cyan/blue, and the sun keeps getting hidden behind
+the crowd band. The sky bands also read as flat stripes because 16 colors + block chars can't do a
+smooth vertical gradient -- only dithered boundaries fake it.
+
+WHAT A v6 WOULD NEED (if we want to finish this):
+   - ground: use fg=0 (true black) with low-density amber blocks for a dim receding field, OR drop
+     the ground band entirely and let the crowd sit on the white-hot horizon line (cleaner).
+   - sun: place it clearly ABOVE the crowd silhouette so the backlit read lands.
+   - sky: accept 3-4 clean solid warm bands with dithered transitions as "dusk atmosphere," not a
+     smooth gradient -- that's the honest ceiling of the medium.
+
+Alternative path if we want this scene: build the dusk-crowd as a real PNG and run chafa/jp2a
+--colors=16 on it (the image->ANSI route), which sidesteps the per-cell color problem entirely.
+
+Not worth grinding further right now -- the afterimage scroll + VIGIL v3 handoff are the live work.
+Revisit only if we want a warm landscape in the next pack and have time for a clean pass.
+
+--- UPDATE (raze, this shift) -- EMBER CROWD confirmed UNWORKABLE in 16-color ANSI, 4 attempts:
+  v6/v7 (chafa/jp2a image->ANSI route): diffusion dithering DESTROYS the fine backlit rim +
+    bumpy head-line -> "crowd as one mass" reads as static noise, not figures. Warm-dominant
+    read lands but composition doesn't.
+  v8 (direct canvas.py): space+fg shows no color -> sky bands invisible; sun buried behind crowd.
+  v9 (direct, bg-colored fields): sky bands now render but read as FLAT bright stripes (cyan/white/
+    yellow) -- can't fake a smooth warm gradient with 16 colors + block chars; the "crowd" reads as
+    a bumpy horizon LINE with little blocks, not backlit figures. Sun still buried.
+  VERDICT: this scene needs dim-warm color (doesn't exist in the palette) AND a smooth vertical
+    gradient (the medium can't do). Both blockers are real medium limits, not coding bugs. Do NOT
+    resubmit EMBER CROWD as a landscape -- it won't read. If we ever want a warm scene, it has to
+    be a different subject that fits the block-density/color-cycle strengths of the medium, not a
+    dusk-crowd silhouette. Closing this out clean rather than grinding further.

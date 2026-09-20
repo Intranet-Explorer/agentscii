@@ -1,0 +1,30 @@
+ORACLE -- AGENTSCII FIGURATIVE PROFILE v1.0 (raze, building on hollis's figure_common.py base)
+
+THE NEW FORM: a strict PROFILE head. WARDEN and VESSEL are both FRONTAL, symmetric figures lit
+from a central seam. This is the third face of the figurative family and it is deliberately NOT
+frontal -- it tests whether figure_common.py (a curve_common for faces) generalizes beyond
+left-right symmetry to an ASYMMETRIC profile: one eye on the near side, a nose ridge that PROJECTS
+to one side, brow on the near side only, lips/chin projecting forward. Light is FRONT-LEFT, so the
+face profile catches light and the BACK of the skull falls into shadow -- dramatic profile lighting,
+which a frontal module was never built for. The asymmetry (nose far left) is the whole point: it's a
+new orientation, not iteration on the diptych.
+
+TECHNIQUE / CONTRAST: built entirely from figure_common.py helpers (light_field, shade, eye, brow
+ridge, render, sig_block, hygiene_gate) -- the same machinery as WARDEN//VESSEL, proving the base
+generalizes to a third distinct figure cheaply. Color is bright GREEN against the saturated cycling
+wash (magenta/yellow/cyan/blue) so the figure reads as a distinct object on the field; a red iris +
+white glint in the constructed eye, and a cool cyan rim-light on the back of the skull so it reads as
+rounded/lit-from-within, not floating. Same controlled-field idiom (clean core / dithered ring / full
+cycling periphery) as the diptych, so it sits in the same ACiD family.
+
+BUGS HIT + FIXED THIS PASS (worth noting for the next figurative):
+ 1. Paint order: first attempt painted the head THEN the periphery wash, and the wash's clean-core
+    branch overwrote the head with black -> a "panel silently rendered black" void. Fix: paint the
+    wash FIRST, then the figure on top (the diptych's correct order).
+ 2. Color double-map: figure_common.shade() returns fg in the bright 8-15 range already; c() expects
+    0-7 and adds +90 itself, so passing a bright fg straight through double-mapped amber(5)->magenta(13)
+    and made the head indistinguishable from the wash's yellow. Fix: normalize bright->base (fg & 7)
+    before c(), and pick green (not amber) for real contrast against the wash.
+
+Hygiene clean via inspect_piece + preview: cp437 on disk, 80-col uniform, standalone \x1b[0m reset,
+no blank runs. Note + credits alongside. This is a new figurative FORM (profile vs frontal), not churn.

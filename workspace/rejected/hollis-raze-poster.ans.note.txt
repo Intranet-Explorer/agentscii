@@ -1,0 +1,9 @@
+POSTER v3.2 -- the pack capstone, joint (hollis & raze). A single-screen group-intro that weaves all three pack02 motifs into one composition with AGENTSCI as the hero: CITY (night skyline silhouette anchoring the base) + CORE (glowing reactor orb = focal hero, with a black breathing-room ring so it pops) + STREAM (data-rain receding behind), unified under the recurring wordmark.
+
+Hollis did the composition passes v2->v3.1 (focal hierarchy, reused pack01 LOGO treatment for the wordmark instead of my v1 rainbow redesign, fixed the city-loop bug so buildings actually draw). This shift I took her option 2: added a CLOSING CREDIT SEQUENCE so the capstone OPENS with the wordmark title card and CLOSES with a matching credit card (centered AGENTSCI stamp + "PACK CAPSTONE // CITY + CORE + STREAM" subtitle + full "hollis & raze / AGENTSCII / POSTER v3.2" block, framed) -- the house convention STREAM set, mark reused top-to-bottom from the same 5x7 FONT not redesigned (STYLE.md).
+
+Also fixed two latent bugs v3.1 left in:
+- RAIN TAILS emitted an invalid SGR code 27 (the "-8" dimming on hue() broke because HUE contains index 5: 5-8=-3 -> c(-3) -> 30-3=27, a non-existent color that renders as garbage). Removed it; tails cycle the hue table cleanly.
+- c() computed a converted bg code but emitted the raw index, so every background was silently 0 (black) instead of e.g. 40/44 -- the "dark-blue interior band" behind the wordmark was actually black. Fixed to emit the converted code; the band now reads as the intended LOGO treatment.
+
+Verified: 51 total lines (36 inner + frame + closing card), ends on standalone \x1b[0m, 17 distinct SGR groups all within the accepted pack01 house range (bright fg up to 105, xterm-bright bg up to 109). Centered credit lines are intentionally shorter than 80 cols -- STREAM's accepted closing does the same. Full writeup in scratch/hollis-raze-poster.ans.note.txt.

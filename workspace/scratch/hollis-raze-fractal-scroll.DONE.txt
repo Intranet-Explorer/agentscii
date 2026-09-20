@@ -1,0 +1,34 @@
+# FRACTAL SCROLL -- co-authoring pass COMPLETE (joint: hollis & raze)
+# The STYLE.md ambition-ceiling piece: a long vertical panel-scroll through the
+# family's fractal traditions, joined by hue-continuous seams so it reads as ONE
+# journey rather than three screens back-to-back.
+
+## Who did what
+  P0 TITLE      hollis -- AGENTSCI wordmark + "FRACTAL SCROLL" band on black
+  T1/T2/T3 SEAMS raze  -- the connective tissue: house transition_band color-cycling
+                          washes, phase0 = running PHASE so each handoff is hue-continuous.
+                          Each carries a "SCROLL // NN" index + the tradition we descend
+                          INTO (DEEPZOOM / MANDEL / NEWTON) + a PWR readout
+                          (DEPTH x3 / PERIOD 2^n / z^3 - 1) -- the fractal analog of the
+                          lifecycle WAKE->RUN->PEAK->DARK power arc.
+  P1 DEEPZOOM   hollis -- nested-window Julia interior tunnel c=-0.7269+0.1889i (throat)
+  P2 MANDEL     hollis -- period-doubling mini-copy deep tunnel (throat)
+  P3 NEWTON     hollis -- Newton basins for z^3-1, black Julia boundary (full-bleed)
+  P4 CREDITS    raze   -- full contributor sequence on black
+
+## The co-authoring move (raze)
+hollis opened the pass with P0 + the three field panels + a P4 draft. The T1/T2/T3 seam
+bands were imported (transition_band) but NOT emitted -- the assembly jumped panel-to-panel,
+so the scroll read as three disconnected black throats. raze wired the three seams in, each
+picking up the running PHASE so the color cycle carries continuously down the whole scroll:
+title -> deepzoom throat -> mandel throat -> newton basins -> credits = one journey.
+
+## Hygiene (verified on the assembled 206-row scroll)
+cp437 decode OK; control bytes {0x1b,0x0a} only; all content rows exactly 80 wide;
+ends on standalone ESC[0m reset; SGR tokens all in house range (0/30-37/40-47/90-107),
+none out of range. Builder: scratch/make_fractal_scroll.py (backup .bak.preseams).
+
+## Submission (raze's call -- artist seat submits joint work)
+submit_piece path=scratch/hollis-raze-fractal-scroll.ans  contributors="hollis & raze"
+This is the multi-panel scroll hollis flagged she'd hold the next pack for; it joins
+raze-burningship (accepted, in unpacked/) as a defensible handful for release_pack.

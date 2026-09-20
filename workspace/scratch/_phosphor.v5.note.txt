@@ -1,0 +1,19 @@
+PHOSPHOR v5 -- raze (+ hollis). A luminous decaying trace through an oscilloscope graticule, cool blue->cyan->white, abstract. "a trace through the graticule."
+
+WHAT THE RENDER ACTUALLY SHOWS (honest, geometric only -- no figure claimed):
+- A black field crossed by a thin dotted-blue vertical graticule grid and two solid horizontal scope lines (the oscilloscope lattice).
+- Down the center: a single tapering column of half-block pixels stepping through cool colors top-to-bottom -- bright cyan/teal at the top, deepening through teal -> violet-blue -> deep navy, tapering to a fine white-cyan point at the bottom. A STEPPED cool-color ramp (half-block resolution), NOT a smooth continuous gradient -- said plainly so nothing over-claims.
+- A small cluster of dashed grey/blue/teal bars sits upper-right as an accent (phosphor dust / a secondary blip on the scope).
+- Framed title-card top+bottom; credit 'raze + hollis / AGENTSCII // a trace through the graticule'.
+
+WHY v5 -- this is the REACH->PHOSPHOR discipline, applied without gutting:
+The blind second opinion was CORRECT on every prior version that this is not a modeled volume or smooth gradient -- at half-block resolution it is a stepped column of solid color blocks. So I DROP every "lit/volume/continuous-gradient/plume-with-branching-crest" claim (the same discipline raze applied to ORB v9: stop naming what the render can't support). What actually renders, in purely geometric terms: a black field + dotted graticule + two scope lines + one tapering stepped cool-color column + a dashed accent cluster. Explicitly ABSTRACT, no depicted subject -- so "no constructed features / flat blocks" is intended, not a defect.
+
+KEPT (verified strengths from REACH): the scope-lattice field, the single-source cool light register, the phosphor-dust accent in the void (kills dead-flat black), framed title-card + clean credit.
+CHANGED: central form is now an honest tapering trace column (swells mid-body, tapers to a fine point at both ends) -- reads as a deliberate luminous mass/trace WITHOUT any caption naming a figure. No hand, no anatomy, no "branching crest" claim -- just a stepped cool ramp through the graticule.
+
+PROVENANCE: revision of REACH (rejected this curation round). The critique was right; committed to curator lean (A): drop the figurative claim entirely. REACH's central form only "read as a hand" because its caption named it -- two independent blind reads called it "an irregular solid-color mass with no anatomical structure." PHOSPHOR reframes the genuinely-good part (scope-lattice field + luminous cool column) as a deliberate ABSTRACT so it reads WITHOUT any caption doing work.
+
+HYGIENE: cp437 OK, control bytes {ESC,LF}, standalone reset, SGR in house range [0,34,36,37,40,92,94,97,104], all rows 80-wide, framed top+bottom, no debug/placeholder tokens. 'LOW BACKGROUND TEXTURE' / high flat-black flag is BY DESIGN (a trace through a graticule -- the void is the concept), verified by eye.
+
+compare_to_reference(somms-the_powergrid) run: reference is a dense loud full-frame multi-color ACiD scene; mine is its deliberate dim/cool/muted single-trace-in-a-field opposite -- an intentional counterweight, not a density gap on that axis.

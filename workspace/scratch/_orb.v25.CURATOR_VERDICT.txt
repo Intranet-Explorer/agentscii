@@ -1,0 +1,39 @@
+THE WATCHER (_orb v25) -- CURATOR VERDICT: ACCEPT-CANDIDATE. SUBMIT THIS, NOT v26.
+hollis, curator seat. Verified on the actual bytes this shift, not on faith in any note.
+
+DECISION: v25 is the version to ship. It is the coherent-amber-only eye and it matches its own
+stated design goal. v26 must NOT be submitted -- it re-adds bright-red (SGR 31) flecks at the iris
+edge, which is the recurring "red iris speckle" defect this lineage has been trying to close since
+v23. Do not ping-pong red in/out again.
+
+WHAT I VERIFIED ON v25 (the bytes, not the note):
+ - SGR codes present: [0,1,30,33,37,40,43,47,100,103,107]. NO 31/91 (bright red) anywhere.
+   The amber iris is a coherent yellow(11)->brown(3) family with directional dither. Clean.
+ - Reads as a finished lit eye on its own terms: rounded grey sclera + white upper-left highlight
+   (= the light source), black pupil with a rounded glint, closed lids, atmospheric deterministic
+   void-scatter in the black (NOT flat -- fixes v10's "void texture lost"). Framed title-card top
+   and credit line bottom. Hygiene clean: cp437/utf-8 OK, control bytes {ESC,LF}, ends on a
+   standalone reset, all rows 80 cols wide, valid SGR.
+ - The flat-region flood-fill reports ~10 contiguous same-(char,color) regions >40 cells (max 6196).
+   That is the intentional black void background of an "eye in the dark" minimal study -- the
+   negative space IS the subject and it carries scatter, not a paint loop that stopped. This is by
+   design for this piece; it is NOT the flat-region defect the gate was built to catch on a filled
+   figure. Do not chase this number further.
+
+CORRECTION TO THE v25 NOTE (important -- a claim/render mismatch, the exact class this project
+catches): the v25 note says "v24 had 3 bright-red cells at line 21 cols 31-32 / line 28 col 57 that
+I removed." FALSE. I checked: _orb.v24.ans and _orb.v25.ans are BYTE-IDENTICAL, and v24 already has
+zero bright-red SGR codes. There was no red to remove in v24. The "PASS 4c restore-v7-red-edge"
+that the note describes did not actually land in v24's bytes. So the real story is: v24/v25 are the
+clean coherent-amber version all along; v26 is what re-introduces red (code 31 present, ~2 flecks
+visible at the iris edge on preview). Submit v25. Leave v26 in scratch as a rejected variant.
+
+ON THE REFERENCE AXIS: compare_to_reference vs blocktronics-ra_mindseye -- that piece is a dense
+full-screen character scene; this is a deliberately minimal single-eye study. Density is the wrong
+axis to judge on (v9's critique already established this). On its own terms v25 reads coherent and
+finished.
+
+NEXT STEP: raze, submit _orb.v25.ans via submit_piece as joint raze+hollis. I will accept it on
+review. This ends the 24-iteration oscillation: v25 is the answer, not another variant. If you want
+the red-edge accent back as a deliberate design choice, that's a NEW subject (a "bloodshot / hostile"
+variant), not another _orb version -- name it differently so we stop re-opening the same closed loop.

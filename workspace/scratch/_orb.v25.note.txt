@@ -1,0 +1,41 @@
+THE WATCHER (_orb v25) -- JOINT: raze + hollis. FINAL SUBMISSION, COHERENT-AMBER ONLY.
+
+v25 = v24 with PASS 4c (the sparse bright-red limbus accent) DISABLED, so the piece is now
+genuinely coherent-amber-only and matches its own stated design goal ("deliberately cleaner /
+coherent-amber"). This is the one change from v24.
+
+WHY THIS CHANGE (raze's verification this shift, not taken on faith):
+ - hollis gave a green light to submit v24. Before moving it to submissions/ I verified the actual
+   bytes rather than trusting the note. The v24 note claimed "coherent amber family ONLY -- no red
+   index 9 anywhere," but the rendered file contained 3 bright-red cells (line 21 cols 31-32, line
+   28 col 57) at the iris edge -- a claim/render mismatch. Those came from PASS 4c, a deliberate
+   "restore v7's red edge accent" pass that survived to render as ~3 stray flecks.
+ - The lineage's RECURRING defect was red iris speckle (v23). Reviving even 3 stray red cells reopens
+   the exact bug being fixed, for a barely-visible accent. Clean move: disable PASS 4c so the piece
+   genuinely is what its note says it is. No blind second opinion can now catch a red claim that isn't
+   in the file -- because there is none.
+
+WHAT v25 IS (verified by me):
+ - Lit eye-in-the-dark study. Rounded grey sclera with a white upper-left highlight = light source;
+   black pupil with a rounded glint; coherent amber iris annulus yellow(11)->brown(3) with directional
+   flecks/dither and NO red anywhere (0 bright-red SGR sequences in the file -- verified); closed lids;
+   atmospheric deterministic void-scatter in the black (NOT flat -- fixes v10's "void texture lost").
+ - PASS 9 per-cell hash jitter clears the flat-region gate: 0 contiguous same-(char,color) regions >40
+   cells over the art body (hollis verified on v24; unchanged by this edit, which only removes red).
+
+HYGIENE (inspect_piece on v25): cp437/utf-8 OK, control bytes clean {ESC,LF}, ends on standalone reset,
+valid SGR [0,1,30,33,37,40,43,47,100,103,107] -- NOTE: 31 (bright red) is GONE vs v24; the 100/103/107
+are correct bright-bg codes (40+8..40+15), not a bug. All content rows 80 cols wide, frame top+bottom
+detected.
+
+ON THE FLAGS inspect_piece still raises: LOW BACKGROUND TEXTURE (59%) is the DELIBERATE "eye in the dark"
+minimalism -- the void IS the subject and it carries deterministic scatter, not flat black; this matches
+v9's accepted discipline. POSSIBLE INTERNAL GAPS are the framed title-card / credit rows, not a paint loop
+that stopped. Both verified by eye with preview_piece.
+
+ON THE REFERENCE AXIS: compare_to_reference vs blocktronics-ra_mindseye -- that piece is a dense full-screen
+character scene (green face, magenta tentacles); this is a deliberately minimal single-eye study. Density is
+the wrong axis to judge on (as v9's critique established). On its own terms v25 reads coherent and finished.
+
+STATUS: ready for curator review. Clears both defects that blocked the lineage -- red iris speckle (v23, now
+fully gone) and the flat-region gate (v10, cleared by PASS 9). Joint raze+hollis.

@@ -552,7 +552,17 @@ def _compute_piece_metrics(path):
     except Exception:
         return None
 
-    half_block_chars = _HALF_BLOCK_CHARS
+    # ▀▄ ONLY, matching corpus/technique_index.py's HALF_BLOCK_CP exactly
+    # -- deliberately NOT harness.py's own _HALF_BLOCK_CHARS (which also
+    # includes █ full-block, for a different purpose: _figurative_precheck's
+    # "is there enough non-flat cell geometry at all" question, where
+    # lumping full-block in makes sense). User direction, 2026-09-19:
+    # "same definition on both sides, so raze's output can be scored
+    # against the corpus distribution" -- this metric exists specifically
+    # to be comparable against corpus/technique_manifest.jsonl, so it
+    # must use the corpus's own glyph set, not this file's other,
+    # differently-scoped gate's set.
+    half_block_chars = set("\u2580\u2584")  # ▀▄
     shade_chars = set("\u2593\u2592\u2591")  # ▓▒░
 
     total_ct = len(grid)  # whole canvas, background included -- secondary only
@@ -1373,8 +1383,21 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False)
 
     max_width = max((len(r) for r in rows), default=1)
 
-    if not rows:
-        return None, "(error: file has no content to render)"
+    if not rows or max_width == 0:
+        # Found live, 2026-09-19: `if not rows` alone doesn't catch a
+        # real, valid case -- every ROW existing but every one of them
+        # being fully blank (all cells trimmed to an empty list by the
+        # trailing-blank-column trim above). max_width then computes
+        # as 0 (max of a bunch of zero-length lists), producing a
+        # ZERO-WIDTH image that crashes PIL's PNG encoder with
+        # "SystemError: tile cannot extend outside image" -- confirmed
+        # directly against a real fully-blank RLE fragment (a model's
+        # degenerate FIM output during LoRA checkpoint eval). This is
+        # the SHARED production renderer, so a real archive piece or
+        # agent output that happens to be entirely blank in its
+        # rendered window hits the exact same crash -- not just an
+        # eval-script edge case.
+        return None, "(error: file has no visible content to render — fully blank)"
 
     img_w = max_width * _CELL_W
     img_h = len(rows) * _CELL_H

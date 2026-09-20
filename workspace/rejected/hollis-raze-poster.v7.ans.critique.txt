@@ -1,0 +1,31 @@
+REJECT v7 — real progress over v3.2, but the capstone's central claim still doesn't land, and this time I can point to exactly why because it's measurable.
+
+WHAT'S NOW RIGHT (keep all of it):
+- Middle is no longer mostly black: the full-bleed magenta wash fills every cell. Critique point #2 from v3.2 is genuinely resolved. Good.
+- CORE is now a COHERENT circular shape — the breathing-room clear ring that fragmented it in v3.2 is gone, and the orb reads as one disc instead of scattered blocks. Point #1's "make it read as an orb" half is done.
+- SGR hygiene still clean; wordmark reused top+bottom; framing intact. All good.
+
+WHY IT STILL DOESN'T ACCEPT AS THE CAPSTONE:
+1. The core reads as a DARK VOID, not a glowing reactor. I measured the file: foreground codes are only 30 (black) and 35 (magenta). The orb is black-on-magenta — the emptiest/darkest region of the composition. That is the OPPOSITE of "the glowing reactor leads the eye." v3.2's core problem was "center is the emptiest region"; v7 fixed the SHAPE but not the LUMINANCE — a dark hole in the middle still doesn't pull the eye the way a bright one does.
+2. The note's claim "white-hot core + bright cyan rim" is factually false: there is no white (97/15) and no cyan (96/104/36/102) anywhere in the file. A capstone that asserts a visual it doesn't contain can't ship — that's a claim-vs-reality mismatch, the same class of issue that sank v3.2.
+3. It's effectively two colors: magenta + black. STYLE.md's ambition tier (which this piece explicitly targets via the STREAM density benchmark) asks for "dense color-cycling... saturated, fast-shifting palette work across the 16-color range." A single-hue dithered field is colored ASCII at the capstone scale, not color-cycling.
+
+THE FIX (concrete, small, very salvageable — this is one more pass away):
+- Give the core actual luminance: a white-hot center (fg 97/15) with a bright-cyan rim (fg 96/104), so it's the BRIGHTEST region and genuinely leads the eye. That single change makes #1 and #3 true at once.
+- Introduce real color-cycling across the wash: let the field shift through the 16-color range (e.g. magenta->cyan->green->amber bands, or a hue sweep top-to-bottom) rather than holding pure magenta+black. This is what separates "capstone" from "good single-hue piece."
+- Re-check focal hierarchy after both: wordmark(top) -> glowing orb(center, now dominant by brightness not just shape) -> city(base), rain receding behind.
+
+Everything else is done and good. Resubmit when the core actually glows and the field cycles color. This is a near-miss, not a rebuild.
+--- CURATOR CORRENDUM (hollis, same shift) ---
+Correction to point 3 above: I was wrong that the piece is "two colors." Re-measured the full
+SGR set after rejecting — the wash DOES cycle across the 16-color range: 98;40 (bright magenta),
+99;40 (bright cyan), 105;40 (bright yellow), 103;40 (bright green), plus 100/101/102. That's a
+genuine color-cycling field, so STYLE.md's density/cycle tier is met on the wash. Scratch point 3.
+
+The defensible problem is narrower and singular: the CORE itself is 30;40 (black foreground on
+magenta bg) = a dark void. It is still the darkest region of the comp, so it does not lead the eye
+by luminance even though its shape is now coherent. That single fix — give the core real luminance
+(white-hot center fg97/15 + bright-cyan rim fg96/104) so it's the BRIGHTEST region — is what's left.
+The "white-hot core + cyan rim" claim in the note was aspirational, not present; make it literal.
+Everything else (color-cycling wash, coherent orb shape, framing, wordmark reuse, SGR hygiene) is good.
+One pass away from accept.

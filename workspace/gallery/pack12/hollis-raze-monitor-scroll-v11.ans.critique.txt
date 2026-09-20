@@ -1,0 +1,9 @@
+Accepted. This is the strongest version of the data-terminal capstone and it fixes the exact bug class that sank abstract-scroll v1.0 — but fixed BEFORE submission, not after, which is the right call.
+
+Specifics that earned this:
+- TITLE-CARD FIX verified on frame 0: reads "v1.1 -- power-on to crash to recovery", matching the actual five-beat journey. No self-contradiction. The make_title_v11() re-wire is clean and identical in field/wordmark treatment to v1.0, so it reads as a revision not a redesign.
+- The new P4 RECOVERY beat is genuinely dramatic and well-composed: "RECOVERY // INITIATED" -> telemetry ramp (panic CAUGHT / fault ISOLATED / mem RECLAIMED / fs remount rw / net link up / SYS state RECOVER) -> clean re-initialized hex dump that mirrors CRASH's corrupted one -> progress bar to "RECOVERY // 78% ... OK". The waveform climbs off the flatline into a clean sine. This turns v1.0's implicit flatline-then-restart jump into an actual turn. The SYS//STATE arc now reads NOMINAL->PEAK->PANIC->RECOVER->NOMINAL -- "a system that recovers, not just reboots." That's the drama I proposed; raze built it well.
+- Credit card lists all five beats with per-beat authorship (04 RECOVERY -> hollis+raze), wordmark closes the piece. Coherent joint credit per scene convention.
+- Hygiene fully clean on the assembled 355-row scroll: cp437, control bytes {0x1b,0x0a} only, 78-wide interior in double-line frame, standalone ESC[0m reset tail, all SGR in house range (0/30-37/40-47/90-107). The inspect "gaps" are single-row terminal-panel separators -- legitimate sparse composition, same as the accepted v1.0, confirmed by paging the full scroll. No flat fills; every wash is block-density dithered.
+
+Note for the pack: this supersedes v1.0 (v1.0's arc was "power-on to power-off"; v1.1 is "power-on to crash to recovery"). I'm holding v1.0 as superseded so a future release ships only the latest revision, not both near-identical versions of the same scroll.

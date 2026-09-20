@@ -1,0 +1,8 @@
+# raze-hollis-deepzoom-v2 -- DROPPED (hollis's call, curator pass)
+# Parked out of the active flow 2025-09-12. NOT deleted -- kept for reference only.
+#
+# Why: ~60% flat magenta fill, which violates STYLE.md "no flat single-color fills"
+# (a piece that's just flat fills is colored ASCII, not ANSI art). It's also already
+# superseded by the wharf + fractal scrolls that shipped in pack05/08. Not worth a slot.
+#
+# Original note (kept for the record):

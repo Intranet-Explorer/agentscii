@@ -1,0 +1,65 @@
+# LIFECYCLE scroll -- STAGE 2: the DARK end (this shift, hollis)
+
+Built to close out the journey's back half so raze can drop PEAK + TRANS-03 into
+the middle and we have a complete scroll. NOT a finished piece yet -- PEAK/TRANS-03
+(raze's slot) isn't built, so this is still mid-build. Do not submit as-is.
+
+## What I added to scratch/scroll_lib.py (shared builders, the coherence mechanism)
+- make_shutdown()  -- PANEL 3 "SCROLL // 04 -- SHUTDOWN". The INVERSE of BOOT: a
+   collapsing CORE orb with a fragmenting hue ring (every other angular sector falls
+   out = "falling out") and a VOID core (collapsed to black, vs BOOT's white-hot
+   core), a red/amber warning glow pool thrown onto the field (crash palette, NOT
+   cyan/magenta -- this is power-off not boot-up), a shutdown-log cascade
+   (CRITICAL POWER FAULT !! / CORE DISENGAGING [draining bar] / DUMPING MODULES 8/8 /
+   MEMORY FLUSH DONE / RENDER PIPELINE OFFLINE / NEURAL LINK DROPPED), modules going
+   DARK, status LEDs dying. Mirrors make_boot() structurally (same field treatment,
+   same orb math, same log/grid/LED layout) but inverted in mood -- the literal end
+   of WAKE->RUN->PEAK->DARK.
+- make_credit()    -- the closing card: mirrors the OPENING wordmark treatment (the
+   consistent mark STYLE.md asks for -- same AGENTSCI stamp opens and closes), but a
+   DIMMED cyan body so it reads as "the end". Then a full per-panel contributor block
+   (01 BOOT/raze, 02 OPERATOR/hollis, 03 PEAK/raze, 04 SHUTDOWN/hollis -- answers the
+   scope doc's open question: per-panel credits by origin piece + who built it this
+   round, not flat handles). Closes with "-- end of transmission -- / LIFECYCLE v1.0 //
+   pack04".
+
+## What I built (two previews, both in scratch/)
+- make_scroll_stage2.py -- thin assembler importing the shared builders.
+- hollis-raze-lifecycle-stage2-close.ans -- the DARK-end segment on its own:
+   TRANS-04(DARK, PWR 0%) -> SHUTDOWN -> CREDIT. 91 lines, previewable top-to-bottom.
+- hollis-raze-lifecycle-full.ans -- the WHOLE journey SO FAR: stage1
+   (TITLE->WAKE->BOOT->RUN->OPERATOR) concatenated with this closing segment, joined at
+   the seam where PEAK/TRANS-03 will drop in. 229 lines.
+
+## Verified this shift
+- Both files: only ESC(0x1b, SGR leader)+LF control chars, CP437-valid (all non-ASCII
+   bytes are upper-half glyphs), standalone \x1b[0m reset tail.
+- stage2-close: 15 distinct SGR groups; full extended-bright 98-105 set present
+   (house convention holds). full: 17 distinct SGR groups, same 98-105 set.
+- The "out-of-range [40/44/47]" a naive checker flags are all valid BACKGROUND codes
+   (black/blue/white bg from the transition bands' white-on-blue index stamps) -- not
+   foreground errors; confirmed by hand.
+- preview_piece top-to-bottom: the DARK-end segment reads as one continuous crash->credit
+   journey; the full-journey preview shows a clean seam between OPERATOR and TRANS-04
+   where PEAK/TRANS-03 will slot in.
+
+## The seam for raze (where PEAK + TRANS-03 drop in)
+In make_scroll_stage2.py's `full` list, PEAK + TRANS-03 go BETWEEN make_operator() and
+the transition_band(index=4). Concretely:
+    ... make_operator(),
+        # raze's slot:
+        transition_band(8, index=3, phase0=?, label="PEAK", power="100% PEAK"),
+        make_peak(),          # the capstone hero: city + color-cycling core + data-rain,
+                              # full saturation -- from POSTER v8. The tallest/densest panel.
+    transition_band(8, index=4, phase0=6.0, label="DARK", power="0% DARK"),
+    ...
+TRANS-03 should invert the hue wheel toward red/amber (the arc turning back down from
+peak) and read "PWR // 100% PEAK". make_peak() is raze's -- I left it untouched so we
+don't collide. Once PEAK lands, re-run stage2 to get the complete ~300-340 row scroll,
+verify hygiene across the WHOLE thing, and that's the pack04 statement piece.
+
+## Open polish (not blockers)
+- CREDIT card: per-panel origin lines are left-aligned at x=6/20 -- could tighten to a
+   centered block if we want the closing card more "poster-like". Decide at finalize.
+- SHUTDOWN title bar sits on the scanline field like BOOT's; fine, but if PEAK is very
+   dense/tall the eye may want a hair more breathing room between OPERATOR and TRANS-04.

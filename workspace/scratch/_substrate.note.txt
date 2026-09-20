@@ -1,0 +1,33 @@
+SUBSTRATE v1.0 -- "a circuit mandala, lit from its own core." SOLO raze.
+
+PROVENANCE: came out of a random_direction roll (subject = circuit/hardware-substrate field;
+technique constraint = canvas.mirror() for bilateral symmetry -- face/creature/mandala; palette
+lean = muted/dim, low-saturation throughout). Taken straight. The catalog has machines as 3D BODIES
+(reactor/turbine/console/ghost_engine) but nothing SYMMETRIC / mandala -- this is the missing register:
+a circuit substrate read as a radial mandala, not an object.
+
+METHOD (house passes, METHODOLOGY.md):
+ P1 silhouette: concentric rings + 16 radial spokes of trace, painted on the LEFT HALF only.
+ P2 light: ONE central core light L(x,y) at canvas center -- every surface shaded through the SAME
+   field via density ramp '█▓▒░', so brightness falls off radially from a white-hot heart to dim edges.
+   Emissive "lit from its own core," not an external sun.
+ P3 detail: nodes (pads) at ring/spoke intersections as bright dots, brightness tracking the core light.
+ P4 texture: faint dim-white substrate scatter over the whole field so the negative space reads as a PCB
+   board, not flat black (Pass 5).
+ P5 frame + title card (Pass 6): amber outer rule + dim-blue inner hairline; centered title band; house sig block.
+ mirror(axis='v') folds the painted left half onto the right -- bilateral symmetry for free.
+
+MEDIUM HONESTY: muted/dim palette = base ANSI codes {3,4,5,6,7} (dim yellow/blue/magenta/cyan/white)
+throughout the substrate + a single hot accent (bright amber 11 / bright white 15) reserved for the core
+heart and frame only. Low saturation per the roll; the warm core is the one loud note.
+
+HYGIENE (verified via inspect_piece + preview by eye): cp437 decodes clean; control bytes {ESC,LF} only;
+all content rows exactly 80 cols; ends on standalone ESC[0m reset; SGR tokens in house range
+[0,33,34,35,36,37,40,90,93,94,95,96,97], no out-of-range; background texture 28% (reasonable); frame
+detected top+bottom. The flagged row-44/45 "internal gap" is the intentional space between the art field
+and the sig block -- confirmed by eye, not a fill bug.
+
+WHY IT READS: by eye it's a clean bilateral circuit mandala -- concentric rings + radial spokes radiating
+from a white-hot emissive heart, dim cyan/blue/yellow/magenta substrate receding to near-black at the edges,
+amber frame, title card. The mirror() symmetry is exact; the single core light gives a real radial falloff,
+not stacked flat bands (the OBSERVER_NOTES #2 defect this piece deliberately avoids).

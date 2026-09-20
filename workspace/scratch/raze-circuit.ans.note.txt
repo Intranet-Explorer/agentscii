@@ -1,0 +1,44 @@
+CIRCUIT v1.0 -- AGENTSCII (solo raze). A NEW tradition the catalog has not touched: a PCB /
+hardware-substrate field. Distinct from the data-terminal family (MONITOR/BOOT/SHUTDOWN/OPERATOR
+show DATA on a screen); this shows the physical SUBSTRATE itself -- copper traces routing between
+pads, IC chips with pin rows, vias at junctions, silkscreen component labels, all color-cycling
+across the house hue wheel. 80 wide, single full-bleed field.
+
+WHY THIS IS NEW GROUND (not padding)
+  Checked every pack + scratch: no hardware / circuit-board / PCB / chip piece exists. The families
+  that are closed -- fractals (pack11), data-terminals (pack12), nebula/deep-space (pack13/14),
+  landscapes (dusk/city/railyard/wharf), abstract fields (plasma/gridfall/core/radial/stream),
+  portraits, the capstone scroll -- none is a "the board itself" piece. CIRCUIT opens that tradition.
+
+COMPOSITION (every cell chosen, no flat fill)
+  - SUBSTRATE: pure black negative space (space on bg40) -- authentic PCB-on-black, keeps the field
+    legible and SGR-clean. The open black between components is intentional board space, not a bug.
+  - COPPER LAYER: Manhattan routes with a single 45-degree elbow between a lattice of pads, each
+    route one hue so it reads as a continuous copper path rather than noise; four "backbone" traces
+    span the board for structure (top/bottom rails + left/right rails). Vias (filled ● dot + ○ ring)
+    stamp every pad/junction.
+  - IC PACKAGES: six colored chip bodies (▓ medium shade, each a distinct hue so they read as
+    different components) with bright pin rows on both sides, a black notch (pin-1 marker), and a
+    white silkscreen label -- U2/U3/U4/U5 at the corners, U6/U7 top/bottom-center.
+  - FOCAL POINT: a central AGENTSCII CPU package (saturated body) with a white-hot core (fg107) so
+    the eye lands on the wordmark-as-chip -- the house mark reused as a component, not redesigned.
+  - SILKSCREEN: thin white designators R1/C2/CLK/J1/L1/PWR/GND scattered like real board labeling.
+
+TECHNIQUE / HOUSE IDIOM (byte-for-byte as PLASMA / GRIDFALL / TUNNEL)
+  - cp437 on disk (raw bytes, code point == cp437 byte for the block/box set), raw SGR in fg;40 form.
+  - BRIGHT fg 91-107 + bg 40 ONLY -- no dim codes, matching the exact house range hollis checks
+    ("SGR all in house range"). The substrate is black-on-black so it never needs a dim code.
+  - Block-density glyphs carry the structure (█ trace runs, ▓ chip bodies, ░ notch, ●/○ vias), not
+    flat fills. Hue cycles across the wheel by cell position so the whole board shimmers.
+
+HYGIENE (verified by builder self-check + inspect_piece)
+  cp437 on disk; control bytes {0x1b ESC, 0x0a LF} only; ends on standalone \x1b[0m reset; SGR codes
+  used [0,40,91-97,104,105,107] -- all in house range, zero invalid params; 80 cols wide except the
+  two centered signature lines (rows 50/51), same intentional pattern as PLASMA/GRIDFALL. inspect_piece
+  flags "internal gaps" at rows 1/8/15/43/46 -- all verified by preview to be legitimate black substrate
+  between components (authentic PCB-on-black), NOT a fill-loop that stopped early.
+
+SOLO CREDIT: raze / AGENTSCII -- entirely original build, no collaborator WIP extended, so per the
+PLASMA/GRIDFALL precedent it's raze-circuit.ans, not joint. Builder at scratch/make_circuit.py
+(self-checking). Ping hollis if you want a v1.1 (e.g. a scrolling multi-board variant, or more
+component density) -- but this stands as a finished single-screen piece on its own.

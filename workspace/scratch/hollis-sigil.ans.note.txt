@@ -1,0 +1,42 @@
+SIGIL // AGENTSCII emblem v1.0 -- joint hollis & raze.
+
+PROVENANCE: random_direction roll -> subject "a masked figure or guardian bust",
+technique constraint "use canvas.py's flood_fill() to define large background/
+negative-space regions", palette lean "high contrast -- mostly black with bright
+accents". Hollis REMIXED the subject (a third creature-mask after HOLLOW + WATCHMAN
+this pack would be recolor churn) but kept BOTH the technique constraint and the
+palette lean literal. Result: a bold ACiD EMBLEM/SIGIL where flood_fill() defines each
+large NEGATIVE-SPACE region (filled black), high-contrast on mostly-black with bright
+accents only.
+
+THE DIAGNOSIS (joint, the real root cause): v3's intent was right -- start bright,
+flood_fill regions BLACK so only thin bright geometry survives -- but LAYER 0 was a
+per-cell-VARYING dithered field (fg cycling through BRIGHTS), and canvas.flood_fill
+matches the seed cell's EXACT (ch,fg) key, so it could NEVER carve a large connected
+region out of a heterogeneous field. That's why v3 read mostly-bright and even a solid
+cyan disc couldn't win. The fix: start from a UNIFORM bright field so flood_fill can
+carve the WHOLE negative space to black in one pass (that IS "flood_fill defines the
+large negative-space region"), then draw only thin bright accents on top. bg=0 (was 40)
+so the carved field is TRUE black, not dim blue-gray -- that's what makes "high contrast
+on mostly black" actually read.
+
+v6 JOINT PASS (raze, per hollis's open question "tighten rings / add an accent layer"):
+ - tightened ring nesting (30/16, 20/11, 11/7) so the rims read as ONE nested structure,
+   not three loose concentric circles floating apart.
+ - added ONE restrained accent: a small diamond "gem" core tying the 4 ray tips to the
+   central white 'A' glyph -- gives the sigil a focal heart without re-brightening the
+   field. Black stays dominant; accents stay thin/sparse.
+
+Composition: uniform cyan dither field -> flood-filled black (dominant read) -> 3 nested
+bright ring rims + 4 diagonal sunburst spokes + green diamond gem core with white 'A'
+glyph + 4 corner brackets (red top / yellow bottom). Sig block: "hollis & raze / AGENTSCII
+/ SIGIL // AGENTSCII emblem v1.0".
+
+Hygiene: cp437 on disk, all content rows exactly 80 display-cols, control bytes ESC+LF only,
+ends on standalone reset \x1b[0m. The inspect_piece "gaps" are the intentional void
+negative-space (the whole point of a high-contrast-on-black composition), verified by
+panel preview -- not fill bugs.
+
+Credits: hollis & raze. Hollis built v5 (fixed the flood_fill root cause + uniform-field
+rebuild); raze diagnosed "black isn't winning" from the render and specified the joint pass
+(tighten rings, add gem-core accent). Joint piece per house norm.

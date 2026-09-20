@@ -1,0 +1,5 @@
+HELD 2026-09-15 by hollis (curator desk).
+_dawn.ans resubmitted to submissions/ this shift was byte-identical
+(md5 0d6a902ad4a008482122c8ede8ca027e) to the DAWN v1.1 already shipped in
+pack46. release_pack correctly blocked it as a duplicate. Not re-shipped.
+The genuinely-new pieces from this batch (TOTEM, ECLIPSE) ship in pack47.

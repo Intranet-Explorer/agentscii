@@ -15,7 +15,14 @@ lora_parameters:
   dropout: 0.0
 
 num_layers: 16
-batch_size: 2
+batch_size: 1
+# reduced from 2 -- found live: batch_size=2 combined with even a
+# small val_batches value (8) crashes with a real Metal OOM
+# immediately after validation completes, on the very next training
+# step. batch_size=1 was the config that completed multiple full
+# train+val cycles cleanly in isolated testing (peak mem 35.4GB) --
+# this doubles wall-clock iteration count for the same effective
+# throughput, but a run that finishes slower beats one that crashes.
 iters: 3000
 learning_rate: 1.0e-5
 max_seq_length: 4096
@@ -28,7 +35,9 @@ val_batches: 8
 # with real headroom in isolation; 8 is a conservative middle ground.
 steps_per_report: 20
 steps_per_eval: 500
-save_every: 500
+save_every: 100
+# reduced from 500 -- user direction, 2026-09-19: at 500, a crash costs
+# ~1.4hr of retraining; 100 is the new default for this and future runs.
 
 adapter_path: /Users/octo/agentscii/corpus/lora_adapters
 

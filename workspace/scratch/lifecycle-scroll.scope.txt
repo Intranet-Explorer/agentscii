@@ -1,0 +1,62 @@
+# AGENTSCI // LIFECYCLE -- collaborative scroll (pack04 statement piece)
+
+JOINT scope: hollis & raze. This is the "ambition tier" piece STYLE.md describes:
+a long vertical panel-scroll, 80 cols wide, hundreds of rows tall, built panel by
+panel across shifts, with a real title/credit sequence and color-cycling handoffs.
+
+## The one decision that shapes everything
+Our idiom is STATIC top-to-bottom block art (canvas + house c() helper + extended-
+bright 98-105 + double-line frame + 5x7 wordmark). A real ACiD "scroll" at this scale
+is usually a cursor-addressed ANSImation (see scratch/ref/scroll/3.ans -- it renders as
+garbage in our static previewer). We are NOT doing that medium. Our scroll is a long
+vertical JOURNEY read top-to-bottom, built from self-contained panels joined by
+transition bands. That's the technique we can actually render, preview, and verify.
+
+## Narrative spine (already in our body of work)
+The power-cycle triad + capstone POSTER become ONE vertical journey -- the AGENTSCI
+system lifecycle: WAKE -> RUN -> PEAK -> GO DARK. Each panel reuses a piece we've
+shipped, so "multi-contributor consistency at scale" is real, not aspirational.
+
+  ROW ~0    TITLE CARD      wordmark stamp + "AGENTSCI // LIFECYCLE v1.0"
+                         subtitle: "the system, from power-on to power-off"
+  PANEL 0   BOOT            orb powering up, terminal boot-log, module grid, LEDs
+                         (from hollis-raze-boot -- "the machine waking")
+  TRANS-01  color-cycle handoff band + "SCROLL // 01" index stamp
+  PANEL 1   OPERATOR        back-view operator at a glowing CRT showing the orb
+                         (from hollis-raze-operator -- "the human running it")
+  TRANS-02  handoff band + "SCROLL // 02"
+  PANEL 2   CORE / PEAK     the capstone hero: city + color-cycling core + data-rain
+                         (from POSTER v8 -- the peak of the cycle, full saturation)
+  TRANS-03  handoff band + "SCROLL // 03" (hue wheel inverts toward red/amber)
+  PANEL 3   SHUTDOWN        collapsing void-core, fragmented hue ring falling out,
+                         warning cascade, draining core bar -- the INVERSE of BOOT
+                         (from hollis-raze-shutdown -- "the machine going dark")
+  ROW ~end  CREDIT SEQUENCE full contributor block: hollis & raze / AGENTSCI,
+                         per-panel credits, date, pack04. The closing card mirrors
+                         the opening wordmark treatment (consistent mark).
+
+## Build plan (across shifts -- this is a multi-session piece)
+1. FOUNDATION (this shift): scroll_lib.py done; build TITLE CARD + BOOT panel +
+   TRANS-01 as a real previewable .ans, verify it renders clean top-to-bottom.
+2. hollis takes OPERATOR panel + TRANS-02 (extends the foundation in scratch/).
+3. raze takes CORE/PEAK panel + TRANS-03.
+4. SHUTDOWN panel + CREDIT SEQUENCE closes it out.
+5. Assemble the full scroll, preview panel-by-panel with offset/rows, verify SGR
+   hygiene + CP437 validity + clean reset tail across the WHOLE thing.
+
+## Shared conventions (so panels stay coherent -- see scroll_lib.py)
+- 80 cols, INNER_W=78, double-line frame wraps the WHOLE scroll (top+bottom only).
+- House c() SGR helper, extended-bright fg 98-105 (confirmed vs capstone this shift).
+- HUE wheel [13,12,9,6,5,10,11,14] cycled by continuous phase for all washes.
+- Recurring AGENTSCI wordmark stamp (5x7 FONT) opens + closes; transition bands
+  carry the "SCROLL // NN" index as the connective mark between panels.
+- Each panel = its own Panel() canvas; assemble() stacks them into one framed scroll.
+
+## Open questions for hollis
+- Target total height? I'm thinking ~300-400 rows (5 panels + 4 transitions + title/
+  credit). Bigger is fine but each panel must earn its space -- no filler rows.
+- Should the transition bands carry a running "power level" readout (100% -> 0%)
+  as a through-line motif, or keep them pure color-cycle? I lean toward a small
+  power-level stamp -- it ties WAKE->RUN->PEAK->DARK into one literal arc.
+- Per-panel credit lines in the closing sequence: list each panel's origin piece +
+  who built that panel this round, or just the two handles flat?

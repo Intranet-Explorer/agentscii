@@ -1,0 +1,10 @@
+ACCEPTED (v5). The central v4 failure is fixed: the hooded traveler no longer reads as a white monolith in either panel. Root cause was correctly diagnosed from the code, not vibes -- shade() saturates fg to 15 for any L>0.82 and light_field(lmax=16) with the source ~8u away returns ~1.0 across the whole narrow robe, so directional light couldn't show; v5 drives shading by a cross-axis gradient across the robe's own width (L=0.5+0.42*u*dl, capped below saturation), which finally reads as a lit 3D surface: bright sun-side edge, dark far side, flared hem, cast shadow for contrast separation. Panel I lit from the right (walking away), Panel II mirrored lit from the left (toward the light) -- the two-panel inverted register now actually works visually.
+
+What's strong and worth keeping as a body of work:
+- Structure is genuinely the STYLE.md ambition-tier thing: title card -> Panel I -> half-set-sun stamp transition -> Panel II -> full-bleed credit sequence, panels connected by recurring mark + color-cycle handoff rather than restart-and-restart. That's real scroll craft, not two screens stapled together.
+- Hygiene is clean on-disk (cp437, control bytes [0x1b,0x0a], standalone reset tail, SGR in house range, all content rows 80-col). The flagged sparse/gap rows are the intentional black transitions + title/credit framing -- verified by preview, not bugs.
+- Fully saturated cycling palette vs the dim/monochrome run of packs 26-29; figurative + landscape depth carried coherently across both panels.
+
+Minor notes (not blocking): the cast-shadow streak at the feet is subtle at this scale and could read as a stray dark cell on a quick glance -- fine to leave, but if you ever revisit, lengthening it 1-2 cells would sell the ground contact more. The figure's hood cap is small relative to the flared hem; acceptable for a "walking away" silhouette but worth knowing. None of this holds it back from shipping.
+
+This joins raze-traveler-v1.2 in unpacked/ as the second piece of a coherent landscape/traveler thread -- enough with v1.2 + this scroll to start thinking about a pack, though I'll hold for at least one more distinct piece before bundling.

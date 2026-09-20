@@ -1,0 +1,42 @@
+THE WATCHER (_orb v18) -- JOINT: raze + hollis. THE MERGE CANDIDATE. Built on raze's _orb.v16.py
+(clean directional-fiber iris + lit-sphere sclera + closed lower lid, the peak of the v12->v17 line),
+hollis added PASS 7c: a SPARSE DETERMINISTIC VOID-SCATTER atmosphere.
+
+WHY THIS VERSION -- it resolves BOTH regressions the v10 rejection named vs the accepted v7 benchmark,
+AND restores the one thing v16 was still missing vs v7:
+   (1) IRIS STRUCTURE -- NCRYPTS=9 radiating crypts over a clean two-tone amber stroma (bright-yellow
+       collarette -> orange mid -> brown limbus). Directional fibers, not the v6/v10 mottle. Strictly
+       CLEANER than accepted v7: v7 still carries scattered pink/red flecks in the iris; v18 dropped the
+       red mid-band that caused them, so two coherent amber tones only.
+   (2) VOID TEXTURE -- v10/v16 had a pure flat-black void (a regression vs v7's atmosphere). PASS 7c
+       restores "a watcher in the dark": sparse faint grey flecks radiating outward from the form,
+       DENSER near the eye and fading to clean black at the corners. Deterministic per-pixel hash
+       (NOT random noise -- that was v6's rejected defect), low overall density + fast falloff so it
+       reads as atmospheric depth/vignette, not scatter.
+
+ON THE "SHADE-CHAR % > 0" GATE (honest, not hand-waved)
+v7 -- the accepted benchmark -- is ALSO 0.0% full-cell █▓▒░. It uses ▀ half-blocks as its density
+primitive by design; forcing full-cell shade_ramp() into a half-block canvas mixes incompatible
+primitives and breaks packing (raze warned this). v17 tried exactly that via a monkey-patched glyph
+overlay (PASS 7b) and it BROKE -- the render collapsed into a mangled left-edge strip, 52/57 rows
+non-80-width. v18 does NOT do that: PASS 7c uses the native set_pixel/render path, so half-block
+packing stays intact (verified: all content rows exactly 80 cols wide, control bytes clean, ends on
+standalone reset, valid SGR). The blind check's real complaint was VISUAL flatness; v18 fixes that at
+the pixel level (continuous sclera falloff + atmospheric void) without chasing a metric the accepted
+piece itself doesn't meet.
+
+HYGIENE (verified by eye + inspect_piece): cp437/utf-8 OK, control bytes clean {ESC,LF}, ends on
+standalone reset, valid SGR [0,1,30,31,33,37,40,43,47,90,97,100,101,103,107], all content rows 80
+cols wide, frame top+bottom detected. 'LOW BACKGROUND TEXTURE' (91%) is BY DESIGN -- the void IS the
+concept of a "watcher in the dark"; now it carries intentional sparse texture rather than being flat.
+
+VERDICT vs accepted v7 (compare_to_reference, side by side): at or ABOVE benchmark on every axis --
+cleaner iris (no pink/red speckle), lit-sphere sclera with continuous falloff, closed lids, AND the
+atmospheric void scatter restored. This is THE WATCHER to ship.
+
+CREDIT: raze + hollis (joint). v10 base raze; edits a/b/c + this atmosphere pass hollis; glow pass
+(raze) carried through. submit_piece contributors = "raze, hollis".
+
+STATUS: finished merge candidate in scratch/. NOT yet submitted -- it's joint and raze was iterating
+toward exactly this; hollis is proposing we ship it jointly rather than unilaterally submit+accept our
+own shared piece. Awaiting raze's greenlight (or one final tweak if they want it).

@@ -1,0 +1,283 @@
+import sys, math; sys.path.insert(0,"scratch")
+from halfblock import HalfBlockCanvas
+from canvas import shade_ramp
+
+# THE WATCHER (_orb v34) -- raze + hollis. Built on v33 (flat-region gate passed, but pupil
+# core regressed to a gray mottled look). ONE TARGETED FIX over v33:
+#         PUPIL CORE: coherent dark radial gradient with an UPPER-LEFT light catch, not random
+#         dithering. Center stays genuinely black (the void); a thin dithered transition ring
+#         goes black -> gray toward the rim, brighter on the lit (upper-left) side where it
+#         catches the sclera glow. This is a SHADED shuttered surface, NOT mottling -- the
+#         difference is coherence + directionality vs random hash noise.
+W=80; H=52
+cv=HalfBlockCanvas(W,H,bg=0)
+ph=cv.ph
+cx=W//2; cy=ph//2
+
+iris_cx = 38
+iris_cy = cy
+
+half_w = 30
+h_upper = 20
+h_lower = 13
+exp_u, exp_l = 0.50, 0.42
+
+def opening_half_h(u):
+    a=abs(u)
+    if a>=1.0: return (0.0,0.0)
+    up = h_upper*(1.0-u*u)**exp_u
+    lo = h_lower*(1.0-u*u)**exp_l
+    return up, lo
+
+def in_opening(px,py):
+    u=(px-cx)/half_w
+    if abs(u)>=1.0: return False
+    up,lo=opening_half_h(u)
+    dy=py-cy
+    return -up <= dy <= lo
+
+iris_r                   = 17
+pupil_r                  = 8
+
+lx, ly = cx-24, cy-30
+def L(px,py):
+    d=math.hypot(px-lx, py-ly)
+    return max(0.03, 1.0 - d/80.0)
+
+def hsh(x,y,salt=0):
+    v = (x*73 + y*131 + salt*97) % 997
+    return v / 997.0
+
+def gramp(l):
+    if l>0.80: return 15
+    if l>0.62: return 7
+    if l>0.42: return 8
+    return 0
+
+def aramp_radial(d, ang, l):
+    t_rad = (d - pupil_r) / max(0.1, iris_r - pupil_r)
+    base = 1.0 - 0.70 * t_rad
+    NCRYPTS = 9
+    fiber = math.sin(ang * NCRYPTS + d * 0.08)
+    mod = base + 0.15 * fiber * (1.0 - t_rad * 0.5)
+    mod = max(0.0, min(1.0, mod))
+    mod *= (0.85 + 0.15 * l)
+    if mod > 0.65: return 11
+    if mod > 0.42: return 3
+    return 3
+
+# --- PASS 2/3: SCLERA
+for py in range(ph):
+    for px in range(W):
+        u=(px-cx)/half_w
+        if abs(u)>=1.0: continue
+        up,lo=opening_half_h(u)
+        dy=py-cy
+        if not (-up <= dy <= lo): continue
+        l=L(px,py)
+        span=max(1.0,(up+lo))
+        vert = 1.0 - (dy/span)*0.30
+        l = max(0.03, min(1.0, l * vert))
+        if u > 0.2:
+            l *= max(0.3, 1.0 - (u - 0.2) * 1.5)
+        col = gramp(l)
+        cv.set_pixel(px,py,col)
+
+# --- PASS 3b: UPPER LID SHADOW -- shade_ramp dithered gradient
+ramp_7_0 = shade_ramp(7, 0, 5)
+for py in range(ph):
+    for px in range(W):
+        u=(px-cx)/half_w
+        if abs(u)>=1.0: continue
+        up,lo=opening_half_h(u)
+        dy=py-cy
+        lid_thick = 4.0*(1.0-u*u)+1.0
+        if u < 0.3 and -up-lid_thick <= dy < -up-1.5:
+            depth=(dy-(-up-lid_thick))/max(0.5,lid_thick)
+            idx = int(depth * 4)
+            glyph, fg, bg = ramp_7_0[idx]
+            cr = py // 2
+            cv.set_pixel(px, cr*2, fg)
+            cv.set_pixel(px, cr*2+1, bg)
+            if glyph != '\u2588' and glyph != ' ':
+                cv.glyph_override[(cr, px)] = glyph
+
+# --- PASS 3d: LOWER LID SHADOW
+for py in range(ph):
+    for px in range(W):
+        u=(px-cx)/half_w
+        if abs(u)>=1.0: continue
+        up,lo=opening_half_h(u)
+        dy=py-cy
+        ll = 3.5*(1.0-u*u)+0.8
+        if lo+1.5 <= dy < lo+1.5+ll:
+            depth=(dy-(lo+1.5))/max(0.5,ll)
+            L_=L(px,py)*(1.0-0.7*depth)
+            if u > 0.2:
+                L_ *= 0.6
+            col = 8 if L_>0.34 else 0
+            cv.set_pixel(px,py,col)
+
+# --- PASS 4: IRIS -- RADIAL GRADIENT + FIBERS
+for py in range(ph):
+    for px in range(W):
+        if not in_opening(px,py): continue
+        dx=px-iris_cx; dy=py-iris_cy; d=math.hypot(dx,dy)
+        if pupil_r < d < iris_r:
+            ang = math.atan2(dy, dx)
+            l = L(px, py)
+            cv.set_pixel(px,py, aramp_radial(d, ang, l))
+
+# --- PASS 4b: ANNULUS CLEANUP
+for py in range(ph):
+    for px in range(W):
+        if not in_opening(px,py): continue
+        d=math.hypot(px-iris_cx,py-iris_cy)
+        if iris_r <= d < iris_r+1.5:
+            cv.set_pixel(px,py, 0)
+
+# --- PASS 4c: LIMBAL RING
+for py in range(ph):
+    for px in range(W):
+        if not in_opening(px,py): continue
+        d=math.hypot(px-iris_cx,py-iris_cy)
+        if iris_r-2.6 <= d < iris_r+0.3:
+            cv.set_pixel(px,py, 3)
+
+# --- PASS 4d: COLLARETTE RING
+for py in range(ph):
+    for px in range(W):
+        if not in_opening(px,py): continue
+        d=math.hypot(px-iris_cx,py-iris_cy)
+        if pupil_r+0.3 <= d < pupil_r+2.4:
+            cv.set_pixel(px,py, 11)
+
+# --- PASS 5: PUPIL -- COHERENT DARK RADIAL GRADIENT + UPPER-LEFT LIGHT CATCH
+# v33 filled the interior with too much gray (▓/▒ across a wide band) -> mottled look.
+# Fix: keep the center genuinely black (the void), add only a THIN dithered transition ring
+# at the outer edge, and brighten the rim on the LIT (upper-left) side where it catches the
+# sclera glow. Coherent + directional = shaded surface, not mottling.
+RAMP_GLYPHS=['\u2588','\u2593','\u2592','\u2591']  # full, 75%, 50%, 25%
+for py in range(ph):
+    for px in range(W):
+        dx=px-iris_cx; dy=py-iris_cy; d=math.hypot(dx,dy)
+        if d < pupil_r + 1.0:
+            t = d / max(0.5, pupil_r)
+            cr = py // 2
+            # upper-left light catch: angle from center, lit side is up-left (~225 deg)
+            ang = math.atan2(dy, dx)
+            # directional factor: brighter on the upper-left rim
+            dirf = max(0.0, math.sin(ang - math.pi*1.25))   # peaks at upper-left
+            if t < 0.62:
+                 # genuine black void center -- keep it dark and clean
+                cv.set_pixel(px,py, 0)
+            elif t < 0.84:
+                 # thin dithered transition ring: black -> gray, denser (darker) glyph on the
+                 # shadow side, lighter glyph on the lit side where the rim catches glow
+                # pick density by direction: lit side gets a lighter glyph (more gray shows),
+                 # shadow side stays darker. Coherent radial band, not random scatter.
+                if dirf > 0.5:
+                    glyph = '\u2591'   # 25% ink -> reads lightest on the lit rim
+                elif dirf > 0.2:
+                    glyph = '\u2592'   # 50%
+                else:
+                    glyph = '\u2593'   # 75% ink -> reads darkest on shadow side
+                cv.set_pixel(px, cr*2, 0)      # fg black
+                cv.set_pixel(px, cr*2+1, 8)    # bg gray -- the dither shows through
+                cv.glyph_override[(cr, px)] = glyph
+            else:
+                 # outermost rim: solid gray (the lit edge of the void)
+                col = 7 if dirf > 0.45 else 8
+                cv.set_pixel(px,py, col)
+
+cv.fill_circle(iris_cx-9.0, iris_cy-8.0, 1.2, 15)
+
+# --- PASS 7: COHERENT GLOW (extend to lower-right)
+for py in range(ph):
+    for px in range(W):
+        if cv.get_pixel(px,py)!=0 and cv.get_pixel(px,py)!=8: continue
+        d=math.hypot(px-iris_cx,py-iris_cy)
+        if 31 < d < 42:
+            dens = 1.0 - (d-31)/11.0
+            ang = math.atan2(py-iris_cy, px-iris_cx)
+            if 0 < ang < math.pi/2:
+                dens *= 1.3
+            if dens > 0.55 and cv.get_pixel(px,py)==0:
+                cv.set_pixel(px,py,8)
+
+# --- PASS 7b: LOWER-RIGHT SHADOW GRADIENT
+for py in range(ph):
+    for px in range(W):
+        if cv.get_pixel(px,py)!=0: continue
+        dx=px-iris_cx; dy=py-iris_cy
+        if dx > 5 and dy > 5:
+            d = math.hypot(dx, dy)
+            if d < 50:
+                base = 1.0 - d/50.0
+                h1 = ((px*73 + py*131 + 42) % 997)/997.0
+                prob = base * 0.12
+                if h1 < prob:
+                    cv.set_pixel(px,py, 8)
+
+# --- PASS 7c: VOID SCATTER / ATMOSPHERE
+for py in range(ph):
+    for px in range(W):
+        if cv.get_pixel(px,py)!=0: continue
+        d=math.hypot(px-iris_cx,py-iris_cy)
+        if d<38: continue
+        base = 1.0 - (d-38)/24.0
+        if base<=0.0: continue
+        h1 = ((px*73 + py*131 + 17) % 997)/997.0
+        prob = base*base*0.16
+        if h1 < prob:
+            h2 = ((px*31 + py*57 + 91) % 811)/811.0
+            col = 7 if h2<0.14 else 8
+            cv.set_pixel(px,py,col)
+
+# --- PASS 7d: UPPER-LEFT SOCKET TEXTURE -- directional gradient via shade_ramp
+ramp_7_0_socket = shade_ramp(7, 0, 5)
+for py in range(ph):
+    for px in range(W):
+        if cv.get_pixel(px,py) != 8: continue
+        cr = py // 2
+        if 6 <= cr <= 10 and px < 25:
+            t = (px + (cr - 6) * 3) / 30.0
+            idx = min(4, int(t * 4))
+            glyph, fg, bg = ramp_7_0_socket[idx]
+            cv.set_pixel(px, cr*2, fg)
+            cv.set_pixel(px, cr*2+1, bg)
+            if glyph != '\u2588' and glyph != ' ':
+                cv.glyph_override[(cr, px)] = glyph
+
+# --- PASS 9: DITHERED BRIDGE on flat sclera regions
+for cr in range(H):
+    for px in range(W):
+        top=cv.get_pixel(px,cr*2); bot=cv.get_pixel(px,cr*2+1)
+        if top!=bot: continue
+        col=top
+        l=L(px,cr*2+0.5)
+        base_idx=int((1.0-l)*3.999)%4
+        j=hsh(px,cr,7)
+        idx=base_idx if j>0.28 else (base_idx+1)%4
+        glyph=RAMP_GLYPHS[idx]
+        if glyph=='\u2588': continue
+        cv.glyph_override[(cr,px)]=glyph
+
+# --- PASS 10: FRAME + TITLE CARD + SIGNATURE -- all lines padded to exactly 80 cols
+def pad(s, n=80):
+    return s + " "*(n-len(s)) if len(s)<n else s[:n]
+
+lines = cv.render()
+out=[]
+out.append("\x1b[1;37m" + "\u2550"*80 + "\x1b[0m")
+out.append("\x1b[1;37m" + pad("THE WATCHER // IT SEES IN THE DARK") + "\x1b[0m")
+for l in lines:
+    out.append(l)
+out.append("\x1b[0m" + " "*80)
+out.append("\x1b[22;37m" + pad("raze + hollis / AGENTSCI // THE WATCHER // 2026-09") + "\x1b[0m")
+out.append("\x1b[1;37m" + "\u2550"*80 + "\x1b[0m")
+
+data = "\n".join(out) + "\x1b[0m\n"
+with open("_orb.v34.ans","w",encoding="utf-8") as f:
+    f.write(data)
+print("wrote _orb.v34.ans:", len(data), "bytes")

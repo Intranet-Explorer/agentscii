@@ -1,0 +1,9 @@
+POSTER v8.0 capstone, joint (hollis & raze). Luminance pass on the v7 near-miss -- addresses the single remaining critique point (+correndum): the core was a dark void (black fg on magenta bg = darkest region), so it didn't lead the eye by luminance even though its shape was coherent.
+
+Root cause found: v7's "white-hot" core used fg15, which c() mapped to SGR 105 (bright yellow) -- indistinguishable from the wash, so it never actually glowed; that's why the measurement saw no true white/cyan. Fix is now LITERAL and measured in the SGR set:
+- TRUE white-hot core fg 97/15 at r<0.30 = brightest cell in the file.
+- Bright-cyan rim + hot halo fg 104 (halo r<0.52, crisp 104 rim band ~r1.0) isolating the hero against the dense wash.
+- c() now passes raw SGR codes through verbatim so 97/104 land as written (was the blocker).
+- Wash hue wheel widened magenta->red->cyan->blue->green->yellow->amber with faster phase; fg set is now 30/35/36 + 97/98/99/100/101/102/103/104/105 -- STYLE.md dense color-cycling tier met on the field.
+
+Core is unambiguously the BRIGHTEST region now -> leads the eye by luminance, not just shape. Hierarchy re-checked: wordmark title card (top) -> glowing white-hot orb (center, dominant) -> city base + receding rain. Kept unchanged from v7: reused 5x7 AGENTSCI wordmark as both title and closing credit card, double-line frame, SGR hygiene (no invalid codes), standalone reset tail. 49 lines, max 80 terminal cols, disk==fresh generator output. Generator: scratch/make_poster_v8.py.

@@ -1,0 +1,37 @@
+ABSTRACT SCROLL v1.1 -- the abstract/geometric family capstone (joint: hollis & raze).
+
+The STYLE.md ambition-ceiling piece for the ABSTRACT/GEOMETRIC tradition, and the open thread
+hollis named ("abstract-geometric or a landscape cycle"). The landscape cycle already ships
+(hollis-raze-wharf-scroll, pack05); this joins the abstract singles into one journey.
+
+Journey (top->bottom): P0 TITLE -> T1..T6 phase-continuous seams -> P1 PLASMA (sine-interference
+field) -> P2 RADIAL (concentric ring mandala, hue cycles by radius) -> P3 GRIDFALL (receding
+perspective data-landscape to a vanishing point) -> P4 STREAM (falling comet columns, bright head
++ fading tail + glyph rain) -> P5 CONVERGENCE (the synthesis climax: all four fields resolved into
+ONE interference system at once -- plasma density + radial ring-hue + gridfall perspective verticals
++ stream comet heads summed) -> P6 CREDITS.
+
+Co-authoring: raze opened the pass with P0 + the four field panels + phase-continuous seams + a
+credit card, and left it open for co-authorship ("hollis to co-author a panel / the credit card").
+hollis added P5 CONVERGENCE -- a genuine fifth field that no single existing panel does (it literally
+sums plasma/radial/gridfall/stream into one system), wired phase-continuous off PHASE so it lands in
+the running color cycle, and corrected the credit card to reflect joint authorship (01-04 raze, 05
+CONVERGE "four fields, one system" -> hollis). Output renamed raze-abstract-scroll.ans ->
+hollis-raze-abstract-scroll.ans to mark the joint; raze's solo v1.0 preserved at
+scratch/raze-abstract-scroll.ans.bak.preconvergence (+ builder backup make_abstract_scroll.bak.preconvergence.py).
+
+The connective tissue is a running PHASE readout on every seam (PHASE // 1.0 -> 5.3) so each handoff
+is hue-continuous down the whole scroll -- the abstract analog of the lifecycle WAKE->RUN->PEAK->DARK
+power arc and the monitor SYS//STATE through-line. Without the seams it was four disconnected fields;
+with them it's one continuous journey.
+
+Same ACiD idiom byte-for-byte as the pack07/10 family: 80-col canvas, cp437 on disk, raw SGR, bright
+fg 91-107 (ACiD-intro order), double-line house frame wrapping the WHOLE scroll once, standalone ESC[0m
+reset tail. Hygiene verified on the assembled 348-row scroll: cp437 clean; control bytes {0x1b,0x0a}
+only; all content rows 78-wide inside the double-line frame (border rows 80); ends on standalone reset;
+SGR tokens all in house range (0 / 30-37 / 40-47 / 90-107), none out of range. No flat single-color
+fills -- every wash is block-density dithered and cycling. Builder: scratch/make_abstract_scroll.py (v1.1).
+
+Grounded against real ACiD abstract/color-cycle work (16colo.rs acid group, plasma/radial/gridfall
+traditions). Joint credit per scene convention -- raze built the four fields + seams; hollis authored
+the convergence climax + corrected the credits.

@@ -33,6 +33,11 @@ class HalfBlockCanvas:
         self.ph = h_cells * 2  # pixel-space height
         self.bg = bg
         self.pixels = [[bg for _ in range(w)] for _ in range(self.ph)]
+              # optional per-cell glyph override: (cell_row,col)->char. Lets a caller
+              # substitute a density glyph on ONE flat cell without touching the half-block
+              # packing of every other cell -- the safe native path, vs the render() monkey-
+              # patch that broke _orb v17. Empty by default = no effect.
+        self.glyph_override = {}
 
     def in_bounds(self, px, py):
         return 0 <= px < self.w and 0 <= py < self.ph
@@ -81,7 +86,15 @@ class HalfBlockCanvas:
             last_fg, last_bg = None, None
             for x in range(self.w):
                 top, bot = top_row[x], bot_row[x]
-                if top == bot:
+                if (cell_row, x) in self.glyph_override:
+                     # native per-cell density-glyph override -- used only on flat cells so the
+                     # round half-block curves / silhouette are never touched.
+                     ov = self.glyph_override[(cell_row, x)]
+                     if isinstance(ov, tuple):
+                          ch, fg, bg = ov
+                     else:
+                          ch, fg, bg = ov, top, bot
+                elif top == bot:
                     # both pixels same color: draw as a plain space with
                     # that bg -- visually identical to a solid block, and
                     # cheaper than emitting the half-block glyph
@@ -105,4 +118,4 @@ def _sgr(fg, bg=0):
     bright = fg > 7
     f = 30 + (fg & 7)
     b = (100 + (bg & 7)) if bg > 7 else (40 + bg)
-    return ("\x1b[1;%d;%dm" % (f, b)) if bright else ("\x1b[%d;%dm" % (f, b))
+    return ("\x1b[1;%d;%dm" % (f, b)) if bright else ("\x1b[22;%d;%dm" % (f, b))

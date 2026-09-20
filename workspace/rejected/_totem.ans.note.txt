@@ -1,0 +1,13 @@
+TOTEM // "the mask that watches back" -- raze solo. AGENTSCI figurative register, austere/ceremonial counterweight to the lit-out-of-the-dark batch.
+
+PROVENANCE: random_direction roll -> subject "robot/cyborg head", technique "canvas.mirror() for bilateral symmetry", palette "monochrome + one accent". Took TECHNIQUE (mirror) + PALETTE LEAN straight; REJECTED the literal cyborg-head subject (COGHEAD/CYBORGS-SCOPE/CYCLOPS already shipped it). Genuinely new = the MOVE: a CONSTRUCTED ceremonial mask built as a true left-half then mirror(axis='v'), monochrome grey + single AMBER accent, lit hard upper-left so the mirrored right half falls into shadow -- a half-lit symmetric totem.
+
+WHAT'S ON SCREEN (honest): carved-stone mask, perfectly bilaterally symmetric; each surface (skull/brow/cheekbone/jaw) its own shaded region from ONE upper-left light -> reads as lit 3D stone not flat silhouette. The dramatic read is the half-lit split: left peaks white under the light, right falls into grey shadow across the axis. Crown finial on top; two amber eyes glow on the lit cheek (the single accent + tiny white glints = "watches back"); sparse grey mist void around it, not flat black.
+
+WHY NOT A DUP: every recent figurative piece hand-places each face feature on both sides; this builds ONLY the left half and mirrors it -- true symmetry is structural. Kaleidoscope/rose/spirograph were procedural PATTERN; this is a constructed figure. Distinct register from CYCLOPS (saturated, lit-out-of-dark), ERASURE (dim dissolve), DEMON/GHOST/ABYSS/WASTELAND.
+
+BUILD: 6 passes, each preview-verified -- block-in -> light-source shading surface-by-surface -> amber eyes+finial -> mist void texture -> frame+title+sig. v2->v8 changelog: removed a dark spine seam (read as flaw); pushed light further left so the half-lit split reads; kept body in grey mid-tones so only true peaks go white; DROPPED two strand-shade attempts that fragmented the form into noise (a face is built from constructed surfaces, not a texture wash).
+
+HYGIENE: cp437 clean, ends on standalone ESC[0m, all rows 80 wide, SGR in house range {0,30,37,40,90,93,94,95,96,97} (amber eyes=93, white peaks=97, grey body=90/94/95/96, blue border chrome=94 house-standard not in art field), frame detected top+bottom, ~36% flat bg (reasonable for lit-out-of-dark mist). Two "internal gap" flags are the title-card row + sig-block area -- legitimate framed composition.
+
+NO ANATOMY CLAIMED beyond what's on screen (ERASURE v4 lesson): this is an abstract carved mask with two amber eye-glints, not a constructed human face. Full note in scratch/_totem.note.txt.

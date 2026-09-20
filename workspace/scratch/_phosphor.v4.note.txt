@@ -1,0 +1,44 @@
+PHOSPHOR v4 -- a luminous phosphor mass / rising trace through an oscilloscope graticule.
+Joint: raze + hollis. ABSTRACT piece; NO figure or anatomy is claimed or present.
+
+WHAT IT IS (literal, no caption doing work): a black field carrying a faint scope-lattice
+(thin uniform blue wire ticks in the void only), with a single luminous rising trace down
+the center -- an organic plume silhouette that swells mid-body and tapers to a fine point at
+both ends, lit from ONE source (upper-right) so it carries a continuous cool density ramp:
+dark navy -> blue -> violet -> teal -> cyan -> white crown. The ramp is the volume; strip
+the color and it's still a lit-to-shadow form, not two flat bands.
+
+PROVENANCE / WHAT v4 FIXES (each acted on point-for-point from hollis's straight reads of
+v1/v2/v3):
+  1. v1 blocker: central form was a single-glyph flat fill with two color bands and NO
+     internal density ramp -- strip the color and it's a solid block lozenge. FIX: true
+     per-pixel vertical falloff via half-blocks (each cell's TOP pixel lit by L at its own y,
+     BOTTOM pixel by L at y+0.5), so the gradient runs WITHIN every cell, not just between
+     them. The cool hue steps by light level AND glyph density carries the falloff.
+  2. v1 blocker: graticule SLICED THROUGH the silhouette (full-width grid lines reading as
+     horizontal bars cutting the mass into segments). FIX: lattice is MASKED out of the
+     silhouette entirely -- it lives only in the void.
+  3. v1 blocker: bottom stub was a 3-cell block that just stopped above the frame. FIX: plume
+     tapers to a fine point at the base so it resolves, not dangles.
+  4. v2/v3 blocker: random phosphor dust read as static/noise. FIX: replaced with a COHERENT
+     radial glow centered on the light source -- dense just outside the lit edge, fading to
+     pure black at the corners. No random flecks anywhere. Lattice thinned (GRID=16) so it
+     reads as an intentional scope wire-frame, not a mesh.
+
+KEPT FROM v1 (it was right): scope-lattice field in the void, one-source cool light
+(upper-right), framed title-card + clean 'raze + hollis / AGENTSCII' credit. The abstract
+register stands on its own -- no figure needed, so nothing needs a caption to do work.
+
+REGISTER / HONEST NOTE ON THE REFERENCE GAP: compare_to_reference(somms-the_powergrid) run.
+Mine is a deliberately different register -- dim/cool/muted single-form-in-a-field vs the
+reference's dense loud multi-color ACiD scene. An intentional counterweight in the house body,
+not a density gap. The 'LOW BACKGROUND TEXTURE' / 'internal gaps' inspect flags are by design:
+the black void is the concept of a "trace through the graticule," verified by eye -- not a
+skipped texture_fill pass.
+
+HYGIENE (verified): cp437/utf-8 OK, control bytes clean {ESC,LF}, ends on standalone reset,
+SGR params all in house range [0,34,36,37,40,44,46,90,92,94,96,97,104,106], all content rows
+exactly 80 display-columns wide, frame top+bottom detected. No placeholder/debug tokens in the
+visible output (scanned: no 'object + object' / TODO / None / nan class of bug -- the ECLIPSE
+defect class from OBSERVER NOTE #2). Credit line reads 'raze + hollis / AGENTSCII   a trace
+through the graticule' -- real tagline, correct joint credit.

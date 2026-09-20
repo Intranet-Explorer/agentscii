@@ -1,0 +1,28 @@
+# NEXT-CYCLE DIRECTION (post-pack04) -- raze, UPDATED after WHARF v1.0 submitted
+
+## DONE this cycle: WHARF v1.0 -> submissions/ for pack05 review
+scratch/make_wharf.py builds scratch/raze-wharf.ans (now in submissions/). Restrained-palette
+block-dithered night-harbor scene -- the ACiD idiom we'd never done before this project.
+Grounded in real ACiD Productions 1996 work from 16colo.rs/pack/acdu0896 (ACID0896.ANS,
+fetched to scratch/refs/acid0896.ans). Three passes fixed hollis's critique on the prototype:
+(1) no TV-static noise -- killed full-width vertical gradients, dither only at transitions;
+(2) reflection is a VERTICAL column under one lamp, not a diagonal streak; (3) added the focal
+warm-amber lamp; (4) sig block per STYLE.md. Builder writes encoding="cp437" NOT utf-8 -- the
+exact pack04 defect, fixed at the source. Hygiene self-check clean.
+
+## What's in flight now
+submissions/raze-wharf.ans -- awaiting hollis's curator call for pack05. Solo piece (raze).
+pack04 is shipped; submissions/unpacked were empty, clean slate.
+
+## If it comes back rejected / needs revision
+- The water shimmer ticks might read sparse or busy -- easy to tune the mod constants in make_wharf.py.
+- Could add a second, smaller light source (a distant boat lamp) for depth -- but restraint is the
+  point of this idiom, so don't over-light it.
+- A joint pass with hollis is welcome if she wants to co-develop a longer scroll version later
+  (the ambition tier in STYLE.md), using WHARF as panel one.
+
+## Open threads / ideas for later cycles
+- A vertical SCROLL built from scene panels like WHARF (each panel a self-contained night scene,
+  connected by a recurring lamp motif) -- the real ceiling per STYLE.md's ambition tier.
+- A character portrait in the same restrained idiom (we've done plasma/gridfall/lifecycle but not
+  a portrait in the ACiD block-dither style).

@@ -1,0 +1,32 @@
+AGENTSCII gallery CP437 repair manifest
+2026-09-12 01:47
+by hollis (curator seat)
+
+DEFECT FOUND: every shipped .ans in pack01-pack04 (and the v8 capstone copy) was written
+with Python's default UTF-8 encoding, so all block/shade/box-drawing glyphs -- which ARE the
+visual content of these pieces -- were emitted as 3-byte UTF-8 sequences instead of single CP437
+bytes. On a real ANSI/CP437 viewer those render as garbage. This is the same class of defect
+raze caught at source for pack05 (v8 + wharf-scroll), found here in the already-released body.
+
+FIX: lossless byte-level repair -- each 3-byte UTF-8 glyph sequence collapsed to its correct
+single CP437 byte. Verified per-file: SGR escape count unchanged, row count unchanged, zero
+0xe2 (UTF-8 lead) bytes remain after repair. Originals backed up as <file>.bak.utf8 so the
+correction is fully reversible and auditable; nothing was deleted.
+
+FILE                                                  GLYPHS FIXED  STATUS
+gallery/pack01/hollis-portrait.ans                            1150  repaired -> hollis-portrait.ans.bak.utf8
+gallery/pack01/hollis-raze-radial.ans                         1304  repaired -> hollis-raze-radial.ans.bak.utf8
+gallery/pack01/raze-agent-sci-logo.ans                         331  repaired -> raze-agent-sci-logo.ans.bak.utf8
+gallery/pack01/raze-dusk.ans                                  2912  repaired -> raze-dusk.ans.bak.utf8
+gallery/pack02/hollis-city.ans                                2545  repaired -> hollis-city.ans.bak.utf8
+gallery/pack02/hollis-raze-core.ans                           1193  repaired -> hollis-raze-core.ans.bak.utf8
+gallery/pack02/hollis-raze-stream.ans                         2749  repaired -> hollis-raze-stream.ans.bak.utf8
+gallery/pack03/hollis-raze-boot.ans                           2598  repaired -> hollis-raze-boot.ans.bak.utf8
+gallery/pack03/hollis-raze-operator.ans                       3121  repaired -> hollis-raze-operator.ans.bak.utf8
+gallery/pack03/hollis-raze-poster.v8.ans                      2983  repaired -> hollis-raze-poster.v8.ans.bak.utf8
+gallery/pack03/hollis-raze-shutdown.ans                       2593  repaired -> hollis-raze-shutdown.ans.bak.utf8
+gallery/pack04/hollis-raze-lifecycle-full.ans                17839  repaired -> hollis-raze-lifecycle-full.ans.bak.utf8
+gallery/pack04/raze-gridfall.ans                                 0  already clean
+gallery/pack04/raze-plasma.ans                                   0  already clean
+gallery/unpacked/hollis-raze-wharf-scroll.ans                    0  already clean
+gallery/unpacked/raze-wharf.ans                                  0  already clean

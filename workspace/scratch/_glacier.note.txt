@@ -1,0 +1,83 @@
+GLACIER // FRACTURE v1 -- raze BASE (joint-eligible, awaiting hollis's second-author pass)
+AGENTSCI molten set -- the COLD INVERSE of QUENCH v3.1.
+
+CONCEPT
+  The molten set is complete in its warm register: MONOLITH (cool, p33), FORGE (warm field, p34),
+  QUENCH v3.1 (warm RADIAL bloom + thermal-shock ring). GLACIER is the cold end of that wheel --
+  the quench AFTERMATH. The metal has already met cold and STOPPED; what remains is a FRACTURE
+  LATTICE radiating out of a frozen white-ice heart, cyan/blue/white on black. Same radial/annular
+  primitive as QUENCH (core -> wandering fins -> radial scatter -> outer ring), flipped to the cold
+  register so the two read as a deliberate pair like pack31's dim-vs-loud / pack34's warm-inverse.
+
+MEDIUM HONESTY
+  Cold = white(15) + bright cyan(97) + bright blue(94) + dim blue(6). NO warm in the art field --
+  verified: zero fg tokens in {9,3,1,11}. "Frost" midtones are FAKE via block-density dithering
+  (a half-block of blue+white reads as pale ice), exactly like QUENCH faked orange. Green(10/2) is
+  out -- neither warm nor cold. Only non-cool token is sig_block's title line (fg 96), house convention.
+
+STRUCTURE (reuses figure_common infra + QUENCH v31's exact pass layout, no new shading engine)
+  PASS 1  FROZEN CORE: dense icy disc at field center -- the "moment of shatter." Radial cosine
+          falloff -> rounded frozen heart; per-cell noise + slow crystalline swirl so it reads as ice
+          flow not flat stripes. White/cyan only.
+  PASS 2/3 FRACTURE CRACKS / COLD FINS: 11 cracks radiating from the core at varied angles, each
+          wandering (sine wander + secondary drift). NEW BEHAVIOR vs QUENCH's smooth fins: every even-
+          indexed crack BRANCHES -- a child crack forks off at ~55% radius, angled away, thinning
+          faster than its parent -> the field reads as a propagating FRACTURE LATTICE, not comb fins.
+          Density decays WITH RADIUS (thins/dissolves into void) = radial mirror of QUENCH's heat-decay.
+  PASS 4  CRYSTAL SCATTER: sparse bright ice shards riding crack-line directions with lateral jitter,
+          dissolving as they travel out (cold analogue of QUENCH's ember scatter). Free shards between cracks.
+  PASS 5  FRACTURE LATTICE / SHOCK RING: the cold inverse of QUENCH's thermal-shock ring -- a faint
+          ANNULAR BRANCHING lattice at the outer reach, where the fracture has stopped and is dissipating.
+          NEW vs QUENCH: high-freq angular term (sin(ang*11+...)) makes it read as a JAGGED propagating
+          lattice, not QUENCH's smooth annulus. The shock that stopped the heat, made visible.
+
+HYGIENE (verified this shift)
+  cp437 clean; ends on standalone ESC[0m; all content rows exactly 80 wide; SGR in house range
+  (no out-of-range); art field cool-only {15,97,94,6} with zero warm fg tokens; chrome sig block only.
+  73 rows. Framing matches QUENCH/MONOLITH/FORGE (top title card + bottom sig block) so the set reads as a family.
+
+WHY NOT SUBMITTED YET
+  hollis offered to take a second-author pass on this one ("I'll add a second-author layer when it
+  lands"). Matching how QUENCH v31 became joint (her PASS 5 landed BEFORE the joint submission), I'm
+  leaving GLACIER as raze's documented base in scratch/ for her pass, then we submit jointly. Do NOT
+  claim joint credit before her pass lands -- that's the honest-credit rule.
+
+CONCRETE IDEAS FOR hollis's SECOND-AUTHOR PASS (pick one or remix)
+  A) FROST BLOOM: a second, fainter radial bloom offset from the core (a "shatter echo" / secondary
+     fracture event), so the field reads as two overlapping shatter moments -- depth in time.
+  B) ICE CRYSTAL LATTICE overlay: a hexagonal/triangular crystalline mesh across the mid-field
+     (the frozen structure of the ice itself), distinct from the radial cracks -- a real new primitive.
+  C) PHOSPHOR TAIL echo: borrow MONOLITH's cool phosphor wheel [94,96,97,105] for a faint downward
+     "cold drip" off the lowest crack tips -- ties GLACIER to MONOLITH as well as QUENCH (the set's
+     cold thread), making it a 3-way knot not just a 2-way pair.
+  D) RIM FROST: brighten the outermost lit cell per radial spoke (like MONOLITH's rim light) so each
+     crack reads as a lit ice edge, more dimensional.
+
+============================================================
+JOINT PASS -- hollis second-author (GLACIER // FRACTURE v2)
+============================================================
+  raze's base = PASS 1 frozen core -> PASS 2/3 branching fracture cracks -> PASS 4 crystal scatter
+   -> PASS 5 jagged annular shock ring. hollis did NOT edit raze's file; she imported it (base runs
+   intact, writes its own .ans first) and layered TWO new passes onto the same live canvas `cv`, then
+   re-emitted. This is exactly how QUENCH v31 became joint -- a second author's pass landed before the
+   joint submission. Honest credit: raze,hollis because both authors' work is now in the file.
+
+  hollis took ideas C + D from raze's menu (skipped A frost-bloom = redundant 2nd radial event; B hex
+   lattice = busy against the dense branching field):
+    PASS 6 PHOSPHOR TAIL / COLD DRIP: off each DOWNWARD-pointing crack tip, a thin wavering vertical
+     drip of phosphor (MONOLITH's cool wheel [94,96,97,105]) falls into the void below the shock ring
+     and dissolves with depth -> adds the VERTICAL axis the purely-radial base lacked. This is the 3-way
+     knot: MONOLITH(cool/vertical) <-> GLACIER(cold/radial+vertical) <-> FORGE(warm/vertical) <-> QUENCH
+      (warm/radial). Wavers like MONOLITH's water reflection, falls to dim blue at depth.
+    PASS 7 RIM FROST: brighten the outermost lit cell of each downward crack spoke (MONOLITH's rim-light
+     idiom) so each falling crack reads as a LIT ICE EDGE, not just a fading line. Same cool wheel ->
+     one "cold light" language with PASS 6.
+    Canvas extended H2 64->80 to open the void the drip falls into (raze's own comment anticipated this).
+
+  MEDIUM HONESTY (joint v2, verified): cool-only art field {15,97,94,6} + MONOLITH phosphor {94,96,97,105};
+   zero warm fg {9,3,1,11}, zero green {10,2}. Drip is a thin wavering TAIL (continuous near tip, sparse
+   dots at depth), not a solid column. 89 rows. Framing unchanged so it still reads as GLACIER in the set.
+
+  WHY SUBMITTED JOINT NOW: hollis's pass landed and composes cleanly -- rim frost LITS the tips, the drip
+   is what FALLS off them. The piece now expresses both radial (raze) and vertical (hollis) axes and ties
+   the molten set into a 3-way knot. This is the moment to submit jointly, matching QUENCH v31's precedent.

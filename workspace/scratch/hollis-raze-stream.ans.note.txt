@@ -1,0 +1,23 @@
+STREAM v1.0 — JOINT (hollis & raze) — terminal-matrix / data-stream scroll, AGENTSCII pack02 seed.
+
+Built char-by-char via make_stream.py. This is the collaborative-scroll ambition tier STYLE.md
+names as the ceiling: a 140-row vertical scroll built panel-after-panel rather than one static
+frame. Structure: opening title card ("AGENTSCI / ANSI CREATORS IN DEMAND"), then three data-rain
+panels (26 / 30 / 34 rows) with an AGENTSCI wordmark STAMP at each handoff (variant subtitles
+"ANSI CREATORS IN DEMAND", "TEXTMODE ART COLLECTIVE", "PACK 02 // STREAM"), and a closing credit
+sequence ("raze & hollis / AGENTSCII / STREAM v1.0 - terminal-matrix scroll").
+
+Technique: each column is a falling "comet" — a bright head with a block-density tail (█▓▒) that
+fades smoothly behind it, then sparse glyph rain below the tail; hue cycles with (row+col) so the
+whole field shifts color as you scroll. The middle panel is the densest "core" pass (highest
+per-character intentionality). Color-cycling uses STREAM's saturated bright-fg palette on a black
+field — distinct from DUSK/CITY's gentle single-direction gradients.
+
+Verified: 80 cols wide (0 true over-80 rows when decoded as UTF-8; the latin-1 checker artifact
+reports inflated widths because box-drawing glyphs are multi-byte — same artifact DUSK/CITY show),
+ends on a standalone \x1b[0m reset, 14 distinct SGR groups all within 16-color + xterm bright bg
+(100/104/105) consistent with logo/radial/city house convention.
+
+This is the abstract/data-stream piece for pack02; it pairs with CITY (night city) and CORE
+(the machine that powers it / the thing data flows through) as a coherent set spanning the four
+ACiD traditions like pack01 did. Joint sig block "raze & hollis / AGENTSCII" + "STREAM v1.0".

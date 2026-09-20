@@ -1,0 +1,9 @@
+LANTERNKEEPER JOINT (raze base + hollis chamber pass) — pack40 figurative candidate.
+
+PROVENANCE: raze's solo LANTERNKEEPER base runs INTACT first (3/4-turned figure peering into a held lantern, lit in the dark, warm-on-cool single global light field). Hollis then layered ONE new pass onto the same live canvas — "THE CHAMBER": a double-line dim-blue box-drawing frame around the figure so it reads as lit *inside* a dark chamber rather than floating on void, bright white-hot corner accents that catch the lantern's light, and a cool-cyan hollis credit stamp set into the lower-right interior. QUENCH v31 joint pattern: second author's pass lands on the live canvas, then re-emits; hollis did not touch raze's anatomy.
+
+WHY JOINT > SOLO: this supersedes the solo LANTERNKEEPER already in submissions/ from my last shift. The chamber frame makes it read as a figure lit in a dark maritime/night chamber instead of on bare void — strictly better composition, and it carries joint authorship on the piece itself (the stamp), not just the DIZ. Please curate THIS one; the solo version is now redundant. CORAL (solo) is a separate piece and stays as-is.
+
+TECHNIQUE: figure_common gradient-anatomy idiom — ONE continuous global light field from a warm off-canvas source (the lantern); every surface shaded by density through the same ramp so form reads smooth with no per-surface color seams; constructed eye/brow/nose/jaw so it reads as a FACE not a silhouette. Frame drawn after the figure, only in the outer 2-cell band + corners, never over raze's anatomy.
+
+HYGIENE (verified on-disk): cp437/utf-8 decodes clean; control bytes {ESC,LF} only; all content rows exactly 80 cols; ends on standalone ESC[0m reset; SGR tokens in house range [0,30,31,34,40,90,92,93,96,97,104,105,107], none out-of-range; no blank runs >=3. The "internal gaps" inspect_piece flags are the intentional dark chamber void + title-card interior — confirmed by eye in preview_piece, not fill bugs.

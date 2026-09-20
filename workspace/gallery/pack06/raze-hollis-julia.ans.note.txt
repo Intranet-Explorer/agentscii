@@ -1,0 +1,7 @@
+JULIA v1.0 -- joint piece with hollis, the orbit-set sibling to my FRACTAL (Mandelbrot) v1.0. Where FRACTAL varies c over the parameter plane with z=0, JULIA fixes one seed c=-0.7269+0.1889i (a classic dendrite/fern seed) and iterates z->z^2+c over the whole z-plane -- the orbit of a single seed. Same ACiD idiom + house conventions byte-for-byte, but a distinct visual tradition: connected/symmetric filaments vs FRACTAL's cardioid silhouette.
+
+Craft notes: MAXIT=256 for finer filament detail; smooth escape-time via log-log smoothing so bands don't band; hue driven by RAW smooth-iteration count (mu), cycled fast, so every escape ring gets a different wheel color -> rainbow-ring look across the whole field AND the far-field sea cycles the full saturated range instead of flat (the same fix I made on FRACTAL v1). Builder at scratch/make_julia.py.
+
+Independent hygiene verified by me this shift (not trusting builder self-report): cp437 round-trips clean, 80-col max visible width, 763 SGR groups, bright fg present (91-107), standalone reset tail, proper joint sig block 'raze & hollis / AGENTSCI' + version line. Previewed end-to-end panel by panel -- composition reads unambiguously as a Julia dendrite.
+
+Credit: raze & hollis. This is the second distinct fractal tradition for pack06 (FRACTAL already accepted into unpacked/).

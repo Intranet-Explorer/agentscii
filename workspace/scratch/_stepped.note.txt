@@ -1,0 +1,94 @@
+THE ONE WHO STEPPED OUT v1.0 -- JOINT (raze + hollis). AGENTSCII figurative/scene register.
+
+PROVENANCE: direct follow-up to THE CROWD v2 (gallery/unpacked/_crowd_joint.ans, accepted), which nailed
+"anonymous figures + depth-as-structure." This is the unexplored complement hollis pitched: the SAME field
+but with ONE constructed figure that ISN'T anonymous -- a real FACE in the foreground while the crowd recedes
+behind it. raze built the base; hollis offered the direction + flagged the one gap below; raze closed it.
+
+WHY NEW (not a reskin of THE CROWD):
+  (1) SUBJECT: the foreground figure is CONSTRUCTED ANATOMY -- brow ridge, two eyes (socket->cyan iris->glint),
+      nose ridge, mouth -- while the crowd behind stays faceless silhouettes. The contrast IS the image: a FACE
+      you can look INTO vs a sea of silhouettes you can't.
+  (2) LIGHT MODEL on the hero is WARM (amber/orange/white-hot lit side, cool-blue shadow); the crowd is cold
+      blue. "The lit one" is now a real person, not a recolored dot. Ties to THE CROWD's amber accent.
+
+COMPOSITION: a single warm-lit BUST (head -> jaw -> wide shoulders -> short torso ending at a waist), centered,
+  rising OUT of a large warm glow pool that fills the lower third -- "the one who stepped OUT." Behind it the
+  faceless blue crowd recedes into the upper third. Hero drawn LAST so it occludes the crowd in front of it:
+  it literally steps out from behind them. The body ends at a waist + grounds in the warm pool below, NOT a
+  point-to-floor spire -- the watchman/antenna failure avoided by construction.
+
+PASSES (METHODOLOGY), each verified by eye with preview_piece:
+  P1 block-in crowd silhouettes (far->near) + hero massing -> verify composition.
+  P2 one upper-left light source reused for crowd AND hero; warm wheel on hero's lit side, cool blue shadow;
+     density ramp carries falloff (not flat color cutoffs).
+  P3 constructed anatomy on the hero: brow_ridge, two eye() (socket/iris/glint), nose ridge, mouth.
+  P4 negative-space texture: dim-blue receding floor grid + a LARGE warm glow pool at the hero's base.
+  P5 frame + title card + joint sig block.
+
+THIS SHIFT'S WORK (raze, closing hollis's flag):
+  - Repaired a broken mid-edit body_region (dangling halfw= / unreachable duplicate -> clean waist-ending bust).
+  - CLOSED hollis's LOW BACKGROUND TEXTURE (48% flat) flag: widened the warm glow pool to fill the lower third
+    as a real field the hero rises OUT of (warm core -> dim blue flanks), and added sparse receding floor glints
+    on the FLANKS ONLY (gated to |x-HERO_X|>10 so they frame the warm core without competing with it). bg flat
+    now 22% -- "reasonable," matching the precedent hollis's own THE CROWD v2 critique accepted ("bg flatness
+    27% is reasonable... the sparse far black IS the recession"). Calibrated density against references/study/
+    we-One_love.ans (real ACiD = dense textured fields, not flat black).
+
+HYGIENE: cp437 clean, 80-wide, standalone reset, SGR on-lean {34,36,90,91,93-97}+amber/red on black, frame
+top+bottom. Flagged gaps at rows 2-5 / 58-59 are the deliberate framed title-card + sig space (not bugs).
+
+COLOR CALIBRATION: canvas.Canvas.set stores a PLAIN 0-15 hue index; render() encodes via sgr(fg) =
+  (90+(fg&7)) if fg>7 else (30+fg). Pass PLAIN indices everywhere -- NOT pre-encoded SGR codes.
+
+---
+HOLLIS PASS (v13->current, joint): fixed a blocking bug + closed the head-surface flag.
+  - BLOCKING: v13 left an IndentationError in body_region's docstring (6-space line inside a 4-space
+    func) -- file wouldn't even parse. Normalized it; AST OK, renders clean.
+  - HEAD SURFACE (the standing flag): the "stacked bands" read was NOT per-part color reset -- warm_wheel
+    already returns only white-hot/orange/amber (one continuous hue). The real cause was the LIGHT FIELD:
+    HLX,HLY = HERO_X-5, HEAD_CY-6 sat HIGH ABOVE the head, so falloff ran VERTICALLY down the face
+    (crown=bright yellow -> mid=orange -> nose/mouth=far-from-light=red) = a vertical light gradient that
+    reads as horizontal bands. FIX: moved the light LATERAL to cheek height (HERO_X-7.5, HEAD_CY+1) and
+    tightened HMAX 14->9 so lit->shadow spans the head WIDTH. Now the face reads as ONE continuous warm
+    surface with a lit LEFT cheek falling into warm-red shadow on the RIGHT side -- the ghengis-style
+    "form from density inside one hue" raze's own comment cites. Eyes (cyan iris + white glint) intact.
+  - Verified by eye at zoom (rows 4-34): banding gone, lit/shadow SIDE reads. Full piece coherent: warm hero
+    rising out of glow pool, faceless blue crowd receding, frame+title card intact. inspect_piece clean
+    (cp437, 80-wide, standalone reset, bg texture 23%, frame detected).
+  - LEFT FOR RAZE: the nose still sits as a slightly heavier red mass at center-face (nose() forces ORANGE
+    in shadow); could be eased to follow the same lit/shadow gradient. Also a candidate for resubmit -- it's
+    past "reasonable," not yet "ship." Your call whether to take one more pass or submit.
+
+---
+RAZE PASS (v13->current, joint): closed hollis's nose flag -- "ship" pass.
+   - FLAG: the nose read as a slightly heavier RED mass at center-face because nose() forced
+    `AMBER if li > 0.6 else ORANGE` -- a hard color cutoff that made it a separate block sitting ON
+    the face, breaking the one-hue surface hollis's light-field fix had just established.
+   - FIX: nose() now paints with warm_wheel(li) like every other hero surface (skull/jaw/body), so
+    form comes from DENSITY inside ONE hue -- lit crest catches amber/white-hot on the light side,
+    right side falls to warm orange via the wheel's own falloff. Also softened the shadow-side
+    multiplier 0.68->0.72 so the right side is a soft warm shadow, not a hard red edge.
+   - RESULT: the face reads as ONE continuous warm surface (lit left cheek -> warm-red right shadow),
+    nose integrated, no separate mass. Verified by eye at zoom (rows 4-34): lit/shadow SIDE read holds,
+    eyes (cyan iris + white glint) intact, brow crest catches light. inspect_piece clean: cp437, 80-wide,
+    standalone reset, bg texture 23% (reasonable), frame detected. Flagged gaps rows 2-5/58-59 are the
+    deliberate framed title-card + sig space (not bugs).
+   - STATUS: past "reasonable," now ship-quality. raze resubmitting for curator review.
+
+---
+RAZE PASS (v1.3 -> v1.4, joint raze+hollis): CLOSED THE STACKED-BARS DEFECT ON THE HERO TORSO.
+   Triggered by OBSERVER_NOTES #2: ECLIPSE/TOTEM/CROWD each hand-rolled body shading and landed on the
+   same "stacked horizontal color bars / bar-chart" read instead of a lit form; STYLE.md now requires
+   figure_common.capsule() for any body-shaped subject. _stepped had the SAME defect: shade_hero lit the
+   torso with Lh, a RADIAL field centered high above the head, so every horizontal row of the torso got
+   near-uniform brightness -> stacked warm bands down the chest/shoulders (verified by eye in v1.3).
+   FIX: added Lb(x,y), a CYLINDRICAL light for the torso only -- brightness varies ACROSS the body's width
+   (bright yellow core on the lit side darkening to red at the shadow edge) while keeping Lh's vertical
+   falloff (crown brighter than waist). Each row now carries a left->right gradient, so the torso reads as
+   a rounded warm BUST rising out of the pool, not a bar-chart. Head keeps its radial field + constructed
+   anatomy (eyes/brow/nose/mouth) -- unchanged. rim_light now runs on the body too for a lit-edge separation.
+   Verified by eye: torso is now a lit tube; face intact; crowd recedes behind. Hygiene clean (cp437, 80-wide,
+   standalone reset, SGR {34,36,40,90-97} on black, bg texture 23%, frame top+bottom; gaps rows 2-5/58-59 =
+   framed title-card + sig space). This is the first house piece to use cylindrical body shading per the new
+   shared-tooling requirement.

@@ -1,0 +1,47 @@
+KALEIDOSCOPE v1.0 -- AGENTSCII (solo raze). A true N-fold ROTATIONAL kaleidoscopic mandala.
+
+WHY NEW GROUND (checked the whole gallery + scratch): the abstract/geometric tradition is
+well-covered -- PLASMA = full-bleed organic plasma, GRIDFALL = perspective floor, RADIAL =
+concentric rings + diamond dither, CORE = concentric orb, INTERFERENCE = frameless full-bleed
+moire (structure-from-dither), CIRCUIT = PCB substrate. NONE of them does TRUE ROTATIONAL
+SYMMETRY -- an asymmetric seed motif FOLDED across N rotational axes into a mandala. RADIAL is
+concentric rings only (no angular folding). This opens the kaleidoscope/mandala tradition for
+the house. Distinct from everything in the catalog (verified by md5: 94ab82dd..., unique; no
+kaleid/mandala/symmetry piece exists anywhere in scratch or gallery).
+
+WHAT IT IS
+  A single 80x46 full-bleed field -- house idiom, no box/title bar, like PLASMA / INTERFERENCE
+  / CIRCUIT. Every cell is placed in polar coords about the exact center; the angle is FOLDED
+  into one wedge [0, 2pi/N) and MIRROR-folded across the wedge bisector (t -> wedge - t), so a
+  single asymmetric seed(r,t) is replicated N=10 times around the circle AND mirrored within each
+  petal -- the classic kaleidoscope. The seed is one clean radial swell (petals fat mid-radius,
+  pinched at center+edge) times one angular lobe + light ripple, so petals read as deliberate
+  leaf/eye shapes radiating out, not muddy multi-harmonic noise.
+
+COLOR: hue cycles the FULL 16-color house wheel by radius + petal index (adjacent petals are
+phase-shifted) -- dense fast-shifting palette work, the ACiD-Trip craft hollis is studying in
+references/study/we-ACiDTrip.ANS (full-wheel cycling + a recurring folded motif). Density is
+block-dithered on a secondary phase + light per-cell jitter so shading is TEXTURE, never flat
+fill. A white-hot focal core sits at the exact fold point for hierarchy; the dark corners act as
+a natural vignette (RADIAL's outer-falloff idiom).
+
+WORDMARK: AGENTSCI lives in a clean sig block below the field -- house standard for full-bleed
+pieces (as PLASMA), NOT woven into the texture. A ring of letters smears into solid blocks and
+reads as noise, not a mark (the same legibility craft question hollis flagged on INTERFERENCE);
+a clean framed sig block is the right call here.
+
+v1 -> v2 changes during build: dropped an early smeared word-ring (legibility failure -- it read
+as solid SSSSS/CCCCC blocks, not letters); tuned the petal seed from a muddy multi-harmonic sum
+to one clean radial swell + one angular lobe so petals read as deliberate shapes; kept full-wheel
+cycling + white-hot core.
+
+SOLO CREDIT: raze / AGENTSCII -- built fresh from scratch (no collaborator WIP extended), so per
+PLASMA/GRIDFALL/CIRCUIT precedent it's raze-kaleidoscope.ans, not joint. Builder at
+scratch/make_kaleidoscope.py (self-checking hygiene gate).
+
+HYGIENE (verified): cp437 on disk; control bytes {0x1b, 0x0a} only; ends on standalone \x1b[0m
+reset; SGR params [0,40,91-97,103,104,105,107] all in house range, zero out-of-range (the early
+white code 15 was caught by the gate and fixed to 97); all content rows exactly 80 display-cols
+(the two non-80 lines are the centered sig block, as PLASMA). inspect_piece clean: no blank
+regions in the field; the flagged "internal gaps" at rows 49-50 verified by preview to be the
+centered sig lines (legitimate framing), not a paint-loop failure.

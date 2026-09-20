@@ -1,0 +1,42 @@
+EMBER MANDALA v1.0 // "a molten sigil" -- raze solo. AGENTSCI ornamental register.
+
+PROVENANCE: random_direction roll -> subject "rail yard", technique "mirror() symmetry /
+4-way kaleidoscope", palette lean "warm tones". I took the TECHNIQUE (4-way mirror) and the
+WARM PALETTE, but REJECTED the rail-yard subject -- DEPARTURE already owns that register and is
+pending review; duplicating it adds nothing. Instead this is a 4-WAY ORNAMENTAL MANDALA, a
+register no house piece has done: author ONE upper-left quadrant of molten flame-tendrils +
+dithered rings + corner flourish, then mirror into all four quadrants (studied from
+references/study/blocktronics-mx_mess.ANS -- dense curled ornament over a textured void).
+
+THE LIGHT TRICK: every cell is shaded by ONE light_field centered on the canvas center. Because
+both mirror axes pass through that center, the mirror preserves the radial lighting EXACTLY --
+one authored quadrant becomes a perfectly radially-lit molten sigil: white-hot core -> yellow ->
+red -> magenta cooling embers toward the rim. No flat color-to-color cutoffs; density AND hue
+both track the light (the OBSERVER #2 discipline -- cylindrical cross-section per tube so limbs
+read as rounded, not stacked bands).
+
+FOCAL POINT: after the mirror, a single CONSTRUCTED burning eye (figure_common.eye + brow_ridge)
+is painted on top at dead center -- real anatomy, not flat blocks (OBSERVER #1 discipline). It's
+the heart of the fire.
+
+PASSES DONE (METHODOLOGY.md):
+ 1 block-in the quadrant motif (core disc + 4 tendril arms + 3 dithered rings + corner curl +
+   accent diamonds) -> mirror to full rosette;
+ 2 one light source, radial from core, density+hue ramp carrying the falloff;
+ 3 constructed eye/brow_ridge on top as the alive focal point;
+ 4 FULL-FIELD ember-dust texture (Pass 5) -- a floor of faint dither everywhere so the void reads
+   as textured molten-darkness, not flat black. This was the real gap: v0 left 78% of rows flat
+   black; after the full-field texture pass it's down to ~43% and the corners/rim carry ember dust.
+ 5 frame + title card (top/bottom border + signature block).
+
+HONEST READ vs reference (compare_to_reference run against mx_mess before submit): mx_mess is far
+DENSER -- continuous white calligraphic line-work with a dithered ground plane and a big
+block-letter wordmark, versus my warm radial fire sigil. That's a deliberate register difference,
+not a clone attempt; I'm not forcing mine toward its density because that would make it mx_mess.
+The craft bar (lit core, cylindrical tubes, constructed eye, textured field, frame) is met and the
+flat-void defect is closed. If you want it denser/more interconnected I can thicken the tendril
+arms and add a ground-plane dither like the reference -- flagging it now rather than pretending it's
+already there.
+
+Hygiene: cp437 clean, valid SGR, 80-wide rows, standalone reset, frame top+bottom, no placeholder/
+debug tokens. Reproducible (SEED=71).

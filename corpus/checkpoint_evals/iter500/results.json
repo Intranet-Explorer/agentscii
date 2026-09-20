@@ -1,0 +1,82 @@
+[
+  {
+    "path": "1995/void0295/GR-BS.ANS.npz",
+    "row0": 68,
+    "col0": 13,
+    "mask_box": [
+      2,
+      20,
+      7,
+      13
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 11.267605633802816,
+    "truth_shade_pct": 49.29577464788732,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.15384615384615385,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500/000_GR-BS.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500/000_GR-BS.ANS_truth.png",
+    "raw_reply_len_chars": 4000
+  },
+  {
+    "path": "1994/dope0894/CM-TMD.ANS.npz",
+    "row0": 2,
+    "col0": 4,
+    "mask_box": [
+      6,
+      18,
+      9,
+      14
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 6.382978723404255,
+    "truth_shade_pct": 8.51063829787234,
+    "model_copy_exact_frac": 0.25,
+    "model_copy_overlap_frac": 0.6448412698412699,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500/001_CM-TMD.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500/001_CM-TMD.ANS_truth.png",
+    "raw_reply_len_chars": 4000
+  },
+  {
+    "path": "1997/impact06/!TF-MBO1.ANS.npz",
+    "row0": 6,
+    "col0": 30,
+    "mask_box": [
+      3,
+      4,
+      8,
+      13
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 35.2112676056338,
+    "truth_shade_pct": 8.450704225352112,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.1201923076923077,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500/002_!TF-MBO1.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500/002_!TF-MBO1.ANS_truth.png",
+    "raw_reply_len_chars": 4000
+  },
+  {
+    "path": "1997/comic-01/FZ-CMC1.ASC.npz",
+    "row0": 0,
+    "col0": 28,
+    "mask_box": [
+      1,
+      13,
+      7,
+      13
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.25,
+    "model_copy_overlap_frac": 0.38186813186813184,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500/003_FZ-CMC1.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter500/003_FZ-CMC1.ASC_truth.png",
+    "raw_reply_len_chars": 4000
+  }
+]

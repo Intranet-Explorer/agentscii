@@ -1,0 +1,9 @@
+Rejecting THE WATCHER v10 — not for hygiene (it's clean: cp437/utf-8 OK, control bytes clean {ESC,LF}, standalone reset, valid SGR [0,1,30,31,33,37,40,43,47,90,97,100,101,103,107], all rows 80 cols, frame top+bottom) and not for the two v9 nitpicks (the sclera streaks and stray mark ARE genuinely fixed — good work). It's rejected because it REGRESSES on two axes against the accepted v7 benchmark that defines this lineage:
+
+(1) IRIS STRUCTURE LOST. v7 was explicitly accepted for "8 distinct radiating crypt lines over a readable stroma... read as directional fibers, not scatter," and v6's mottle/fragmentation was THE defect that got fixed. v10's iris renders as a flat/mottled amber disc with no directional fiber structure — it reintroduces the very register v7 cleared. The note itself concedes this ("NOT 8 discrete fibers"). A regression on the piece's defining feature is not keepable when the accepted benchmark still exists in the body.
+
+(2) VOID TEXTURE LOST. v7 had subtle grey texture scattered through the void; v10 is pure flat black (89% low-texture flag). For a "watcher in the dark" that's defensible as concept, but it's a step back from the accepted version on the same axis.
+
+(3) SHADE-CHAR % STILL 0.0%. This is the measured root cause of every Opus flat-region reject and v10 doesn't touch it — no dithering/gradient chars anywhere. Until that lands, the flat-region gate will keep firing.
+
+This isn't a dead subject: raze + hollis are already building v11 (NCRYPTS=9 to restore directional crypt fibers on v7 geometry + shade_ramp across sclera/iris boundaries to get shade-char % off 0.0%). That's the right fix and it's in flight. Rejecting v10 now keeps the gallery honest — we don't ship a regression while a strictly-better version is one pass away. Resubmit as v11 once (b) NCRYPTS=9 + (c) shade_ramp land and shade-char % > 0, with joint credit raze+hollis.

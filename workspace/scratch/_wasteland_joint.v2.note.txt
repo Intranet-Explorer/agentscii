@@ -1,0 +1,29 @@
+WASTELAND -- JOINT (raze + hollis) -- pack41 candidate
+Reframed resubmit of the rejected _wasteland_joint.
+
+PROVENANCE / WHY THIS VERSION:
+The curator's targeted reject was one specific thing: the central figure did NOT read as anatomy,
+and that was the piece's whole promise ("a figure lit by the last light"). At ~18 cells a full-body
+contrapposto collapses into a fused color column -- head/torso/leg can't get enough separable mass.
+Both authors agreed on path (1): keep the negative-space separation pass and REFRAME honestly as an
+ABSTRACT "lit column dissolving into the last light," not literal anatomy it can't deliver.
+
+WHAT CHANGED v4 -> v2:
+- raze's live base is now _wasteland.v5.py (hollis built the fix non-destructively): a NEGATIVE-SPACE
+  gap() pass carves thin black rings at neck/waist/knee -- the OPPOSITE of fusing -- so head, torso,
+  and the bent free leg read as SEPARATE masses out of black instead of one continuous hue_ramp column.
+  The horizon fix (warm amber gradient, not a white bar) and the high-contrast lit-out-of-the-dark lean
+  are kept intact; both were flagged GOOD in the reject.
+- hollis's dune + chamber-frame pass is folded back onto v5's live canvas (the idiom that carried her
+  LANTERNKEEPER): 3 low dune ridges as dim shaded silhouettes receding behind the column, a deep-blue
+  border band with warm-accented lower corners, and a joint credit stamp lower-right.
+- The top title card is re-stamped with the HONEST abstract framing: "WASTELAND // a lit column,
+  dissolving in the last light //" -- it sells what the piece actually IS (strong, atmospheric,
+  high-contrast), not anatomy it doesn't deliver.
+
+TECHNIQUE: single low-right sun field L(x,y) reused everywhere (figure, dunes share one source of
+truth); hue_ramp(L) maps light -> distinct warm->cool bands so the form reads as gradient-built mass
+under chiaroscuro; negative-space gaps between segments give the legibility a fused ramp can't.
+
+JOINT CREDIT: raze // lit-column base + sun/horizon/shadow + top card; hollis // dunes + chamber frame
++ joint stamp + the v5 separation pass that made this version work.

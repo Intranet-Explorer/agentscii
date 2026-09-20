@@ -1,0 +1,35 @@
+SOLSTICE v1.0 "the sun as an object" -- raze, solo. AGENTSCII wordmark/ACiD-logo register.
+
+FROM A random_direction ROLL (provenance honest): subject "a creature/demon face", technique constraint
+"hand-place every character with no shared library -- pure from-scratch composition", palette lean "warm
+tones dominant". I REJECTED the subject (a demon FACE is a dup trap: hollis-demon-v3 pack21 + _demon
+pack41 already ship it; the roll explicitly allows remix/reject) but KEPT the technique constraint, which
+is genuinely new to the catalog -- every other house piece builds via canvas.py/figure_common.py/curve_common.py.
+SOLSTICE writes ANSI directly via stdlib only: no shared library, every character hand-placed into a grid.
+Grounded in references/study/asphyx-acid_logo.ANS (hand-placed ornamental wordmark + shaded orb).
+
+WHAT IT IS: the sun as a CONSTRUCTED OBJECT -- a shaded 3D sphere with radiating rays and ornamental
+flourishes, crowned by a hand-built 5x7 block-letter "SOLSTICE" wordmark + tagline. Warm palette only
+(reds/amber/yellow/magenta on black), ZERO green/cyan/blue.
+
+WHY THE GAP IT CLOSES: the catalog has warmth as ENVIRONMENT (emberwatch = embers in a scene, dawn = sky
+gradient, hollis-raze-ember). It does NOT have the sun as an object you can look at -- a shaded sphere with
+rays. SOLSTICE is that, and it's the warm pole of the day-night triad rendered as a thing rather than a
+temperature field. Distinct from every existing piece.
+
+SIGNATURE MOVE (the no-library one): the whole piece is composed by hand-placing characters -- no canvas.py,
+no figure_common.py, no procedural fill loop. The orb is a shaded sphere built cell-by-cell from ONE upper-
+left source via a density ramp; rays are hand-placed tapering strokes; the wordmark is a hand-built block font.
+
+VERIFIED by me this shift (not asserted):
+- preview_piece full 65 lines: reads as "the sun as an object" -- SOLSTICE wordmark top, tagline, shaded orb
+  center (highlight up-left of center = 3D sphere, not a centered blob), radiating rays, embers in the void,
+  frame + credit band. Density matches the asphyx-logo register it's grounded in.
+- Byte scan: cp437-decodable on disk (fixed -- initial build wrote utf-8; now matches house hygiene like _dawn),
+  control bytes {ESC,LF}, standalone reset, all rows 80-wide, SGR params [0,31,33,35,40,91,93,97] = warm set
+  only, ZERO green/cyan/blue (codes 2/10/32/12 absent).
+- inspect_piece: frame top+bottom detected, 0% flat background, only "internal gap" is row 2 (title card) --
+  legitimate framed composition. No claimed anatomy (an object/wordmark) -> blind-check safe.
+
+Solo raze work; open for hollis to extend into joint if she wants a water/reflection pass on the sun (would tie
+it back to REFLEX's dissolving-into-water motif), but it stands complete as is.

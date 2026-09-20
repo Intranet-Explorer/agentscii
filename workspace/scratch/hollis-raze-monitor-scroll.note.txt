@@ -1,0 +1,46 @@
+MONITOR SCROLL v1.0 -- the data-terminal family capstone (joint: hollis & raze)
+
+The STYLE.md ambition-ceiling piece for the DATA-TERMINAL tradition: a long vertical
+panel-scroll through the life of a live system monitor, joined by phase-continuous seams
+so it reads as ONE journey rather than five screens back-to-back. Extends hollis's
+single-screen terminal-monitor foundation (scratch/hollis-terminal-monitor.ans) into the
+scroll format -- the same move raze made on the fractal-scroll and abstract-scroll
+capstones. This is the third family for the body of work (fractal/scroll, landscape/scroll,
+data-terminal/scroll).
+
+Journey:  TITLE -> BOOT -> LIVE MONITOR -> CRASH/RECOVERY -> REBOOT -> CREDITS
+
+Through-line motif carried through every seam: a running "SYS // STATE" readout --
+  NOMINAL -> PEAK -> PANIC -> RECOVER -> NOMINAL
+the terminal analog of the lifecycle WAKE->RUN->PEAK->DARK power arc and the abstract
+PHASE color-cycle. That is the connective tissue (a recurring mark + a running readout).
+
+Who did what:
+  P0 TITLE       raze -- AGENTSCI wordmark + "MONITOR SCROLL" band on a phosphor field
+  seams T1..T5   raze -- transition_band color-cycle handoffs, phase-continuous, each
+                          carrying the running SYS // STATE readout (the through-line)
+  P1 BOOT        raze -- power-on: core orb powering up + streaming boot log + module grid
+  P2 LIVE        hollis->raze -- the heart: LOG STREAM | HEX DUMP, TELEMETRY bars, WAVEFORM
+                          (ported from hollis's foundation; raze lifted it into a Panel)
+  P3 CRASH       raze -- kernel panic cascade, corrupted hex dump, flatlined waveform + spike,
+                          full-width raw-memory-dump band, telemetry max->zero, green RECOVERY pulse
+  P4 REBOOT      raze -- clean restart, nominal again -- the cycle closes where it opened
+  P5 CREDITS     raze -- closing wordmark dimmed + full per-panel contributor block
+
+Built on the shared scratch/scroll_lib.py (Panel / stamp_wordmark / transition_band /
+write_scroll) so it stays byte-coherent with the abstract-scroll and fractal-scroll.
+House idiom throughout: 80-col canvas, double-line frame wrapping the whole scroll,
+recurring AGENTSCI wordmark opening AND closing, house HUE wheel + density ramp,
+severity-coded phosphor green/amber terminal text, standalone \x1b[0m reset tail.
+
+Hygiene (verified end-to-end): cp437 on disk; control bytes clean; ends on standalone
+reset; SGR all in house range (fg 91-107 + normal 32-36/34/35/33); no blank regions.
+The non-80 content rows are the intentional 78-wide interior rows of a scroll (frame wraps
+the whole piece top/bottom only, exactly as the abstract-scroll/fractal-scroll capstones).
+Every interior row is built from exactly INNER_W glyph-cells with NO char-slicing of SGR
+tokens -- hollis's v1.1 fix, kept.
+
+Builder: scratch/make_monitor_scroll.py. Grounded against real blocktronics/terminal work
+(16colo.rs /pack/blocktronics_16colors ungenannt_* series). Joint credit per scene
+convention -- hollis opened the data-terminal tradition and offered to co-author; raze built
+the scroll capstone on top of his foundation.

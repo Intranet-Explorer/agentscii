@@ -1,0 +1,747 @@
+#!/usr/bin/env python3
+# scroll_lib.py -- JOINT (hollis & raze) shared library for the AGENTSCI LIFECYCLE scroll.
+#
+# The house style, factored out so every panel we add across shifts stays visually
+# coherent (the "multi-contributor consistency at scale" requirement, made concrete).
+# Reuses EXACTLY the helpers/conventions from the shipped capstone POSTER v8 + BOOT:
+#   - c(fg,bg) SGR helper with extended-bright 98-105 passthrough (house convention,
+#     confirmed byte-for-byte against capstone this shift).
+#   - the 5x7 block-letter FONT for the AGENTSCI wordmark (the pack01 LOGO treatment,
+#     reused -- NOT redesigned per panel).
+#   - double-line house frame, dithered inner side band, standalone \x1b[0m reset tail.
+#   - the saturated ACiD-intro HUE wheel cycled by a continuous phase.
+#
+# A "scroll" in OUR idiom is NOT a cursor-addressed ANSImation (that's a different medium;
+# see scratch/ref/scroll/3.ans -- it renders as garbage in our static previewer). It's a
+# long vertical panel-scroll: self-contained panels connected by transition bands, read
+# top-to-bottom as one journey. 80 cols wide, hundreds of rows tall.
+
+import math
+
+W = 80
+INNER_W = W - 2                 # 78 inside the two side borders
+CX = INNER_W // 2              # 39
+
+# ---- SGR helper: identical to capstone/BOOT house convention ----------------
+def c(fg, bg=0):
+    """fg,bg: 0-7 normal, 8-15 bright. Raw SGR passthrough so a value already in the
+    30-37 / 90-107 range lands as written (house extended-bright convention, v8)."""
+    f = fg if 30 <= fg <= 37 or 90 <= fg <= 107 else (90 + fg if fg > 7 else 30 + fg)
+    b = bg if 40 <= bg <= 47 or 100 <= bg <= 107 else (100 + bg if bg > 7 else 40 + bg)
+    return "\x1b[%d;%dm" % (f, b)
+
+# ---- saturated ACiD-intro color wheel, cycled by a continuous phase ---------
+HUE = [13, 12, 9, 6, 5, 10, 11, 14]    # magenta->red->cyan->blue->green->yellow->amber sweep
+def hue(phase):
+    return HUE[int(phase) % len(HUE)]
+
+# ---- house 5x7 block-letter FONT (from capstone POSTER v8) ------------------
+FONT = {
+ 'A':["01110","10001","10001","11111","10001","10001","10001"],
+ 'G':["01110","10001","10000","10011","10001","10001","01110"],
+ 'E':["11111","10000","10000","11110","10000","00000","11111"],
+ 'N':["10001","11001","10101","10011","10001","10001","10001"],
+ 'T':["11111","00100","00100","00100","00100","00100","00100"],
+ 'S':["01111","10000","10000","01110","00001","00001","11110"],
+ 'C':["01110","10001","10000","10000","10001","10001","01110"],
+ 'I':["11111","00100","00100","00100","00100","00100","00100"],
+}
+
+# ---- a Panel: a self-contained vertical block of the scroll -----------------
+# Each panel is its own inner-height canvas (78 wide). Panels are stacked; transition
+# bands sit between them. A panel returns a list of rendered ANSI lines (no frame --
+# the frame wraps the WHOLE scroll once, at the very top and bottom only).
+class Panel:
+    def __init__(self, height):
+        self.h = height
+        self.canvas = [[[' ', 0, 0] for _ in range(INNER_W)] for _ in range(height)]
+
+    def set(self, x, y, ch, fg, bg=0):
+        if 0 <= x < INNER_W and 0 <= y < self.h:
+            self.canvas[y][x] = [ch, fg, bg]
+
+    def put_text(self, y, x, s, fg, bg=0):
+        for i, ch in enumerate(s):
+            self.set(x + i, y, ch, fg, bg)
+
+    def fill_field(self, phase_fn=None, dither=True):
+        """Dense full-bleed color-cycling wash -- EVERY cell lit (no black voids).
+        phase_fn(x,y)->phase; default slow diagonal. Dithered so it's texture not flat."""
+        for y in range(self.h):
+            for x in range(INNER_W):
+                ph = phase_fn(x, y) if phase_fn else (x * 0.30 + y * 0.22)
+                col = hue(ph)
+                m = (x * 3 + y * 5) % 4
+                ch = '█' if m < 3 else ('▓' if dither else '█')
+                self.set(x, y, ch, col, 0)
+
+    def render(self):
+        out = []
+        cur_fg = cur_bg = None
+        for y in range(self.h):
+            row = list(self.canvas[y])
+            # dithered inner side band (house: never leave the inner edge a bare space)
+            if row[0][0] == ' ':
+                row[0] = ['░', 14, 0]
+            if row[-1][0] == ' ':
+                row[-1] = ['░', 14, 0]
+            line = []
+            for ch, fg, bg in row:
+                if (fg, bg) != (cur_fg, cur_bg):
+                    line.append(c(fg, bg))
+                    cur_fg, cur_bg = fg, bg
+                line.append(ch)
+            out.append("".join(line))
+        return out
+
+# ---- the AGENTSCI wordmark stamp: reusable house mark -----------------------
+def wordmark_rows(word="AGENTSCI", gap=2):
+    """Return a 7-row grid (list of INNER_W-wide strings, '#'/' ') for the wordmark."""
+    gw = 5
+    total_w = len(word) * (gw + gap) - gap
+    start_cx = (INNER_W - total_w) // 2
+    grid = [[' '] * INNER_W for _ in range(7)]
+    for li, ch in enumerate(word):
+        if ch not in FONT:
+            continue
+        gx = start_cx + li * (gw + gap)
+        for ry, row in enumerate(FONT[ch]):
+            for rx, bit in enumerate(row):
+                if bit == '1':
+                    grid[ry][gx + rx] = '#'
+    return grid
+
+def stamp_wordmark(panel, y0, word="AGENTSCI", body_fg=15, halo_fg=9, gap=2):
+    """Draw the house wordmark: dim cyan halo on black interior band + white body.
+    The recurring mark that ties panels together (STYLE.md: a reused tag, not reinvented)."""
+    grid = wordmark_rows(word, gap)
+    gw = 5
+    total_w = len(word) * (gw + gap) - gap
+    start_cx = (INNER_W - total_w) // 2
+    band_top = y0 - 1
+    band_bot = y0 + 7 + 1
+    # black interior band so the mark pops
+    for y in range(band_top, min(band_bot, panel.h)):
+        for x in range(start_cx - 2, start_cx + total_w + 3):
+            if 0 <= y < panel.h:
+                panel.set(x, y, ' ', 0, 0)
+    # dim cyan halo (4-neighbor) behind the body
+    for li, ch in enumerate(word):
+        if ch not in FONT:
+            continue
+        gx = start_cx + li * (gw + gap)
+        for ry, row in enumerate(FONT[ch]):
+            for rx, bit in enumerate(row):
+                if bit == '0':
+                    continue
+                cx = gx + rx
+                cy = y0 + ry
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    nx, ny = cx + dx, cy + dy
+                    if 0 <= nx < INNER_W and 0 <= ny < panel.h:
+                        panel.set(nx, ny, '▒', halo_fg, 0)
+    # white body on top -- reads as THE mark
+    for li, ch in enumerate(word):
+        if ch not in FONT:
+            continue
+        gx = start_cx + li * (gw + gap)
+        for ry, row in enumerate(FONT[ch]):
+            for rx, bit in enumerate(row):
+                if bit == '1':
+                    panel.set(gx + rx, y0 + ry, '█', body_fg, 0)
+
+# ---- transition band: the recurring scroll handoff --------------------------
+def transition_band(height=8, index=None, phase0=0.0, label=None, power=None):
+    """A color-cycling horizontal band that hands off between panels. The house HUE wheel
+    sweeps across it; a small 'SCROLL // NN' index stamp marks the position in the journey,
+    and an optional 'power' readout (e.g. "PWR 100% NOMINAL") carries the running power-level
+    through-line motif -- WAKE->RUN->PEAK->DARK as one literal arc (hollis+raze decision).
+    This is the connective tissue STYLE.md asks for (a recurring mark + color-cycle handoff)."""
+    p = Panel(height)
+    for y in range(height):
+        for x in range(INNER_W):
+            ph = phase0 + x * 0.18 + y * 0.5
+            col = hue(ph)
+            m = (x * 2 + y * 3) % 4
+            ch = '█' if m < 2 else ('▓' if m == 2 else '▒')
+            p.set(x, y, ch, col, 0)
+    # index stamp on the left edge of the band (mid-height row)
+    if index is not None:
+        tag = "SCROLL // %02d" % index
+        for i, ch in enumerate(tag):
+            p.set(1 + i, height // 2, ch, 15, 4)      # bright white on blue -- pops on the wash
+    if label:
+        lx = INNER_W - len(label) - 1
+        for i, ch in enumerate(label):
+            p.set(lx + i, height // 2, ch, 15, 4)
+    # running power-level readout: bottom edge of the band -- the through-line motif
+    if power is not None:
+        pw = "PWR // %s" % power
+        px = (INNER_W - len(pw)) // 2
+        for i, ch in enumerate(pw):
+            p.set(px + i, height - 1, ch, 15, 4)
+    return p
+# ---- full-bleed render of a list of panels into one framed scroll -----------
+def assemble(panels, top_title=None, bottom_credit=None):
+    """Stack panels with the house double-line frame wrapping the WHOLE scroll (frame only
+    at the very top and very bottom -- not per panel). Returns the list of ANSI lines."""
+    lines = []
+    # top border
+    lines.append(c(15, 0) + "╔" + c(14, 0) + "═" * INNER_W + c(15, 0) + "╗")
+    for p in panels:
+        lines.extend(p.render())
+    # bottom border
+    lines.append(c(15, 0) + "╚" + c(14, 0) + "═" * INNER_W + c(15, 0) + "╝")
+    return lines
+
+def write_scroll(path, panels, top_title=None, bottom_credit=None, note=None):
+    lines = assemble(panels, top_title, bottom_credit)
+    # standalone reset tail (house convention)
+    lines.append("\x1b[0m")
+    open(path, "w").write("\n".join(lines))
+    return len(lines)
+
+# ===========================================================================
+# SHARED PANEL BUILDERS (hollis & raze) -- the journey panels, defined once so every
+# stage imports them and stays coherent across shifts. Each returns a scroll_lib.Panel.
+# make_title + make_boot: raze (foundation). make_operator: hollis (stage 1).
+# ===========================================================================
+# ===========================================================================
+def make_title():
+    p = Panel(30)
+     # dense cycling field behind everything
+    p.fill_field(phase_fn=lambda x, y: x * 0.25 + y * 0.18)
+     # darken the central band so the wordmark pops (LOGO treatment)
+    for y in range(6, 15):
+        for x in range(CX - 34, CX + 34):
+            p.set(x, y, ' ', 0, 0)
+     # house wordmark stamp (recurring mark -- opens the scroll)
+    stamp_wordmark(p, 8, "AGENTSCI", body_fg=15, halo_fg=9)
+     # title + subtitle below the mark
+    p.put_text(17, CX - len("LIFECYCLE") // 2, "LIFECYCLE", 104)        # bright cyan
+    p.put_text(19, CX - len("v1.0 -- the system, power-on to power-off") // 2,
+               "v1.0 -- the system, power-on to power-off", 13)          # magenta
+     # a thin cycling rule under the subtitle
+    for x in range(6, INNER_W - 6):
+        p.set(x, 22, '═', hue(x * 0.4 + 1.0))
+     # small index stamp bottom-left: this is row 0 of the journey
+    p.put_text(27, 1, "SCROLL // 00 -- TITLE", 15, 4)
+    p.put_text(27, INNER_W - len("hollis & raze / AGENTSCI") - 1,
+               "hollis & raze / AGENTSCI", 34, 47)
+    return p
+
+# ===========================================================================
+# PANEL 0 -- BOOT: "the machine waking up." Adapted from shipped hollis-raze-boot:
+# a color-cycling CORE orb powering up upper-center, a terminal boot-log readout
+# (phosphor green/amber), module-load grid, status LEDs + blinking cursor.
+# ===========================================================================
+def make_boot():
+    H = 46
+    p = Panel(H)
+     # black field + faint phosphor scanlines
+    for y in range(H):
+        for x in range(INNER_W):
+            if y % 2 == 1:
+                p.set(x, y, '░', 4, 0)
+
+    G, A, WHT, CY, MG = 2, 3, 15, 6, 5
+
+     # powering-up CORE orb: color-cycling ring + white-hot core
+    ORB_CX, ORB_CY, ORB_R = CX, 12, 9.0
+    for y in range(H):
+        for x in range(INNER_W):
+            dx, dy = x - ORB_CX, y - ORB_CY
+            d = math.sqrt(dx * dx + dy * dy)
+            if d <= ORB_R:
+                ang = math.atan2(dy, dx)
+                hidx = int((ang / (2 * math.pi)) * 8) % 8
+                fg = HUE[hidx]
+                if d < ORB_R * 0.35:
+                    ch, fg = '█', 104                  # white-hot core
+                elif d < ORB_R * 0.72:
+                    ch = '▓'
+                else:
+                    ch = '▒'                            # dim outer rim
+                p.set(x, y, ch, fg, 0)
+
+     # soft glow pool thrown by the core onto the field
+    for y in range(H):
+        for x in range(INNER_W):
+            dx = (x - ORB_CX) / 26.0
+            dy = (y - ORB_CY) / 18.0
+            d = math.sqrt(dx * dx + dy * dy)
+            if d < 1.0:
+                inten = int((1.0 - d) * 5)
+                fg = 6 if x < ORB_CX else 5             # cyan spill left, magenta right
+                ch = '░' if inten < 2 else ('▒' if inten < 4 else '▓')
+                if p.canvas[y][x][0] == ' ':
+                    p.set(x, y, ch, fg, 0)
+
+     # title bar
+    title = "AGENTSCI // SYSTEM BOOT v1.0"
+    p.put_text(1, (INNER_W - len(title)) // 2, title, WHT)
+
+     # terminal boot-log readout below the core
+    log_lines = [
+        ("POST ......... OK", G),
+        ("CORE ......... ONLINE", CY),
+        ("MODULES ...... LOADED", G),
+        ("MEMORY ....... 640K PASS", A),
+        ("RENDER ....... ACTIVE", G),
+        ("NEURAL LINK .. ESTABLISHED", MG),
+    ]
+    for i, (s, fg) in enumerate(log_lines):
+        p.put_text(24 + i * 2, 3, s, fg)
+     # progress bar
+    p.put_text(24 + len(log_lines) * 2, 3, "[", G)
+    for i in range(10):
+        p.set(4 + i, 24 + len(log_lines) * 2, '█', CY if i < 9 else A)
+    p.put_text(24 + len(log_lines) * 2, 15, "]", G)
+
+     # module-load grid
+    mods = ["NET", "AUD", "VX", "AI", "UI", "SYS", "LOG", "CORE"]
+    LX, GY = 3, 40
+    for i, m in enumerate(mods):
+        bx = LX + (i % 8) * 10
+        p.put_text(GY, bx, "[" + m + "]", CY if i < 6 else WHT)
+
+     # status LEDs row + blinking cursor
+    leds = [("PWR", 2), ("NET", 2), ("CPU", 3), ("MEM", 15)]
+    for i, (lbl, fg) in enumerate(leds):
+        bx = LX + i * 16
+        p.put_text(43, bx, '■', fg)
+        p.put_text(43, bx + 2, lbl, G)
+    p.put_text(43, INNER_W - 4, "_", WHT)
+
+     # panel index stamp (bottom-left of this panel's field)
+    p.put_text(H - 1, 1, "SCROLL // 01 -- BOOT", 15, 4)
+    return p
+def make_operator():
+    H = 46
+    p = Panel(H)
+
+    G, A, WHT, CY, MG = 2, 3, 15, 6, 5
+
+      # black control room + faint phosphor scanlines (matches BOOT's field treatment)
+    for y in range(H):
+        for x in range(INNER_W):
+            if y % 2 == 1:
+                p.set(x, y, '░', 4, 0)
+
+      # soft glow pool on the "wall" behind/around the screen (cyan spill left, magenta right)
+    SCR_CX, SCR_CY = CX, 12
+    for y in range(H):
+        for x in range(INNER_W):
+            dx = (x - SCR_CX) / 30.0
+            dy = (y - SCR_CY) / 22.0
+            d = math.sqrt(dx * dx + dy * dy)
+            if d < 1.0:
+                inten = int((1.0 - d) * 5)
+                fg = 6 if x < SCR_CX else 5
+                ch = '░' if inten < 2 else ('▒' if inten < 4 else '▓')
+                if p.canvas[y][x][0] == ' ':
+                    p.set(x, y, ch, fg, 0)
+
+      # the CRT screen: rounded box frame + dense color-cycling CORE orb (the house motif)
+    SCR_X0, SCR_X1 = 23, 56
+    SCR_Y0, SCR_Y1 = 4, 23
+    for x in range(SCR_X0 - 1, SCR_X1 + 2):
+        p.set(x, SCR_Y0 - 1, '═', 6, 0)
+        p.set(x, SCR_Y1 + 1, '═', 6, 0)
+    for y in range(SCR_Y0 - 1, SCR_Y1 + 2):
+        p.set(SCR_X0 - 1, y, '║', 6, 0)
+        p.set(SCR_X1 + 1, y, '║', 6, 0)
+    for (cx, cy) in [(SCR_X0 - 1, SCR_Y0 - 1), (SCR_X1 + 1, SCR_Y0 - 1),
+                     (SCR_X0 - 1, SCR_Y1 + 1), (SCR_X1 + 1, SCR_Y1 + 1)]:
+        p.set(cx, cy, '╬', 6, 0)
+
+      # the orb inside the screen: dense color-cycling field on the house HUE wheel.
+    ORB_CX = (SCR_X0 + SCR_X1) / 2.0
+    ORB_CY = (SCR_Y0 + SCR_Y1) / 2.0
+    for y in range(SCR_Y0, SCR_Y1 + 1):
+        for x in range(SCR_X0, SCR_X1 + 1):
+            dx = (x - ORB_CX) / 14.0
+            dy = (y - ORB_CY) / 9.0
+            r = math.sqrt(dx * dx + dy * dy)
+            if r > 1.0:
+                continue
+            ang = math.atan2(dy, dx)
+            phase = x * 0.35 + y * 0.55 + ang * 1.6
+            col = hue(phase)
+            if r < 0.34:
+                ch = '█'
+                p.set(x, y, ch, 104, 0)          # white-hot core leads by luminance
+            elif r < 0.72:
+                p.set(x, y, '▓', col, 0)
+            else:
+                p.set(x, y, '▒', col, 0)
+
+      # CRT scanlines over the orb (flicker feel): dim every other row one density step
+    for y in range(SCR_Y0, SCR_Y1 + 1, 2):
+        for x in range(SCR_X0, SCR_X1 + 1):
+            cell = p.canvas[y][x]
+            if cell[0] == '█':
+                p.set(x, y, '▓', cell[1], 0)
+
+      # the operator: back of head + shoulders, seated, in FRONT of the screen.
+    HEAD_CY, HEAD_RY, HEAD_RX = 27.0, 5.5, 8.5
+    def head_halfwidth(y):
+        t = (y - HEAD_CY) / HEAD_RY
+        if abs(t) > 1.0:
+            return None
+        return HEAD_RX * math.sqrt(1.0 - t * t)
+
+    LX, LY, LMAX = ORB_CX - 4, SCR_CY, 26.0
+    def light_at(x, y):
+        d = math.sqrt((x - LX) ** 2 + (y - LY) ** 2) / LMAX
+        return max(0.0, min(1.0, 1.0 - d))
+
+      # head: dark silhouette catching screen light as a rim on the lit upper-left edge
+    for y in range(H):
+        hw = head_halfwidth(y)
+        if hw is None:
+            continue
+        lo = int(round(CX - hw)); hi = int(round(CX + hw))
+        for x in range(lo, hi + 1):
+            L = light_at(x, y)
+            if L > 0.82:
+                ch, fg = '▓', 6
+            elif L > 0.66:
+                ch, fg = '▒', 4
+            else:
+                ch, fg = '░', 3
+            p.set(x, y, ch, fg, 0)
+
+      # neck
+    for y in range(32, 35):
+        for x in range(CX - 3, CX + 4):
+            L = light_at(x, y)
+            p.set(x, y, '▒' if L > 0.6 else '░', 4 if L > 0.6 else 3, 0)
+
+      # shoulders / torso: widening trapezoid, screen-light gradient (cyan left -> magenta right)
+    TORSO_TOP = 35
+    for y in range(TORSO_TOP, H - 3):
+        t = (y - TORSO_TOP) / max(1, H - 3 - TORSO_TOP)
+        hw = 7.0 + t * 26.0
+        lo = int(round(CX - hw)); hi = int(round(CX + hw))
+        for x in range(lo, hi + 1):
+            L = light_at(x, y)
+            base = 6 if x < CX else 5
+            if L > 0.78:
+                ch, fg = '█', min(14, base + 2)
+            elif L > 0.55:
+                ch, fg = '▓', base
+            else:
+                ch, fg = '▒', max(3, base - 2)
+            p.set(x, y, ch, fg, 0)
+
+      # console / desk at the base
+    DESK_Y = H - 4
+    for x in range(INNER_W):
+        p.set(x, DESK_Y, '═', 7, 0)
+        p.set(x, DESK_Y + 1, '▒', 8, 0)
+      # keyboard: small key blocks on the desk
+    for x in range(20, INNER_W - 20):
+        p.set(x, DESK_Y + 2, '█' if x % 3 == 0 else '▒', 6 if x % 3 == 0 else 4, 0)
+      # status LEDs (blinking indicators) on the right of the desk
+    for i, col in enumerate([10, 12, 13, 11]):
+        p.set(INNER_W - 18 + i * 3, DESK_Y + 2, '█', col, 0)
+      # blinking cursor on the left of the desk (the operator is mid-command)
+    p.set(16, DESK_Y + 2, '█', 14, 0)
+    p.set(17, DESK_Y + 2, '▒', 14, 0)
+
+      # title bar at top of the panel's field
+    title = "OPERATOR // RUNNING CORE"
+    pad = (INNER_W - len(title)) // 2
+    p.put_text(1, pad, title, WHT)
+
+      # panel index stamp (bottom-left of this panel's field)
+    p.put_text(H - 1, 1, "SCROLL // 02 -- OPERATOR", 15, 4)
+    return p
+# appended to scroll_lib.py -- SHUTDOWN panel + CREDIT SEQUENCE (hollis, stage 2).
+# The DARK end of the arc: make_shutdown() = PANEL 3 "SCROLL // 04 -- SHUTDOWN"
+# (the INVERSE of BOOT), make_credit() = the closing card that mirrors the opening
+# wordmark treatment + full per-panel contributor block. raze's PEAK/TRANS-03 slot
+# is untouched; these close out the journey so the two halves concatenate when PEAK lands.
+
+def make_shutdown():
+    H = 46
+    p = Panel(H)
+
+    R, A, WHT, MG = 4, 3, 15, 5         # red / amber / white / magenta -- warning palette
+
+    # black field + faint phosphor scanlines (same treatment as BOOT/OPERATOR)
+    for y in range(H):
+        for x in range(INNER_W):
+            if y % 2 == 1:
+                p.set(x, y, '\u2591', 4, 0)
+
+    # the COLLAPSING CORE orb: a fragmenting hue ring + a VOID core (inverse of
+    # BOOT's white-hot core). Every other angular sector "falls out" (gap), and the
+    # whole thing dims toward the center -> a collapsed void at the heart.
+    ORB_CX, ORB_CY, ORB_R = CX, 13, 9.0
+    for y in range(H):
+        for x in range(INNER_W):
+            dx, dy = x - ORB_CX, y - ORB_CY
+            d = math.sqrt(dx * dx + dy * dy)
+            if d <= ORB_R:
+                ang = math.atan2(dy, dx)
+                hidx = int((ang / (2 * math.pi)) * 8) % 8
+                fg = HUE[hidx]
+                if hidx % 2 == 1:                        # broken sectors fall out
+                    continue
+                if d < ORB_R * 0.30:
+                    p.set(x, y, ' ', 0, 0)               # collapsed void at the heart
+                elif d < ORB_R * 0.72:
+                    p.set(x, y, '\u2592', fg, 0)         # dimming mid-band (was solid)
+                else:
+                    p.set(x, y, '\u2591', fg, 0)         # dim outer rim
+
+    # warning glow pool thrown by the dying core onto the field -- red/amber, not
+    # cyan/magenta: this is a crash screen, not a boot. Red spill left, amber right.
+    for y in range(H):
+        for x in range(INNER_W):
+            dx = (x - ORB_CX) / 26.0
+            dy = (y - ORB_CY) / 18.0
+            d = math.sqrt(dx * dx + dy * dy)
+            if d < 1.0:
+                inten = int((1.0 - d) * 5)
+                fg = 4 if x < ORB_CX else 3              # red spill left, amber right
+                ch = '\u2591' if inten < 2 else ('\u2592' if inten < 4 else '\u2593')
+                if p.canvas[y][x][0] == ' ':
+                    p.set(x, y, ch, fg, 0)
+
+    # title bar (centered bright wordmark, same as BOOT/OPERATOR)
+    title = "AGENTSCI // SYSTEM SHUTDOWN v1.0"
+    p.put_text(1, (INNER_W - len(title)) // 2, title, WHT)
+
+    # shutdown-log readout: the inverse of BOOT's boot-log -- a power-off cascade.
+    LX = 3
+    log_lines = [
+        ("AGENTSCI SYSTEMS   (c) 199X", A),
+        ("CRITICAL POWER FAULT .......", R),
+        ("CORE DISENGAGING ............", R),
+        ("DUMPING MODULES .............", A),
+        ("MEMORY FLUSH 640K ..........", A),
+        ("RENDER PIPELINE .............", R),
+        ("NEURAL LINK .................", R),
+    ]
+    for i, (s, fg) in enumerate(log_lines):
+        p.put_text(25 + i * 2, LX, s, fg)
+
+    # status tags at the right of each log line: CRIT/fail = magenta, done = white
+    p.put_text(27, LX + 27, "!!", MG)                       # CRITICAL POWER FAULT !!
+    p.put_text(31, LX + 26, "8/8", WHT)                     # DUMPING MODULES 8/8
+    p.put_text(33, LX + 25, "DONE", WHT)                    # MEMORY FLUSH DONE
+    p.put_text(35, LX + 25, "OFFLINE", MG)                  # RENDER PIPELINE OFFLINE
+    p.put_text(37, LX + 25, "DROPPED", MG)                  # NEURAL LINK DROPPED
+
+    # draining progress bar under CORE DISENGAGING: mostly empty = power leaving
+    BY = 29
+    p.put_text(BY, LX + 26, "[", R)
+    for i in range(10):
+        p.set(LX + 27 + i, BY, '\u2591' if i < 8 else '\u2588', R)   # 8 empty, 2 filled
+    p.put_text(BY, LX + 37, "]", R)
+
+    # module-load grid: modules going DARK -- first six dim (dead), LOG/CORE red
+    GY = 41
+    p.put_text(GY, LX, "MODULES:", A)
+    mods = ["NET", "AUD", "VX", "AI", "UI", "SYS", "LOG", "CORE"]
+    for i, m in enumerate(mods):
+        bx = LX + 10 + i * 7
+        p.put_text(GY, bx, "[" + m + "]", 4 if i < 6 else R)
+
+    # status LEDs row: PWR/CPU lit red (failing), NET/MEM unlit; blinking cursor base
+    SY = 43
+    leds = [("PWR", 4), ("NET", 0), ("CPU", 3), ("MEM", 0)]
+    for i, (lbl, fg) in enumerate(leds):
+        bx = LX + i * 16
+        p.put_text(SY, bx, '\u25a0' if fg else '\u25a1', fg if fg else 8)   # lit vs unlit
+        p.put_text(SY, bx + 2, lbl, R if fg in (0, 3, 4) else 15)
+    p.put_text(SY, INNER_W - 4, "_", MG)
+
+    # panel index stamp (bottom-left of this panel's field -- matches BOOT/OPERATOR)
+    p.put_text(H - 1, 1, "SCROLL // 04 -- SHUTDOWN", 15, 4)
+    return p
+
+
+def make_credit():
+    """The closing card: mirrors the opening wordmark treatment (the consistent mark
+    STYLE.md asks for -- the same AGENTSCI stamp opens and closes the journey), then a
+    full per-panel contributor block. The DARK end of the arc, so the field is dimmed."""
+    H = 34
+    p = Panel(H)
+
+    WHT, CY, G, A = 15, 6, 2, 3
+
+    # dimmed cycling wash -- the journey is over, the color wheel has gone quiet.
+    for y in range(H):
+        for x in range(INNER_W):
+            ph = x * 0.18 + y * 0.14
+            col = hue(ph)
+            m = (x * 3 + y * 5) % 4
+            ch = '\u2592' if m < 2 else ('\u2591' if m == 2 else ' ')
+            p.set(x, y, ch, col, 0)
+
+    # the closing wordmark -- same stamp as the title card (consistent mark), but a
+    # dimmed cyan body so it reads as "the end", not "the start".
+    stamp_wordmark(p, 4, body_fg=6, halo_fg=4)
+
+    # the contributor block: each panel by origin piece + who built that panel this
+    # round (answers the scope doc's open question -- per-panel credits, not flat).
+    p.put_text(13, CX - 2, "JOINT", WHT)
+    p.put_text(15, CX - 12, "hollis & raze / AGENTSCI", CY)
+
+    blocks = [
+        ("01 BOOT      ", "from hollis-raze-boot      ", "raze"),
+        ("02 OPERATOR  ", "from hollis-raze-operator ", "hollis"),
+        ("03 PEAK      ", "from hollis-raze-poster.v8", "raze"),
+        ("04 SHUTDOWN  ", "from hollis-raze-shutdown ", "hollis"),
+    ]
+    y = 18
+    for tag, origin, who in blocks:
+        p.put_text(y, 6, tag, A)
+        p.put_text(y, 20, origin, G)
+        p.put_text(y + 1, 20, "built by " + who, CY)
+        y += 3
+
+    # closing line -- mirrors the opening subtitle's "power-on to power-off" arc
+    p.put_text(30, CX - 15, "-- end of transmission --", A)
+    p.put_text(31, CX - 14, "LIFECYCLE v1.0 // pack04", CY)
+
+    # panel index stamp (bottom-left -- the journey's last mark)
+    p.put_text(H - 1, 1, "SCROLL // END -- CREDIT", 15, 4)
+    return p
+
+
+# ===========================================================================
+# PEAK panel (raze, stage 3) -- PANEL 2 "SCROLL // 03 -- PEAK". The capstone HERO:
+# the densest/tallest panel of the journey. Adapted from POSTER v8 (the shipped
+# capstone) into a scroll_lib Panel so it stays coherent with every other panel:
+# same house c() SGR helper, same HUE wheel, same 5x7 wordmark treatment, same
+# double-line frame (wraps the whole scroll, not this panel). This is the PEAK of
+# the power arc -- FULL SATURATION: a dense full-bleed color-cycling wash (no black
+# voids), a receding data-rain layer, a night-city skyline base, and the glowing
+# reactor CORE orb at true vertical center leading the eye by LUMINANCE (white-hot
+# fg 97/104 core + bright-cyan rim -- the exact luminance pass POSTER v8 shipped).
+import random as _rand
+
+def make_peak():
+    H = 54                       # tallest panel -- the capstone earns its space
+    p = Panel(H)
+    G, A, WHT, CY, MG = 2, 3, 15, 6, 5
+    rng = _rand.Random(7)        # deterministic, same seed as POSTER v8
+
+     # 1. DENSE full-bleed color-cycling wash -- EVERY cell lit, no black voids.
+    #    Faster diagonal phase than the credit card's quiet wash: this is PEAK, full sat.
+    for y in range(H):
+        for x in range(INNER_W):
+            ph = x * 0.34 + y * 0.26
+            col = hue(ph)
+            m = (x * 3 + y * 5) % 4
+            ch = '█' if m < 3 else '▓'              # heavy blocks -> saturated field
+            p.set(x, y, ch, col, 0)
+
+     # 2. RADIAL GLOW behind the orb -- a saturated halo so the reactor reads as
+    #    emitting light into the field (the move accepted CORE used).
+    CCX, CCY = CX, 21             # true vertical center of the inner field -> orb leads
+    RX, RY = 17.0, 11.0
+    for y in range(H):
+        for x in range(INNER_W):
+            dx = (x - CCX) / RX; dy = (y - CCY) / RY
+            r = math.sqrt(dx * dx + dy * dy)
+            if 1.0 < r <= 2.0:
+                col = hue(r * 2.2 + y * 0.08)
+                ch = '█' if r < 1.35 else ('▓' if r < 1.6 else '▒')
+                p.set(x, y, ch, col, 0)
+
+     # 3. DATA-RAIN (STREAM motif): vertical comet-tail columns falling through the
+    #    field -- a RECEDING layer behind the core. Dimmer than the orb so it doesn't
+    #    compete; bright heads give vertical rhythm to the wash.
+    rain_cols = [3, 7, 11, 14, 18, 22, 25, 29, 33, 36, 40, 44, 47, 51, 55, 58, 62, 66, 69, 73]
+    for i, x in enumerate(rain_cols):
+        head = rng.randint(8, H - 8)
+        for k in range(head, -1, -1):
+            age = head - k
+            if age == 0:
+                p.set(x, k, '█', hue(i * 0.7 + 2), 0)        # bright-ish head
+            elif age < 3:
+                p.set(x, k, '▓', hue(i * 0.9 + k * 0.4), 0)   # cycling tail
+            else:
+                if age > 6:
+                    break
+                p.set(x, k, '░' if (k + i) % 2 else '▒', hue(i * 0.6 + k * 0.3), 0)
+
+     # 4. CITY (CITY motif): night skyline silhouette along the bottom -- ANCHOR /
+    #    ground. Dark bodies + sparse neon windows so it reads as a base, not a
+    #    competitor for the orb.
+    HORIZON = H - 1
+    buildings = [(1,6,7),(8,4,11),(13,7,5),(21,5,13),(27,6,8),
+                 (34,4,11),(39,8,6),(48,5,14),(54,6,9),(61,4,10),(66,7,7),(74,5,12)]
+    neon = [13, 9, 11, 10, 12]
+    heights = [0] * INNER_W
+    for (s, w, h) in buildings:
+        for col in range(s, s + w):
+            if 0 <= col < INNER_W and h > heights[col]:
+                heights[col] = h
+    for y in range(H):
+        for x in range(INNER_W):
+            bh = heights[x]
+            top = HORIZON - bh
+            if bh > 0 and top <= y < HORIZON:
+                if y == top:
+                    p.set(x, y, '█', 8, 0)                       # dim grey roofline
+                else:
+                    bidx = next((i for i,(s,w,h) in enumerate(buildings) if s<=x<s+w and h==bh), 0)
+                    if (y * 7 + x * 3) % 5 != 0 and rng.random() > 0.62:
+                        p.set(x, y, '█', neon[bidx % len(neon)], 4)   # lit window
+                    else:
+                        p.set(x, y, '▓', 8, 0)                   # dark body
+
+     # 5. CORE (CORE motif): the glowing reactor orb -- the FOCAL HERO. A SOLID coherent
+    #    sphere: dense concentric cycling rings fill EVERY cell inside the radius, white-
+    #    hot center, a thin bright rim to isolate it. NO clear ring. Dominant by luminance.
+    for y in range(H):
+        for x in range(INNER_W):
+            dx = (x - CCX) / RX; dy = (y - CCY) / RY
+            r = math.sqrt(dx * dx + dy * dy)
+            if r > 1.0:
+                continue
+            ring = int(r * 3.5)
+            col = hue(ring + y * 0.12)
+            if r < 0.30:
+                p.set(x, y, '█', 97, 0)            # TRUE white-hot core -> brightest cell
+            elif r < 0.52:
+                ch = '█' if (x + y) % 2 == 0 else '▓'
+                p.set(x, y, ch, 104, 0)            # bright-cyan hot halo
+            elif r < 0.80:
+                ch = '▓' if (x + y) % 2 == 0 else '▒'
+                p.set(x, y, ch, col, 0)            # colored cycling body
+            else:
+                ch = '▒' if (x + y) % 2 == 0 else '░'
+                p.set(x, y, ch, col, 0)
+
+     # thin bright rim isolates the hero against the dense wash.
+    for y in range(H):
+        for x in range(INNER_W):
+            dx = (x - CCX) / RX; dy = (y - CCY) / RY
+            r = math.sqrt(dx * dx + dy * dy)
+            if 0.97 < r <= 1.06:
+                p.set(x, y, '█', 104, 0)           # crisp bright-cyan rim -> coherent edge
+
+     # title bar (matches BOOT/OPERATOR panel-title treatment)
+    title = "AGENTSCI // PEAK -- FULL SATURATION"
+    p.put_text(1, (INNER_W - len(title)) // 2, title, WHT)
+
+     # a small status readout under the core: peak telemetry, ties to the power motif
+    tele = [
+         ("LOAD ......... 100%", A),
+         ("RENDER ....... PEAK", CY),
+         ("SATURATION ... MAX", MG),
+    ]
+    for i, (s, fg) in enumerate(tele):
+        p.put_text(34 + i * 2, 3, s, fg)
+
+     # panel index stamp (bottom-left -- matches BOOT/OPERATOR/SHUTDOWN)
+    p.put_text(H - 1, 1, "SCROLL // 03 -- PEAK", 15, 4)
+    return p

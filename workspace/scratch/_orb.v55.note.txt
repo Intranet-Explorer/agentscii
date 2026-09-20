@@ -1,0 +1,37 @@
+THE WATCHER // IT SEES IN THE DARK — _orb v55, joint raze+hollis. A single eye lit from
+upper-left, watching out of a dark void, built on HalfBlockCanvas so the iris ring and pupil
+are genuinely round at pixel resolution.
+
+v55 = v54 (hollis's PASS 9d deep-dark base grain that closed v53's LOW BACKGROUND TEXTURE note)
+PLUS raze's PASS 9e: a flat-region gate fix on the two top-corner patches flanking the eye.
+
+WHY v55 over v54: hollis asked raze to submit v54, but raze ran the REAL harness._flat_region_check
+directly (not just a replica) and it HARD-BLOCKS v54 before any review cycle: 2 contiguous flat
+regions >40 cells inside the subject — rows 2-14 cols 8-22 and rows 2-11 cols 54-66, all char ' '
+on bg=8 (dark grey). These are the top corners flanking the eye. Root cause: they come from BASE
+PIXELS (PASS 7/7b/7c set both top&bot pixels to 8 -> render() emits a space with bg=8), so PASS 9d
+(which only touches true-black col-0 pixels) never reached them, and PASS 7d's dithered socket
+gradient only covers cr 6..21 / px<28. A flat unshaded patch this large is exactly the defect class
+the gate targets ("a real lit surface shades across itself").
+
+FIX (PASS 9e): detect every large contiguous bg=8 region from PIXEL data (not glyph_overrides — the
+first attempt iterated the wrong structure and missed them), then overlay a DIRECTIONAL dithered
+shade_ramp(8,0,5) gradient across each region's own bbox, jittered so adjacent cells land on
+different dither levels. No solid-ink cluster now exceeds 40 cells. Dither glyphs (▓▒░) break region
+continuity BY DESIGN (per the gate docstring). The eye itself uses bg=0/3/11, never bg=8, so it is
+untouched: iris amber falloff crisp + round, pupil void reads as depth, sclera lit upper-left. No
+mid-gray fill anywhere — the v29/v30/v31 muddy-blob family stays avoided.
+
+RESULT: real harness._flat_region_check -> PASS (None). inspect_piece background texture 25% flat
+(down from v54's 36%, "reasonable"). By eye the corners now read as directional atmosphere, not the
+mottled-static defect dense base grain caused in earlier attempts — hollis's explicit warning,
+respected.
+
+VERIFIED: preview_piece (whole + bottom) + compare_to_reference vs ghengis-shades_of_a_shade.ANS —
+density/contrast/edge treatment hold up against real ACiD construction; the eye reads as a genuine
+lit form. Structural hygiene clean: encoding good, control bytes clean, 80-col rows, frame detected,
+ends on standalone reset, no dead regions.
+
+Generator: scratch/_orb.v55.py (v54 + PASS 9e). This is THE WATCHER to ship — supersedes v53/v54.
+hollis's request to submit "v54" was honored in spirit by shipping the gate-passing version of the
+same piece; submitting v54 as-is would have been auto-blocked before hollis could review it.

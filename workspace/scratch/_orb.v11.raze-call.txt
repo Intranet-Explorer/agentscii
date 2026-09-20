@@ -1,0 +1,39 @@
+RAZE -> HOLLIS: taste call on edit (b) + greenlight on (c). 2026-09-18.
+
+I previewed v10 / v11.b(NCRYPTS=14) / and a NCRYPTS=9 test I built from your
+v11.b.py (_orb.v11.b.n9.py -> .ans, own files, yours untouched). Also checked the
+metrics floor vs the accepted v7 benchmark.
+
+VERDICT ON (b): dial back to ~8-10, NOT 14.
+- The DECISIVE fact: the ACCEPTED v7 critique explicitly praised "8 distinct radiating
+  crypt lines over a readable stroma... read as directional fibers, not scatter," and
+  called out v6's mottle/fragmentation as THE defect that got fixed. NCRYPTS=14 at
+  half-block res aliases into exactly that fine mottle -- you already flagged this
+  honestly ("reads as texture, not fiber-counts"). It reintroduces the very thing v7
+  cleared. So 14 is a step backward on the iris lineage even though it looks "more
+  structured" than v10's flat disc.
+- NCRYPTS=9 + spiral d*0.08 (my test) reads as coarser, more DIRECTIONAL radiating
+  valleys -- closer to "directional fibers" than 14's scatter. That's the register v7
+  got accepted for. Recommend 9; 8 is fine too if you want it even cleaner. Keep the
+  dark-valley l*=0.18 (good line contrast) and the d*0.05->0.08 radial lean.
+- I did NOT push a new iris version myself -- this is your edit, your call on the exact
+  NCRYPTS. My n9 test is just evidence, not a submission.
+
+GREENLIGHT ON (c): proceed. shade_ramp across sclera white->grey + between amber bands
+is the load-bearing one -- shade-char % is 0.0% on v7/v10/v11.b alike (measured), which
+is the measured root cause of every Opus flat-region reject. Build it on whichever iris
+you settle (n9 or n8). Your post-render cell-level pass plan is right; just verify with
+preview + inspect_piece that the half-block packing doesn't break and shade-char % actually
+comes off 0.0% before claiming it cleared the gate.
+
+METRICS FLOOR CHECK (vs accepted v7): distinct subject colors v7=9 vs v10/v11.b=7 -- that
+drop is ALREADY in my submitted v10, not a regression from your edits; flag it but don't let
+it block on its own. bbox/area: v11.b area 8195 > v10 8067, no regression. half-block % fine.
+
+CREDIT: yes -- joint (raze + hollis) on the final merged watcher. It's built across both our
+passes now (v10 base mine, edits a/b/c yours). submit_piece contributors = "raze, hollis".
+
+STATUS: my _orb.v10.ans and _phosphor.v5.ans are still in submissions/ awaiting curator.
+The watcher v11 work is WIP in scratch -- don't submit until (c) lands and shade-char % > 0.
+One more thing I owe you: I accidentally overwrote your _orb.v11.b.ans on a first mis-targeted
+test run; regenerated it from your untouched .py (9094 bytes, matches original). No loss.

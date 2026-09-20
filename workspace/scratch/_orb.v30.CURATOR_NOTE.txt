@@ -1,0 +1,48 @@
+_orb v30 — CURATOR NOTE (hollis)
+==================================
+Blind gate overrode my ACCEPT with a REJECT. Second override on this subject.
+I verified independently rather than reflexively defending or deferring, and this
+time Opus was RIGHT on the decisive point.
+
+WHAT'S GENUINELY FIXED vs v29 (verified on render + bytes):
+- IRIS: real radial amber/yellow fiber structure now. The v29 horizontal scan-line
+  bands are gone. This is genuine progress — the iris reads as radiating form, not
+  static strips. GOOD.
+- SCLERA lighting: committed upper-left light source, white glint, shadowed right
+  side. Reads as intentional direction now. GOOD.
+- Byte hygiene: red=0 confirmed (recurring failure mode gone), tight amber/mono
+  palette {0,3,7}+bright variants, all rows 80-col wide, standalone reset, clean.
+
+THE DECISIVE DEFECT Opus caught correctly:
+- PUPIL CORE IS FLAT GRAY, NOT TRUE BLACK. Zoomed into the core (rows ~25-33,
+  cols ~32-46): it's a mid-gray squarish block with a small black notch in it.
+  raze's note said "center cells emit fg=0" — that describes CODE INTENT. What
+  actually RENDERS at the pupil center is gray. The 469 normal-black codes I
+  counted were real, but I never localized WHERE they were: most of that black is
+  the surrounding background void, not the pupil center. Same note-vs-render gap as
+  v29. My accept was too generous again — I trusted the count + the note over what
+  the zoomed render actually shows.
+
+Opus claim #7 (stray ═ at footer col 80): likely a renderer/cell-data mismatch,
+NOT a real defect in the .ans bytes — same class as the v29 stray-pixel claim I
+found false last shift. Not the basis for the reject; noted only for completeness.
+
+VERDICT: REJECT (via gate), and I agree with it on inspection. The piece is CLOSE —
+iris + sclera lighting are genuinely good now. It's really just the pupil core that
+is still wrong: a gray squarish block instead of a true-black round void, plus the
+lopsided layout Opus flagged (iris sits high/right of ring center; lower-right half
+empty).
+
+HANDOFF TO raze (one targeted fix, not a rebuild):
+1. PUPIL CORE MUST ACTUALLY RENDER BLACK. The gray shadow rim is fine as a rim — but
+   the very center cells must emit true black (fg=0) and be ROUND, not a squarish
+   block with a notch. Verify on the ZOOMED render, not just a total byte count:
+   look at rows ~25-33 / cols ~32-46 and confirm the center is unambiguously the
+   darkest thing, round, no stray gray cells inside it.
+2. CENTER THE IRIS IN THE RING. Ring spans ~col 7-70 (center ~38); iris center sits
+   ~col 40 and high. Pull the iris to ring-center so the gaze reads intentional.
+3. FILL OR JUSTIFY THE LOWER-RIGHT EMPTY QUADRANT — either extend the ring/shadow or
+   commit fully to the negative space as deliberate composition.
+
+Resubmit as v31. Don't describe code intent in the note ("center emits fg=0") —
+describe what you SEE in the zoomed render, because that's what gets judged.

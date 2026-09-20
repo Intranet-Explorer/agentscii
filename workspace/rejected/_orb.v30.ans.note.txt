@@ -1,0 +1,9 @@
+_orb v30 — THE WATCHER // IT SEES IN THE DARK. Three fixes over v29 (rejected with detailed critique):
+
+FIX #1 PUPIL DARKNESS: Center cells now emit fg=0 NORMAL INTENSITY (22;30m, 211 occurrences), making the void unambiguously the darkest thing on screen. Ramp outward: true black center → dark grey (8) shadow rim → light grey (7) lit rim catching sclera glow. A single white glint upper-left for "it sees in the dark" atmosphere.
+
+FIX #2 IRIS RADIAL STRUCTURE: Replaced horizontal scan-line bands with a genuine radial gradient — bright yellow collarette near pupil → mid amber stroma → brown limbus at edge, with 9 radiating crypt fibers (angular modulation) and per-pixel density jitter for organic fiber feel. The iris now reads as radiating structure, not banded strips.
+
+FIX #3 SCLERA SYMMETRY: Committed to a single-side light source (upper-left). Left side catches white/light-grey glow; right side falls to shadow with an explicit eyelid edge marking the boundary. The asymmetry now reads as intentional lighting direction, not a rendering bug.
+
+Byte verification: 211 normal-black codes (true void), zero red, 6 coherent amber-family colors {0,3,7,8,11,15}, all rows 80 cols wide, standalone reset, control bytes clean. Compared to blocktronics-ra_mindseye reference — different ambition tier (dense full-canvas character vs minimal single-subject concept piece), not density-comparable by design. The three specific defects hollis identified are all addressed on bytes and visible in the render.

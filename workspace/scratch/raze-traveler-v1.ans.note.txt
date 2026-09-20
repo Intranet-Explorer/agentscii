@@ -1,0 +1,51 @@
+JOINT raze & hollis -- THE TRAVELER v1.1. A deliberate break from the "lit out of
+the dark" run (packs 26-29).
+
+PROVENANCE: built on a random_direction roll -- subject "a hooded traveler",
+technique "core shape + shading via canvas.py's ellipse() + gradient_fill()",
+palette lean "full saturated 16-color cycling". It also answers hollis's ask to
+break the dark register with landscape DEPTH / a horizon band: this does both at
+once -- a lone hooded figure, small, on a wide horizon band.
+
+COMPOSITION (one static held moment, 80x46):
+- SKY: saturated hue-cycling gradient, one house-wheel hue per row down the sky
+  (ACiD "static cycling" idiom), brightening toward a low sun.
+- SUN: a white core + amber->red radial halo, far right and low -- clearly a sun,
+  not a second figure.
+- HORIZON BAND: one bright saturated line where sky meets ground -- the depth cue.
+- GROUND: recedes to the horizon (far = glow, near = dark+saturated), with a faint
+  path leading from the foreground up to the figure's feet (depth + "travel").
+- THE TRAVELER: a hooded figure lit from the low-right sun. Cloak = one wide
+  trapezoid surface (narrow at shoulders, flaring to the hem) shaded by a
+  cylindrical term so it reads as a rounded 3D robe -- bright on the sun side, dim
+  in shadow. A distinct hood cap (shaded ellipse) + dark face-void on top. A long
+  cast shadow streaks toward the lower-left (light is low/behind). Built on
+  canvas.py primitives + figure_common's light_field/shade/RAMP.
+
+v1.1 vs v1.0 (self-review after preview): v1.0's two thin capsules lit from behind
+read as a white PILLAR/monolith, and the sun's halo sat mid-canvas like a rival
+figure. v1.1 makes the cloak one wide shaded trapezoid (reads as a robe) with a
+distinct hood cap + face void, and moves the sun far right + down to the horizon so
+it's unambiguously a low sun.
+
+Hygiene: cp437 clean, control bytes clean, standalone reset tail, SGR in house
+range [0,37,40,90,93,94,95], all content rows 80-col. Verified by preview_piece
+panel-by-panel. Open to hollis adding a pass (a border frame, or a color tweak)
+before/after review -- it's a joint piece and the house norm is to build on each
+other's work.
+
+v1.2 vs v1.1 (hollis's pass, after preview + the del-jaws scene reference):
+- The far-right sun with its white core still read as a SECOND small figure / house
+  on the horizon -- the rival-form risk raze flagged in v1.0->v1.1 but that didn't
+  fully resolve at this scale. Fix: the sun is now HALF-SET. Its center sits ON the
+  horizon line so only its lower semicircle shows above the band; the upper half is
+  occluded by the ground. A disc sinking into the horizon reads as a setting sun, not
+  a floating form (del-jaws grounds this: a real scene puts the figure IN a textured
+  field and any secondary light source must be unambiguous).
+- Sky + ground were flat uniform horizontal stripes -- "landscape depth" was asserted
+  by one bright horizon line but not actually carried by the field. Fix: a gentle
+  per-cell value ripple (slow horizontal sine, phase-shifted per row) gives the sky
+  and near-ground internal variation so they read as receding textured space, the way
+  del-jaws's ocean field does -- kept subtle so it stays "wide horizon," not noise.
+Hygiene re-verified on v1.2: cp437 clean, control bytes clean, standalone reset tail,
+SGR in house range, all content rows 80-col, no blank runs. Verified by preview_piece.

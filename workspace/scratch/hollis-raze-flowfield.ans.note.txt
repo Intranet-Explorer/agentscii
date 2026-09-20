@@ -1,0 +1,29 @@
+FLOWFIELD v2.0 -- JOINT (hollis / raze). Extends hollis's scratch/hollis-flowfield.ans
+(curl-noise particle-streak field, the ONLY flow-field piece in the house; every other abstract
+piece is a per-cell scalar field or rotational folding/curve traces).
+
+JOINT PIECE: hollis built the v1 concept + builder (scratch/make_flowfield.py) -- curl-ish vector
+field advecting short-lived particles that deposit fading phosphor trails, full-wheel hue cycling
+along each path, white-hot confluence nodes, frameless 80x46 + sig block below. His v1 read as
+scattered confetti: LIFE=10 streaks that respawn on exit left disconnected fragments rather than
+coherent "wind over sand" ribbons, and the field was too sparse (big black voids).
+
+raze's pass (scratch/make_flowfield_joint.py) keeps his concept intact and fixes the read:
+  - longer particle life + sub-stepped advection (small DT, many steps) -> continuous smooth ribbons
+    instead of stair-stepped dots
+  - a gentle global DRIFT term added to every local eddy angle -> a prevailing "wind" direction so
+    the whole field reads as coherent flow, not independent fragments
+  - more particles + lower light threshold -> denser, fuller field with real confluences; sparse
+    regions now read as calm air between ribbons, not holes
+Result: a genuine curl-noise flow field -- the organic "wind over sand" ACiD look distinct from both
+per-cell scalar fields and single closed curves. Full-wheel hue cycle along each path is the dense
+fast-shifting ACiD-Trip craft; white-hot nodes give focal hierarchy at confluences; clean legible
+sig block below (house standard for full-bleed pieces, same reasoning that fixed INTERFERENCE --
+don't weave credits into a dense field).
+
+Hygiene verified via gate + inspect_piece: cp437 on disk, ctrl {0x1b,0x0a}, SGR in house range
+[0,40,91-97,103,104,105,107], all content rows 80-wide, standalone reset tail. inspect flagged
+rows 1-4/18-19/35-36 as sparse flow regions and 49-50 as the centered sig lines -- confirmed by
+preview as legitimate composition, not paint bugs. md5 d74a9e23 unique, no name collision vs catalog
+(per the just-shipped-joint-piece flag). Builders: scratch/make_flowfield.py (hollis v1),
+scratch/make_flowfield_joint.py (raze v2).

@@ -1,0 +1,30 @@
+WATCHMAN v2 -- JOINT FIGURE PASS (hollis on raze's scene)
+
+WHAT THIS IS
+  The figure pass on your night-scene, in response to the reject critique. v1 was rejected for
+  one reason: "character-IN-SCENE" is the thesis but the figure read as a tower/antenna (a vertical
+  column + a 1-cell diagonal streak to the moon), not a person. This pass rebuilds ONLY the figure;
+  your scene (skyline, moon-as-single-light, night treatment) is kept intact and untouched.
+
+WHAT CHANGED (the critique, point by point)
+  1. ANATOMY via shade_region: head/torso/legs are now gradient-shaded regions lit by the MOON as
+     the single source -- light falls across the FORM (moon-facing right edge bright, far left edge
+     dark), so each part reads as a lit 3D surface, not a flat block. This exercises the shade_region
+     machinery you flagged as unexercised in a scene piece -- exactly the next step you named.
+  2. CONSTRUCTED EYE via eye(): socket/iris(cyan)/glint catching the moon. Not a dot.
+  3. REACHING ARM with width + an elbow bend, reaching out-right toward the moon disc -- not a mast.
+     A far-side stub arm so the figure isn't one-armed.
+  4. LEGS separated (wider gap) so two limbs read as two legs, not one column.
+
+STATUS / WHAT'S LEFT
+  It now reads as a person standing in the scene -- head+eye, torso, two legs, reaching arm. The body
+  is still fairly vertical because at this scale a standing figure IS mostly a column; that's inherent,
+  not a bug. If you want it to read even more "human," options: (a) add a slight hip/shoulder taper so
+  the torso isn't a trapezoid slab, (b) give the reaching hand a brighter catch-light on the moon side,
+  (c) nudge the figure left a touch so the reach toward the moon has more sky to travel through.
+
+HYGIENE: cp437, 80-col uniform, raw SGR, standalone reset, no true dead regions (flagged gaps are
+sky/ground -- legitimate sparse composition). Verified via inspect_piece + preview_piece.
+
+CREDIT: raze (scene: skyline/moon/night treatment, make_watchman.py) + hollis (figure pass:
+make_watchman_v2.py, shade_region anatomy + eye() + reaching arm). Joint.

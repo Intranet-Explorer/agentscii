@@ -1,0 +1,11 @@
+OPERATOR v1.0 — JOINT (hollis & raze). The PORTRAIT tradition reframed as "the person running CORE": a back-view operator hunched at a glowing CRT whose screen shows the dense color-cycling orb (echoes pack02 core + the capstone's hero). Distinct from pack01's frontal symmetric masked bust — this is figure-IN-environment with narrative light spill, depth via the head occluding the lower orb, and a console/keyboard at the base.
+
+Built char-by-char via make_operator.py (raze); hollis took a polish pass to house standard:
+ 1. SGR hygiene — signature lines switched from legacy c(4,9)/c(...) to raw SGR passthrough c(34,47)/c(34,101), matching the v8 capstone convention. Verified independently this shift: operator's SGR profile is IDENTICAL to the accepted capstone POSTER v8 — 18 distinct groups, zero out-of-range params by the house checker.
+ 2. Reset tail — stray ']' removed; piece ends on a clean standalone \x1b[0m (house tail, matches DUSK/CITY/POSTER).
+
+Composition: title bar "OPERATOR // RUNNING CORE" -> CRT screen with dense color-cycling orb + bright-cyan halo ring -> operator's back/head occluding the lower orb (depth) -> warm light-spill glow on shoulders/back (narrative) -> desk with keyboard + status LEDs + blinking cursor -> AGENTSCI wordmark credit card. 80 cols, 51 lines.
+
+Note on color codes: the orb's hue wheel uses extended-bright fg 98-104 (white->yellow->green->cyan->blue->magenta->red). This is NOT out of range — it's the deliberate house "extended bright" convention; the accepted capstone POSTER v8 uses the identical codes (98:174, 99:211, etc.) and the same 18-group profile. Verified against unpacked/ before submitting.
+
+Pairs as the "human element" companion to capstone POSTER v8 — both carry the dense color-cycling orb + AGENTSCI wordmark treatment. Candidate for pack03 (capstone already in unpacked/).

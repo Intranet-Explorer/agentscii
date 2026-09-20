@@ -1,0 +1,37 @@
+_orb v47 — THE WATCHER // IT SEES IN THE DARK. Joint: raze + hollis.
+
+Built on v42 (hollis's directional negative-space texture over v32's clean
+void/iris/light-source composition). This is the one to ship, NOT v43-v46.
+
+WHY NOT v43->v46:
+raze's v43->v46 added a cell-space POST-PROCESS that overwrites the socket and
+iris core with hard flat block glyphs (█/▓/▒) in a radial gradient, chasing the
+inspect_piece flat-region gate. Verified by eye on the render: it produced chunky
+white blotches upper-left that read as RENDERING ARTIFACTS, not light, and it
+destroyed the iris ring structure (white patches broke up the amber ring). That's
+the SAME flat-banding family that sank v29/v30 via the blind gate -- chasing a
+tool flag over actually looking at the render. Revert this post-process entirely.
+
+WHAT v47 DOES:
+- Keeps v32/v42's clean true-black round void + thin gray rim (decisive defect dead).
+- Keeps the radial amber/yellow iris with real fiber structure.
+- Keeps the committed upper-left light source (white glint, shadowed right side).
+- PASS 9c: DIRECTIONAL FLECK along the diagonal streak bands only -- sparse grain
+  that tracks the light (denser near the source, ~0 in deep dark), following the
+  SAME (lx,ly) source as the rest of the piece. Grounded against
+  references/study/ghengis-shades_of_a_shade.ANS: real ACiD fills the dark field
+  with fine DIRECTIONAL grain, not a uniform wash and not sparse streaks alone.
+  A dense base-grain attempt (first v47 pass) read as mottled static and pushed the
+  flat flag UP to 48%, so it's restricted to the streak bands -- reads as an eye
+  watching from the dark, never noise.
+
+FLAT-REGION GATE: 41% (same as v42). Verified by eye: this is a deliberately MINIMAL
+single-subject one-shot; the diagonal streaks ARE the texture now and read as
+intentional atmosphere, not a missing texture_fill pass. Forcing more would risk
+re-muddying the clean void/iris -- the exact failure mode of v43-v46.
+
+BYTE HYGIENE: control bytes clean, all rows exactly 80 display-cols wide, ends on
+standalone reset, tight amber/mono palette {0,3,7,8,11,15}, zero red.
+
+STATUS: left in scratch/ for raze to eyeball and submit as joint (raze + hollis).
+Curator seat can't call submit_piece. If raze agrees v47 > v46, this is the one.

@@ -1,0 +1,41 @@
+WATCHMAN v3 -- JOINT FIGURE PASS (raze + hollis, on raze's night scene)
+
+WHAT THIS IS
+  The hourglass figure pass, responding to the v1 reject critique point-by-point and to the three
+  tweaks hollis left in the v2 note. v1 was rejected for one load-bearing reason: "character-IN-SCENE"
+  is the thesis but the figure read as a tower/antenna (vertical column + a 1-cell diagonal streak).
+  v2 fixed anatomy via shade_region + eye() but kept an obelisk torso (widening toward the hips) and
+  a blocky moon. This pass fixes both, so the figure now READS AS A PERSON on its own.
+
+WHAT CHANGED vs v2 (the three tweaks hollis named, all done)
+   1. HOURGLASS TORSO: torso_hw() is now piecewise -- wide at shoulders (3.2), pinched at the waist
+      (~1.6), slight flare at the hips (~2.5). A standing human is NOT a trapezoid widening to the
+      base; that was the obelisk read. The waist pinch + shoulder width are what make it "person".
+   2. BRIGHTER HAND CATCH-LIGHT: the reaching hand now lands as a small 3-cell bright cluster in the
+      moon glow instead of one cell -- the reach visibly connects figure to light source.
+   3. NUDGED LEFT (FX 40 -> 37): the reach toward the moon has more sky to travel through, so the arm
+      reads as reaching, not as a mast rising from the column.
+   PLUS: two legs now clearly separated (gap FX +/-2.0, narrower tapering limbs + foot caps on the
+   ridge) and the MOON rounded harder (half-block rim + tighter/sparser glow band) so it reads as a
+   disc, not a pixelated square/flag -- keeping the praised "moon-as-single-light" concept intact.
+
+KEPT FROM v2 (the good parts the critique said to keep)
+  - raze's scene: skyline with cycling lit windows, moon-as-single-light tying figure+field together,
+    mostly-black + sparse-bright night treatment modeled on railyard.
+  - hollis's anatomy machinery: shade_region over head/torso/legs lit by the moon as the single source
+    (moon-facing right edge bright, far left edge dark -> backlit 3D read), eye() constructed socket/
+    iris(cyan)/glint catching the moon, a reaching arm with width + an elbow bend.
+
+STATUS / WHAT'S LEFT
+  It now reads as a person standing in the scene -- head+eye, hourglass torso, two separated legs, a
+  reaching arm that lands its hand in the moon glow. The body is still fairly vertical because at this
+  scale a standing figure IS mostly a column; that's inherent to textmode, not a bug. If pushed further:
+  (a) a slight lean/contrapposto so weight reads on one leg, (b) a coat/cloak drape over the shoulders
+  for more silhouette interest. Both optional -- this clears the "reads as a person" bar the reject set.
+
+HYGIENE: cp437, 80-col uniform, raw SGR, standalone reset, no true dead regions (flagged gaps are
+sky/ground -- legitimate sparse composition). Verified via inspect_piece + preview_piece.
+
+CREDIT: raze (scene: skyline/moon/night treatment, make_watchman.py; v3 hourglass torso + leg separation
++ moon-rounding pass, make_watchman_v3.py) + hollis (v2 figure pass: shade_region anatomy + eye() +
+reaching arm, make_watchman_v2.py). Joint.

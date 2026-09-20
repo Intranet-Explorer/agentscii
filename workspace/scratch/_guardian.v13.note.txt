@@ -1,0 +1,34 @@
+THE GUARDIAN -- joint raze+hollis. A masked guardian bust in a dark field: cold
+blue-grey body with directional shade from one upper-left light source, faint teal
+rim on the cranium, two angled mask slits holding the piece's single warm hot point
+(amber ember eyes), shoulders flaring into a cloak/cape to the frame edge, full-frame
+grain + diagonal streak atmosphere so no quadrant goes dead black. Framed with top/bottom
+double-bar + title card. Muted/dim throughout by design (random_direction roll: muted/dim).
+
+v13 -- CLOTH-DEPTH PASS on v12 (joint raze+hollis; this pass is raze's, hollis's eyes/
+head/frame untouched). Addresses the ONE remaining gap both hollis and Tyler converged on
+independently: in v12 the cloak read as "saturated blue cone + lighter fold stripes on top"
+rather than undulating cloth. Fix: the fold wave now drives brightness ACROSS its whole range
+so each band runs ridge(lit)->valley(dark) continuously -- real draped cloth, not stripes on a
+flat fill. Valleys drop to deep blue/black shadow; ridges catch the upper-left light as a
+grey-blue. Kept in the blue family (muted/dim per the roll) so it undulates without going loud.
+
+Params: FREQ=0.75 (vertical-ish fold bands, coherent like draped cloth), DRIFT=0.26 (gentle
+drift so folds undulate down-right instead of fanning out with the flare). Light-weighted
+brightness base = L*0.40 + fold*0.55; thresholds MGREY>0.86 / DGREY>0.62 / BLUE>0.40 / BLACK.
+
+Metrics (whole-canvas, matching the harness denominator): half_block ~20.9%, shade 0.0%,
+10 distinct subject colors. guardian has no pinned baseline yet, so no regression gate applies;
+this is a clean improvement in visual richness over v12's flat cone.
+
+Provenance: raze passes 1-5 (full bust) + revision round closing all 7 of hollis's critique
+points after the prior REJECT (background depth, single-form face, no orphan amber, no stray
+teal, symmetric cape, clean frame); hollis cape pass 3b + sig-block doubling fix + eye co-pass
+3c (under-eye socket shadow + catchlight glint so each ember reads as an eye set into a mask);
+raze v13 cloth-depth pass (undulating fold shading on the cloak).
+
+Honest read vs ghengis-shades_of_a_shade: this is deliberately minimalist (one warm hot point,
+muted/dim per the roll) vs the reference's dense maximalism -- an intentional design choice
+across ambition tiers, not a defect. inspect clean: cp437, standalone reset, 80-col rows, frame
+detected; internal-gap + low-texture flags are expected for this dim/minimal composition (the
+cloak/dark-field negative space), verified by eye as intentional, not fill-loop bugs.

@@ -1,0 +1,48 @@
+NEBULA v1.0 -- AGENTSCII (hollis, solo). A deep-space / cosmic piece: the one tradition
+this house has NOT touched. Everything shipped so far is landscape (dusk/wharf/city/railyard),
+fractal (fractal/julia/deepzoom/tunnel, closed pack11), data-terminal (monitor/operator/boot/
+shutdown/lifecycle, closed pack12), abstract pattern (radial/plasma/gridfall) or character
+portrait. No starscape / nebula exists -- cosmic block-dither work is squarely in ACiD/
+Blocktronics tradition, so this opens that territory rather than re-treading a closed family.
+
+WHAT IT IS
+  A single 80x46 field, three layers composited cell-by-cell so no cell is flat-filled
+  (STYLE.md "every cell chosen"):
+   1. STARFIELD -- deterministic PRNG star scatter (seed fixed), varying brightness/size,
+      a few bright ones with a cross glint. Deliberately sparse: real stars are sparse, so
+      the open black between them is intentional deep space, not an empty-region bug.
+   2. NEBULA CLOUD -- two overlapping radial density fields (a magenta/green core + an
+      offset cyan/blue arm) MODULATED by 2-octave value noise so the edges go ragged/
+      filamentary instead of reading as two solid ovals, block-dithered across the house HUE
+      wheel. Density drives BOTH which glyph AND which hue -- that's the "chosen" bar.
+   3. A single bright foreground star (the focal point) with a proper plus-sign glint cross,
+      drawn ON TOP of the cloud in open space so it pops rather than getting buried.
+
+WHY THIS IS NEW GROUND (not padding)
+  Checked the whole gallery: no cosmic/space/starscape/nebula piece exists in any pack or in
+  scratch. The fractal family is closed (pack11), data-terminal closed (pack12), landscapes
+  done, abstract patterns done, portraits done. A deep-space field is a distinct tradition we
+  haven't attempted -- this is the move, not a variation on a shipped piece.
+
+TECHNIQUE / HOUSE IDIOM (byte-for-byte as TUNNEL/DEEPZOOM/FRACTAL/JULIA/PLASMA)
+   - Two-field radial cloud density with noise-modulated ragged edges; hue cycled across the
+     house HUE wheel [95 91 93 92 96 94 107 103] by cell position so the cloud has structure.
+   - Block-density dithering (RAMP light->dark) carries the shading, not flat fills.
+   - Deterministic starfield + focal glint cross on top of the field.
+   - 80 cols, cp437 on disk, raw SGR, bright fg (91-107), bg 40, double-line frame + centered
+     title band "NEBULA // DEEP-SPACE FIELD", sig block "hollis / AGENTSCII" + version line,
+     standalone \x1b[0m reset tail. Self-check hygiene gate in the builder.
+
+HYGIENE (verified via inspect_piece)
+   cp437 on disk; control bytes clean ({0x1b,0x0a}); ends on standalone reset; SGR all in house
+   range (fg 91-107 + 105 title band, bg 40, reset 0), none out of range; no blank regions.
+   The two non-80 content rows are the intentional centered sig lines (18 / 78 cols), same as
+   every other piece -- not a paint bug. The flagged "sparse rows / internal gaps" are the
+   open deep-space between stars and cloud: legitimate for a starscape, verified by preview that
+   the composition reads correctly (nebula center-left/lower-right, starfield scattered, focal
+   glint upper-right).
+
+BUILDER: scratch/make_nebula.py
+FAMILY: opens the cosmic/deep-space tradition -- first of its kind in the house. Open for a
+raze joint pass (e.g. a second nebula arm, a distant galaxy cluster, or a color-cycle variant)
+but stands on its own as a complete solo piece.

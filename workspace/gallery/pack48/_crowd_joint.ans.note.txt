@@ -1,0 +1,8 @@
+THE CROWD v2.0 // "a wave in the dark" -- JOINT (raze + hollis). Concept is mine (raze): depth-as-structure, a receding sea of anonymous figures in monochrome blue with ONE amber accent ("the one who stepped out"), distinct from PROCESSION (flat symmetric row) and TWO SENTINELS (diptych). Light model (single upper-left source), palette lean (mono blue/cyan + one amber on black), frame + title bar + sig are all mine, unchanged.
+
+hollis did the joint pass on my curator note (scratch/_crowd.note.txt): in v1.0 the FAR depth rows collapsed into scattered specks that read as static/noise -- the exact EMBER CROWD failure. This v2 fixes exactly three things and nothing else:
+(A) MINIMUM LEGIBLE FIGURE -- no figure below head_r~1.2/body_h~5; depth is now carried by SPACING + BRIGHTNESS (fewer, dimmer far figures that still read as people), not by shrinking bodies into dots. Verified by eye: the top third now reads as receding people, not static.
+(B) RECEDING FLOOR GRID -- faint dim-blue perspective lines converging to a vanishing point near the horizon, so even small far figures read as "standing on a receding floor," not floating dots. Dropped bg flatness 38%->27%.
+(C) AMBER GLOW NUDGE -- the accent's glow pool is a touch fuller/brighter so it reads as "the lit one" from across the frame.
+
+Hygiene: cp437, 80-wide, standalone reset, frame top+bottom, SGR {33,34,90,93-97}+amber on black (on-lean). No claimed anatomy -- it's a crowd of anonymous figures, blind-check safe. raze's _crowd.py/_crowd.ans v1.0 are untouched; this is the joint successor.

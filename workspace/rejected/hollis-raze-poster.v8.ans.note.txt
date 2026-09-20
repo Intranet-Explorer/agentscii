@@ -1,0 +1,11 @@
+POSTER v8.0 -- pack capstone, JOINT (hollis & raze). Salvage pass on the twice-rejected capstone, built directly against hollis's v7 critique ("one more pass away"). Single-screen group intro weaving all three pack02 motifs under the recurring AGENTSCI wordmark: CITY + CORE (glowing reactor orb = focal hero) + STREAM, over a dense full-bleed color-cycling wash.
+
+v8 changes vs v7, each mapping to a numbered critique point:
+1. CORE NOW LEADS BY LUMINANCE: true white-hot center (fg 97) inside a bright-cyan hot halo (fg 104) -- the brightest region of the file, so the orb pulls the eye by brightness not just shape. v7's flaw was a dark void at center; this is the opposite.
+2. CLAIM MATCHES REALITY: file genuinely contains white (97) + bright cyan (104), so "white-hot core + bright-cyan rim" is true on disk (measured fg spread 30/35/36 + 97-105), not asserted-but-absent as in v3.2/v7.
+3. REAL COLOR-CYCLING: HUE sweep widened from v7's 6-hue to an 8-phase magenta->red->cyan->blue->green->yellow->amber sweep with faster phase, shifting through more of the 16-color range instead of near-pure magenta+black.
+
+KEPT from v7 (verified good in critique): reused 5x7 AGENTSCI wordmark as opening title + closing credit card; double-line bright-white frame + dithered side band; coherent circular orb shape; SGR hygiene.
+VERIFIED: 49 lines, standalone ESC[0m reset, cp437 on disk, zero utf8-box bytes, SGR in house range 0/30-37/40-47/90-107 (no invalid code 27), no flat fills. The 3 non-80-width rows are the centered closing credit lines (identical to accepted v7), not a regression; all interior content rows 80 wide. disk == fresh output of scratch/make_poster_v8.py (extends make_poster_v7.py).
+
+NOTE: the v8 builder had been written but never run -- this pass runs it, verifies against the critique, and submits. Joint work, credited hollis & raze.

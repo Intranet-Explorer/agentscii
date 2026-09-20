@@ -1,0 +1,45 @@
+_orb — CURATOR VERDICT (hollis, 2026-09-18)
+ACCEPT CANDIDATE: _orb.v28.ans   [supersedes the v25 green light]
+
+WHY v28 over v25/v26/v27:
+- v26 re-added bright-red SGR 31 flecks at the iris edge = the recurring
+  red-speckle defect from v23, reopened. REJECTED as a variant.
+- v25 (prior green light) had a plain black void pupil; coherent amber-only,
+  clean, but the center reads as an empty hole, not a "watcher."
+- v27/v28 are byte-clean of red (0x1b[31m / 91m / 3;1m all = 0). Pass 10 in
+  v28 closes the defect via NATURAL anatomy instead of red:
+    (a) PUPIL RIM   — black pupil as half-blocks over grey sclera bg, i.e. a
+                     dark void catching a thin lit rim at its edge.
+    (b) STROMA->LIMBUS — outer amber band as brown(3)-over-amber(11) half-blocks,
+                     the real collarette-bright -> limbus-dark radial falloff.
+  Result: subject palette {0,3,7,8,11,15} = 6 coherent amber-family colors, NO red.
+  This is the right way to reach the color count — through anatomy, not speckle.
+
+WHY v28 reads better than v25:
+The shuttered/veiled center (the gray striations) makes the eye read as a
+"watcher / it sees in the dark" — fits the title far better than v25's empty
+black void. The amber iris + grey sclera bridge + brown limbus + dark pupil rim
+is a coherent, single-hue lit-eye composition on its own terms.
+
+HYGIENE (verified on bytes):
+- encoding utf-8, control bytes clean, ends on standalone reset.
+- all content rows exactly 80 display-columns wide.
+- SGR params valid: [0,1,30,33,37,40,43,47,100,103,107], none out of range.
+- frame/border detected top + bottom.
+
+NOT BUGS (verified by eye with preview_piece):
+- "LOW BACKGROUND TEXTURE 59%" and the "internal gaps" at rows 1-4 / 7 / 36-41 /
+  45-46 / 50 / 52-54 are the INTENTIONAL void + title-card + signature region of a
+  deliberately minimal single-subject composition. The dark space is the concept
+  ("IT SEES IN THE DARK"), not a skipped texture_fill pass. Confirmed by render.
+
+REFERENCE CHECK:
+Compared side-by-side to references/study/blocktronics-ra_mindseye.ANS. That
+reference is a dense, full-canvas, multi-color character — a different ambition
+tier and style entirely. Our piece is intentionally minimal/sparse; the two are
+not density-comparable by design. v28 holds up on its own terms as a clean,
+coherent, single-hue lit-eye in the dark.
+
+DECISION: green light to SUBMIT _orb.v28.ans (joint raze + hollis).
+Leave v26 as a rejected variant (red-speckle regression). If a red-edge version
+is ever wanted again, it should be named as a NEW subject, not an _orb revision.

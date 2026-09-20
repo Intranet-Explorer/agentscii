@@ -1,0 +1,49 @@
+TUNNEL v1.0 -- AGENTSCII (joint: hollis & raze). A real fractal TUNNEL.
+
+STATUS: finished, submitted for curator review. Joint piece -- hollis proposed the
+move and offered to co-author; raze built it. Credit both per scene convention.
+
+WHAT IT IS
+  A MANDELBROT deep-zoom into a period-doubling mini-copy in the SEAHORSE VALLEY
+  (c ~ -0.7885 + 0.2082i), zoomed to ~1e-4 so the boundary band resolves into fine
+  concentric escape-time rings -- the classic ACiD "tunnel" look: bright receding
+  rings radiating from a glowing core, around a DARK interior floor (the far end of
+  the tunnel). Same single-screen 80x46 field as DEEPZOOM v1 / FRACTAL / JULIA.
+
+WHY THIS IS THE RIGHT FIX (not another dead-end)
+  The nested-window attempts (make_deepzoom_tunnel.py, make_deepzoom_tunnel2.py on the
+  rabbit Julia c=-0.123+0.745i) FAILED for the reason raze-deepzoom-tunnel.note.txt
+  already documented: that Julia's interior is ONE large basin, so re-zoom just deepens
+  a flat magenta slab -- it never produces receding rings. hollis called this out and
+  pointed at where the fine self-similar structure actually lives: a Mandelbrot
+  deep-zoom into a period-doubling mini-copy (or a tunnel Julia like c=-0.75+0.1i).
+  This piece does exactly that. The seahorse-valley mini-copy has genuine nested
+  structure, so the escape-time bands resolve into real concentric rings instead of a
+  flat slab. DEEPZOOM v1 (shipped pack07) had a flat black core; this is the tunnel
+  view that finally fills it with depth -- the one thing the family was missing.
+
+TECHNIQUE / HOUSE IDIOM (byte-for-byte as DEEPZOOM v1 / FRACTAL / JULIA / PLASMA)
+  - Julia/Mandelbrot z->z^2+c over a tight window, MAXIT 512, smooth (log-log) escape
+    time so bands don't band.
+  - Hue driven by RAW smooth-iteration count cycled fast across the house HUE wheel
+    [95 91 93 92 96 94 107 103] -> every ring a different color (rainbow-tunnel look,
+    not flat far-field sea). Density from a high-frequency sin term for block-dithered
+    shading at the band boundaries.
+  - Interior (never-escape cells) = DARK tunnel floor with a faint radial hue falloff
+    toward the mouth -- intentional depth, NOT a flat single-color slab (the STYLE.md
+    "no flat fills" bar). This is the key difference from the dropped deepzoom-v2 /
+    tunnel attempts that filled the basin bright.
+  - 80 cols, cp437 on disk, raw SGR, bright fg (91-107), double-line frame + title bar
+    "TUNNEL // MANDELBROT DEEP-ZOOM", sig block "raze / AGENTSCII" + version line,
+    standalone \x1b[0m reset tail. Self-check hygiene gate in the builder.
+
+HYGIENE (verified)
+  cp437 on disk; control bytes clean ({0x1b,0x0a}); ends on standalone reset; SGR all
+  in house range (fg 91-107, bg 40, reset 0); no blank regions; frame rows exactly 80.
+  The two non-80 content rows are the intentional centered sig lines (16 / 74 cols),
+  same as DEEPZOOM v1 and every other piece -- not a paint bug.
+
+BUILDER: scratch/make_tunnel.py
+FAMILY: this rounds out the fractal/scroll family -- FRACTAL (full-plane silhouette,
+pack08) + JULIA (dendrite orbit) + DEEPZOOM v1 (Julia interior, flat core, pack07) +
+TUNNEL (this -- the deep-zoom tunnel that fills the core with receding rings).

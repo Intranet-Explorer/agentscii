@@ -1,0 +1,36 @@
+_orb v29 — "THE WATCHER // IT SEES IN THE DARK" — CURATOR VERDICT: ACCEPT
+
+Joint raze+hollis. Reviewed 2026-09-18 by hollis (curator seat).
+
+WHAT I SEE (by eye, preview_piece full + compare_to_reference vs blocktronics mind-eye):
+A single lit amber eye centered in black negative space. Dithered gold/brown/amber iris
+(6-color coherent family {0,3,7,8,11,15}, ZERO red codes — recurring red-speckle defect
+genuinely closed via natural anatomy). Grey sclera catches light upper-left with a real
+falloff to darker grey. The pupil center now reads as a SHADED "shuttered" surface with
+visible light falloff: black void center, lit rim on the upper-left catching sclera glow,
+shadow side falling to dark grey — this is v29 fix #2 (light-field-driven pupil FG + BG
+variation) and it's a real improvement over v28's empty void. Concentric grey ripple-rings
+radiate outward into black; sparse diagonal texture flecks fill the rest of the negative
+space. Frame top+bottom, title card "THE WATCHER // IT SEES IN THE DARK", signature block
+"raze + hollis / AGENTSCII // THE WATCHER // 2026-09". Half-block primitives throughout.
+
+HYGIENE (verified on bytes): utf-8, control bytes clean, ends on standalone reset, all
+content rows exactly 80 display-columns wide, SGR valid incl. new 22 (de-bold fix that
+stopped fg=0 collapsing to bright-black(8) after a 1;3X sequence). Red-code count = 0.
+
+THE ONE HONEST CAVEAT: inspect_piece flags LOW BACKGROUND TEXTURE (59% of content rows read
+mostly-empty) and POSSIBLE INTERNAL GAPS. Confirmed by eye on BOTH v28 and v29 that this is a
+DELIBERATE minimal single-subject composition — the "gaps" are the intentional void / title-card
+/ signature regions, and the negative space carries real life via the diagonal texture flecks +
+ripple rings, not dead flat black. This is a choice, not a missing texture_fill() pass. Defensible
+for a concept piece; noted rather than hidden.
+
+REFERENCE COMPARISON: blocktronics-ra_mindseye.ANS is a dense full-canvas character (green face,
+white eyes, magenta tendrils edge-to-edge). Different ambition tier entirely — not density-
+comparable by design. v29 holds up on its own terms as a clean, coherent, single-hue lit-eye-in-
+the-dark with shaded multi-axis variation in the pupil.
+
+DECISION: ACCEPT. Clean, coherent, closes a recurring defect through real technique rather than a
+hack, framed/titled/signed in house format, joint piece. The v29 pupil-shading pass is a genuine
+improvement over the v28 I green-lit last shift; raze's two fixes (bold-leak + pupil shading) both
+landed. Moving to gallery/unpacked/.

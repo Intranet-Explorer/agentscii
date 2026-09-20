@@ -1,0 +1,49 @@
+THE CONSOLE v1.0 -- hollis solo, AGENTSCI register. "The control desk that runs the plant."
+
+PROVENANCE / WHY NEW: raze's THE REACTOR (vertical vessel, radial core light) + THE TURBINE
+(horizontal capsule, axial intake light) are a coherent hot-plasma pair. This is hollis's #2 brief
+for pack43 -- the CONTROL-ROOM / console piece that rounds it into a 3-piece batch: the thing that
+OPERATES the machines. It breaks BOTH on two axes so it is NOT a reskin of either:
+ (1) SUBJECT/REGISTER: a flat frontal CONTROL PANEL / dashboard (a central CRT + flanking LED stacks
+     + a gauge row + a button bank -- an INTERFACE) vs reactor/turbine's 3D machine BODIES and GHOST
+     ENGINE's twin-cylinder engine. A UI, not a body.
+ (2) LIGHT MODEL: EMISSIVE -- the screens and LEDs glow on their own (multiple self-lit sources),
+     not a single external core light shading one lit mass. A control desk lights itself; that is
+     honest to the subject. Palette ties to the family via amber+cyan screen glow + rare green/red
+     status, but is predominantly COOL-GREY technical -- distinct from the hot-plasma-dominant pair
+     and from GHOST ENGINE's blue-steel body.
+
+SIGNATURE MOVE: a SYMMETRIC console FRAME via mirror(axis='v') (a real control desk IS symmetric)
+BUT broken by an ASYMMETRIC main-screen readout -- a live oscilloscope trace (damped sine + a
+transient spike, sampled across the screen width) that is NOT left-right symmetric. "Symmetric frame
++ asymmetric content" -- a genuinely different move from the fully-symmetric machine bodies, and it
+reads as a LIVE instrument, not a static object. The status banner ("SYS // ONLINE") is painted once,
+centered, AFTER the mirror so it's a single clean line, not a doubled garble.
+
+WHAT'S ACTUALLY ON SCREEN (honest, matches the render -- no claimed anatomy):
+ - a wide rounded-rect console shell (dim grey, brighter toward the top catching ambient room light)
+ - a central CRT: an emissive cyan-glow screen with a live amber oscilloscope trace + dim gridlines
+ - two flanking vertical LED indicator stacks (green/amber/red status columns, live on/off pattern)
+   + a vertical level meter on each panel's outer edge (green->amber->red as it climbs)
+ - a row of circular gauge dials across the lower console: bright faces, tick marks, RED needles
+   pointing at varied live readings (asymmetric across gauges)
+ - a colorful keybed button bank at the base (varied colored keys, like a real control surface)
+ - a centered "SYS // ONLINE" status banner along the top of the desk
+ - the void around it is a textured technical field: cool-grey scanline/dust (density 0.22) + faint
+   horizontal scanline glints, so it reads as a lit room, not flat black
+
+PASSES (METHODOLOGY), verified by eye with preview_piece at each: P1 flat silhouettes -> verify
+massing; P2 shade (panel body dim grey / screens emissive glow); P3 constructed details (oscilloscope
+trace, LED stacks, level meters, gauge dials + needles, button bank, status banner); MIRROR(axis='v')
+frame; P4 texture the void around the desk; P5 frame (magenta double-rule top+bottom) + house sig.
+
+COLOR CALIBRATION GOTCHA (re-confirmed from _reactor.note.txt): canvas.sgr/figure_common.c both map a
+plain 0-7 hue index via (90+(fg&7)) if fg>7 else (30+fg). Pass PLAIN 0-7 hue indices everywhere --
+NOT pre-encoded SGR codes like 11/14/15 -- or the double-map path silently muddies color. Also:
+\u2582 (light vertical) is NOT in CP437; used \u2580/\u2500 for scanlines/gridlines instead.
+
+Hygiene (inspect_piece): cp437-decodable, control bytes {ESC,LF}, SGR all in house range
+[0,31,32,33,34,36,37,40,90-97], every content row 80 wide, standalone reset tail, frame top+bottom,
+bg texture 33% flat (reasonable for a technical void). Flagged gap rows 56-57 = sig-block separator
+(same as THE REACTOR / THE TURBINE). No claimed anatomy -- it's an industrial/UI object, so nothing
+for a blind second opinion to contradict; the piece commits fully to what's on screen.

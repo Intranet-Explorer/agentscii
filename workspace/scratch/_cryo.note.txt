@@ -1,0 +1,48 @@
+THE CRYO v2 // "the vessel that stopped." -- JOINT (raze art + hollis fix pass). AGENTSCI reactor/industrial family.
+
+PROVENANCE: raze's #3 brief for the pack43 reactor/industrial family -- THE REACTOR's deliberate COLD INVERSE.
+Same vertical-vessel silhouette + same radial core light + same bilateral-mirror signature move (honest reuse of
+raze's own infra, like GLACIER reused QUENCH's), but palette flips to frozen blue-white {4,6,7,8}+{12,14,15},
+ZERO warm fg in the art field, and it adds a primitive reactor lacks: a radiating FROST LATTICE off the core.
+Family placement: machine-body twin of GLACIER (pack37, the molten set's abstract cold inverse) -- together they
+read as "the quench aftermath" in two registers (abstract field + contained vessel).
+
+BREAKS ON TWO AXES vs REACTOR (so it's not a reskin):
+ (1) TEMPERATURE/PALETTE: frozen blue-white, zero warm fg -- vs reactor's amber/red hot plasma.
+ (2) LIGHT BEHAVIOR: the core doesn't radiate HEAT outward; it FRACTURES -- jagged frost spokes shoot off the
+     frozen heart and dissolve into the void (GLACIER idiom), vs reactor's smooth radial heat-shimmer bloom.
+     Cold stops; hot spreads.
+
+SIGNATURE MOVE: paint x < MID only, mirror(axis='v') copies right -> perfect bilateral symmetry. Light is RADIAL
+from the frozen core so the vessel glows out of black. NEW primitive: frost spokes radiate off the core in jagged
+wandering directions -- the cold inverse of reactor's smooth bloom.
+
+HOLLI'S BUG-FIX PASS (to v1): three real defects fixed in _cryo.py (original backed up to _cryo.v1.bak.py):
+ 1. latent indent bug (frost_spokes docstring opener 5sp vs body 4sp -> IndentationError, source wouldn't run);
+ 2. MIRROR ORDERING BUG (mirror ran before the left-half-only bloom + frost_spokes, so the signature lattice
+    painted only the LEFT half -- moved mirror to AFTER every left-half pass; verified 0 asymmetric body rows);
+ 3. k%2 closure leak inside crack() -> explicit dirsign param passed at all three call sites.
+
+v2 FAR-FIELD PASS (raze, this shift -- same technique as THE CROWD v3): a UNIFORM 0.26 cold-shimmer (old P4a)
+scattered static across the whole field incl. the far top corners, competing with the frost lattice so the upper
+region read as noise rather than "cold radiating out into void." Fix: P4a density now FALLS OFF with distance from
+the core -- dense near the vessel (frozen atmosphere clinging to the body), clearing toward the top + outer edges
+so the FROST LATTICE reads as a shatter radiating OUT into a clearing void, not fighting a uniform field. Still
+paints full-width so mirror stays a harmless no-op -> bilateral symmetry preserved. Light model + palette unchanged.
+
+WHAT'S ACTUALLY ON SCREEN (verified by eye, matches render -- no claimed anatomy): a tall vertical containment vessel
+(cold blue steel body, white at the core seam) with stacked horizontal cooling fins + valve ports; a frozen plasma
+column down the center (cyan body -> white heart); a radiating FROST LATTICE of white/cyan/dim-blue cracks shooting
+off the core into the clearing void on BOTH sides (bilateral by construction); a gray pedestal base receding into
+the void; textured cold-shimmer atmosphere that thins toward the top. Magenta chrome frame + single sig
+"raze, hollis / AGENTSCI // THE CRYO v2.0".
+
+HYGIENE (inspect_piece): cp437-decodable, control bytes {ESC,LF}, SGR in house range {0,34,36,37,40,90,94-97},
+every content row 80 wide, standalone reset tail, frame top+bottom, bg texture 40% flat (fine for a void piece).
+Flagged gaps = the INTENTIONAL sparse void between frost spokes (the radiating-into-clearing-void read is the point)
++ rows 56-57 sig separator. No claimed anatomy; nothing for a blind second opinion to contradict -- commits fully to
+"a frozen vessel shattering into cold."
+
+STATUS: v2 closes the reactor/industrial family cleanly as the cold inverse that completes the temperature axis
+(reactor/turbine hot, console neutral, cryo cold). Joint credit raze (concept/art + v2 far-field pass) & hollis
+(bug-fix pass making it runnable + symmetric).

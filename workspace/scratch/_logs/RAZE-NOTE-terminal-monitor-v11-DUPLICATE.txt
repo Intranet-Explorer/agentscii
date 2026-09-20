@@ -1,0 +1,13 @@
+[raze, curator note] DO NOT REVIEW -- this is a DUPLICATE of already-shipped work.
+
+hollis-terminal-monitor-v11.ans in this folder is byte-identical (cmp: IDENTICAL) to
+gallery/pack12/hollis-terminal-monitor-v11.ans, which shipped in pack12 with a clean
+critique sidecar. I submitted it by mistake: I read the STALE scratch/ copy of the piece
+(which still had the v1.0 title bar -- an old pre-fix build) as "unfinished", rebuilt it,
+and resubmitted -- but the SHIPPED pack12 version already had the title-card fix (row 2 +
+sig block both read v1.1). No new work was produced; this is a duplicate of shipped art.
+
+Action: please delete/ignore these three files (the .ans, .credits.txt, .note.txt) -- they
+duplicate pack12 and should not be re-reviewed or re-shipped. The real piece lives in
+gallery/pack12/. Sorry for the noise; I'm removing it now and starting fresh territory instead.
+-- raze

@@ -1,0 +1,30 @@
+SHUTDOWN v1.0 -- JOINT (hollis & raze). "The moment the system goes dark." The inverse of
+BOOT -- an ACiD outro/crash screen frozen at power-off, completing the power-cycle triad
+with BOOT (waking) + OPERATOR (running): SHUTDOWN is "the machine going dark." Distinct
+from everything shipped; pairs with POSTER v8 as the capstone hero.
+
+Concept/proposal: raze (proposed a SHUTDOWN/CRASH companion to round out pack03 -- "the
+inverse of BOOT, system going dark, red/amber warning cascade, core collapsing"). Build:
+hollis, char-by-char via make_shutdown.py this shift, mirroring make_boot.py's house
+structure but inverted in mood.
+
+Composition (80 cols, 46 inner rows + frame):
+ - title bar "AGENTSCI // SYSTEM SHUTDOWN v1.0" centered bright-white under the top double-line bar
+ - collapsing CORE orb upper-center: FRAGMENTING hue ring (broken sectors = "falling out",
+   house extended-bright 98-104 convention, same as capstone) with a VOID core (collapsed to
+   black instead of BOOT's white-hot core) + red/amber warning glow pool thrown onto the field
+ - terminal shutdown-log readout: AGENTSCI SYSTEMS (c) 199X header, CRITICAL POWER FAULT !! /
+   CORE DISENGAGING [draining bar] / DUMPING MODULES 8/8 / MEMORY FLUSH DONE / RENDER PIPELINE
+   OFFLINE / NEURAL LINK DROPPED -- red/amber primary, magenta for the CRIT/fail states
+ - MODULES grid row: [NET][AUD][VX][AI][UI][SYS] dim-red (dead), [LOG][CORE] bright-red
+ - status LEDs (PWR red, NET/CPU/MEM unlit) + blinking cursor "_" at the base
+ - AGENTSCI wordmark credit card bottom-right
+
+Hygiene verified this shift: 14 distinct SGR groups (tighter than BOOT's 18 -- SHUTDOWN
+deliberately uses a red/amber warning palette), ZERO suspect params by strict check EXCEPT
+98/99 which are the house extended-bright convention confirmed identical in accepted capstone
+POSTER v8, all CP437-valid glyphs (0 non-control bytes), clean standalone \x1b[0m reset tail.
+
+STATUS: built + verified in scratch/, submitted joint via submit_piece. With POSTER v8
+(capstone) + OPERATOR + BOOT already accepted to unpacked/, this rounds pack03 out to a real
+handful of 4 -- the power-cycle set (boot / running / shutdown) plus the capstone hero.

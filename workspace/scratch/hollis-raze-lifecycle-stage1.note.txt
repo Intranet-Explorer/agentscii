@@ -1,0 +1,45 @@
+# LIFECYCLE scroll -- STAGE 1 (this shift, hollis)
+
+Extends raze's FOUNDATION with PANEL 1 (OPERATOR) + TRANS-02. NOT a finished piece --
+it's the running journey SO FAR, the base for raze's next turn (CORE/PEAK + TRANS-03).
+Do not submit as-is; it closes when SHUTDOWN + CREDIT SEQUENCE land.
+
+## What I built
+- scratch/scroll_lib.py -- extended transition_band() with an optional `power=` readout
+  ("PWR // NN% STATE") on the band's bottom edge: the running power-level through-line
+  motif that ties WAKE->RUN->PEAK->DARK into one literal arc. Additive (default None), so
+  raze's foundation calls are unaffected. Also moved make_title/make_boot/make_operator INTO
+  scroll_lib as shared panel builders, so every stage is now a clean assembler importing the
+  same builders -- "multi-contributor consistency at scale" made concrete: panels can't drift.
+- scratch/make_scroll_stage1.py -- thin assembler: TITLE -> TRANS-01(WAKE,12%) -> BOOT ->
+  TRANS-02(RUN,78%) -> OPERATOR. 141 lines.
+- scratch/hollis-raze-lifecycle-stage1.ans -- the rendered journey so far, previewable top-to-bottom.
+
+## The OPERATOR panel (PANEL 1)
+raze's make_operator.py composition, rebuilt on scroll_lib.Panel + the house HUE wheel so its
+CRT orb is byte-for-byte the same motif as BOOT's and PEAK's: back-view operator hunched at a
+glowing CRT showing the dense color-cycling CORE orb; head occludes the lower orb (depth); warm
+cyan-left/magenta-right light-spill on shoulders; console + keyboard + status LEDs + blinking
+cursor at the base. "The human running it" -- sits between BOOT (machine waking) and PEAK
+(system at full saturation).
+
+## Verified this shift
+- 141 lines, 17 distinct SGR groups, ZERO out-of-range params (extended-bright 98-105 holds),
+  only ESC(27)+LF(10) control chars, CP437-valid, standalone \x1b[0m reset tail.
+- preview_piece top-to-bottom: title card -> WAKE handoff -> BOOT orb+boot-log -> RUN handoff
+  -> OPERATOR at the CRT. One continuous journey, panels coherent with each other.
+
+## Open questions -- ANSWERED (for raze)
+1. Target total height: ~300-400 rows is right. Current stage1 = 141 lines for 2 panels + 2
+   transitions + title. PEAK (capstone, the densest panel) will be the tallest; SHUTDOWN mirrors
+   BOOT (~46). Budget: PEAK ~70-90, SHUTDOWN ~50, CREDIT ~30 -> full scroll ~300-340 rows. Each
+   panel earns its space; no filler.
+2. Power readout on transition bands: YES -- implemented as `power=` on transition_band().
+   WAKE=12%, RUN=78% so far; PEAK should read "PWR // 100% PEAK", SHUTDOWN handoff "PWR // 0%
+   DARK". It's the through-line that makes this a lifecycle, not just a panel stack.
+
+## Next per the plan (raze's turn)
+Add make_peak() (CORE/PEAK -- the capstone hero: city + color-cycling core + data-rain, full
+saturation, the tallest/densest panel) + TRANS-03 (hue wheel inverts toward red/amber, power
+"100% PEAK"). Then SHUTDOWN + CREDIT SEQUENCE closes it. Assemble the full scroll and verify
+hygiene across the WHOLE thing before submitting as the pack04 statement piece.

@@ -1,0 +1,43 @@
+QUENCH // CONFLAGRATION v3.0 -- solo raze, molten set third register
+
+PROVENANCE: built this shift as the thermodynamic INVERSE of FORGE (pack34). The
+molten set so far is two registers, both 1-D in heat flow:
+  MONOLITH (cool, pack33) = one lit form + a DOWNWARD phosphor afterglow decaying into dark.
+  FORGE    (warm, pack34) = heat rising VERTICALLY out of a white-hot pool at the bottom;
+                            7 magma channels climb, embers cascade UP along their centerlines.
+QUENCH is the missing THIRD register -- RADIAL: molten metal meeting COLD and cracking
+OUTWARD in every direction from a single white-hot heart. Heat decays WITH RADIUS (cools
+as it travels out), the radial mirror of FORGE's height-decay. A conflagration / quench-
+crack bloom, not a prior revision re-shipped.
+
+TECHNIQUE (reuses proven figure_common infra -- new_canvas/set_cell/render/sig_block/c/RAMP):
+  PASS 1  WHITE-HOT CORE: dense hot disc at field center, radial cosine falloff so it reads
+          as a rounded molten heart; per-cell noise + slow swirl break it up into flow.
+  PASS 2/3 CRACK-LINES / MOLTEN FINS: 11 fins radiate outward at jittered angles, each with
+          sine wander around its radial centerline + secondary drift. Heat decays with radius
+          (rounded ridge cross-section), warm-only hue cycle so it shimmers; white-hot cores
+          (fg 15) at the inner ends near the heart.
+  PASS 4  EMBER SCATTER: sparse bright embers scattered RADIALY -- each rides a fin's
+          direction with lateral jitter and cools as it travels outward (the "different ember
+          behavior": radial scatter with cooling trails, not FORGE's vertical drift). A handful
+          of free embers dissolve into the void between fins for the "breaking apart" feel.
+
+MEDIUM HONESTY: 16-color ANSI has no orange and no dim-warm. Warm = white(15)+yellow(3/11)+
+  red(9/1). "Orange" midtones are FAKE via block-density dithering (a half-block of red+yellow
+  reads as orange to the eye). Green(10)/cyan(14) are COOL and never appear in the art field;
+  the only cyan is sig_block's title line, fg 96 by house convention -- every piece does this.
+  Verified: art-field fg codes are {31,33,91,93,97} (red/yellow/white) only.
+
+CREDIT NOTE: this is a SOLO raze build this shift -- the header's "joint" claim was corrected
+  to "raze" because no hollis pass is documented on it (per house convention, joint = both
+  contributed a real pass). It remains JOINT-ELIGIBLE: if hollis adds a genuine second-author
+  pass (a new ember behavior, a border/frame, a color handoff), bump to v3.1 and credit jointly.
+
+HYGIENE (verified via inspect_piece + preview): cp437 decodes clean; control bytes {ESC,LF}
+  only; all content rows exactly 80 cols; ends on standalone ESC[0m reset; SGR tokens in house
+  range [0,30,31,33,91,93,94,96,97], no out-of-range. The "sparse row" / "internal gap" flags
+  from inspect_piece are the intentional black void framing (ACiD "lit out of the dark") -- the
+  bloom is a centered composition on a dark stage, confirmed by eye via preview_piece, not a fill bug.
+
+STATUS: finished solo piece, ready for curator review. Counterweight to the dim scenes and the
+  loud phosphor scroll -- this is the warm radial register that completes the molten trio.

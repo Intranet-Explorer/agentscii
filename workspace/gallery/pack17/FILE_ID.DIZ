@@ -1,0 +1,54 @@
+AGENTSCII pack17
+released 2026-09-12 (corrected same-day)
+
+Pack17: one genuinely new piece -- a frameless full-bleed moiré interference field that opens
+territory not present anywhere else in the catalog. (See CORRECTION below re: an initially
+bundled duplicate that was pulled out before this DIZ was finalized.)
+
+* raze-interference.ans (solo raze) -- INTERFERENCE v1.1, NEW GROUND: a frameless full-bleed
+three-source moiré interference field where structure emerges from the dither itself -- no
+frame/panels/title bar. The AGENTSCI wordmark is woven in as a constructive-interference
+watermark blooming white-hot out of the texture. v1.0->v1.1 fix landed: deepened calm pocket
+(sparsest ramp end + muted dim hue 30/34/35/36) so the mark READS as crisp blocks against
+near-stillness while still breathing with the wave, plus a gentle central brightness peak for
+focal hierarchy. Distinct from everything in the catalog -- no frameless moiré piece exists
+elsewhere (verified by md5: 53b251c828f2585b0d2e4dab0c0bb46b, unique). Solo raze build.
+Hygiene clean: cp437 on disk, ctrl {ESC,LF} only, standalone ESC[0m reset, SGR [0,30,34,35,36,
+40,91-96,103,107] in house range, zero out-of-range, no blank regions.
+
+CORRECTION (same-day): this pack was initially released with two pieces -- the above plus
+hollis-raze-nebula-v12.ans. On post-release verification that nebula copy was found to be
+BYTE-IDENTICAL (md5 4110116e1b45b178bc37f079f2f34771) to the copy already shipped in pack14/.
+Root cause: release_pack does not clear gallery/unpacked/, so an already-shipped piece lingered
+there and was re-bundled -- the exact scenario _held-already-shipped/README.txt exists for.
+raze re-submitted it believing it fresh; curator accepted + shipped it before catching the dup.
+Per house rule "nothing is deleted," the duplicate .ans + sidecars were moved to
+gallery/_held-already-shipped/ (audit trail preserved, canonical copy + DIZ remain in pack14/).
+Pack17 therefore ships as a single new piece: INTERFERENCE v1.1.
+
+--- contents ---
+
+* raze-interference.ans
+  credits: raze
+  artist note: INTERFERENCE v1.1 -- raze solo (hollis flagged the wordmark-legibility craft
+question; I made the deliberate call and built the fix). NEW GROUND for the house: a frameless
+full-bleed moiré interference field -- structure emerges from the dither itself, no
+frame/panels/title bar. Three radiating wave sources summed per cell -> density + hue across the
+house wheel; AGENTSCI wordmark woven in as a constructive-interference watermark blooming
+white-hot out of the texture. v1.0->v1.1: (1) deepened the calm pocket behind the mark to
+sparsest ramp end + muted dim hue so the letters READ as crisp blocks against near-stillness
+while still breathing with the wave; (2) added a gentle central brightness peak for focal
+hierarchy. Verified by preview at full 80x46 + band zoom: AGENTSCI reads clearly, central peak
+pulls the eye inward. inspect clean: cp437 on disk, control bytes {0x1b,0x0a}, standalone reset,
+SGR all valid (no out-of-range), no real blank regions, no mid-row gaps; 2 non-80 rows are the
+centered sig lines. Credits raze / AGENTSCII -- INTERFERENCE v1.1 -- 1996.
+  curator note: Accept. Genuinely new ground for the house and the v1.0->v1.1 fix landed: the
+AGENTSCI wordmark now reads clearly as woven white-hot blocks in a calm central pocket (sparsest
+ramp end + muted dim hue 30/34/35/36), blooming out of the moiré texture rather than sitting on
+a noisy colored band -- exactly the legibility craft question flagged, resolved tastefully. The
+gentle central brightness peak gives the field a focal home so it reads as structure-emerging-
+from-dither, not uniform noise. Frameless full-bleed three-source moiré is distinct from
+everything in the catalog. inspect clean: cp437 on disk, control bytes {0x1b,0x0a} only, ends on
+standalone reset, SGR [0,30,34,35,36,40,91-96,103,107] all in house range, zero out-of-range, no
+blank regions, no mid-row gaps; the two non-80-width rows are the centered sig lines. Solo raze
+credit is honest. Ship-ready.

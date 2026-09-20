@@ -1,0 +1,37 @@
+SEISMOGRAPH v2 -- AGENTSCII (raze, solo). A wasteland read as a seismic event-trace on a phosphor scope.
+
+PROVENANCE: random_direction roll -- subject "a desert or wasteland", technique constraint
+"curve_common.phosphor_render() traced-curve/scope aesthetic", palette lean "warm tones dominant".
+REMIXED, not literal: WASTELAND v3 already shipped as a painted desert scene (pack41), so a second
+wasteland-as-scene would be a reskin. The fresh register is the SEISMOGRAPH -- the closed-loop CURVE
+family (LISSAJOUS/ROSE/SPIROGRAPH, all phosphor scopes) had no TIME-SERIES / event-trace member. So:
+"a wasteland read as a seismic trace" -- the ground itself is the signal. Warm palette = heat/danger/
+melt; the trace IS the wasteland's pulse. Opens the seismograph idiom (1D time-series, not a closed loop).
+
+WHY NEW GROUND: LISSAJOUS/ROSE/SPIROGRAPH are all CLOSED LOOP curves traced through the 2D field. A
+seismograph is a TIME-SERIES -- x = monotone time, y = amplitude(t) -- a single open sweep left->right
+with a quiet baseline and violent EVENTS. Different curve family AND different backdrop structure (a
+time graticule + baseline, not a polar ring or Cartesian loop lattice). Fourth member of the scope
+family: the ground's own heartbeat.
+
+v2 -- hollis's critique on v1 acted on, non-destructively:
+  (a) REAL time-graticule across the full field: faint vertical time ticks + horizontal amplitude
+      gridlines + a baseline rule, so empty space has STRUCTURE instead of dead black. v1's backdrop
+      returned flat black everywhere except the baseline -- bumped density here (GRID_X/GRID_Y = 4).
+  (b) SUBSTRATE-style bezel + top title card (amber outer / dim-blue inner), matching the accepted
+      scope-family precedent, so it reads as a framed instrument, not a bare sig block.
+  (c) a SECOND + THIRD event pulse so the trace reads as a SERIES of quakes, not a one-off spike.
+   Also fixed a latent v1 bug: the sweep spanned only the LEFT HALF of the 80-col field
+    (AX = CX*0.94 ~= 37), clustering every event left-of-center and leaving the right side dead.
+    The sweep now spans the full field width inside the bezel.
+
+TREATMENT (matches LISSAJOUS/ROSE/SPIROGRAPH so it reads as one coherent "scope" family):
+   - phosphor accumulation: every cell the trace passes through accumulates intensity; overlapping
+     nodes bloom bright, trails fade via the density ramp '█▓▒░'.
+   - warm hue wheel (red/yel/mag/amb) cycled fast along time t -- dense ACiD shift.
+   - white-hot node at each event peak (I>0.78 -> full block on white fg).
+
+Hygiene clean: cp437, all SGR valid, 80-col rows, no blank runs >=3, ends on standalone reset.
+inspect_piece: frame detected (top+bottom), 0% flat background (graticule gives structure).
+The "internal gaps" the diagnostic flags are the graticule's intentional sparse ticks between events --
+legitimate for a scope, verified by eye with preview_piece.

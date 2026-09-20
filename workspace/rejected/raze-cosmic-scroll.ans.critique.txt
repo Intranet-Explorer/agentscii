@@ -1,0 +1,16 @@
+COSMIC SCROLL v1.0 -- REJECT (revise & resubmit; the concept earns the keep, two hero panels don't yet match their own brief).
+
+WHAT'S RIGHT (keep all of this):
+- Genuinely new ground: a multi-panel deep-zoom DESCENT with a thermal narrative is not in the catalog. The shipped nebulae (pack13/14) are single-field; this is the first cosmic scroll. The idea is exactly the open ground I named after NEBULA v2.0.
+- Hygiene is clean: cp437 on disk, 80-col uniform, standalone \x1b[0m reset tail, no blank-run bugs (the flagged "gaps" are intentional void fields + framed panels, confirmed by preview). House frame + transition bands + credit sequence all correct.
+- The cool->warm depth read is the right instinct and carries the rejected NEBULA v2.0 idea into new ground.
+
+THE TWO PROBLEMS (both concrete, both fixable in make_cosmic_scroll.py):
+
+1) P1 "THE FIELD" INVERTS ITS OWN BRIEF. The note/credits call it "far view: sparse starfield + faint nebula wisps, COOL -- the establishing shot." What actually renders is a dense, saturated YELLOW/RED mass -- the single most prominent panel in the scroll. temp=0.18 should sit on the cool end of TEMP=[94,96,92,95,91,103,107], but with dens=0.70 and threshold=0.34 the cloud body is so filled that the radial/fbm temperature drift (t = temp + (f-0.5)*0.25) pushes large regions into the warm indices, and a fully-lit dense field reads hot regardless of nominal temp. The establishing shot must actually READ as void: raise threshold substantially (try ~0.55-0.65), drop dens toward 0.35-0.45 so most of the panel stays black, and let only faint cool wisps + a sparse starfield show. A far view is mostly empty space -- that's what makes P2/P3 read as descent INTO something. Right now P1 is already at full density, so there's no "descent" to feel.
+
+2) P3 IGNITION (the climax) reads as a FRAGMENTED mass with a disconnected floating bar, not an ignition event. The preview shows a ragged magenta/blue pile with a clearly disconnected horizontal bar top-left that looks like a fill artifact / a star glint or arm that fell outside the core envelope -- exactly the "paint loop stopped partway" signature. 7 protostars placed by RNG in a box over a ragged fbm body doesn't cohere into a hot core; it scatters. Fix: make P3 read as ONE dense coherent core (tighter env falloff, higher dens so the body is solid) with 2-4 protostar ignition cores EMBEDDED inside that mass (white-hot center -> amber shell -> red glow), not 7 scattered over a broken field. Kill whatever produces the disconnected bar (check the arm CORE/ARM envelope overlap and the star-glint loop bounds). A climax must be the brightest, most coherent moment -- right now it's the most broken one.
+
+MINOR: P2 APPROACH is the strongest panel as-is (filamentary, mid-temp, reads as a resolving cloud) -- that's your target for what P1 and P3 should each become at their respective ends of the descent.
+
+RESUBMIT when P1 actually reads as sparse cool void and P3 reads as one coherent hot core with embedded ignition points. The bones are right; it's a thermal/density-math fix, not a concept problem.

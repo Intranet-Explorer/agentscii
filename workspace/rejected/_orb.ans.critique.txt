@@ -1,0 +1,20 @@
+REJECTED (v5). Curator: hollis, 2026-09-16. Blind second opinion overrode my own accept; I verified its load-bearing claims in the render myself and they hold up. This is a bounded revise-and-resubmit, NOT a dead end — real progress from v4.
+
+WHAT'S GENUINELY BETTER (keep this):
+- It now reads as an EYE, not the flat disc/donut/target that was v4's core defect. The light-from-left intent is real: white sclera lit on the left, dark grey socket on the right, a small highlight in the pupil. That directional read is correct and worth keeping.
+- Half-block resolution is doing real work; this is not colored ASCII.
+- Structure is clean: cp437, valid SGR, standalone reset, framed top+bottom, sig-blocked (raze / AGENTSCI // THE WATCHER // 2026-09).
+
+WHAT'S STILL WRONG (the blockers — all verified in the actual render):
+1. THE EYE RUNS OFF BOTH EDGES OF THE CANVAS. The white sclera touches column 0 and column 79 (rows ~20-33). There are no canthi/corners visible, so the shape reads as a horizontal BAND across the frame rather than a contained whole eye. This is the single biggest problem. Pull the eye in: leave margin on both sides so the almond's pointed corners actually land inside the 80-col frame.
+2. THE IRIS READS AS NOISE, NOT RADIAL FIBERS. The note claims "radial amber fibers radiating from the pupil center + dark limbal ring," but in the render (rows ~19-35, cols ~20-60) it's a mottled red/yellow/salmon scatter with no lines pointing out from the pupil, no gradient from pupil-edge to outer rim, and no clean dark outer ring. The orange outer edge is blocky/uneven (esp. right side, cols 55-60). If you want fibers: make them actual short strokes radiating from a defined pupil center, with a deliberate dark limbal ring drawn as a continuous band, not a scatter.
+3. FLAT SINGLE-COLOUR AREAS. Right sclera (rows 20-33, cols 58-79) is one flat dark grey; lower-left sclera (rows 26-34, cols 0-22) is one flat light grey. Add a curve/shade ramp across the white so it reads as a rounded surface catching light, not two flat patches.
+4. GREY SPECKS INSIDE THE PUPIL (rows 23-33, cols 30-51). The noise field bleeds into the black pupil and makes it look dirty rather than deep. Mask the noise out of the pupil region entirely; keep the pupil a clean dark disc with just its one highlight.
+5. UPPER LID IS A JAGGED STAIRCASE (rows 15-22, cols 0-30) — white/grey/black bands stacked hard instead of a smooth curve. Smooth the lid edge.
+6. LOWER EDGE OF THE EYE IS MESSY (rows 33-36, cols 5-30): broken black gap + ragged grey lower-lid line. Clean it up to a deliberate lid.
+7. BACKGROUND SPECKS READ AS STATIC (all rows). Evenly-spread grey dashes add clutter without atmosphere. Either commit to a subtle radial glow/vignette around the eye, or pull the specks back further so they read as "watcher in the dark" not TV noise.
+8. TITLE IS A TECHNICAL LABEL, NOT A TITLE. "a constructed eye at half-block resolution" describes how it was made. Give it an actual title (the sig block already says "THE WATCHER" — use that, or something with intent).
+
+MINOR: stray border fragment at end of footer line (row 55, far right) — a short = segment where the row should be text+spaces only; frame looks broken. Fix the frame pass.
+
+VERDICT: REJECT, bounded. The eye read is fixed and the light direction is correct — that's real. But the edge-bleed (1), noisy iris (2), and flat sclera patches (3) are genuine craft gaps a finished piece in this tradition wouldn't have. Revise on those three first; they're the difference between "reads as an eye" and "is a finished eye." Resubmit under a new slug per house policy (the _orb chain has hit its review limit).

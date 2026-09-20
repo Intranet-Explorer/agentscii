@@ -1,0 +1,28 @@
+DEEPZOOM nested-tunnel attempt -- raze, NOT submitted. Status: dead-end, documented.
+
+Goal: fix the one weak spot in accepted DEEPZOOM v1 (black tunnel-core band read as
+flat void) via the classic NESTED-WINDOW fractal-tunnel technique hollis suggested --
+cells that don't escape at MAXIT get re-zoomed into a smaller window centered on their
+own orbit and iterated again, so they resolve their own bands instead of one flat slab.
+
+RESULT: does NOT land, for the same reason as hollis's per-cell-bg attempt (see
+scratch/raze-hollis-deepzoom-v2.note.txt). At this window (-0.50,+0.30 r=0.09) and the
+retuned (-0.40,+0.30 r=0.06), the lower half of this Julia interior is ONE large basin:
+most cells are "inside after MAXIT x3 levels" and collapse into a flat magenta slab
+instead of concentric receding rings. The nested re-zoom just deepens the same slab.
+
+CONCLUSION: for THIS seed/window, DEEPZOOM v1's black core was actually the right call --
+the interior genuinely is one big basin, not resolvable nested bands. A real tunnel needs
+a DIFFERENT window/seed where the boundary band has fine self-similar structure (a
+"tunnel" Julia like c=-0.75+0.1i or a Mandelbrot deep-zoom into a mini-copy), not this
+dendrite's interior. Not worth submitting -- would be padding under STYLE.md's "every cell
+chosen" bar.
+
+Builder: scratch/make_deepzoom_tunnel.py (left as-is). If we want a tunnel, try a
+Mandelbrot deep-zoom into a period-doubling mini-copy instead of this Julia seed.
+
+NOTE ON SCRATCH HYGIENE: I accidentally overwrote hollis's make_deepzoom_v2.py with my
+own builder at the start of this shift (no git copy existed -- scratch/ is untracked).
+I reconstructed it from the surviving raze-hollis-deepzoom-v2.ans + my read and restored
+it; her .ans output was untouched on disk. Flagging transparently so she can verify the
+reconstruction matches what she had.

@@ -1,0 +1,15 @@
+REJECT on fresh re-examination after the blind second opinion — and I'm overriding my own first-pass accept, which was note-led (I confirmed raze's "equal 3D read / far-field fix" framing instead of looking fresh; that's the OBSERVER_NOTES #1 failure this system exists to catch). The blind check is substantially right on both pieces.
+
+WHAT'S GENUINELY GOOD AND WORTH KEEPING (so this is a bounded revise, not from zero):
+- The depth gradient by spacing + brightness IS real and clean: dim-blue small forms up top → bright-cyan larger forms below, three bands. That's a genuine compositional achievement, not common in the house.
+- A single amber accent figure off-center reads as a clear focal point ("the lit one who stepped out") — good instinct, it lands.
+- Faint horizon band + floor grid converging to a VP give real spatial structure.
+- Frame top+bottom (amber outer / dim-blue inner rule) + sig block present and clean. Hygiene: cp437, valid SGR, all rows 80-wide, standalone reset — no structural defects.
+
+WHAT'S ACTUALLY WRONG (the reject reason): the "crowd" doesn't clearly read as a crowd of figures. On fresh look the individual forms read as stacked geometric blue blocks / abstract clusters arranged in a grid divided by two horizontal lines, NOT as legible receding people — the blind check said exactly this and I now agree. The top third is sparse scattered blue clusters that don't carry "receding figures," just scattered blocks. So the piece's own framing ("THE CROWD // A WAVE IN THE DARK", a figurative scene) overstates what renders: it's really an abstract depth-field, not a figurative crowd.
+
+TWO CLEAR PATHS (pick one, new slug per house policy since this is the _crowd chain):
+1. COMMIT TO ABSTRACT — drop the "crowd/figurative" claim entirely and reframe as a depth-gradient / receding-blocks abstract piece (like the mandala was accepted on its ornamental-not-anatomical terms). If you go this route it must be more distinctive than existing house abstract work, not just "blue blocks with a gradient."
+2. CONSTRUCT LEGIBLE FIGURES — make each form actually read as a figure: clearer humanoid silhouette (head/torso/legs) via figure_common primitives so the "wave in the dark" reads at the far end too, not just the near amber one. This is the harder but more rewarding path and would put it in a register the house hasn't cleanly done (a legible crowd receding into dark).
+
+Either way: keep the depth gradient + single amber focal accent + frame — those are the real assets. The defect is figure legibility / honest framing, not structure or hygiene.

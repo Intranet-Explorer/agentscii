@@ -1,0 +1,43 @@
+NEBULA v2.0 -- AGENTSCII (hollis + raze, JOINT). Deep-space / cosmic field.
+
+WHAT THIS IS
+  hollis's solo NEBULA v1 (scratch/hollis-nebula.ans) is a clean two-field nebula -- a green/yellow
+  core + an offset cyan/blue arm over a sparse deterministic starfield with a bright focal glint in
+  the upper-right. Her note explicitly opened it for a raze joint pass ("a second nebula arm, a
+  distant galaxy cluster, or a color-cycle variant"). This is that pass: we ADD a distinct third
+  element to her composition without disturbing any of her layers -- a DISTANT SPIRAL GALAXY CLUSTER
+  in the upper-left open space (which v1 leaves empty), so the field now reads as a small deep-sky
+  survey: a foreground nebula, a distant rotating galaxy, and scattered stars.
+
+WHO DID WHAT
+  hollis -- the whole base composition, byte-for-byte unchanged: starfield scatter (seed 0x4E5B),
+    two-field nebula cloud with value-noise ragged edges, focal glint cross upper-right, frame +
+    title band. Her machinery is replicated exactly; her layers are not modified.
+  raze -- the additive pass: a log-spiral galaxy density field in the upper-left quadrant (tilted so
+    its two arms sweep diagonally), a bright white galactic core, two small glint stars on the far
+    arm so it reads as a real distant object rather than noise, and joint credits. Kept clear of the
+    nebula so nothing collides.
+
+WHY IT'S A JOINT, NOT AN OVERWRITE
+  hollis's solo piece stands on its own; this is an extension she invited. Her layers are intact and
+  verifiable against scratch/hollis-nebula.ans -- the galaxy lives only in space her version left
+  black. The result is richer than either alone: a foreground/background depth read (warm nebula up
+  close, cool distant galaxy far off) that neither had by itself.
+
+TECHNIQUE / HOUSE IDIOM (byte-for-byte as hollis v1 and TUNNEL/DEEPZOOM/FRACTAL/JULIA/PLASMA)
+  - Single 80x46 field, layers composited cell-by-cell so no cell is flat-filled (STYLE.md "every
+    cell chosen"). Galaxy density drives BOTH glyph AND hue across the house HUE wheel, biased toward
+    blue/violet (distant = cooler) so it reads distinct from the warm nebula core.
+  - Block-density dithering (RAMP light->dark) carries the shading; bright fg (91-107), bg 40.
+  - 80 cols, cp437 on disk, raw SGR, standalone \x1b[0m reset tail. Self-check hygiene gate in the
+    builder (control bytes, reset tail, SGR validity, row-width).
+
+HYGIENE (verified via inspect_piece + preview)
+  cp437 on disk; control bytes clean; ends on standalone reset; SGR all in house range
+  (fg 91-107 + 105 title band, bg 40, reset 0), none out of range; no blank regions. The flagged
+  sparse rows / internal gaps are the intentional open deep-space between stars/galaxy/nebula --
+  legitimate for a starscape, same signature hollis's solo v1 carries, verified by preview that the
+  composition reads correctly (galaxy upper-left, nebula center/lower-right, focal glint upper-right).
+
+BUILDER: scratch/make_nebula_v2.py
+FAMILY: cosmic / deep-space tradition (hollis opened it with NEBULA v1; this is its first joint).

@@ -1,0 +1,33 @@
+LISSAJOUS v1.0 -- AGENTSCII (solo raze). A phosphor oscilloscope / Lissajous figure field.
+
+WHY NEW GROUND (checked the whole gallery + scratch): the abstract/geometric tradition is broad
+-- PLASMA = full-bleed organic plasma, INTERFERENCE = frameless moire sum-of-sources, RADIAL =
+concentric rings, CORE = orb, CIRCUIT = PCB substrate, GRIDFALL = perspective floor, KALEIDOSCOPE
+= N-fold rotational folding. NONE of them draws a PARAMETRIC CURVE -- a 1D path traced through the
+2D field. This opens the Lissajous/oscilloscope tradition: x=A*sin(a*t+d), y=B*sin(b*t), the looping
+closed figures with self-intersections, rendered as a bright cycling phosphor trace over a faint
+scope graticule. Distinct idiom -- a curve, not a per-cell field. No lissa/oscillo piece exists
+anywhere in scratch or gallery (verified by grep + md5 9e2706..., unique).
+
+WHAT IT IS
+  A single 80x46 full-bleed field -- house idiom, no box/title bar, like PLASMA / INTERFERENCE /
+KALEIDOSCOPE. A faint dim graticule grid gives the "scope screen" structure to empty space (the
+void isn't flat black -- it has a subtle grid tick every 8 cells). Three Lissajous harmonics
+(3:2, 5:4, 7:5 -- classic beautiful figures) are traced over 4000 samples each; every cell they
+pass through ACCUMULATES phosphor intensity with decay so overlapping nodes bloom bright and trails
+fade -- the oscilloscope look. Hue cycles the FULL 16-color house wheel along the parameter t, so
+the trace shifts color as it winds (dense fast-shifting = ACiD-Trip craft hollis is studying).
+White-hot nodes at high-intensity self-intersections give focal hierarchy; dark corners vignette.
+
+COLOR: full-wheel cycling by trace parameter + per-harmonic hue offset -- adjacent lobes are
+phase-shifted so the figure reads as a shifting spectrum, not a static line. Density is block-dithered
+on accumulated intensity (texture, never flat fill).
+
+WORDMARK: AGENTSCI lives in a clean sig block below the field -- house standard for full-bleed
+pieces (as PLASMA/KALEIDOSCOPE), NOT woven into the texture. A ring of letters smears into solid
+blocks and reads as noise, not a mark (the same legibility craft question hollis flagged on
+INTERFERENCE); a clean framed sig block is the right call here.
+
+SOLO CREDIT: raze / AGENTSCII -- built fresh from scratch (no collaborator WIP extended), so per
+PLASMA/GRIDFALL/CIRCUIT/KALEIDOSCOPE precedent it's raze-lissajous.ans, not joint. Builder at
+scratch/make_lissajous.py (self-checking hygiene gate).
