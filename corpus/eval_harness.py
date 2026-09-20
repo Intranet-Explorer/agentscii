@@ -31,6 +31,7 @@ sys.path.insert(0, str(CORPUS_DIR))
 import numpy as np
 import harness
 import windowing as w
+import prepare_training_data as ptd
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
 
@@ -150,7 +151,49 @@ def call_ollama_fill(model, prompt, timeout=180, num_predict=800):
     return r.get("message", {}).get("content", "")
 
 
+def build_eval_prompt(d, rel_path, c_win, f_win, b_win, context_text, mask_box):
+    """Build the eval prompt using training's OWN build_prompt() (user
+    direction, 2026-09-20: 'make_eval_prompt() should use training's
+    build_prompt() so the model is scored on the shape it trained on').
+
+    Replaces the old make_eval_prompt(), which used a different,
+    untrimmed prose format than what prepare_training_data.py actually
+    trained on -- a trained checkpoint would have been evaluated on a
+    prompt shape it never saw during training, which could show up as
+    a real score difference attributable to the format mismatch, not
+    the model's learned capability.
+
+    Reconstructs the exact same conditioning fields windowing.py
+    computes for a training example, from the SAME npz-loaded piece
+    data eval already has in hand -- sauce_group/sauce_year via the
+    identical extraction windowing.py's main() uses, and
+    half_block_pct/shade_pct/shade_bucket via window_technique_metrics
+    on the WHOLE WINDOW (matching windowing.py's own per-window,
+    pre-mask computation -- NOT on the masked target alone).
+    """
+    sauce_group = d["sauce_group"].item().decode("utf-8", "replace") if d["sauce_group"].size else ""
+    sauce_date = d["sauce_date"].item().decode("utf-8", "replace") if d["sauce_date"].size else ""
+    year = sauce_date[:4] if len(sauce_date) >= 4 and sauce_date[:4].isdigit() else rel_path.split("/")[0]
+    half_pct, shade_pct = w.window_technique_metrics(c_win, f_win, b_win)
+    bucket = w.shade_bucket(half_pct, shade_pct)
+    row = {
+        "sauce_group": sauce_group, "sauce_year": year,
+        "half_block_pct": half_pct, "shade_pct": shade_pct, "shade_bucket": bucket,
+        "mask_box": list(mask_box), "context": context_text,
+    }
+    return ptd.build_prompt(row)
+
+
 def make_eval_prompt(context_text, mask_h, mask_w):
+    """DEPRECATED (2026-09-20): the old, untrimmed-prose eval prompt --
+    a different shape than what training actually used
+    (prepare_training_data.build_prompt()). Kept only so old code
+    calling this directly still runs; both real call sites in this
+    file and checkpoint_eval.py now use build_eval_prompt() instead,
+    which matches training's format exactly. Do not use this for new
+    eval runs -- it will score the model on an out-of-distribution
+    prompt shape and produce numbers that aren't comparable to
+    anything trained with build_prompt()."""
     return (
         "Below is a window of ANSI/textmode art, run-length encoded. "
         "Each line is 'r{row} col,FB:glyphs col,FB:glyphs ...' where F "
@@ -389,7 +432,7 @@ def main():
         )
         top, left, mask_h, mask_w = mask_box
 
-        prompt = make_eval_prompt(context_text, mask_h, mask_w)
+        prompt = build_eval_prompt(d, rel, c_win, f_win, b_win, context_text, mask_box)
         try:
             raw_reply = call_ollama_fill(args.model, prompt)
         except Exception as e:
