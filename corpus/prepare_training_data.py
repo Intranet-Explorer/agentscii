@@ -32,24 +32,24 @@ def build_prompt(row):
     shade = row.get("shade_pct", 0.0)
     bucket = row.get("shade_bucket", "unknown")
     mask_h, mask_w = row["mask_box"][2], row["mask_box"][3]
-    return (
-        f"Piece metadata: year={year} group={group} "
-        f"half_block_pct={half:.1f} shade_pct={shade:.1f} shade_bucket={bucket}\n\n"
-        "Below is a window of ANSI/textmode art, run-length encoded. "
-        "Each line is 'r{row} col,FB:glyphs col,FB:glyphs ...' where F "
-        "is the foreground color (hex 0-f) and B is the background "
-        "color (hex 0-f), and 'glyphs' are the literal characters at "
-        "that run. Background cells (space, color 07 or omitted) are "
-        "not shown.\n\n"
-        f"A rectangular region marked [MASK w={mask_w}] spanning "
-        f"{mask_h} rows has been removed. Reconstruct ONLY that "
-        f"region, consistent with the surrounding art.\n\n"
-        f"{row['context']}\n\n"
-        f"Reply with ONLY the reconstructed region as {mask_h} lines "
-        f"in the same 'r00 col,FB:glyphs ...' format, using ROW/COLUMN "
-        f"indices LOCAL to the masked region (r00 = the region's first "
-        f"row, column 0 = the region's first column). No explanation."
+    # Minimal tagged wrapper (user direction, 2026-09-20): the original
+    # wrapper spent ~700 fixed chars of English prose re-explaining the
+    # RLE format and reply instructions on EVERY example -- FITM doesn't
+    # need that, the model only needs the conditioning tags and clear
+    # context/target delimiters. Measured real-tokenizer impact: full
+    # built prompt+target mean dropped from 2,105 to (re-measure and
+    # report after this change -- see corpus/token_stats_wrapped.py).
+    # Kept the SAME conditioning fields (year/group/shade_bucket/
+    # half_block_pct/shade_pct) and the SAME [MASK w=..] marker inside
+    # context (written by windowing.py, not this function) since the
+    # model needs to know the mask's shape to reconstruct it -- only
+    # the prose EXPLAINING the format was cut, not the information
+    # content mask_h/mask_w carry.
+    tag = (
+        f"[Y={year} G={group} TIER={bucket} HALF={half:.1f} SHADE={shade:.1f} "
+        f"MASKH={mask_h} MASKW={mask_w}]"
     )
+    return f"{tag}\n<CTX>\n{row['context']}\n</CTX>\n<FILL>"
 
 
 def main():
