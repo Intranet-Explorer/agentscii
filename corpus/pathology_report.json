@@ -11,19 +11,19 @@
   },
   "tokenized_scan": {
     "train": {
-      "total": 29681,
+      "total": 29679,
       "empty_completion_span": 0,
       "over_token_cap": 0,
       "empty_completion_sample_indices": []
     },
     "valid": {
-      "total": 937,
+      "total": 938,
       "empty_completion_span": 0,
       "over_token_cap": 0,
       "empty_completion_sample_indices": []
     },
     "test": {
-      "total": 625,
+      "total": 626,
       "empty_completion_span": 0,
       "over_token_cap": 0,
       "empty_completion_sample_indices": []

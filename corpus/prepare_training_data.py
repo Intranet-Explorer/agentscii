@@ -66,15 +66,83 @@ def main():
         for line in f:
             rows.append(json.loads(line))
 
+    # Split at the PARENT-PIECE level, not the window level (fix,
+    # 2026-09-20: found live via a real val-loss curve turning up
+    # while train loss kept falling at iteration 300-400 of a
+    # 500-iteration run, well under 2% of the data seen -- too early
+    # for genuine overfitting. Root-caused directly: windowing.py
+    # slides 40x16 windows with 50% overlap in BOTH dimensions, so one
+    # parent piece yields many highly-correlated, overlapping windows.
+    # The OLD code shuffled and split at the WINDOW level -- verified
+    # 75.7% of val-split parent pieces (661/873) also had windows in
+    # the train split, and 436 parent pieces overlapped train/test.
+    # Early in training, val "benefits" from leaked familiarity with
+    # near-duplicate windows of pieces the model is actively training
+    # on; as the model starts memorizing the SPECIFIC train windows
+    # (not just general technique), that leaked advantage reverses --
+    # exactly the turn-up-early signature observed. This split now
+    # groups all windows by parent_path FIRST, shuffles PIECES (not
+    # windows), and assigns each piece's ENTIRE window set to one
+    # split -- guarantees zero parent-piece overlap between
+    # train/valid/test, the same principle corpus/holdout.py already
+    # uses for the outer holdout split, applied here to this inner
+    # split too.
+    #
+    # NOTE: this is a different, additional split from
+    # holdout_split.json (the frozen, content-hash-level corpus
+    # holdout eval_harness.py/checkpoint_eval.py score against, never
+    # touched by windowing.py's selection at all) -- this fixes the
+    # SEPARATE, smaller train/valid/test split carved out of the 40k
+    # training subsample itself, used only for mlx_lm's own
+    # training-loss monitoring.
+    from collections import defaultdict
+    by_parent = defaultdict(list)
+    for row in rows:
+        by_parent[row["parent_path"]].append(row)
+
+    parents = list(by_parent.keys())
     rng = random.Random(args.seed)
-    rng.shuffle(rows)
+    rng.shuffle(parents)
+
+    n_rows = len(rows)
+    n_val_target = round(n_rows * args.val_frac)
+    n_test_target = round(n_rows * args.test_frac)
+
+    val_rows, test_rows, train_rows = [], [], []
+    val_parents, test_parents = set(), set()
+    i = 0
+    while i < len(parents) and len(val_rows) < n_val_target:
+        p = parents[i]
+        val_rows.extend(by_parent[p])
+        val_parents.add(p)
+        i += 1
+    while i < len(parents) and len(test_rows) < n_test_target:
+        p = parents[i]
+        test_rows.extend(by_parent[p])
+        test_parents.add(p)
+        i += 1
+    for p in parents[i:]:
+        train_rows.extend(by_parent[p])
+
+    # shuffle each split's rows so mlx_lm's own iterate_batches (which
+    # sorts by length internally anyway, but takes the input list order
+    # as its starting point) doesn't see all of one piece's windows in
+    # a contiguous run
+    rng.shuffle(train_rows)
+    rng.shuffle(val_rows)
+    rng.shuffle(test_rows)
+
+    train_parents_check = set(r["parent_path"] for r in train_rows)
+    leak_val = train_parents_check & val_parents
+    leak_test = train_parents_check & test_parents
+    print(f"Parent-piece-level split: {len(parents)} unique pieces "
+          f"({len(train_parents_check)} train / "
+          f"{len(val_parents)} val / {len(test_parents)} test)")
+    print(f"Leak check: {len(leak_val)} parent pieces in both train+val, "
+          f"{len(leak_test)} in both train+test (must be 0)")
+    assert not leak_val and not leak_test, "parent-piece split leaked -- do not proceed"
 
     n = len(rows)
-    n_val = round(n * args.val_frac)
-    n_test = round(n * args.test_frac)
-    val_rows = rows[:n_val]
-    test_rows = rows[n_val:n_val + n_test]
-    train_rows = rows[n_val + n_test:]
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
