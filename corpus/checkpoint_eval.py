@@ -108,7 +108,7 @@ def main():
         )
         top, left, mask_h, mask_w = mask_box
 
-        prompt = eh.make_eval_prompt(context_text, mask_h, mask_w)
+        prompt = eh.build_eval_prompt(d, rel, c_win, f_win, b_win, context_text, mask_box)
         try:
             raw_reply = generate_fill_mlx(model, tokenizer, prompt)
         except Exception as e:
