@@ -54,6 +54,27 @@ investigation, not assumed:
    bad step poisoned every checkpoint through 1040 without a single
    visible symptom besides the loss printout itself going nan).
 
+4. Hard max_seq_length preflight (task 3, 2026-09-20): mlx_lm's own
+   iterate_batches (mlx_lm/tuner/trainer.py) does NOT enforce
+   max_seq_length as a cap -- it SILENTLY TRUNCATES any sequence
+   longer than it (`truncated_length = min(lengths[j],
+   max_seq_length)`), printing a warning but continuing. This is a
+   real bug class distinct from the NaN itself: a truncated example
+   can chop a FITM target's tail off entirely (if the prompt alone
+   is already >= max_seq_length, the truncated completion span is
+   empty -- a guaranteed-degenerate training step), and it's exactly
+   how a [1, 4096] batch (a sequence originally longer, truncated
+   down to the 4096 cap) reached the NaN halt at iteration 301: the
+   config's max_seq_length was always 4096 (never 2,000 as loosely
+   recalled), but nothing enforced it as a REJECT -- only mlx_lm's
+   silent truncate-and-warn. Fixed here with a real preflight: before
+   launching, every example in mlx_train_data/{train,valid}.jsonl is
+   tokenized with the REAL tokenizer via the REAL ChatDataset.process
+   path (the same path training itself uses), and if ANY example's
+   token length exceeds max_seq_length, the run ABORTS before a
+   single training step -- rejecting bad data outright instead of
+   letting mlx_lm quietly truncate it mid-run.
+
 Usage:
     python3 corpus/train_launch.py -c corpus/lora_config.yaml
 """
@@ -116,6 +137,67 @@ def stop_harness_and_dependents():
         print("ERROR: harness process still resident after stop attempt -- ABORTING launch.", file=sys.stderr)
         sys.exit(1)
     print("Confirmed: harness stopped, dashboard stopped, no Ollama models loaded.\n")
+
+
+def enforce_max_seq_length(config_path):
+    """Task 3 preflight: reject (not truncate) any example over
+    max_seq_length before training starts. Reads max_seq_length and
+    `data` straight from the same YAML config mlx_lm.lora will load,
+    tokenizes every train/valid example with the REAL tokenizer via
+    the REAL ChatDataset.process path (mlx_lm.tuner.datasets), and
+    aborts the whole launch if anything is over cap -- mlx_lm's own
+    iterate_batches only warns and silently truncates, which is the
+    actual gap that let a 4,096-token example into training (see
+    module docstring point 4 for the honest correction on the
+    originally-recalled \"2,000 cap\": tracked config history shows
+    max_seq_length has always been 4096, not 2,000 -- there was no
+    lower configured cap that got bypassed; the real bug is
+    truncate-instead-of-reject at the always-4096 cap).
+    """
+    import yaml
+    sys.path.insert(0, "/Users/octo/Library/Python/3.9/lib/python/site-packages")
+    from mlx_lm.utils import load
+    from mlx_lm.tuner.datasets import load_local_dataset
+    import types as _types
+
+    cfg = yaml.safe_load(Path(config_path).read_text())
+    max_seq_length = cfg["max_seq_length"]
+    data_dir = Path(cfg["data"])
+    mask_prompt = cfg.get("mask_prompt", False)
+
+    print(f"=== max_seq_length preflight: cap={max_seq_length}, data={data_dir} ===")
+    _, tokenizer = load(cfg["model"])
+    ds_config = _types.SimpleNamespace(
+        mask_prompt=mask_prompt, prompt_feature="prompt", text_feature="text",
+        completion_feature="completion", chat_feature="messages",
+    )
+    train_raw, valid_raw, _test_raw = load_local_dataset(data_dir, tokenizer, ds_config)
+
+    over_cap = []
+    for split_name, split_raw in [("train", train_raw), ("valid", valid_raw)]:
+        for i in range(len(split_raw)):
+            tokens, _offset = split_raw.process(split_raw[i])
+            if len(tokens) > max_seq_length:
+                over_cap.append({"split": split_name, "index": i, "length": len(tokens)})
+
+    if over_cap:
+        import json
+        report_path = CORPUS_DIR / "max_seq_length_violation_report.json"
+        report_path.write_text(json.dumps({
+            "max_seq_length": max_seq_length,
+            "n_violations": len(over_cap),
+            "violations_sample": over_cap[:50],
+        }, indent=2))
+        print(f"\n!!! {len(over_cap)} example(s) exceed max_seq_length={max_seq_length} !!!",
+              file=sys.stderr)
+        print(f"Report: {report_path}", file=sys.stderr)
+        print("ABORTING before training -- rebuild the dataset (corpus/filter_dataset.py) "
+              "or raise max_seq_length deliberately, don't let mlx_lm silently truncate.",
+              file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Preflight OK: all {len(train_raw)} train + {len(valid_raw)} valid examples "
+          f"are <= {max_seq_length} tokens under the real tokenizer.\n")
 
 
 def patch_loss_and_launch(config_path):
@@ -350,6 +432,7 @@ def main():
         print("--skip-stop-check set: NOT stopping harness/dashboard/ollama. "
               "Only use this if you have already verified nothing else is resident.")
 
+    enforce_max_seq_length(args.config)
     patch_loss_and_launch(args.config)
 
 
