@@ -196,10 +196,24 @@ def enforce_max_seq_length(config_path):
     iterate_batches only warns and silently truncates, which is the
     actual gap that let a 4,096-token example into training (see
     module docstring point 4 for the honest correction on the
-    originally-recalled \"2,000 cap\": tracked config history shows
+    originally-recalled "2,000 cap": tracked config history shows
     max_seq_length has always been 4096, not 2,000 -- there was no
     lower configured cap that got bypassed; the real bug is
     truncate-instead-of-reject at the always-4096 cap).
+
+    KNOWN COST, found live during the task-7 smoke test: this loads
+    the full base model a SECOND time (once here for the preflight's
+    tokenizer, once again inside mlx_lm.lora's own run()) -- the
+    200-step smoke test's progress_watchdog fired a real 10-minute
+    stall detection during this double-load window (nothing writes to
+    training_run.log until mlx_lm.lora's own "Loading pretrained
+    model" step starts, well after this function's model load
+    finishes). Harmless (progress_watchdog only captures a diagnostic
+    sample, never kills), but costs several real minutes of wall clock
+    on a ~12B model every launch. Not fixed here -- a real fix would
+    share one loaded model between the preflight and training instead
+    of loading twice, which means restructuring where this preflight
+    runs relative to mlx_lm.lora's own run(), left as a follow-up.
     """
     import yaml
     sys.path.insert(0, "/Users/octo/Library/Python/3.9/lib/python/site-packages")

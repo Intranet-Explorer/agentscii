@@ -1,0 +1,35 @@
+model: /Users/octo/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c
+train: true
+data: /Users/octo/agentscii/corpus/mlx_train_data
+seed: 0
+
+fine_tune_type: lora
+mask_prompt: true
+
+lora_parameters:
+  rank: 16
+  scale: 2.0
+  dropout: 0.0
+
+num_layers: 16
+batch_size: 1
+iters: 200
+# Task 7 smoke test (2026-09-20): 200 iterations, same hyperparameters
+# as the real lora_config.yaml (rank/scale/batch_size/max_seq_length/
+# val_batches/save_every all identical), with NaN guard + all three
+# watchdogs + the max_seq_length preflight + the cache limit active,
+# to confirm the guarded launch path runs clean end to end before
+# committing to the real 3,000-iteration run. adapter_path points at
+# a separate directory so this doesn't touch/overwrite any real
+# checkpoint.
+learning_rate: 1.0e-5
+max_seq_length: 3072
+
+val_batches: 8
+steps_per_report: 20
+steps_per_eval: 100
+save_every: 100
+
+adapter_path: /Users/octo/agentscii/corpus/lora_adapters_smoke_test
+
+grad_checkpoint: false
