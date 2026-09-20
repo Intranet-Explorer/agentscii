@@ -43,6 +43,7 @@ corpus/eval_results*.json
 corpus/mlx_train_data/
 corpus/lora_adapters/
 corpus/lora_adapters_smoke_test/
+corpus/archive_run1_nan_corrupted/*.safetensors
 corpus/progress_watchdog_samples/
 corpus/captions*.json
 corpus/*.log

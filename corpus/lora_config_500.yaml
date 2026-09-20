@@ -1,0 +1,39 @@
+model: /Users/octo/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c
+train: true
+data: /Users/octo/agentscii/corpus/mlx_train_data
+seed: 0
+
+fine_tune_type: lora
+mask_prompt: true
+
+lora_parameters:
+  rank: 16
+  scale: 2.0
+  dropout: 0.0
+
+num_layers: 16
+batch_size: 1
+iters: 500
+# 500-iteration run (2026-09-20), same hyperparameters as the real
+# lora_config.yaml (rank/scale/batch_size/max_seq_length/val_batches
+# all identical) -- checkpoint_eval.py runs at 100/200/300/400/500 to
+# decide whether to commit to the full 3,000-iteration run. At
+# batch_size=1 over 29,681 train examples, 500 iterations sees under
+# 2% of the training data -- val loss turning up while train loss
+# keeps falling this early would be a real red flag pointing at the
+# data split, not normal overfitting for the amount of data seen.
+learning_rate: 1.0e-5
+max_seq_length: 3072
+
+val_batches: 8
+steps_per_report: 20
+steps_per_eval: 100
+# every 100 iters (matches save_every) so training's own val loss is
+# measured at every checkpoint boundary, not just checkpoint_eval.py's
+# separate FIM-quality metrics -- needed for the overfitting check
+# (val loss vs train loss trend at each of the 5 checkpoints).
+save_every: 100
+
+adapter_path: /Users/octo/agentscii/corpus/lora_adapters
+
+grad_checkpoint: false
