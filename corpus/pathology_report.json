@@ -1,52 +1,31 @@
 {
   "raw_scan": {
-    "total": 40000,
-    "empty_target": 2201,
+    "total": 36618,
+    "empty_target": 0,
     "empty_context": 0,
-    "target_all_same_glyph": 550
+    "target_all_same_glyph": 0
   },
   "raw_bad_indices_sample": {
-    "empty_target": [
-      6,
-      15,
-      24,
-      34,
-      40,
-      41,
-      44,
-      58,
-      59,
-      60,
-      61,
-      62,
-      79,
-      80,
-      81,
-      82,
-      86,
-      89,
-      101,
-      102
-    ],
+    "empty_target": [],
     "empty_context": []
   },
   "tokenized_scan": {
     "train": {
-      "total": 38000,
+      "total": 34787,
       "empty_completion_span": 0,
-      "over_token_cap": 602,
+      "over_token_cap": 0,
       "empty_completion_sample_indices": []
     },
     "valid": {
-      "total": 1200,
+      "total": 1099,
       "empty_completion_span": 0,
-      "over_token_cap": 20,
+      "over_token_cap": 0,
       "empty_completion_sample_indices": []
     },
     "test": {
-      "total": 800,
+      "total": 732,
       "empty_completion_span": 0,
-      "over_token_cap": 9,
+      "over_token_cap": 0,
       "empty_completion_sample_indices": []
     }
   }

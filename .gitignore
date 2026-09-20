@@ -38,6 +38,7 @@ corpus/*_full.log
 corpus/shipped_scoring_report.json
 corpus/windows.jsonl
 corpus/train_subsample.jsonl
+corpus/train_subsample_pre_filter.jsonl.bak
 corpus/eval_results*.json
 corpus/mlx_train_data/
 corpus/lora_adapters/
