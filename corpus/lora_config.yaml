@@ -25,7 +25,24 @@ batch_size: 1
 # throughput, but a run that finishes slower beats one that crashes.
 iters: 3000
 learning_rate: 1.0e-5
-max_seq_length: 4096
+max_seq_length: 3072
+# set to 3072 (user direction, 2026-09-20), just above the REAL
+# tokenizer's measured p90 on the full built prompt+target. 2048 was
+# tried first per the windowing.py tiktoken-based estimate (context
+# mean=1,225/p90=1,911) but the REAL Mistral tokenizer on the full
+# built prompt (wrapper + chat template + context + target) measured
+# heavier: mean=2,105/p50=2,109/p90=3,098/p99=3,856/max=4,490 with the
+# original prose wrapper (kept only 11,790/40,000 at a 2048 cap -- a
+# 3.1x cut, not a tail-trim). The prompt wrapper (build_prompt() in
+# prepare_training_data.py) was then cut from ~700 chars of English
+# prose re-explaining the RLE format to a minimal tagged header
+# ([Y=.. G=.. TIER=.. HALF=.. SHADE=.. MASKH=.. MASKW=..] + <CTX>/
+# </CTX>/<FILL> delimiters, no information lost -- the context field
+# already carries the mask row/col range and per-row [MASK w=N]
+# markers). Re-measured after the trim: mean=1,936/p50=1,940/
+# p90=2,929/p99=3,687/max=4,321 -- p90 still lands above 2,500, so the
+# cap stays at 3072 (2,560 was the fallback only if p90 dropped under
+# 2,500) -- see corpus/filter_report_3072.json for exact kept counts.
 
 val_batches: 8
 # reduced from 25 -- found live: val_batches=25 (batch_size=2,

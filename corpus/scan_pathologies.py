@@ -53,7 +53,7 @@ def scan_raw_subsample(path):
     return counts, bad_indices
 
 
-def scan_tokenized(mlx_data_dir, model_path, max_seq_length=4096):
+def scan_tokenized(mlx_data_dir, model_path, max_seq_length=3072):
     """Pathologies only visible after real tokenization: empty completion
     token span (ntoks=0 -> guaranteed NaN loss), sequences over the
     token cap (silently truncated by mlx_lm, which can chop a target's

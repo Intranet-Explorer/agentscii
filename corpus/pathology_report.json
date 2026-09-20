@@ -1,6 +1,6 @@
 {
   "raw_scan": {
-    "total": 36618,
+    "total": 31243,
     "empty_target": 0,
     "empty_context": 0,
     "target_all_same_glyph": 0
@@ -11,19 +11,19 @@
   },
   "tokenized_scan": {
     "train": {
-      "total": 34787,
+      "total": 29681,
       "empty_completion_span": 0,
       "over_token_cap": 0,
       "empty_completion_sample_indices": []
     },
     "valid": {
-      "total": 1099,
+      "total": 937,
       "empty_completion_span": 0,
       "over_token_cap": 0,
       "empty_completion_sample_indices": []
     },
     "test": {
-      "total": 732,
+      "total": 625,
       "empty_completion_span": 0,
       "over_token_cap": 0,
       "empty_completion_sample_indices": []
