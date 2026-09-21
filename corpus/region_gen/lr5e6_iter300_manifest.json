@@ -1,0 +1,62 @@
+[
+  {
+    "piece": "/Users/octo/agentscii/corpus/parsed/1995/roc-0495/RZ-GUILD.ANS.npz",
+    "label": "lr5e6_iter300",
+    "row0": 17,
+    "col0": 8,
+    "mask_h": 8,
+    "mask_w": 14,
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "spliced_ans": "corpus/region_gen/lr5e6_iter300_RZ-GUILD.spliced.ans",
+    "original_ans": "corpus/region_gen/lr5e6_iter300_RZ-GUILD.original.ans",
+    "spliced_png": "corpus/region_gen/lr5e6_iter300_RZ-GUILD.spliced.png",
+    "original_png": "corpus/region_gen/lr5e6_iter300_RZ-GUILD.original.png",
+    "raw_reply_len_chars": 724
+  },
+  {
+    "piece": "/Users/octo/agentscii/corpus/parsed/2014/blocktronics_blockalypse/bw_blockalypse.ans.npz",
+    "label": "lr5e6_iter300",
+    "row0": 68,
+    "col0": 8,
+    "mask_h": 8,
+    "mask_w": 14,
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "spliced_ans": "corpus/region_gen/lr5e6_iter300_bw_blockalypse.spliced.ans",
+    "original_ans": "corpus/region_gen/lr5e6_iter300_bw_blockalypse.original.ans",
+    "spliced_png": "corpus/region_gen/lr5e6_iter300_bw_blockalypse.spliced.png",
+    "original_png": "corpus/region_gen/lr5e6_iter300_bw_blockalypse.original.png",
+    "raw_reply_len_chars": 800
+  },
+  {
+    "piece": "/Users/octo/agentscii/corpus/parsed/1995/tl199507/TS-GIMP.ANS.npz",
+    "label": "lr5e6_iter300",
+    "row0": 2,
+    "col0": 8,
+    "mask_h": 8,
+    "mask_w": 14,
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 100.0,
+    "spliced_ans": "corpus/region_gen/lr5e6_iter300_TS-GIMP.spliced.ans",
+    "original_ans": "corpus/region_gen/lr5e6_iter300_TS-GIMP.original.ans",
+    "spliced_png": "corpus/region_gen/lr5e6_iter300_TS-GIMP.spliced.png",
+    "original_png": "corpus/region_gen/lr5e6_iter300_TS-GIMP.original.png",
+    "raw_reply_len_chars": 313
+  },
+  {
+    "piece": "/Users/octo/agentscii/corpus/parsed/2022/trek2022/TNG-BORG.ANS.npz",
+    "label": "lr5e6_iter300",
+    "row0": 4,
+    "col0": 8,
+    "mask_h": 8,
+    "mask_w": 14,
+    "model_half_block_pct": 29.41176470588235,
+    "model_shade_pct": 0.0,
+    "spliced_ans": "corpus/region_gen/lr5e6_iter300_TNG-BORG.spliced.ans",
+    "original_ans": "corpus/region_gen/lr5e6_iter300_TNG-BORG.original.ans",
+    "spliced_png": "corpus/region_gen/lr5e6_iter300_TNG-BORG.spliced.png",
+    "original_png": "corpus/region_gen/lr5e6_iter300_TNG-BORG.original.png",
+    "raw_reply_len_chars": 759
+  }
+]
