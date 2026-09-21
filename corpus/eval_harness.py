@@ -351,11 +351,13 @@ def opus_pairwise_eval(model_png, truth_png):
             "WINNER: A or WINNER: B or WINNER: TIE\n"
             "REASON: <1-2 sentences>"
         )
-        result = subprocess.run(
+        result = harness._run_claude_p(
             ["claude", "-p", prompt, "--model", "claude-opus-5",
              "--allowedTools", "Read", "--output-format", "json"],
-            cwd=tmpdir, capture_output=True, text=True, timeout=90,
+            cwd=tmpdir,
         )
+        if result is None:
+            return {"status": "error", "message": "claude -p timed out after retry (120s x2)"}
         if result.returncode != 0:
             return {"status": "error", "message": f"claude CLI exit {result.returncode}"}
         data = json.loads(result.stdout)

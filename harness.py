@@ -3012,6 +3012,81 @@ OPUS_MAX_REVIEWS_PER_PIECE = 3  # condition 3 (user): one re-review per
 # revision, shelved (not resubmitted indefinitely) after 3 total.
 
 
+def _run_claude_p(args_list, timeout=120, retries=1, **run_kwargs):
+    """Hard-timeout wrapper for every `claude -p` subprocess call (user
+    direction, 2026-09-20: 'wrap every claude -p call in a hard timeout
+    (120s, retry once, then record as unjudged) -- a hung gate call
+    would stall a shift the same way').
+
+    Found live: the existing per-call-site `subprocess.run(...,
+    timeout=90)` pattern does NOT actually guarantee the process dies
+    on timeout. A real checkpoint_eval.py pairwise call sat alive for
+    56 minutes at ~0% CPU (1 minute of real CPU time total) instead of
+    hitting its stated 90s timeout -- confirmed directly via `ps`: one
+    live `claude` child process, no error, no exit. subprocess.run's
+    timeout kills the DIRECT child on TimeoutExpired, but if that
+    child's own stdout/stderr-reading `communicate()` is blocked on a
+    grandchild (claude's own internal tool-execution subprocess, a
+    sandboxed read, etc.) that inherited the pipe file descriptors and
+    doesn't exit, the parent's read() never returns and TimeoutExpired
+    never fires reliably either -- a known sharp edge of
+    subprocess.run(timeout=...) with pipe-inheriting descendants,
+    confirmed as the actual failure mode here by watching the hung
+    process's real state (S, sleeping, not R) and near-zero CPU time
+    for the entire 56-minute span, not just assumed from the docs.
+
+    Fixed with a real process-group kill: launches in its own process
+    group (start_new_session=True, POSIX-only, acceptable since this
+    codebase already assumes macOS via other darwin-specific tool
+    calls elsewhere), waits with an explicit timeout via
+    communicate(timeout=...), and on TimeoutExpired sends SIGKILL to
+    the WHOLE PROCESS GROUP (os.killpg, negative pid) -- not just the
+    direct child -- so an unresponsive grandchild holding the pipe
+    open gets killed too, not just orphaned.
+
+    Retries once on timeout (a real, transient CLI hang is plausible;
+    two independent hangs on the same call is not worth blocking a
+    whole shift over). Returns a subprocess.CompletedProcess-like
+    object on success, or None if both attempts timed out or every
+    other subprocess error occurred -- callers must check for None and
+    treat it as an unjudged/error result, never crash on it.
+    """
+    import subprocess as _sp
+    import os as _os
+    import signal as _signal
+
+    for attempt in range(retries + 1):
+        try:
+            proc = _sp.Popen(
+                args_list, stdout=_sp.PIPE, stderr=_sp.PIPE, text=True,
+                start_new_session=True, **run_kwargs,
+            )
+        except Exception as e:
+            return None
+        try:
+            stdout, stderr = proc.communicate(timeout=timeout)
+            return _sp.CompletedProcess(args_list, proc.returncode, stdout, stderr)
+        except _sp.TimeoutExpired:
+            try:
+                _os.killpg(_os.getpgid(proc.pid), _signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
+            try:
+                proc.communicate(timeout=5)
+            except Exception:
+                pass
+            if attempt < retries:
+                continue
+            return None
+        except Exception:
+            try:
+                _os.killpg(_os.getpgid(proc.pid), _signal.SIGKILL)
+            except Exception:
+                pass
+            return None
+    return None
+
+
 def _kill_stale_claude_login(max_age_s=300):
     """Find and kill any `claude login` process older than max_age_s.
 
@@ -3170,19 +3245,25 @@ def opus_subject_check(path):
             "DESCRIPTION: <one or two sentences of what you actually see>"
         )
 
-        result = subprocess.run(
+        result = _run_claude_p(
             ["claude", "-p", prompt, "--model", "claude-opus-5",
              "--allowedTools", "Read", "--output-format", "json"],
-            cwd=tmpdir, capture_output=True, text=True, timeout=90,
+            cwd=tmpdir,
         )
+        if result is None:
+            return {"status": "error", "message": "(subject check call timed out after retry)",
+                    "blind_subject": None, "intended_title": intended_title}
         if result.returncode != 0 and result.returncode == 1 and not result.stderr.strip():
             # same stuck-login auto-heal as opus_curate_review
             if _kill_stale_claude_login(max_age_s=300):
-                result = subprocess.run(
+                result = _run_claude_p(
                     ["claude", "-p", prompt, "--model", "claude-opus-5",
                      "--allowedTools", "Read", "--output-format", "json"],
-                    cwd=tmpdir, capture_output=True, text=True, timeout=90,
+                    cwd=tmpdir,
                 )
+                if result is None:
+                    return {"status": "error", "message": "(subject check call timed out after retry)",
+                            "blind_subject": None, "intended_title": intended_title}
         if result.returncode != 0:
             err = f"claude CLI exit {result.returncode}: {result.stderr[:500]}"
             return {"status": "error", "message": f"(subject check call failed: {err})",
@@ -3248,11 +3329,14 @@ def opus_subject_check(path):
             "VERDICT: MATCH or VERDICT: MISMATCH\n"
             "REASON: <one sentence>"
         )
-        match_result = subprocess.run(
+        match_result = _run_claude_p(
             ["claude", "-p", match_prompt, "--model", "claude-opus-5",
              "--output-format", "json"],
-            capture_output=True, text=True, timeout=60,
         )
+        if match_result is None:
+            return {"status": "error",
+                    "message": "(subject-match judgment call timed out after retry)",
+                    "blind_subject": blind_subject, "intended_title": intended_title}
         if match_result.returncode != 0:
             return {"status": "error",
                     "message": f"(subject-match judgment call failed: exit {match_result.returncode})",
@@ -3423,18 +3507,22 @@ def opus_pairwise_regression_check(pinned_path, candidate_path, intended_title):
             "REASON: <2-3 sentences, specific to what you see in each>"
         )
 
-        result = subprocess.run(
+        result = _run_claude_p(
             ["claude", "-p", prompt, "--model", "claude-opus-5",
              "--allowedTools", "Read", "--output-format", "json"],
-            cwd=tmpdir, capture_output=True, text=True, timeout=90,
+            cwd=tmpdir,
         )
+        if result is None:
+            return {"status": "error", "message": "(pairwise check call timed out after retry)"}
         if result.returncode != 0 and result.returncode == 1 and not result.stderr.strip():
             if _kill_stale_claude_login(max_age_s=300):
-                result = subprocess.run(
+                result = _run_claude_p(
                     ["claude", "-p", prompt, "--model", "claude-opus-5",
                      "--allowedTools", "Read", "--output-format", "json"],
-                    cwd=tmpdir, capture_output=True, text=True, timeout=90,
+                    cwd=tmpdir,
                 )
+                if result is None:
+                    return {"status": "error", "message": "(pairwise check call timed out after retry)"}
         if result.returncode != 0:
             err = f"claude CLI exit {result.returncode}: {result.stderr[:500]}"
             return {"status": "error", "message": f"(pairwise check call failed: {err})"}
@@ -3594,12 +3682,12 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                 "shows some structure."
             )
 
-            result = subprocess.run(
+            result = _run_claude_p(
                 ["claude", "-p", prompt, "--model", "claude-opus-5",
                  "--allowedTools", "Read", "--output-format", "json"],
-                cwd=tmpdir, capture_output=True, text=True, timeout=90,
+                cwd=tmpdir,
             )
-            if result.returncode != 0:
+            if result is not None and result.returncode != 0:
                 # A stuck/orphaned `claude login` process holds
                 # ~/.claude/.credentials.lock and makes every `claude -p`
                 # call fail instantly with exit 1 and NO stderr -- which
@@ -3614,11 +3702,27 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                         max_age_s=300
                     )
                     if stale_login_killed:
-                        result = subprocess.run(
+                        result = _run_claude_p(
                             ["claude", "-p", prompt, "--model", "claude-opus-5",
                              "--allowedTools", "Read", "--output-format", "json"],
-                            cwd=tmpdir, capture_output=True, text=True, timeout=90,
+                            cwd=tmpdir,
                         )
+            if result is None:
+                # _run_claude_p already retried once internally (120s x2)
+                # before giving up -- record as unjudged/error, never
+                # block the shift waiting on a third attempt (user
+                # direction, 2026-09-20: "a hung gate call would stall a
+                # shift the same way" -- this IS that gate).
+                err = "claude -p timed out after retry (120s x2, process group killed)"
+                conn.execute(
+                    "INSERT INTO opus_reviews (piece_slug, path, qwen_decision, "
+                    "qwen_critique, opus_verdict, opus_reasoning, opus_cost_usd, "
+                    "opus_error, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (slug, str(path), qwen_decision, qwen_critique, None, None,
+                     None, err, time.time()),
+                )
+                conn.commit()
+                return {"status": "error", "message": f"(Opus review call failed: {err})", "opus_verdict": None}
             if result.returncode != 0:
                 err = f"claude CLI exit {result.returncode}: {result.stderr[:500]}"
                 if result.returncode == 1 and not result.stderr.strip():
