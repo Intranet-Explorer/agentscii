@@ -1,0 +1,1001 @@
+[
+  {
+    "path": "1995/void0295/GR-BS.ANS.npz",
+    "row0": 97,
+    "col0": 5,
+    "mask_box": [
+      1,
+      10,
+      8,
+      15
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 9.090909090909092,
+    "truth_half_block_pct": 5.882352941176471,
+    "truth_shade_pct": 25.49019607843137,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.30625,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/000_GR-BS.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/000_GR-BS.ANS_truth.png",
+    "raw_reply_len_chars": 740,
+    "pairwise": {
+      "status": "ok",
+      "winner": "model",
+      "reasoning": "WINNER: A\nREASON: A holds clean vertical bands of solid red with a regular dithered stipple column, reading as a deliberate shading ramp between flat fields \u2014 the kind of block-character gradient real ANSI art uses. B is ragged and inconsistent: jagged block edges and scattered dither patches that don't continue any form or maintain a shading direction."
+    }
+  },
+  {
+    "path": "1994/dope0894/CM-TMD.ANS.npz",
+    "row0": 1,
+    "col0": 6,
+    "mask_box": [
+      5,
+      5,
+      9,
+      14
+    ],
+    "model_half_block_pct": 100.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 6.0,
+    "truth_shade_pct": 18.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.30952380952380953,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/001_CM-TMD.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/001_CM-TMD.ANS_truth.png",
+    "raw_reply_len_chars": 712,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\n\nREASON: A shows stippled/half-tone block shading forming continuous vertical columns with varied edges and a gradient between light and mid greys \u2014 the kind of structured form-building typical of hand-drawn ANSI art. B is just a few flat horizontal bars over empty black with an arbitrary red stripe, carrying no texture or continuation of a form."
+    }
+  },
+  {
+    "path": "1997/impact06/!TF-MBO1.ANS.npz",
+    "row0": 6,
+    "col0": 38,
+    "mask_box": [
+      3,
+      25,
+      9,
+      14
+    ],
+    "model_half_block_pct": 100.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 88.88888888888889,
+    "model_copy_exact_frac": 0.25,
+    "model_copy_overlap_frac": 0.5833333333333333,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/002_!TF-MBO1.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/002_!TF-MBO1.ANS_truth.png",
+    "raw_reply_len_chars": 405,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\n\nREASON: A shows a consistent cyan-on-black dithered texture repeated in evenly spaced patches along a single horizontal band, plus a solid block anchoring the left edge \u2014 that reads as deliberate shading continuing a form. B is almost entirely empty black with one flat gray bar floating at the top, which looks like a degenerate/blank fill rather than art that continues anything."
+    }
+  },
+  {
+    "path": "1997/comic-01/FZ-CMC1.ASC.npz",
+    "row0": 1,
+    "col0": 18,
+    "mask_box": [
+      7,
+      13,
+      9,
+      13
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.2735042735042735,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/003_FZ-CMC1.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/003_FZ-CMC1.ASC_truth.png",
+    "raw_reply_len_chars": 349,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\n\nREASON: B shows structured, repeated glyph runs (`$$`, `sssss`, `\"\"\"\"\"`) forming symmetrical columns and a legible shaded form with consistent left/right edges, which reads as deliberate textmode art. A is a single short line of unrelated punctuation and superscripts with no vertical structure or shading continuity."
+    }
+  },
+  {
+    "path": "1996/ecl-02/SD-ELD.ANS.npz",
+    "row0": 3,
+    "col0": 27,
+    "mask_box": [
+      5,
+      4,
+      8,
+      13
+    ],
+    "model_half_block_pct": 100.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 41.26984126984127,
+    "truth_shade_pct": 39.682539682539684,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.2451923076923077,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/004_SD-ELD.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/004_SD-ELD.ANS_truth.png",
+    "raw_reply_len_chars": 710,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\nREASON: B shows real textmode craft \u2014 consistent dither/shade-block gradients between red, brown and orange, with two symmetric column-like forms that continue coherently down the tile. A is just flat red bars that stop abruptly against a large empty black area, with no shading or form continuation, which reads like a degenerate fill."
+    }
+  },
+  {
+    "path": "1995/thst995a/TI-OBX.ANS.npz",
+    "row0": 7,
+    "col0": 18,
+    "mask_box": [
+      4,
+      10,
+      8,
+      14
+    ],
+    "model_half_block_pct": 28.571428571428573,
+    "model_shade_pct": 8.928571428571429,
+    "truth_half_block_pct": 30.107526881720432,
+    "truth_shade_pct": 6.451612903225806,
+    "model_copy_exact_frac": 0.25,
+    "model_copy_overlap_frac": 0.25,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/005_TI-OBX.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/005_TI-OBX.ANS_truth.png",
+    "raw_reply_len_chars": 772,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\n\nREASON: A reads as a coherent scene \u2014 repeating vertical pillar/column forms with consistent dark-cyan shading on the same side, a dithered gradient band used as texture on a surface, and a gray baseline that continues cleanly across the fragment. B's shapes are disconnected rectangles with an arbitrary nested outline and a dark background block intruding mid-form, so the shading has no consistent light direction and the edges don't continue into any readable structure."
+    }
+  },
+  {
+    "path": "1995/nd-pak02/CL-HT.ASC.npz",
+    "row0": 3,
+    "col0": 5,
+    "mask_box": [
+      1,
+      15,
+      7,
+      13
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.5521978021978022,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/006_CL-HT.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/006_CL-HT.ASC_truth.png",
+    "raw_reply_len_chars": 313,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\nREASON: B shows a consistent diagonal lattice of `/` and `\\` strokes with repeated, aligned motifs that read as a continuing textured form typical of ANSI line art, while A is almost entirely empty apart from one stray `|/\\` cluster and a flat rule \u2014 a fill that reads as blank/broken rather than a continuation of any form."
+    }
+  },
+  {
+    "path": "2002/l0p15_02/TZ!LEG9.ASC.npz",
+    "row0": 0,
+    "col0": 22,
+    "mask_box": [
+      8,
+      4,
+      7,
+      13
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.4697802197802198,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/007_TZ!LEG9.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/007_TZ!LEG9.ASC_truth.png",
+    "raw_reply_len_chars": 1591,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\nREASON: A has varied block shapes with shading transitions (`$$'`, `$$..s$$`) that read as a continuing filled form with edges, while B is a single flat row of repeated `$` over empty space \u2014 degenerate filler with no structure or continuation."
+    }
+  },
+  {
+    "path": "1994/kts-tz01/TZ-AYS6.ASC.npz",
+    "row0": 1,
+    "col0": 4,
+    "mask_box": [
+      0,
+      20,
+      7,
+      14
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.35714285714285715,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/008_TZ-AYS6.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/008_TZ-AYS6.ASC_truth.png",
+    "raw_reply_len_chars": 6337,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\nREASON: B shows structured ANSI line-art \u2014 paired slashes forming angled contours, a symmetric `\\_/` and `|__/` closure, consistent stroke weight \u2014 that reads as a coherent continuation of a drawn form. A is essentially two flat horizontal rules with empty space, which carries no shading or form and looks like a degenerate/blank fill rather than art."
+    }
+  },
+  {
+    "path": "1995/roc-0795/WL-PLANB.ANS.npz",
+    "row0": 6,
+    "col0": 33,
+    "mask_box": [
+      2,
+      15,
+      9,
+      13
+    ],
+    "model_half_block_pct": 10.256410256410257,
+    "model_shade_pct": 19.23076923076923,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.25,
+    "model_copy_overlap_frac": 0.38888888888888884,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/009_WL-PLANB.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/009_WL-PLANB.ANS_truth.png",
+    "raw_reply_len_chars": 782,
+    "pairwise": {
+      "status": "ok",
+      "winner": "model",
+      "reasoning": "WINNER: A\nREASON: A shows consistent block-shading columns (solid/checkered dither) repeating cleanly row to row with aligned text labels, which reads as a deliberate ANSI border or pattern continuing an established form. B is just sparse, scattered text fragments on empty black with no shading, alignment, or structural continuation \u2014 it doesn't fill the rectangle as textmode art."
+    }
+  },
+  {
+    "path": "1997/blndr036/TC-BL36.ANS.npz",
+    "row0": 85,
+    "col0": 19,
+    "mask_box": [
+      5,
+      4,
+      7,
+      15
+    ],
+    "model_half_block_pct": 100.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 43.07692307692308,
+    "truth_shade_pct": 10.76923076923077,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.23809523809523808,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/010_TC-BL36.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/010_TC-BL36.ANS_truth.png",
+    "raw_reply_len_chars": 405,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\nREASON: A shows structured textmode forms \u2014 diagonal green blocks with consistent stepped shading, a dithered/stippled column continuing a vertical element, and a cyan shape with coherent edges. B is almost entirely empty black with a single flat green bar, which reads as a collapsed/degenerate fill rather than a continuation of any form."
+    }
+  },
+  {
+    "path": "1997/eglo01/SH-FCE.ANS.npz",
+    "row0": 1,
+    "col0": 3,
+    "mask_box": [
+      0,
+      25,
+      9,
+      13
+    ],
+    "model_half_block_pct": 56.41025641025641,
+    "model_shade_pct": 11.538461538461538,
+    "truth_half_block_pct": 39.473684210526315,
+    "truth_shade_pct": 18.42105263157895,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.14814814814814814,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/011_SH-FCE.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/011_SH-FCE.ANS_truth.png",
+    "raw_reply_len_chars": 704,
+    "pairwise": {
+      "status": "ok",
+      "winner": "model",
+      "reasoning": "WINNER: A\nREASON: A shows a continuous curved form with a consistent brown outline wrapping a salmon fill, plus a graded grey ramp on the left that reads as deliberate shading. B is mostly empty black with disconnected pink blobs and a floating grey/dithered bar that continues no form and has no shading logic."
+    }
+  },
+  {
+    "path": "2021/laz14/wa-electric-city-BBS.ans.npz",
+    "row0": 11,
+    "col0": 0,
+    "mask_box": [
+      2,
+      21,
+      7,
+      14
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 53.65853658536585,
+    "truth_half_block_pct": 7.216494845360825,
+    "truth_shade_pct": 22.68041237113402,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.07142857142857142,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/012_wa-electric-city-BBS.ans.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/012_wa-electric-city-BBS.ans_truth.png",
+    "raw_reply_len_chars": 746,
+    "pairwise": {
+      "status": "ok",
+      "winner": "model",
+      "reasoning": "WINNER: A\n\nREASON: A reads as a coherent scene fragment \u2014 horizontal bands (dark blue above, a solid orange strip, a gray dithered slab) that stratify cleanly, with the dither density shading consistently in one direction like a lit surface. B is a jumble of mismatched checkerboard patches in unrelated color pairs (gray, blue, orange, a stray cyan block) at differing scales with no continuous form or consistent shading direction, which reads as noise rather than art."
+    }
+  },
+  {
+    "path": "1994/fear1194/FL-BULL.ANS.npz",
+    "row0": 13,
+    "col0": 18,
+    "mask_box": [
+      1,
+      0,
+      9,
+      13
+    ],
+    "model_half_block_pct": 29.41176470588235,
+    "model_shade_pct": 39.21568627450981,
+    "truth_half_block_pct": 11.206896551724139,
+    "truth_shade_pct": 84.48275862068965,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.05128205128205129,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/013_FL-BULL.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/013_FL-BULL.ANS_truth.png",
+    "raw_reply_len_chars": 723,
+    "pairwise": {
+      "status": "ok",
+      "winner": "model",
+      "reasoning": "WINNER: B\nREASON: B shows consistent vertical banding with an ordered dark\u2192bright dither gradient and a regular repeating stair-step edge, reading as a deliberate shaded form. A is blotchy and inconsistent \u2014 dither densities jump arbitrarily between rows, black streaks cut across the form at random, and a stray white block sits with no supporting structure around it."
+    }
+  },
+  {
+    "path": "1996/tpy-0696/CFX-SSON.ASC.npz",
+    "row0": 9,
+    "col0": 1,
+    "mask_box": [
+      8,
+      24,
+      8,
+      15
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.0,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/014_CFX-SSON.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/014_CFX-SSON.ASC_truth.png",
+    "raw_reply_len_chars": 800,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\nREASON: B is a uniform, evenly-spaced dot/dither texture that fills the whole patch consistently \u2014 exactly the kind of shading block ANSI art uses, and it reads as a continuing surface. A is a single row of repeated `O` characters after a stray `|` with the rest of the rectangle left blank, which is a degenerate fill that doesn't continue any form or shading."
+    }
+  },
+  {
+    "path": "2002/jasper03/43-ROUGH.ANS.npz",
+    "row0": 3,
+    "col0": 20,
+    "mask_box": [
+      1,
+      10,
+      7,
+      14
+    ],
+    "model_half_block_pct": 33.333333333333336,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 28.8659793814433,
+    "truth_shade_pct": 3.0927835051546393,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.07142857142857142,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/015_43-ROUGH.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/015_43-ROUGH.ANS_truth.png",
+    "raw_reply_len_chars": 784,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\n\nREASON: B shows real textmode technique \u2014 the gray bands continue into a stepped black notch and the red field carries a dithered (\u2592-style) stipple patch right where the light/dark transition sits, which is how ANSI artists shade an edge. A is just flat gray bars that stop dead into an empty black half, with no form being continued or shaded."
+    }
+  },
+  {
+    "path": "1997/bmbook12/US-CSC.ANS.npz",
+    "row0": 2,
+    "col0": 39,
+    "mask_box": [
+      8,
+      16,
+      8,
+      13
+    ],
+    "model_half_block_pct": 100.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 28.37837837837838,
+    "truth_shade_pct": 16.216216216216218,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.08333333333333333,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/016_US-CSC.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/016_US-CSC.ANS_truth.png",
+    "raw_reply_len_chars": 709,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\n\nREASON: B has varied blocks, dithered half-tone transitions, and shaded forms that read as a continuing figure with a text label, which is typical of coherent ANSI/textmode art. A is just flat magenta horizontal bars against black with no shading or structure, looking like a degenerate fill rather than a continuation of any form."
+    }
+  },
+  {
+    "path": "2004/mimic73/us-dan1.ans.npz",
+    "row0": 9,
+    "col0": 10,
+    "mask_box": [
+      8,
+      12,
+      8,
+      14
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.21428571428571427,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/017_us-dan1.ans.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/017_us-dan1.ans_truth.png",
+    "raw_reply_len_chars": 917,
+    "pairwise": {
+      "status": "ok",
+      "winner": "model",
+      "reasoning": "WINNER: A\nREASON: A uses a self-consistent glyph vocabulary (`` `4$$ ``, `$b`, `.d$P`, `j$$`) \u2014 the classic ASCII/ANSI shading family where `d/P/b/k` carry the rounded edges and `` ` ``/`4` the light fringe \u2014 and the strokes flow diagonally as if continuing a curved form. B is mostly disconnected vertical pipes, stray `#`/`@` and floating fragments with no shared shading ramp or continuing contour, reading as noise dropped into the hole."
+    }
+  },
+  {
+    "path": "1997/saga9705/BM!SAGA.ANS.npz",
+    "row0": 101,
+    "col0": 15,
+    "mask_box": [
+      5,
+      25,
+      8,
+      15
+    ],
+    "model_half_block_pct": 48.93617021276596,
+    "model_shade_pct": 19.148936170212767,
+    "truth_half_block_pct": 41.1764705882353,
+    "truth_shade_pct": 33.8235294117647,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.37222222222222223,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/018_BM!SAGA.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/018_BM!SAGA.ANS_truth.png",
+    "raw_reply_len_chars": 258,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\nREASON: A keeps a consistent 50%-dither fill against solid grey with aligned horizontal bars and rectangular forms whose edges continue cleanly across the fragment. B has stray floating letters (\"o\", \"d\") and an unanchored dithered blob that connects to none of the surrounding bars, reading as random fill rather than a continued form."
+    }
+  },
+  {
+    "path": "1993/adfa0793/BA-69ER1.ANS.npz",
+    "row0": 51,
+    "col0": 27,
+    "mask_box": [
+      4,
+      7,
+      9,
+      15
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 1.0,
+    "model_copy_overlap_frac": 1.0,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/019_BA-69ER1.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/019_BA-69ER1.ANS_truth.png",
+    "raw_reply_len_chars": 800,
+    "pairwise": {
+      "status": "error",
+      "message": "render failed"
+    }
+  },
+  {
+    "path": "1996/mist0396/GK-0396.ANS.npz",
+    "row0": 40,
+    "col0": 4,
+    "mask_box": [
+      7,
+      20,
+      8,
+      13
+    ],
+    "model_half_block_pct": 100.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 57.4468085106383,
+    "truth_shade_pct": 2.127659574468085,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.37740384615384615,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/020_GK-0396.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/020_GK-0396.ANS_truth.png",
+    "raw_reply_len_chars": 405,
+    "pairwise": {
+      "status": "ok",
+      "winner": "model",
+      "reasoning": "WINNER: A\nREASON: A is a clean, uniform red band with a consistent darker edge running edge-to-edge over flat black \u2014 exactly how a masked slice of a horizontal bar should continue. B breaks the red bar off short and fills the space with an unrelated dotted line and a speckled blue/white diagonal clump that connects to nothing, reading as random noise rather than a continued form."
+    }
+  },
+  {
+    "path": "1998/spin02/#NEWS.ASC.npz",
+    "row0": 27,
+    "col0": 23,
+    "mask_box": [
+      1,
+      2,
+      7,
+      14
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.12499999999999999,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/021_#NEWS.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/021_#NEWS.ASC_truth.png",
+    "raw_reply_len_chars": 866,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\n\nREASON: A is a degenerate loop \u2014 the identical string \"thantottime!\" stamped on every row, a collapse artifact rather than any shading or form. B reads as a plausible continuation of a text block (varied, prose-like fragments with sensible spacing and an `*` accent), which is exactly what fills a masked region inside an ANSI textmode piece."
+    }
+  },
+  {
+    "path": "1997/sac1297b/ROY-TECL.ASC.npz",
+    "row0": 2,
+    "col0": 40,
+    "mask_box": [
+      4,
+      10,
+      9,
+      14
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.2837301587301587,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/022_ROY-TECL.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/022_ROY-TECL.ASC_truth.png",
+    "raw_reply_len_chars": 450,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\nREASON: B shows a coherent block of `$$$$` mass with varied density, edges tapering into `.` and `'` lighter characters \u2014 a consistent light-to-dark shading ramp continuing a solid form. A is a single flat row of uniform `$` with nothing above or below it, reading as an unshaded, disconnected band rather than part of a form."
+    }
+  },
+  {
+    "path": "1996/itsmay96/JC-IZ#1.ASC.npz",
+    "row0": 0,
+    "col0": 7,
+    "mask_box": [
+      1,
+      0,
+      9,
+      15
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.32592592592592595,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/023_JC-IZ#1.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/023_JC-IZ#1.ASC_truth.png",
+    "raw_reply_len_chars": 1591,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\n\nREASON: B has vertically consistent structure \u2014 repeated `$$$` column groups aligned row to row, with the `\u00b2S`/backtick accents used as consistent shading accents, plus a solid `$` band closing it off like a border, which reads as a deliberate form. A is a single `$` run with nothing under it, so it neither shades nor continues any shape."
+    }
+  },
+  {
+    "path": "1997/blawork/JR_BS.ANS.npz",
+    "row0": 2,
+    "col0": 32,
+    "mask_box": [
+      1,
+      6,
+      9,
+      14
+    ],
+    "model_half_block_pct": 90.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 48.4375,
+    "truth_shade_pct": 15.625,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.16269841269841268,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/024_JR_BS.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/024_JR_BS.ANS_truth.png",
+    "raw_reply_len_chars": 705,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\nREASON: B shows a coherent organic form \u2014 a red shape with consistent light/dark shading, dithered gradient blocks, and diagonal edges that read as a continuing contour. A is just flat identical gray bars repeated on black, a degenerate filler pattern with no shading variation or form to continue."
+    }
+  },
+  {
+    "path": "1998/sac0998a/CH-DE.ASC.npz",
+    "row0": 1,
+    "col0": 30,
+    "mask_box": [
+      3,
+      0,
+      9,
+      15
+    ],
+    "model_half_block_pct": 98.9247311827957,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 22.608695652173914,
+    "truth_shade_pct": 13.043478260869565,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.14074074074074075,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/025_CH-DE.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/025_CH-DE.ASC_truth.png",
+    "raw_reply_len_chars": 708,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\n\nREASON: A shows coherent blocky forms with graded dither/stipple shading (solid, half-tone, sparse) that flow into continuous curved edges the way hand-drawn ANSI shading does. B is a degenerate repeating scanline pattern of identical grey bars with one unrelated blob floating in it \u2014 no form, no shading logic, the look of a model collapsing to a repeated row."
+    }
+  },
+  {
+    "path": "1995/thst0895/CK-SHUT.ANS.npz",
+    "row0": 1,
+    "col0": 6,
+    "mask_box": [
+      0,
+      25,
+      8,
+      15
+    ],
+    "model_half_block_pct": 100.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 14.782608695652174,
+    "truth_shade_pct": 73.04347826086956,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.13333333333333333,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/026_CK-SHUT.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/026_CK-SHUT.ANS_truth.png",
+    "raw_reply_len_chars": 707,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\nREASON: A has structured regions \u2014 a dark red field with vertical striping, a grey shaded mass, and green forms with edges that read as a continuing shape \u2014 consistent with surrounding ANSI art. B is a uniform checkerboard dither of one grey with no structure or variation, which reads as filler rather than a continuation of any form."
+    }
+  },
+  {
+    "path": "1995/rmrs-03/WD-DIZ.ASC.npz",
+    "row0": 50,
+    "col0": 17,
+    "mask_box": [
+      7,
+      0,
+      9,
+      14
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.369047619047619,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/027_WD-DIZ.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/027_WD-DIZ.ASC_truth.png",
+    "raw_reply_len_chars": 950,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\nREASON: A shows coherent structure \u2014 ASCII letterform strokes resolving into readable text (\"ons of Reality\") with clean, aligned horizontal rules typical of an ANSI header block. B is a scatter of unaligned slashes, dots and underscores with no continuous stroke or shading logic, reading as noise rather than a continuation of any form."
+    }
+  },
+  {
+    "path": "2000/bmbook21/T-HEL.ANS.npz",
+    "row0": 3,
+    "col0": 23,
+    "mask_box": [
+      0,
+      14,
+      8,
+      13
+    ],
+    "model_half_block_pct": 53.84615384615385,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 27.586206896551722,
+    "truth_shade_pct": 13.793103448275861,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.041666666666666664,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/028_T-HEL.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/028_T-HEL.ANS_truth.png",
+    "raw_reply_len_chars": 313,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\nREASON: A shows structured ANSI-style forms \u2014 horizontal bars, filled rectangles, and half/quarter-block dither patterns in a consistent magenta/cyan/blue palette that reads as deliberate shading and continued geometry. B is almost entirely empty black with one detached row of blue blocks, which looks like a collapsed or failed fill rather than a continued form."
+    }
+  },
+  {
+    "path": "1999/karma-06/AC-CARMA.ASC.npz",
+    "row0": 1,
+    "col0": 3,
+    "mask_box": [
+      0,
+      13,
+      7,
+      14
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.4761904761904761,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/029_AC-CARMA.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/029_AC-CARMA.ASC_truth.png",
+    "raw_reply_len_chars": 517,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\n\nREASON: A shows coherent line-art \u2014 consistent diagonal strokes that meet and continue into a recognizable form, with a legible text fragment (\"\\ cl\") in the same style. B is essentially empty apart from two stray horizontal rules, which reads as a collapsed/degenerate fill rather than a continuation of any form."
+    }
+  },
+  {
+    "path": "1998/uprise07/BC!PRIM.ASC.npz",
+    "row0": 1,
+    "col0": 11,
+    "mask_box": [
+      5,
+      25,
+      8,
+      13
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.25,
+    "model_copy_overlap_frac": 0.4254807692307692,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/030_BC!PRIM.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/030_BC!PRIM.ASC_truth.png",
+    "raw_reply_len_chars": 888,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\nREASON: A holds a consistent dot-dithered shading field across every row with line-drawing glyphs (`_|`, `|_,`) forming a continuous edge, which reads as a deliberate textured surface continuing into the masked area. B is a jumble of mismatched glyphs (`Yg`, `\u00b64$`, stray quotes) in inconsistent colors and densities with no repeating shading ramp or continued contour."
+    }
+  },
+  {
+    "path": "1997/phb-0597/PU-HEJ.ANS.npz",
+    "row0": 4,
+    "col0": 10,
+    "mask_box": [
+      4,
+      20,
+      8,
+      13
+    ],
+    "model_half_block_pct": 50.0,
+    "model_shade_pct": 17.307692307692307,
+    "truth_half_block_pct": 17.142857142857142,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.125,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/031_PU-HEJ.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/031_PU-HEJ.ANS_truth.png",
+    "raw_reply_len_chars": 716,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\nREASON: A's magenta strokes are a single consistent color forming connected, angular shapes that read as one continuing form running off the edge of the fill area, which is how blocky ANSI linework behaves. B is a scatter of grey blocks with mismatched dither and hatch glyphs butted together at random, with no gradient ordering or contiguous edge \u2014 it reads as noise rather than shading or a shape."
+    }
+  },
+  {
+    "path": "1994/sac1294/HT-LKCC.ASC.npz",
+    "row0": 2,
+    "col0": 32,
+    "mask_box": [
+      1,
+      2,
+      8,
+      15
+    ],
+    "model_half_block_pct": 100.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 35.416666666666664,
+    "truth_shade_pct": 22.916666666666668,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.3833333333333333,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/032_HT-LKCC.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/032_HT-LKCC.ASC_truth.png",
+    "raw_reply_len_chars": 405,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\nREASON: B uses the textmode vocabulary coherently \u2014 solid grey masses, dithered/stippled shading blocks, and vertical forms that read as a continuing object with consistent light-to-dark gradation. A is essentially an empty black field with a single stray horizontal bar, which carries no form or shading and reads as a collapsed/degenerate fill rather than art."
+    }
+  },
+  {
+    "path": "1996/awe9612/US-ADRAW.ANS.npz",
+    "row0": 7,
+    "col0": 31,
+    "mask_box": [
+      3,
+      14,
+      8,
+      15
+    ],
+    "model_half_block_pct": 66.66666666666667,
+    "model_shade_pct": 6.666666666666667,
+    "truth_half_block_pct": 41.666666666666664,
+    "truth_shade_pct": 35.416666666666664,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.03125,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/033_US-ADRAW.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/033_US-ADRAW.ANS_truth.png",
+    "raw_reply_len_chars": 313,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\nREASON: A shows coherent ANSI/textmode structure \u2014 dithered block-character gradients between blue and cyan, consistent palette, and vertical forms that read as a continuing shape. B is almost entirely empty black with one short row of scattered gray glyphs, which reads as a collapsed or broken fill rather than art continuing into the masked region."
+    }
+  },
+  {
+    "path": "1999/xrt-04/DRM-WZ.ANS.npz",
+    "row0": 0,
+    "col0": 15,
+    "mask_box": [
+      5,
+      6,
+      8,
+      14
+    ],
+    "model_half_block_pct": 100.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 22.77227722772277,
+    "truth_shade_pct": 50.495049504950494,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.08928571428571429,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/034_DRM-WZ.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/034_DRM-WZ.ANS_truth.png",
+    "raw_reply_len_chars": 405,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: B\n\nREASON: B shows coherent textmode structure \u2014 graduated dither/block shading, a continuous cyan outline that reads as part of a larger form, and consistent color use \u2014 whereas A is almost entirely empty black with one stray gray rule and an unrelated cyan blob, which reads as a blank/collapsed fill rather than art continuing the surrounding piece."
+    }
+  },
+  {
+    "path": "1995/glynis01/KG-ELIX.ANS.npz",
+    "row0": 1,
+    "col0": 11,
+    "mask_box": [
+      7,
+      20,
+      8,
+      15
+    ],
+    "model_half_block_pct": 60.0,
+    "model_shade_pct": 26.666666666666668,
+    "truth_half_block_pct": 36.470588235294116,
+    "truth_shade_pct": 21.176470588235293,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.4375,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/035_KG-ELIX.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/035_KG-ELIX.ANS_truth.png",
+    "raw_reply_len_chars": 309,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\nREASON: A shows a coherent form \u2014 a yellow mass bounded by brown outline strokes with consistent dithered shading and a green ground line continuing off the fragment \u2014 whereas B is a single disconnected band of green blocks above a large empty black field, with no structure or continuation."
+    }
+  },
+  {
+    "path": "1997/woe0497/FZ-PRODI.ASC.npz",
+    "row0": 0,
+    "col0": 4,
+    "mask_box": [
+      3,
+      11,
+      9,
+      14
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.27976190476190477,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/036_FZ-PRODI.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/036_FZ-PRODI.ASC_truth.png",
+    "raw_reply_len_chars": 917,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\n\nREASON: A shows real textmode structure \u2014 varied glyph density (`$`, `l`, `i`, `\"`, `,`) forming shading gradients, a bright highlighted mass against darker blue ground, and green accents that trace a coherent edge. B is a flat, uniform block of identical `$` characters in a single color repeated across every row, which reads as degenerate repetition rather than a continuation of any form."
+    }
+  },
+  {
+    "path": "1999/l0p04_99/SK!AIDS.ASC.npz",
+    "row0": 33,
+    "col0": 8,
+    "mask_box": [
+      3,
+      2,
+      8,
+      13
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 100.0,
+    "truth_half_block_pct": 22.727272727272727,
+    "truth_shade_pct": 36.36363636363637,
+    "model_copy_exact_frac": 0.25,
+    "model_copy_overlap_frac": 0.46875,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/037_SK!AIDS.ASC.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/037_SK!AIDS.ASC_truth.png",
+    "raw_reply_len_chars": 405,
+    "pairwise": {
+      "status": "ok",
+      "winner": "model",
+      "reasoning": "WINNER: A\nREASON: A is a clean, uniform band of dithered block shading (\u2593/\u2592-style stipple) running edge-to-edge above a solid dark field \u2014 exactly the consistent texture-and-gradient idiom of ANSI art, and it would tile sensibly into a surrounding form. B is a scatter of mismatched half-block chunks with a stray vertical rule and floating letters, with no continuous edge or shading logic tying the pieces together."
+    }
+  },
+  {
+    "path": "1996/srg1196/BW\u00a0-MSC2.ANS.npz",
+    "row0": 11,
+    "col0": 33,
+    "mask_box": [
+      2,
+      25,
+      9,
+      15
+    ],
+    "model_half_block_pct": 100.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.3333333333333333,
+    "model_copy_overlap_frac": 0.5925925925925926,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/038_BW\u00a0-MSC2.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/038_BW\u00a0-MSC2.ANS_truth.png",
+    "raw_reply_len_chars": 405,
+    "pairwise": {
+      "status": "ok",
+      "winner": "ground_truth",
+      "reasoning": "WINNER: A\n\nREASON: A contains coherent textmode content \u2014 red-on-black bracketed labels like `chat!]` and `[exit!]` that read as a consistent menu/button row continuing off the mask edge, with uniform color and baseline alignment. B is essentially an empty black field with a single detached red band at the top that connects to nothing, which reads as a broken or collapsed fill rather than a continuation of any form."
+    }
+  },
+  {
+    "path": "1995/dp-art2/MA-MAIN.ANS.npz",
+    "row0": 0,
+    "col0": 13,
+    "mask_box": [
+      8,
+      15,
+      8,
+      15
+    ],
+    "model_half_block_pct": 0.0,
+    "model_shade_pct": 0.0,
+    "truth_half_block_pct": 0.0,
+    "truth_shade_pct": 0.0,
+    "model_copy_exact_frac": 0.0,
+    "model_copy_overlap_frac": 0.20833333333333334,
+    "render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/039_MA-MAIN.ANS.png",
+    "truth_render_path": "/Users/octo/agentscii/corpus/checkpoint_evals/iter200_n40/039_MA-MAIN.ANS_truth.png",
+    "raw_reply_len_chars": 730,
+    "pairwise": {
+      "status": "ok",
+      "winner": "model",
+      "reasoning": "WINNER: A\nREASON: A shows a consistent repeating motif \u2014 evenly spaced green diagonal strokes in a uniform color beneath a clean horizontal rule, reading as a deliberate texture/border that could continue a larger form. B is incoherent: nonsense letter salad (\"SaGeS:\", \"mandZ!\") mixed with scattered yellow/green dots at inconsistent spacing, with no shading logic or continuing shape."
+    }
+  }
+]
