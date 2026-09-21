@@ -48,4 +48,11 @@ corpus/progress_watchdog_samples/
 corpus/captions*.json
 corpus/*.log
 corpus/patch_index.db
+corpus/lora_adapters_lr5e6/
+
+# checkpoint_eval.py renders (.ans/.png per example, regenerated on
+# every run, not stable across reruns even for the same checkpoint) --
+# keep only the numeric results (results.json, checkpoint_summary.jsonl)
+corpus/checkpoint_evals/*/*.ans
+corpus/checkpoint_evals/*/*.png
 
