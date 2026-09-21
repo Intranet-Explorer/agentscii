@@ -107,6 +107,33 @@ def main():
     n_skipped_blank_alnum = 0
     n_render_fail = 0
     n_processed_candidates = 0
+    _last_checkpoint = [0]
+
+    def _write_checkpoint(out_dir, embeddings, kept_meta):
+        if not embeddings:
+            return
+        emb_matrix = np.concatenate(embeddings, axis=0)
+        np.save(out_dir / "embeddings.npy", emb_matrix)
+        meta_db = out_dir / "meta.db"
+        if meta_db.exists():
+            meta_db.unlink()
+        meta_conn = sqlite3.connect(str(meta_db))
+        meta_conn.execute("""
+            CREATE TABLE meta (
+                row_idx INTEGER PRIMARY KEY,
+                parent_path TEXT, row_offset INTEGER, col_offset INTEGER,
+                window_rows INTEGER, window_cols INTEGER,
+                half_block_pct REAL, shade_pct REAL
+            )
+        """)
+        meta_conn.executemany(
+            "INSERT INTO meta VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [(i, m["parent_path"], m["row_offset"], m["col_offset"], m["window_rows"],
+              m["window_cols"], m["half_block_pct"], m["shade_pct"]) for i, m in enumerate(kept_meta)],
+        )
+        meta_conn.commit()
+        meta_conn.close()
+        print(f"  [checkpoint] wrote {emb_matrix.shape[0]} embeddings to {out_dir}")
 
     def flush_batch():
         if not imgs_batch:
@@ -168,6 +195,20 @@ def main():
             print(f"  ...{len(kept_meta)} kept ({n_processed_candidates} candidates seen, "
                   f"{n_skipped_blank_alnum} skipped blank/alnum, {n_render_fail} render fail) "
                   f"{rate:.1f}/s, {elapsed/60:.1f} min elapsed")
+
+        # Checkpoint every 50k kept patches (found live, 2026-09-21: a
+        # concurrent training run's memory watchdog killed this process
+        # mid-run via SIGKILL -- this script only wrote embeddings.npy/
+        # meta.db at the very end, so a kill at minute 107 lost 380k
+        # patches of real compute with nothing recoverable. Writing
+        # periodic checkpoints means a future interruption loses at
+        # most one checkpoint interval's worth of work, and a resumed
+        # run can pick up from the last checkpoint instead of
+        # restarting from zero.)
+        if len(kept_meta) % 50000 == 0 and len(kept_meta) > 0 and len(kept_meta) != _last_checkpoint[0]:
+            flush_batch()
+            _write_checkpoint(out_dir, embeddings, kept_meta)
+            _last_checkpoint[0] = len(kept_meta)
 
     flush_batch()
     import shutil
