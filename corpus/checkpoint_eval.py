@@ -96,7 +96,22 @@ def main():
         # per-example mask placement uses its own derived seed so it's
         # reproducible independent of how many examples were skipped
         # before it in the candidate list)
-        local_rng = random.Random(hash(rel) & 0xFFFFFFFF)
+        # hash(rel) is Python's built-in str hash, randomized per-process
+        # by default (PYTHONHASHSEED) -- this made mask position differ
+        # across SEPARATE PROCESS INVOCATIONS even for the identical
+        # (rel, seed) pair, silently breaking the "same examples, same
+        # mask position, directly comparable checkpoint to checkpoint"
+        # claim this script's own docstring makes. Found live comparing
+        # iter200 vs iter500 results.json: same 15 piece paths (that part
+        # IS controlled by the outer `rng.sample(..., seed=args.seed)`
+        # above, which only picks WHICH pieces) but different (row0,
+        # col0) mask positions for 4/15 of them across the two runs --
+        # each checkpoint eval was silently scoring a DIFFERENT actual
+        # reconstruction task on those pieces, not the same one.
+        # hashlib.md5 is stable across runs/processes -- use that.
+        import hashlib
+        local_seed = int(hashlib.md5(rel.encode()).hexdigest()[:8], 16)
+        local_rng = random.Random(local_seed)
         row0 = local_rng.randint(0, chars_full.shape[0] - w.WINDOW_ROWS)
         col0 = local_rng.randint(0, chars_full.shape[1] - w.WINDOW_COLS)
         c_win = chars_full[row0:row0 + w.WINDOW_ROWS, col0:col0 + w.WINDOW_COLS]
