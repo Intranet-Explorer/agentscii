@@ -861,6 +861,35 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "find_patches",
+            "description": (
+                "Search the real 16colo.rs archive corpus (86k real ACiD/Blocktronics-scene "
+                "pieces, not synthetic) for small real technique references, and see them "
+                "rendered as an actual image — CLIP visual-embedding retrieval, so a "
+                "free-text description like 'shaded sphere warm light' or 'metallic chrome "
+                "edge' finds patches that actually look like that, not just ones whose SAUCE "
+                "title happens to contain a matching word. Use this to see how real artists "
+                "actually built the half-block/shade technique you're trying for, instead of "
+                "guessing at it from scratch — this is real corpus study material, the same "
+                "purpose as workspace/references/study/ but searchable by description instead "
+                "of needing an exact filename. Results are small 40x16-cell windows, not full "
+                "pieces — they show technique up close, not composition."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "description": {"type": "string", "description": "What you're looking for, in plain language — subject, technique, mood, whatever's relevant."},
+                    "n": {"type": "integer", "description": "How many patches to return, rendered side by side. Default 3, max 6."},
+                    "half_block_min": {"type": "number", "description": "Optional: only patches with at least this much half-block usage (0-100)."},
+                    "shade_min": {"type": "number", "description": "Optional: only patches with at least this much shade-glyph usage (0-100)."},
+                },
+                "required": ["description"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "inspect_piece",
             "description": (
                 "Run a full structural diagnostic on an .ans/.asc file in one call: "
@@ -1496,6 +1525,81 @@ def render_comparison_b64(piece_path, reference_path, offset=0, max_rows=60):
     if piece_note or ref_note:
         note = f" (piece{piece_note or ' full'}, reference{ref_note or ' full'})"
     return out_b64, note
+
+
+def render_patches_grid_b64(patches):
+    """Render N retrieved corpus patches (real (chars, fg, bg) numpy
+    grids, e.g. from corpus/find_patches_clip.py) side by side as ONE
+    composite image, each labeled with its source piece and technique
+    metrics -- same "one image, not N separate tool results" pattern
+    as render_comparison_b64, built for the find_patches tool (user
+    direction, 2026-09-21: "wire find_patches into raze as a tool").
+
+    Writes each patch's grid to a temp .ans file (same SGR-encoding
+    convention corpus/eval_harness.py's render_grid_to_png uses
+    internally) and reuses render_ans_to_png_b64 rather than
+    reimplementing cell rasterization a third time. patches: list of
+    dicts with chars/fg/bg numpy arrays plus parent_path/
+    half_block_pct/shade_pct (the shape find_patches_clip.find_patches_clip
+    and find_patches.find_patches_by_technique both return)."""
+    from PIL import Image, ImageDraw, ImageFont
+    import tempfile
+
+    if not patches:
+        return None, "(no patches to render)"
+
+    imgs = []
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for i, p in enumerate(patches):
+            chars, fg, bg = p["chars"], p["fg"], p["bg"]
+            lines = []
+            for r in range(chars.shape[0]):
+                parts = []
+                cur_fg, cur_bg = None, None
+                for c in range(chars.shape[1]):
+                    f, b, ch = int(fg[r, c]), int(bg[r, c]), chr(int(chars[r, c]))
+                    if (f, b) != (cur_fg, cur_bg):
+                        sgr_fg = 30 + (f % 8) + (60 if f >= 8 else 0)
+                        sgr_bg = 40 + (b % 8) + (60 if b >= 8 else 0)
+                        parts.append(f"\x1b[0;{sgr_fg};{sgr_bg}m")
+                        cur_fg, cur_bg = f, b
+                    parts.append(ch)
+                lines.append("".join(parts))
+            text = "\r\n".join(lines) + "\x1b[0m\r\n"
+            tmp_path = Path(tmpdir) / f"patch_{i}.ans"
+            tmp_path.write_bytes(text.encode("utf-8"))
+            b64, note = render_ans_to_png_b64(str(tmp_path))
+            if b64 is None:
+                continue
+            img = Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
+            label = f"{Path(p['parent_path']).name} half={p.get('half_block_pct', 0):.0f} shade={p.get('shade_pct', 0):.0f}"
+            imgs.append((img, label))
+
+    if not imgs:
+        return None, "(all patches failed to render)"
+
+    label_h = 22
+    gap = 8
+    cell_h = max(im.height for im, _ in imgs)
+    w = sum(im.width for im, _ in imgs) + gap * (len(imgs) + 1)
+    h = cell_h + label_h + gap * 2
+    canvas = Image.new("RGB", (w, h), (20, 20, 20))
+    draw = ImageDraw.Draw(canvas)
+    try:
+        font = ImageFont.truetype(_FONT_PATH, 14)
+    except Exception:
+        font = ImageFont.load_default()
+
+    x = gap
+    for img, label in imgs:
+        draw.text((x, gap), label, font=font, fill=(150, 255, 150))
+        canvas.paste(img, (x, gap + label_h))
+        x += img.width + gap
+
+    buf = io.BytesIO()
+    canvas.save(buf, format="PNG")
+    out_b64 = base64.b64encode(buf.getvalue()).decode()
+    return out_b64, f" ({len(imgs)} patches)"
 
 
 def _parse_ans_grid(path):
@@ -4162,6 +4266,55 @@ def run_shift(conn, agent):
                             continue
                 except Exception as e:
                     result = f"(error rendering preview: {e})"
+            elif name == "find_patches":
+                try:
+                    description = (fargs.get("description") or "").strip()
+                    if not description:
+                        result = "(error: description is required)"
+                    else:
+                        n = max(1, min(int(fargs.get("n", 3) or 3), 6))
+                        half_block_min = fargs.get("half_block_min")
+                        shade_min = fargs.get("shade_min")
+                        corpus_dir = str(PROJECT_DIR / "corpus")
+                        if corpus_dir not in sys.path:
+                            sys.path.insert(0, corpus_dir)
+                        try:
+                            from find_patches_clip import find_patches_clip
+                            hits = find_patches_clip(
+                                description, n=n, index_dir=str(PROJECT_DIR / "corpus" / "clip_index"),
+                                half_block_min=half_block_min, shade_min=shade_min,
+                            )
+                            method = "CLIP visual-embedding"
+                        except FileNotFoundError:
+                            # clip_index not built yet -- degrade to the
+                            # keyword/technique fallback rather than error out
+                            from find_patches import find_patches as find_patches_kw
+                            hits = find_patches_kw(description, n=n)
+                            method = "keyword/technique (CLIP index unavailable)"
+                        if not hits:
+                            result = f"(no patches found for {description!r})"
+                        else:
+                            b64, note_or_err = render_patches_grid_b64(hits)
+                            if b64 is None:
+                                result = note_or_err
+                            else:
+                                result = (
+                                    f"{len(hits)} patches found for {description!r} via {method}{note_or_err} — "
+                                    "see image. Each is a real 40x16-cell window from a real archive piece, "
+                                    "not synthetic. Study the technique, don't copy the piece verbatim."
+                                )
+                                log_event(conn, agent, shift_id, "tool", result, tool_name=name, tool_call_id=tc.get("id"))
+                                messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tc.get("id"),
+                                    "content": [
+                                        {"type": "text", "text": result},
+                                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                                    ],
+                                })
+                                continue
+                except Exception as e:
+                    result = f"(error searching patches: {e})"
             elif name == "compare_to_reference":
                 try:
                     piece_p = _resolve_workspace_path(fargs.get("piece_path", ""))
