@@ -1,0 +1,38 @@
+model: /Users/octo/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c
+train: true
+data: /Users/octo/agentscii/corpus/mlx_train_data
+seed: 0
+
+fine_tune_type: lora
+mask_prompt: true
+
+lora_parameters:
+  rank: 16
+  scale: 2.0
+  dropout: 0.0
+
+num_layers: 16
+batch_size: 1
+iters: 500
+# Rerun of lora_config_500.yaml at 1/2 the learning rate (2026-09-20).
+# Diagnosis: the first 500-iter run's glyph metrics wandered rather
+# than converged (half_block% 28->36->28->23->15 around a truth of
+# ~20, shade% similarly noisy) and train/val loss inflected at iter300
+# -- 0.7% of one epoch over 29,681 examples. Too early for real
+# overfitting; reads as an LR too high for stable convergence at this
+# batch size. Everything else held identical: same seed (0), same
+# mlx_train_data (parent-piece-level split, zero leak), same
+# max_seq_length/val_batches/rank/scale. Only learning_rate changes,
+# 1.0e-5 -> 5.0e-6. Adapter path is separate so both runs' checkpoints
+# survive for direct curve comparison.
+learning_rate: 5.0e-6
+max_seq_length: 3072
+
+val_batches: 8
+steps_per_report: 20
+steps_per_eval: 100
+save_every: 100
+
+adapter_path: /Users/octo/agentscii/corpus/lora_adapters_lr5e6
+
+grad_checkpoint: false
