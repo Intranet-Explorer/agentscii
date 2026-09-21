@@ -1,0 +1,38 @@
+[
+  {
+    "rel": "2005/viix2ii/ViiX2 - XXX - Roadrunner.ans.npz",
+    "row0": 162,
+    "col0": 27,
+    "orig_half_block_pct": 37.6953125,
+    "orig_shade_pct": 28.3203125,
+    "flat_half_block_pct": 0.0,
+    "flat_shade_pct": 0.0,
+    "flat_n_colors": 8,
+    "flat_png": "corpus/flat_shaded_examples_v3/00_ViiX2 - XXX - Roadrunner_flat.png",
+    "shaded_png": "corpus/flat_shaded_examples_v3/00_ViiX2 - XXX - Roadrunner_shaded.png"
+  },
+  {
+    "rel": "1995/era-1095/ZO-TREE.ANS.npz",
+    "row0": 31,
+    "col0": 38,
+    "orig_half_block_pct": 24.90909090909091,
+    "orig_shade_pct": 28.363636363636363,
+    "flat_half_block_pct": 0.0,
+    "flat_shade_pct": 0.0,
+    "flat_n_colors": 4,
+    "flat_png": "corpus/flat_shaded_examples_v3/01_ZO-TREE_flat.png",
+    "shaded_png": "corpus/flat_shaded_examples_v3/01_ZO-TREE_shaded.png"
+  },
+  {
+    "rel": "1998/awe-16/TNA-FLH2.ANS.npz",
+    "row0": 8,
+    "col0": 35,
+    "orig_half_block_pct": 32.08955223880597,
+    "orig_shade_pct": 18.407960199004975,
+    "flat_half_block_pct": 0.0,
+    "flat_shade_pct": 0.0,
+    "flat_n_colors": 12,
+    "flat_png": "corpus/flat_shaded_examples_v3/02_TNA-FLH2_flat.png",
+    "shaded_png": "corpus/flat_shaded_examples_v3/02_TNA-FLH2_shaded.png"
+  }
+]

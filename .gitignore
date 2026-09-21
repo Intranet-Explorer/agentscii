@@ -55,4 +55,5 @@ corpus/lora_adapters_lr5e6/
 # keep only the numeric results (results.json, checkpoint_summary.jsonl)
 corpus/checkpoint_evals/*/*.ans
 corpus/checkpoint_evals/*/*.png
+corpus/clip_index/
 
