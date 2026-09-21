@@ -1,0 +1,69 @@
+model: /Users/octo/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c
+train: true
+data: /Users/octo/agentscii/corpus/mlx_train_data_flatshaded
+seed: 0
+
+fine_tune_type: lora
+mask_prompt: true
+
+lora_parameters:
+  rank: 16
+  scale: 2.0
+  dropout: 0.0
+
+num_layers: 16
+batch_size: 1
+iters: 500
+# Reframed objective (2026-09-20): flat-block-in -> shaded/detailed,
+# NOT fill-in-the-middle. User direction after the FITM real-piece
+# test showed the model learned texture statistics, not content,
+# because a masked hole is genuinely ambiguous: "Replace title
+# matching... the training objective, not tuning. Stop tuning this
+# adapter... build a 'flat -> shaded' pair generator... the model
+# learns to take a simple block-in and turn it into detailed, shaded
+# work -- which is precisely the skill raze lacks."
+#
+# Dataset: corpus/build_flat_shaded_dataset.py. Input = a window from
+# a REAL corpus piece, flattened+small-region-merged at the FULL PIECE
+# level (corpus/flat_shaded_pairs.py::flatten_piece_and_merge) before
+# windowing -- verified visually against 3 real raze pieces (_reach,
+# _phosphor, _guardian.v1) to land close on color count (8/4/12 vs
+# raze's 5/5/10) and region coherence. Target = the same window,
+# un-flattened (the real original). No mask -- whole window visible
+# in flattened form; task is "apply shading technique", not "guess
+# hidden content".
+#
+# Same learning rate as the diagnosed-good lr5e6 FITM run (that run's
+# val loss was lower at every checkpoint vs the original 1e-5, even
+# though the FITM objective itself was later abandoned -- the LR
+# finding is independent of the objective and carries over).
+learning_rate: 5.0e-6
+# Real-tokenizer measurement on this NEW prompt shape (no mask
+# compression -- both context AND target are FULL un-masked 40x16
+# windows, unlike FIM's partial-mask target): mean=3420, p50=3455,
+# p90=4668, p99=5654, max=6411 -- much longer than the old FIM task's
+# p90=2929 at the same window size. Cap set at 5120 (just above p90,
+# same "just above p90" convention as the FIM cap decision), dataset
+# pre-filtered against this cap with the real tokenizer before this
+# run (2740/2850 train kept).
+max_seq_length: 5120
+
+val_batches: 8
+steps_per_report: 20
+steps_per_eval: 100
+save_every: 100
+
+adapter_path: /Users/octo/agentscii/corpus/lora_adapters_flatshaded
+
+# Enabled after a real Metal OOM crash (2026-09-21, "Insufficient
+# Memory" abort on iter1's first backward pass): this task's much
+# longer un-masked full-window sequences (mean 3420 tokens vs the old
+# FITM task's mean 1936, cap here 5120 vs FITM's 3072) need more
+# transient activation memory during backprop than mx.set_cache_limit
+# alone protects against -- that limit only caps STEADY-STATE cache,
+# not the transient peak during one step's allocation churn (see this
+# file's own module docstring on mx.set_cache_limit's real effect).
+# grad_checkpoint trades some step time for materially lower backward-
+# pass activation memory, directly addressing the actual failure mode.
+grad_checkpoint: true
+

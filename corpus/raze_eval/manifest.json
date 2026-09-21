@@ -1,0 +1,26 @@
+[
+  {
+    "piece": "workspace/rejected/_reach.ans",
+    "label": "_reach",
+    "n_windows_shaded": 4,
+    "original_png": "corpus/raze_eval/_reach.original.png",
+    "flat_png": "corpus/raze_eval/_reach.flat.png",
+    "model_shaded_png": "corpus/raze_eval/_reach.model_shaded.png"
+  },
+  {
+    "piece": "workspace/rejected/_phosphor.ans",
+    "label": "_phosphor",
+    "n_windows_shaded": 4,
+    "original_png": "corpus/raze_eval/_phosphor.original.png",
+    "flat_png": "corpus/raze_eval/_phosphor.flat.png",
+    "model_shaded_png": "corpus/raze_eval/_phosphor.model_shaded.png"
+  },
+  {
+    "piece": "workspace/scratch/_guardian.v1.ans",
+    "label": "_guardian.v1",
+    "n_windows_shaded": 6,
+    "original_png": "corpus/raze_eval/_guardian.original.png",
+    "flat_png": "corpus/raze_eval/_guardian.flat.png",
+    "model_shaded_png": "corpus/raze_eval/_guardian.model_shaded.png"
+  }
+]
