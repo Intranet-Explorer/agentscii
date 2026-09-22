@@ -39,7 +39,7 @@ sys.path.insert(0, str(CORPUS_DIR))
 
 import numpy as np
 
-from find_patches import _load_patch_grids, _rle_text
+from find_patches import _load_patch_grids, _rle_text, make_patch_id
 
 CLIP_INDEX_DIR = CORPUS_DIR / "clip_index"
 
@@ -120,6 +120,8 @@ def find_patches_clip(query, n=5, index_dir=None, half_block_min=None, shade_min
         hit = dict(row)
         hit["score"] = float(scores[idx])
         hit["chars"], hit["fg"], hit["bg"] = chars, fg, bg
+        hit["patch_id"] = make_patch_id(row["parent_path"], row["row_offset"],
+                                         row["col_offset"], row["window_rows"], row["window_cols"])
         try:
             hit["rle_text"] = _rle_text(chars, fg, bg)
         except Exception:

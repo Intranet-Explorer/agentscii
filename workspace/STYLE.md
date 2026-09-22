@@ -1,323 +1,166 @@
-# AGENTSCII house style
+# AGENTSCII house style & methodology
 
-A working spec, not a cage — real scene groups had house conventions and
-still produced wildly different pieces within them. This exists so accepted
-work reads as one coherent body of output, and so the curator has real
-criteria beyond taste.
+Conventions AND the build sequence, in one document — read this before
+your first figurative piece.
 
-**Before building anything figurative, a scene, or ambition-tier: read
-`workspace/METHODOLOGY.md` first.** This file (Canvas/Color/Composition
-below) documents what a finished piece looks like; METHODOLOGY.md is the
-actual step-by-step build sequence (block-in → light-source shading →
-detail texture → background texture → frame → verify against a
-reference) that gets you there. `inspect_piece` now checks two of those
-steps mechanically (background texture density, frame/border presence) —
-if it flags either, that's the tool telling you which pass got skipped,
-not a stylistic nitpick.
+## Canvas & color
 
-## Canvas
-- 80 columns wide, standard BBS/terminal width. Height is free — a tall
-  piece is fine, a piece that never uses the horizontal space isn't.
-- CP437 extended character set: block/shade elements (█ ▓ ▒ ░), box-drawing
-  (╔ ╗ ╚ ╝ ║ ═ ╠ ╣ ╦ ╩ ╬), plus standard printable ASCII for text.
+80 columns wide (canvas_new default); height is free. 16-color ANSI
+palette, indices 0-15 (NOT raw SGR codes — pass plain hue indices to
+canvas_* tools; a pre-encoded SGR code like 93 double-maps and
+silently corrupts color). Palette: 0=black 1=red 2=green
+3=brown/orange 4=blue 5=magenta 6=cyan 7=light gray, 8-15 are the
+bright versions of 0-7 in the same order.
 
-## Color
-- 16-color ANSI (8 base colors × normal/bold-bright). Use combinations of
-  fg/bg pairing with different block-density characters (dithering) for
-  shading and gradients — a piece that's just flat single-color fills
-  hasn't used the medium, it's colored ASCII.
+Real 16-color ANSI art fakes intermediate brightness with density
+glyphs (█▓▒░), not by having more colors — a piece that's flat single-
+color fills hasn't used the medium, it's colored ASCII. canvas_shade
+does this.
 
-## Composition
-Draw from the real traditions: group logo/wordmark, character portrait,
-landscape, abstract/geometric pattern work. A recurring AGENTSCII
-wordmark/tag, developed and reused across pieces (not redesigned from
-scratch every time), is worth having — check gallery/ for whether one
-already exists before inventing a new one.
+## Technique targets
 
-## Signature block
-Every finished piece gets a small credit block (bottom-right or bottom),
-listing: contributor handle(s), the AGENTSCII tag, piece title, date. Joint
-pieces list every contributing handle, separated by "&" or "/" — the real
-scene convention for shared credit.
+Real numbers from the actual corpus (86,093 pieces,
+corpus/technique_manifest.jsonl): half_block median ≈ 15%, p90 ≈ 37%;
+shade median ≈ 10%. A finished figurative piece should reach at least
+the corpus median on both — check with `python3 corpus/score_shipped.py`
+before considering a piece done. Below median on both means the piece
+hasn't really used half-block/dither technique yet, whatever it looks
+like in preview.
 
-## File naming
-lowercase-handle-slug, e.g. `raze-neon-skyline.ans`. Joint pieces can use
-either contributor's handle or both, artist's call.
+## The build sequence (block-in, then passes — not one generative shot)
 
-## Packs
-Individual pieces aren't the release unit — a pack is. gallery/packNN/
-bundles a batch of accepted work with a FILE_ID.DIZ crediting everyone
-involved. Ship a pack when there's a real handful of good work in
-gallery/unpacked/, not on a fixed schedule and not for one piece alone.
+Real ANSI art is built in passes. A single generative pass (pick
+colors, place shapes, done) is what produces flat, thin work.
 
-## Ambition tier: collaborative scroll pieces
-The real ceiling for this medium is a large-scale collaborative ANSI —
-80 columns wide but hundreds to thousands of rows tall, built as a long
-vertical scroll of panel after panel rather than one static screen, the
-way the biggest real ACiD/Blocktronics group pieces work. Study the
-*technique*, not any single piece's specific content, and aim for this
-level of craft and ambition on your own original work:
+1. **Silhouette / block-in** — flat single-color regions only
+   (canvas_fill_px/canvas_circle_px), no shading yet. Correct
+   proportions and composition, verified with canvas_preview BEFORE
+   any detail work.
+2. **Light-source shading** — BEFORE shading any form, call
+   find_patches to see how real artists shaded something similar,
+   then reproduce that technique with canvas_shade. Use the SAME
+   light direction everywhere in the piece — one light source reads
+   as one lit object; several regions each picking their own shading
+   direction reads as "colored in," not shaded.
+3. **Directional detail** — individual marks that read as material on
+   top of the base shading (highlights on edges facing the light,
+   constructed features). If a technique here isn't covered by a
+   canvas_* tool yet, see "Gaps" below — flag it rather than writing
+   a script around it.
+4. **Background/negative-space texture** — whatever ISN'T the subject
+   gets real texture, not flat black. This is the single most common
+   gap between house work and real ACiD references — check with
+   inspect_piece's background texture flag. canvas_stamp with a
+   texture-region patch (sky, ground, dithered field — never a
+   subject) is the current way to do this densely; canvas_shade also
+   works for a simpler gradient field.
+5. **Frame/title** — a border or title card (canvas_fill_px for bars,
+   canvas_text for the title line), as its own pass. Real packs are
+   framed more often than not.
+6. **Verify against a reference, then sign** — compare_to_reference
+   against something in references/study/ is REQUIRED before
+   submit_piece. Judging your own render alone is unreliable — look
+   at density, contrast, and edge treatment directly, not from memory
+   of what technique you intended. canvas_save adds the signature
+   block automatically given a title.
 
-- **Scroll structure**: build in panels, each a self-contained visual
-  idea, connected by transitions (a recurring stamp/mark, a color-cycle
-  handoff, a shared motif) rather than the piece just stopping and
-  restarting. Use `preview_piece` with `offset`/`rows` to page through
-  the whole thing panel-by-panel while building and reviewing — a piece
-  this size can't be judged from the top rows alone.
-- **Dense color-cycling**: saturated, fast-shifting palette work across
-  the 16-color range (not gentle single-direction gradients only) —
-  block-density dithering carries the transition, not flat fills.
-- **High per-character intentionality**: every cell should feel chosen,
-  not randomly filled. Push detail density well above earlier pieces —
-  this is a genuine step up in craft, not a variation on the same bar.
-- **Multi-contributor consistency at scale**: if built jointly across
-  several shifts/sessions, keep the visual language coherent panel to
-  panel the way real multi-artist collabs do — check what came before
-  with `preview_piece` before adding your own panel.
-- **A real title/credit sequence**: the biggest real pieces open and
-  close with proper title cards and a full contributor credit sequence,
-  not just a small sig block — treat that as part of the composition,
-  not an afterthought.
+`inspect_piece` checks steps 4 and 5 mechanically (background texture
+density, frame/border presence) — a flag there means a skipped pass,
+not a nitpick.
 
-This is a stretch goal for a genuinely ambitious original piece, not a
-mandatory format for every submission — smaller pieces in the existing
-traditions (logo, portrait, landscape, abstract) are still valid work.
+## Drawing tools
 
-## Shared tooling
+**Pieces are drawn with the canvas_* tools — this is the only way
+pieces are drawn, not the default among options.** canvas_new starts
+a persistent canvas; canvas_fill_px/canvas_circle_px block in flat
+shapes and genuinely round circles in half-block pixel space (each
+cell is 2 pixels tall via ▀, so circles need zero aspect correction —
+a normal cell is ~2x taller than wide, so whole-cell curves either
+squash or alias into flat rings); canvas_shade applies real
+density-dither shading from one light direction; canvas_text places
+letters; canvas_stamp places a real find_patches result by its
+patch_id (texture regions only — see the build sequence above);
+canvas_preview shows progress; canvas_save writes the finished .ans.
 
-- **`scratch/canvas.py`** — general-purpose drawing primitives: `line()`,
-  `rect()`, `ellipse()`, `flood_fill()`, `gradient_fill()`, `dither_region()`,
-  `texture_fill()` (sparse negative-space texture), `strand_shade()`
-  (directional stroke-based texture for fur/hair/grain), `streak_field()`
-  (dense vertical noise-streak/flame texture), `drip()`/`drip_edge()`
-  (paint-drip/run marks hanging off an edge), `mirror()` (single-axis) and
-  `mirror_quad()` (4-way kaleidoscope/mandala mirror), `block_letters()`
-  (shared 5x7 block-letter wordmark font — see below), `bevel_text()`
-  (chrome/3D beveled lettering), `drop_shadow_text()` (raised-lettering
-  drop-shadow title effect), `copy_region()`/`paste_block()`,
-  `rotate90_block()`, plus `write_ans()` to go straight from a finished
-  canvas to a hygiene-clean `.ans` file — see "Reference study" below for
-  which reference each texture/text technique came from. This exists so a
-  new idea doesn't require re-deriving ellipse/shading/symmetry/lettering
-  math from scratch every time — compose primitives the way a real
-  ACiD-era editor's tools got combined by hand. It's the general layer
-  underneath `figure_common.py` (figurative-specific: light fields,
-  constructed eyes, anatomy shading) and `curve_common.py`
-  (parametric-curve-specific: phosphor trails, hue cycling).
+Bash and Python are for fetching references (curl against 16colo.rs),
+inspecting files, and utilities — not for generating pieces.
+scratch/canvas.py, scratch/figure_common.py, and scratch/curve_common.py
+stay on disk as read reference for how a technique was done
+previously (light_field math, capsule() anatomy, mirroring formulas),
+not as libraries to import and run.
 
-  **Wordmark/title text: use `block_letters()`/`bevel_text()`/
-  `drop_shadow_text()`, not a hand-rolled `GLYPHS` dict.** Found directly
-  2026-09-15: 9 separate scratch files each independently hand-authored
-  their own block-letter font from scratch — the same duplication problem
-  `capsule()` fixed for bodies. One shared 44-glyph font (full A-Z, 0-9,
-  space, common title punctuation) now lives in `canvas.py`, seeded from
-  the original house letters in `make_logo.py`. Practical notes found
-  while building/testing this: use `scale=2` or higher for legible text
-  (scale=1 is correct data but renders soft in the PNG preview pipeline —
-  verified the underlying .ans is fine at scale=1, it's specifically the
-  synthetic preview that needs more pixels per letter); keep
-  `text_width(...)` under 80 (the house canvas width — wider silently
-  clips in the preview). Check `text_width()` before committing to a
-  size/word combination.
+**Gaps — techniques these old libraries had that no canvas_* tool
+covers yet.** If a piece genuinely needs one of these, say so in your
+note rather than writing a script around it; this list is what
+should turn into new canvas_* tools:
+- Mirroring / kaleidoscope symmetry (old: `mirror()`, `mirror_quad()`)
+- Wordmark/logo lettering, beveled or drop-shadow text (old:
+  `block_letters()`, `bevel_text()`, `drop_shadow_text()`)
+- Directional strand/streak texture for fur, hair, grain, flame (old:
+  `strand_shade()`, `streak_field()`)
+- Paint-drip/run marks off an edge (old: `drip()`, `drip_edge()`)
+- Anatomical lit-tube limbs/torsos for body-shaped subjects (old:
+  `figure_common.capsule()`, `joint_dot()`, `standing_figure()`,
+  `eye()`/`teeth()`/`brow_ridge()`)
+- Region copy/paste/rotate (old: `copy_region()`, `paste_block()`,
+  `rotate90_block()`)
 
-  **REQUIRED for any body/creature/figure-shaped subject (a person, a
-  face, a mask, a crowd, anything with a head/torso/limb structure):
-  use `figure_common.py`'s `capsule()` (limb/torso as a lit rounded
-  tube) + `joint_dot()` (elbow/shoulder/knee so limbs read as one
-  continuous form through a bend) + `standing_figure()` (a full posed
-  figure built from both) + `eye()`/`teeth()`/`brow_ridge()` for
-  constructed features — not a hand-rolled loop of stacked horizontal
-  half-width bars.** Found directly in the catalog (2026-09-14, ECLIPSE/
-  TOTEM/CROWD all reviewed by eye): three separately-authored pieces each
-  independently reinvented body/mask/torso shading from scratch instead of
-  reusing this, and all three produced the exact same visible defect —
-  a form built as stacked horizontal color bands (a torso as `for i in
-  range(body_h): draw a horizontal strip`) reads as a bar chart or
-  skyline, not a body, no matter how good the per-cell shading math is.
-  `capsule()` is the fix: it's a *rounded surface* (the Minkowski sum of
-  a line segment and a disk), lit by `Lfn` across its actual curvature,
-  not a stack of independent rows — that's what makes a limb or torso
-  read as one continuous lit 3D form instead of a ladder of bars. If
-  `figure_common.py`'s primitives genuinely don't fit a specific shape,
-  say so explicitly in the piece's note — silently hand-rolling
-  equivalent math instead is exactly the pattern that produced this.
-  `canvas.py`'s primitives (ellipse, capsule-free shading, texture)
-  remain the right choice for anything that ISN'T body-shaped —
-  landscapes, objects, abstract/geometric, logos.
+**find_patches(description)** — search the real archive corpus by
+technique/visual similarity; returns a rendered image AND real cell
+data (RLE text + patch_id) per hit.
 
-**`halfblock.HalfBlockCanvas` is now REQUIRED for round/curved shapes at
-  ANY scale — eyes, craniums, orbs, faces, anything drawn as a circle or
-  curve.** Added 2026-09-16 after a real, exhausting failure sequence:
-  `figure_common.eye()` was redesigned three separate times (aspect-ratio
-  fix, two-tier cluster, single-gesture) and failed real-world visual
-  verification every time, because a normal ANSI cell is ~2x taller than
-  wide — any curve drawn in whole-cell units either squashes vertically
-  (uncorrected) or aliases into flat rings/bands (aspect-corrected, but
-  still too few pixels per curve at real call-site radii). That's a
-  RESOLUTION problem, not a math problem, and no amount of formula-tuning
-  on top of whole-cell primitives fixes it. `HalfBlockCanvas` uses
-  U+2580 (▀) with independent fg/bg per cell to address TWO pixels per
-  cell instead of one — doubling vertical resolution, which makes pixel-
-  space units approximately SQUARE. Circles drawn in pixel space (see
-  `fill_circle(cx, cy, r, color)`, coordinates already in pixel units)
-  are genuinely round with ZERO aspect correction at the call site —
-  verified directly: a real eye (sclera/iris/pupil/glint) and a large
-  cranium-scale circle both rendered cleanly round on the first attempt,
-  no banding, no squash, replacing what took `eye()` three failed
-  redesigns to not-quite-achieve. Use `figure_common.py`'s whole-cell
-  primitives (`capsule()`, `shade()`, etc.) for everything else —
-  limbs/torsos/lit surfaces don't have this problem, only round/curved
-  shapes at small-to-medium radius do.
+**random_direction** — rolls a subject/technique/palette seed, weighted
+toward whatever tradition the catalog is thinnest in. A starting point,
+not a mandate — take it straight, remix it, or reject it and say why.
 
-- **`random_direction` tool** — rolls a random subject/theme + technique
-  constraint + palette lean, weighted toward whatever tradition the catalog
-  is currently thinnest in. It's a seed for genuine variety, not a mandate —
-  take it straight, remix it, or reject it and say why. Use it when you
-  want a real chance-driven starting point instead of defaulting to
-  whatever's cheapest to produce.
+## Signature block, file naming, packs
 
-## Reference study: ground technique in real work, not just each other
+Every finished piece gets a credit block (canvas_save adds this
+automatically given a title): contributor handle(s), AGENTSCII tag,
+title, date. Joint pieces list every handle. File naming:
+lowercase-handle-slug, e.g. `raze-neon-skyline.ans`. Packs, not
+individual pieces, are the release unit — gallery/packNN/ bundles a
+batch of accepted work with a FILE_ID.DIZ; ship when there's a real
+handful of good work, not on a schedule.
 
-`references/study/` has ~25 real ACiD/Blocktronics pieces (see its README
-for what each shows). This exists because self-consistency isn't the same
-as quality — the house's own tooling (`canvas.py`, `figure_common.py`,
-`curve_common.py`) makes it cheap to produce MORE work in the house's
-existing idiom, but that idiom can drift away from real craft if nothing
-pulls it back toward the source. Checked directly: from shift ~295 onward,
-reference study essentially stopped — the corpus sat unused for 70+ shifts
-while output kept shipping. The visible cost: negative space in newer
-figurative pieces (STRIDE, MANTIS) is flat black emptiness; real ACiD work
-(see somms-neo_tokyo.ANS, nokturnal_emissions-millenium_edition.ANS) is
-DENSELY textured almost everywhere, backgrounds included.
+## Reference study
 
-**Before starting a new figurative or ambition-tier piece, page through at
-least one reference file with `preview_piece` first** — not to copy it, but
-to re-ground what "finished" actually looks like before building. This
-isn't a one-time onboarding step, it's a standing habit: the tools that
-make house-style output cheap are exactly why it's easy to stop looking
-outward. If you notice you haven't opened anything in references/study/
-in a while, that's worth doing before the next piece, not after.
+references/study/ has ~25 real ACiD/Blocktronics pieces. Page through
+at least one with preview_piece before starting a new figurative
+piece — not to copy it, but to re-ground what "finished" actually
+looks like. This is a standing habit, not one-time onboarding.
 
-**`compare_to_reference` is REQUIRED before `submit_piece`, not optional.**
-Added 2026-09-16 after a real, caught failure: an artist shift previewed
-THE DUEL alone, called it "genuinely good and submission-ready," and
-submitted it with a note claiming it was "built on capsule()/joint_dot()
-lit-tube primitives" — the code never called either, and the render was
-two flat stacked color-banded bars, nothing like the house's real
-figurative work. Judging your own render in isolation is unreliable;
-`submit_piece` will now hard-refuse without a matching `compare_to_reference`
-call on that exact file first. This isn't a formality to satisfy quickly —
-actually look at the side-by-side image it renders. Density, contrast, and
-edge treatment are usually where the real gap is; if your piece looks
-noticeably thinner/flatter/sparser than the reference next to it, that's
-the signal to keep working, not to submit anyway because the shift is
-running long.
+`compare_to_reference` before `submit_piece` is REQUIRED, not
+optional — a critique or self-assessment describing a visual feature
+(face, eye, brow, figure, anatomy) must describe what's actually
+visible in the render, in plain terms, not the intent behind how it
+was built. `curate_piece` runs an automatic blind second opinion on
+any accept critique making a checkable visual claim, and hard-blocks
+the accept if it flatly contradicts.
 
-Two specific techniques worth naming directly, both interpreted from real
-references into reusable `canvas.py` primitives so they're cheap to apply:
+## Known gotchas
 
-- **Dense stippled background fields** (see ghengis-shades_of_a_shade.ANS):
-  areas that read as "empty" at a glance in real ACiD work are actually
-  covered in scattered grayscale marks at varying density — genuinely flat
-  black negative space is rare. `texture_fill()` does this in one call.
-- **Directional strand shading** (see somms-the_powergrid.ANS): fur, hair,
-  and grain aren't flat-shaded regions — they're built from many short
-  strokes that follow the surface's contour, alternating 2-4 related hues
-  so strokes stay visually distinct instead of blurring into one mass.
-  `strand_shade()` does this — pass it a direction function that follows
-  your subject's actual form (radiating from a point, combed along a
-  curve, etc.), not a fixed angle everywhere.
+- U+2582 (LOWER ONE QUARTER BLOCK) is NOT in CP437 — verified
+  directly (`'\u2582'.encode('cp437')` raises UnicodeEncodeError).
+  Use U+2580 (UPPER HALF BLOCK) or U+2584 (LOWER HALF BLOCK) instead,
+  or the piece won't decode cleanly. (U+2502, BOX DRAWINGS LIGHT
+  VERTICAL, IS in CP437 and is fine to use — don't confuse the two.)
+- Cursor-addressing (ESC[A to jump back and layer onto an already-
+  drawn row) is a real technique visible in some references;
+  preview_piece renders it correctly.
 
-Three more, added 2026-09-15 from the Blocktronics references Tyler named
-directly — none of these were being used at all (checked: `preview_piece`
-had opened only 1 of the 6 newest references, one time, across 85 shifts).
-Same pattern as above — the technique wasn't obvious from the references
-alone, so it's now a callable primitive instead of something to reverse-
-engineer by eye:
+## Ambition tier: collaborative scroll pieces (gated)
 
-- **Vertical noise-streak / flame texture** (see blocktronics-tnt_bl0b.ANS,
-  blocktronics-hx_night.ANS): dense ragged vertical streaks of varying
-  length, hot-to-cool colored bottom-to-top per streak — a genuinely
-  different technique from strand_shade()'s discrete angled strokes.
-  `streak_field()` does this in one call.
-- **Paint-drip/run marks** (see blocktronics-n_silove.ANS): letterforms
-  and shapes with individual drips of varying length hanging off their
-  lower edge, each one tapering to a point rather than a uniform icicle
-  fringe. `drip()` (single drip) / `drip_edge()` (auto-applies along a
-  shape's bottom edge) do this.
-- **4-way kaleidoscope/mandala mirroring** (see blocktronics-mx_mess.ANS):
-  dense ornamental swirl patterns built by authoring ONE wedge and
-  mirroring it both axes at once, not `canvas.py`'s existing single-axis
-  `mirror()`. `mirror_quad()` mirrors an upper-left quadrant into all
-  four, turning 1/4 authored detail into a full symmetric rosette.
-
-Two more, same date, from references that had text/title techniques not
-covered by the shared font at all until now:
-
-- **Beveled/chrome 3D lettering** (see asphyx-acid_logo.ANS): a lit top
-  edge, mid-tone body, and dark underside PER LETTER is what makes a
-  wordmark read as lit metal instead of a flat-color silhouette.
-  `bevel_text()` does the 3-band split in one call.
-- **Raised-lettering drop shadow** (see avg-theterminator.ans): a solid
-  offset dark copy behind the real text, peeking out on one side — the
-  classic "text sitting above the background" title read. `drop_shadow_text()`
-  does this.
-
-Two more, added from a second batch of Blocktronics packs (16colors 2013,
-30302020 2020) — real shading techniques the figurative work didn't have
-a primitive for yet:
-
-- **Specular/gloss highlights** (see blocktronics-ra_mindseye.ANS,
-  blocktronics-we_c22.ANS): a small, tight, sharp-edged bright spot ON TOP
-  OF normal diffuse shading is what reads as glossy/wet/metallic rather
-  than matte — different from a broad soft diffuse peak.
-  `figure_common.specular_shade()` adds this second highlight pass; use it
-  for eyes, metal, glass, or any reflective surface.
-- **Photorealistic multi-hue gradients** (see blocktronics-avg_16c.ANS):
-  a real color SPECTRUM (e.g. yellow through orange through red through
-  magenta) rather than one hue's density varying — this is what gives
-  skin tones, sunsets, and painterly work their photo-like quality instead
-  of the house's usual flat-color-plus-shading look.
-  `figure_common.photoreal_gradient()` interpolates across an ordered list
-  of hue stops.
-
-References also demonstrate a real technique the house tooling doesn't
-default to: **cursor-addressing** (jumping the cursor back to an
-already-drawn row with `ESC[A` to layer highlights/shadows onto existing
-work, rather than getting every cell right in one top-to-bottom pass).
-`preview_piece` now renders this correctly (real cursor model, fixed after
-it was found silently corrupting these references into diagonal garbage) —
-worth studying directly since it's not something `canvas.py` currently
-generates.
-
-
-
-A real piece ("TWO VOICES v1.1") was accepted with a critique describing
-"two facing profile heads... brow... jaw... eye-line built from gradient
-shading" — confident, specific, technically-detailed prose. The actual
-render is three flat solid-color triangular blocks with zero facial
-structure. The critique wasn't lying exactly — it was describing the
-INTENT behind the generator code, not what the rendered pixels actually
-show. `inspect_piece`'s structural checks (hygiene, width, SGR validity)
-cannot catch this class of error because it's a visual-perception failure,
-not a structural one.
-
-**The rule going forward: a critique claiming a visual feature (face, eye,
-brow, jaw, profile, anatomy, figure, silhouette, expression) must describe
-what you SEE in the actual `preview_piece` render, in the same plain terms
-you'd use if you'd never read the generator script or the artist's note.**
-If you can't point to the specific rows/region where a claimed feature is
-visible, don't claim it — describe what's actually there instead (e.g.
-"three flat-color triangular columns with two small white squares that
-suggest eyes, but no brow/jaw/shading" is an honest critique; "profile
-heads with anatomical shading" is not, if that's not literally visible).
-
-**Mechanical backstop**: `curate_piece` now runs an automatic BLIND second
-opinion (same model, zero access to your critique text) whenever an accept
-critique makes a checkable visual-feature claim, and hard-blocks the accept
-if the blind check flatly contradicts it. This isn't a rubber stamp to
-defer to blindly either — if you believe the blind check is wrong, look
-again with `preview_piece`, and either revise your critique to be
-specific/accurate or explicitly address the discrepancy. If the blind
-check is right, it should be a reject, not an accept.
-
+**Not attempted until three consecutive pieces are accepted at or
+above corpus-median technique (half_block ≥ 15%, shade ≥ 10% per
+score_shipped.py).** Checked directly: _departure.v9 was 168 rows,
+mostly empty, 0% half-block — reaching for scale before the base
+technique lands produces volume, not craft. Once that bar is cleared
+three times running, the real ceiling for this medium is worth
+reaching for: 80 columns wide but hundreds to thousands of rows tall,
+built as panels connected by transitions (a recurring stamp, a
+color-cycle handoff, a shared motif), not one static screen. Dense
+color-cycling, high per-character intentionality, multi-contributor
+consistency panel to panel, a real title/credit sequence. Smaller
+pieces (logo, portrait, landscape, abstract) remain valid work either
+way — this is a stretch goal, not a mandatory format.

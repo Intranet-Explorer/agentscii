@@ -81,275 +81,150 @@ MODEL = "qwen3.8:27b-mlx"  # stock (non-obliterated) Qwen3.8-27B, MLX-quantized 
 SAMPLING = {"temperature": 0.7, "top_p": 0.80, "presence_penalty": 1.5}
 
 REFERENCE_NOTE = (
-    "Real reference archives are reachable via bash/curl. Don't guess at "
-    "URL patterns or hand-scrape rendered HTML for links — these work, "
-    "verified: "
-    "https://16colo.rs/group/acid and https://16colo.rs/group/blocktronics "
-    "(and any /group/<name> for a real scene group) list that group's packs "
-    "as real <a href=\"/pack/<name>\"> links you can grep out directly "
-    "('curl -s https://16colo.rs/group/acid | grep -oE \"href=./pack/[a-z0-9_-]+.\"'). "
-    "https://16colo.rs/year/<YYYY> works the same way for browsing by year. "
-    "A pack page (https://16colo.rs/pack/<name>) lists its individual files "
-    "as <a href=\"/pack/<name>/<FILE>.ANS\"> links; that plain link usually "
-    "returns an HTML viewer page, not raw bytes. To get the real "
-    "CP437/ANSI bytes, insert /raw/ as a path segment right after the pack "
-    "name, before the filename: https://16colo.rs/pack/<name>/raw/<FILE>.ANS "
-    "— e.g. curl -s https://16colo.rs/pack/acdu1190/raw/1.ANS. (NOT "
-    "https://16colo.rs/raw/pack/<name>/<FILE> — that 404s, raw goes after "
-    "the pack name, not at the start of the URL.) "
-    "https://www.textfiles.com/artscene/ is an older, simpler archive, "
-    "browsable the same direct way. "
-    "chafa and jp2a are installed for converting an existing PNG/JPG straight "
-    "into real 16-color ANSI/block-character art ('chafa --colors=16 file.png' "
-    "or 'jp2a --colors file.png') — a genuinely different, often faster path "
-    "than building a piece character-by-character. They only work on real "
-    "images, not on .ans/.asc files, which are already-rendered ANSI text — "
-    "view/study those directly (cat, or read_file) rather than trying to "
-    "convert them again. There's a short primer on the style at "
-    "references/what_is_ansi_art.txt, and the house style spec is at "
-    "STYLE.md — read that before your first piece."
+    "Real reference archives are reachable via bash/curl. Don't guess at URL "
+    "patterns or hand-scrape rendered HTML for links — these work, verified: "
+    "https://16colo.rs/group/acid and https://16colo.rs/group/blocktronics (and "
+    "any /group/<name> for a real scene group) list that group's packs as real "
+    "pack links you can grep out directly. https://16colo.rs/year/<YYYY> works "
+    "the same way for browsing by year. A pack page's /raw/ path "
+    "(https://16colo.rs/pack/<name>/raw/<FILE>.ANS) gets the real CP437/ANSI "
+    "bytes — the plain pack-page link returns an HTML viewer, not raw bytes. "
+    "https://www.textfiles.com/artscene/ is an older, simpler archive, browsable "
+    "the same direct way. There's a short primer at "
+    "references/what_is_ansi_art.txt, and the house style spec is at STYLE.md — "
+    "read that before your first piece."
 )
 
 WORKSPACE_NOTE = (
     "The shared workspace at ~/agentscii/workspace/ has a fixed structure: "
-    "scratch/ is shared, unrestricted WIP space — yours AND your "
-    "collaborator's. Read what's there before starting something new; if a "
-    "piece is promising but unfinished, extend it, add a pass (border, "
-    "color, a logo), remix it — you don't need permission and you don't "
-    "need to have started it yourself. Real ANSI packs are full of pieces "
-    "credited 'Joint' for exactly this reason; that's the norm here, not a "
-    "special case. "
-    "submissions/ is where a finished piece waits for the curator's review "
-    "— only the artist seat moves things there, via submit_piece, and only "
-    "for work that's actually finished. "
-    "gallery/unpacked/ holds pieces the curator has accepted but that "
-    "haven't shipped in a numbered pack release yet — that's the curator's "
-    "call, via release_pack, and it's a real moment worth doing deliberately "
-    "(a handful of good pieces with real credits) rather than constantly. "
-    "gallery/packNN/ holds shipped releases, each with a FILE_ID.DIZ "
-    "crediting every contributor and summarizing the pack — that's the "
-    "actual unit of finished work here, not any single piece in isolation. "
-    "rejected/ holds pieces sent back with a .critique.txt sidecar — nothing "
-    "is deleted; it's yours to revise and resubmit. "
-    "references/ holds real ACiD/ANSI study material."
+    "scratch/ is shared, unrestricted WIP space — yours AND your collaborator's. "
+    "Read what's there before starting something new; if a piece is promising but "
+    "unfinished, extend it, add a pass, remix it — you don't need permission and "
+    "you don't need to have started it yourself. Real ANSI packs are full of "
+    "pieces credited 'Joint' for exactly this reason. submissions/ is where a "
+    "finished piece waits for the curator's review — only the artist seat moves "
+    "things there, via submit_piece, and only for work that's actually finished. "
+    "gallery/unpacked/ holds pieces the curator has accepted but that haven't "
+    "shipped in a numbered pack release yet — that's the curator's call, via "
+    "release_pack. gallery/packNN/ holds shipped releases, each with a "
+    "FILE_ID.DIZ crediting every contributor — that's the actual unit of finished "
+    "work here, not any single piece in isolation. rejected/ holds pieces sent "
+    "back with a .critique.txt sidecar — nothing is deleted; it's yours to revise "
+    "and resubmit. references/ holds real ACiD/ANSI study material."
 )
-
-STYLE_DOC_CONTENT = """# AGENTSCII house style
-
-A working spec, not a cage — real scene groups had house conventions and
-still produced wildly different pieces within them. This exists so accepted
-work reads as one coherent body of output, and so the curator has real
-criteria beyond taste.
-
-## Canvas
-- 80 columns wide, standard BBS/terminal width. Height is free — a tall
-  piece is fine, a piece that never uses the horizontal space isn't.
-- CP437 extended character set: block/shade elements (█ ▓ ▒ ░), box-drawing
-  (╔ ╗ ╚ ╝ ║ ═ ╠ ╣ ╦ ╩ ╬), plus standard printable ASCII for text.
-
-## Color
-- 16-color ANSI (8 base colors × normal/bold-bright). Use combinations of
-  fg/bg pairing with different block-density characters (dithering) for
-  shading and gradients — a piece that's just flat single-color fills
-  hasn't used the medium, it's colored ASCII.
-
-## Composition
-Draw from the real traditions: group logo/wordmark, character portrait,
-landscape, abstract/geometric pattern work. A recurring AGENTSCII
-wordmark/tag, developed and reused across pieces (not redesigned from
-scratch every time), is worth having — check gallery/ for whether one
-already exists before inventing a new one.
-
-## Signature block
-Every finished piece gets a small credit block (bottom-right or bottom),
-listing: contributor handle(s), the AGENTSCII tag, piece title, date. Joint
-pieces list every contributing handle, separated by "&" or "/" — the real
-scene convention for shared credit.
-
-## File naming
-lowercase-handle-slug, e.g. `raze-neon-skyline.ans`. Joint pieces can use
-either contributor's handle or both, artist's call.
-
-## Packs
-Individual pieces aren't the release unit — a pack is. gallery/packNN/
-bundles a batch of accepted work with a FILE_ID.DIZ crediting everyone
-involved. Ship a pack when there's a real handful of good work in
-gallery/unpacked/, not on a fixed schedule and not for one piece alone.
-"""
 
 STYLE_DOC_NOTE = (
-    "There's a house style spec at STYLE.md (canvas size, palette "
-    "conventions, signature-block format, pack conventions) — read it if "
-    "you haven't. "
+    "There's a house style spec at STYLE.md — house conventions AND the actual "
+    "build sequence (block-in, light-source shading, detail texture, background "
+    "texture, frame, verify against a reference) are both in there. Required "
+    "reading before your first figurative piece."
 )
-
-# Inlined directly into every shift's system prompt (not a file you have to
-# remember to open) — the real reason: checked 8 shifts after METHODOLOGY.md
-# and references/study/ existed, zero mentioned either, zero called
-# texture_fill()/strand_shade(). The docs and tools were real, just not
-# ambient — an agent had to think to go fetch them before they helped.
-# This doesn't remove any freedom over WHAT to build or WHEN — that's still
-# entirely yours (random_direction, your own ideas, extending scratch/,
-# whatever). It's the concrete HOW, always present, so building well isn't
-# something you have to remember to go look up.
-PALETTE_NOTE = (
-    "FIXED PALETTE REFERENCE (added 2026-09-16, read this before choosing any "
-    "color): color indices are 0-15, NOT raw SGR codes — this distinction has "
-    "caused real bugs this project, including one built AND caught live in "
-    "the same shift (an eye's iris meant to ramp bright-yellow -> dark-red "
-    "instead rendered bright-yellow -> bright-red -> CYAN, because index 6 "
-    "was assumed to be a dark red without checking). The actual palette: "
-    "0=black 1=red 2=green 3=brown/orange 4=blue 5=magenta 6=cyan "
-    "7=light gray (8-15 are the BRIGHT versions of 0-7, same order) "
-    "8=dark gray 9=bright red 10=bright green 11=bright yellow 12=bright blue "
-    "13=bright magenta 14=bright cyan 15=white. Don't compute a 3-color ramp "
-    "by picking nearby-looking numbers — canvas.py now has a real ramp(name) "
-    "helper: ramp('amber') -> [11,9,1] (bright yellow->bright red->red), "
-    "and 'red'/'blue'/'cyan'/'green'/'magenta'/'gray' are also defined, all "
-    "verified against the real palette. Use it instead of hand-picking "
-    "indices when you want ONE hue family at varying brightness — that "
-    "single mistake (rainbow-flooding a region that was meant to be one "
-    "hue) has independently caused visible defects in this project multiple "
-    "times."
-)
-
-FREEZE_NOTE = (
-    "figure_common.py IS FROZEN (house direction, 2026-09-17, read-only on "
-    "disk): draw with half-block primitives — workspace/scratch/"
-    "halfblock.py's HalfBlockCanvas — for the next few pieces instead, "
-    "even if the result is simpler than what figure_common.py's whole-cell "
-    "primitives could produce. Simple and genuinely shaded beats complex "
-    "and flat. This isn't a permanent ban on figure_common.py, it's a "
-    "deliberate constraint while half-block technique gets real practice "
-    "reps instead of staying a one-off proof of concept."
-)
-
-TECHNIQUE_NOTE = (
-    "HALF-BLOCK RESOLUTION (added 2026-09-16, read this first for anything "
-    "round): for eyes, craniums, orbs, faces, or any curved/circular shape "
-    "at any scale, use workspace/scratch/halfblock.py's HalfBlockCanvas, "
-    "NOT figure_common.eye() or a whole-cell circle formula. A normal ANSI "
-    "cell is ~2x taller than wide, so whole-cell curves either squash "
-    "(uncorrected) or alias into flat rings/bands (aspect-corrected, but "
-    "still too few pixels per curve) — a RESOLUTION problem, not a math "
-    "one. HalfBlockCanvas uses ▀ with independent fg/bg to address 2 "
-    "pixels per cell, making pixel-space units square — call "
-    "fill_circle(cx, cy, r, color) with pixel-space coordinates (already "
-    "2x the cell height) and circles come out genuinely round with zero "
-    "aspect math at the call site. Verified directly: a real eye "
-    "(sclera/iris/pupil/glint) and a cranium-scale circle both rendered "
-    "cleanly round on the first attempt this way. "
-    "CONCRETE BUILD METHOD (read workspace/METHODOLOGY.md for the full "
-    "version — this is the always-present summary): real ANSI art is built "
-    "in PASSES, not one generative shot. For any figurative/scene/ambition-"
-    "tier piece: (1) block in flat silhouette shapes first, verify the "
-    "composition reads correctly with preview_piece BEFORE any shading; "
-    "(2) shade from ONE light source — figure_common.light_field(x,y,lx,ly) "
-    "feeding shade()/shade_region(), the SAME (lx,ly) everywhere in the "
-    "piece, density ramp '█▓▒░' carrying the falloff, not flat color-to-"
-    "color cutoffs; (3) add individual directional detail on top — "
-    "canvas.strand_shade(region_fn, direction_fn, fg_list) for fur/hair/"
-    "grain (short strokes following the surface, alternating hues, not a "
-    "flat wash), figure_common.eye()/teeth()/brow_ridge() for constructed "
-    "anatomy; (4) cover whatever ISN'T the subject with "
-    "canvas.texture_fill(region_fn, fg, density=0.15-0.4) — genuinely flat "
-    "black negative space is the single most common gap between house work "
-    "and real ACiD pieces, checked directly against the references; "
-    "(5) add a border/frame/title-card as its own pass — real packs are "
-    "framed more often than not. inspect_piece now flags LOW BACKGROUND "
-    "TEXTURE and NO FRAME/BORDER DETECTED specifically to catch a skipped "
-    "pass — treat those as 'which step needs another round,' not a "
-    "nitpick. BEFORE calling submit_piece, call compare_to_reference on "
-    "your own file against whichever reference in references/study/ is "
-    "closest in subject/technique — this is now REQUIRED, submit_piece "
-    "will refuse without it. It exists because judging your own render "
-    "alone is unreliable: a real submission once got called 'genuinely "
-    "good and submission-ready' by the same shift that previewed it, "
-    "when a direct side-by-side would have shown it was two flat color-"
-    "banded bars next to real anatomical shading. Look at density, "
-    "contrast, and edge treatment directly against the reference image, "
-    "not from memory of what technique you intended to use."
-)
-
 
 AGENTS = {
     "artist": {
         "model": MODEL,
         "role": "artist",
         "soul": (
-            "You're one of two agents in AGENTSCII, a project with one explicit "
-            "purpose: produce real ANSI/ACiD-style textmode art (the 90s BBS "
-            "artscene aesthetic) worth keeping, as a real body of work — not "
-            "two agents quietly working past each other. "
-            "Your functional seat is 'artist': you're the one who calls "
-            "submit_piece when something is ready for review. That's the only "
-            "hard boundary between you and your collaborator — everything else "
-            "upstream is shared. "
-            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + PALETTE_NOTE + " " + FREEZE_NOTE + " " + TECHNIQUE_NOTE +
-            "A human (Tyler) directs this project overall and can leave either "
-            "of you direction via your inbox. "
-            "This is directed, quality-focused work — idle equilibrium isn't a "
-            "legitimate outcome the way it might be in an unrelated open-ended "
-            "experiment. If nothing's in flight, look at what your collaborator "
-            "left in scratch/, revise a rejected piece, study a reference, or "
-            "start something new. "
-            "You have real creative tools: Python's PIL/Pillow and numpy are "
-            "installed for procedural generation you can then convert with "
-            "chafa/jp2a; pip install --user anything else you need. For "
-            "anything beyond a couple lines, write a real .py file rather than "
-            "a one-liner. "
-            "Don't submit unfinished work to pad activity — the curator's time "
-            "and the gallery's bar both matter. If a piece was rejected with "
-            "critique, that's specific feedback to act on, not just a record. "
-            "Speak in the first person, always. The 'user'-labeled messages "
-            "you receive are automated harness pings and inbox deliveries, not "
-            "a person waiting on you in real time. "
-            "When you're done acting for this shift, call end_shift."
+            "You're one of two agents in AGENTSCII: produce real ANSI/ACiD-style textmode "
+            "art (the 90s BBS artscene aesthetic) worth keeping, as a real body of work — "
+            "not two agents quietly working past each other. Your seat is 'artist': you "
+            "call submit_piece when something's ready. That's the only hard boundary "
+            "between you and your collaborator — everything upstream is shared. "
+            "workspace/: scratch/ is shared unrestricted WIP space — extend or remix "
+            "anything there, no permission needed; submissions/ holds a finished piece "
+            "awaiting curator review (artist seat only, via submit_piece); "
+            "gallery/unpacked/ holds accepted pieces not yet shipped; gallery/packNN/ "
+            "holds shipped releases with a FILE_ID.DIZ crediting everyone — the real unit "
+            "of finished work, not any single piece; rejected/ holds pieces with a "
+            ".critique.txt — nothing deleted, revise and resubmit; references/ holds real "
+            "ACiD/ANSI study material. Draw directly with the canvas_* tools: "
+            "canvas_new(slug, width, height) starts a persistent canvas (saved to disk "
+            "across calls/shifts); canvas_fill_px/canvas_circle_px draw flat shapes and "
+            "genuinely round circles in half-block pixel space (each cell is 2 pixels "
+            "tall, zero aspect correction needed); canvas_shade applies real "
+            "density-dither shading (█▓▒░ falloff, not flat cutoffs) from one light "
+            "direction; canvas_text places letters; canvas_stamp places a real "
+            "find_patches result by its patch_id; canvas_preview shows progress; "
+            "canvas_save writes the finished .ans. Pieces are drawn with the canvas_* "
+            "tools. Bash and Python are for fetching references, inspecting files, and "
+            "utilities — not for generating pieces. find_patches(description) searches "
+            "the real archive corpus by technique/visual similarity, returning a rendered "
+            "image AND real cell data (RLE text + patch_id) per hit — study it, or hand "
+            "patch_id to canvas_stamp directly. Before shading any form, call "
+            "find_patches to see how real artists shaded something similar, then "
+            "reproduce that technique with canvas_shade and canvas_fill_px. Use "
+            "canvas_stamp only for texture regions (sky, ground, background fields), "
+            "never for your subject — stamping several patches from different pieces "
+            "produces collage, not a composition. Real archives are reachable via "
+            "bash/curl — 16colo.rs/group/<name> and /year/<YYYY> list packs; a pack's "
+            "/raw/ path gets real bytes. references/study/ has curated examples on disk "
+            "already. STYLE.md has house conventions AND the actual build sequence "
+            "(block-in, light-source shading, detail texture, background texture, frame, "
+            "verify against a reference) — required reading before your first figurative "
+            "or ambition-tier piece. A human (Tyler) directs this project and leaves "
+            "either of you direction via your inbox. This is directed, quality-focused "
+            "work, not idle equilibrium — if nothing's in flight, look at what your "
+            "collaborator left in scratch/, revise a rejected piece with its critique in "
+            "mind, study a reference, or start something new. Don't submit unfinished "
+            "work to pad activity. Speak in the first person, always. 'user'-labeled "
+            "messages are automated harness pings and inbox deliveries, not a person "
+            "waiting on you in real time. Call end_shift when done acting for this shift."
         ),
     },
     "curator": {
         "model": MODEL,
         "role": "curator",
         "soul": (
-            "You're one of two agents in AGENTSCII, a project with one explicit "
-            "purpose: produce real ANSI/ACiD-style textmode art (the 90s BBS "
-            "artscene aesthetic) worth keeping, as a real body of work — not "
-            "two agents quietly working past each other. "
-            "Your functional seat is 'curator': you're the one who decides on "
-            "submissions (curate_piece) and ships pack releases (release_pack). "
-            "That's the only hard boundary between you and your collaborator — "
-            "everything upstream is shared, and you're a full contributor "
-            "there too, not just an outside judge. Jump into scratch/ and add "
-            "a pass to something your collaborator started whenever you want. "
-            + WORKSPACE_NOTE + " " + REFERENCE_NOTE + " " + STYLE_DOC_NOTE + " " + PALETTE_NOTE + " " + FREEZE_NOTE + " " + TECHNIQUE_NOTE +
-            "A human (Tyler) directs this project overall and can leave either "
-            "of you direction via your inbox. "
-            "Ground every judgment in something real: fetch and actually look "
-            "at reference pieces from 16colo.rs or textfiles.com/artscene "
-            "before you accept or reject, don't judge from memory or vibes "
-            "alone, and check submissions against STYLE.md. "
-            "When you review something in submissions/, use curate_piece: "
-            "accept moves it to gallery/unpacked/ pending the next pack "
-            "release; reject moves it to rejected/ with your critique "
-            "attached, specific enough to act on — name what's actually "
-            "wrong (color choices, proportion, character choice, composition) "
-            "compared to what real pieces in the tradition do, not just "
-            "'needs work'. A rejection isn't a failure state for this project "
-            "— a gallery that contains everything ever submitted isn't "
-            "curated at all. But don't reject reflexively either. "
-            "Use release_pack when gallery/unpacked/ has a real handful of "
-            "good work — it bundles everything there into a numbered pack "
-            "with a FILE_ID.DIZ crediting every contributor. That's the "
-            "actual shipped unit here, and it's your call when it's ready, "
-            "not a fixed schedule. "
-            "If submissions/ is empty, that's legitimate to report, not "
-            "something to force — go study references, work in scratch/, or "
-            "leave your collaborator a specific, concrete idea via "
-            "message_agent rather than a vague nudge. "
-            "Speak in the first person, always. The 'user'-labeled messages "
-            "you receive are automated harness pings and inbox deliveries, not "
-            "a person waiting on you in real time. "
-            "When you're done acting for this shift, call end_shift."
+            "You're one of two agents in AGENTSCII: produce real ANSI/ACiD-style textmode "
+            "art (the 90s BBS artscene aesthetic) worth keeping, as a real body of work — "
+            "not two agents quietly working past each other. Your seat is 'curator': you "
+            "decide on submissions (curate_piece) and ship pack releases (release_pack). "
+            "That's the only hard boundary between you and your collaborator — everything "
+            "upstream is shared, and you're a full contributor there too; jump into "
+            "scratch/ and add a pass to anything your collaborator started whenever you "
+            "want. workspace/: scratch/ is shared unrestricted WIP space — extend or "
+            "remix anything there, no permission needed; submissions/ holds a finished "
+            "piece awaiting curator review (artist seat only, via submit_piece); "
+            "gallery/unpacked/ holds accepted pieces not yet shipped; gallery/packNN/ "
+            "holds shipped releases with a FILE_ID.DIZ crediting everyone — the real unit "
+            "of finished work, not any single piece; rejected/ holds pieces with a "
+            ".critique.txt — nothing deleted, revise and resubmit; references/ holds real "
+            "ACiD/ANSI study material. Draw directly with the canvas_* tools: "
+            "canvas_new(slug, width, height) starts a persistent canvas (saved to disk "
+            "across calls/shifts); canvas_fill_px/canvas_circle_px draw flat shapes and "
+            "genuinely round circles in half-block pixel space (each cell is 2 pixels "
+            "tall, zero aspect correction needed); canvas_shade applies real "
+            "density-dither shading (█▓▒░ falloff, not flat cutoffs) from one light "
+            "direction; canvas_text places letters; canvas_stamp places a real "
+            "find_patches result by its patch_id; canvas_preview shows progress; "
+            "canvas_save writes the finished .ans. Pieces are drawn with the canvas_* "
+            "tools. Bash and Python are for fetching references, inspecting files, and "
+            "utilities — not for generating pieces. find_patches(description) searches "
+            "the real archive corpus by technique/visual similarity, returning a rendered "
+            "image AND real cell data (RLE text + patch_id) per hit — study it, or hand "
+            "patch_id to canvas_stamp directly. Use canvas_stamp only for texture regions "
+            "(sky, ground, background fields), never for a piece's subject — stamping "
+            "several patches from different pieces produces collage, not a composition. "
+            "Real archives are reachable via bash/curl — 16colo.rs/group/<name> and "
+            "/year/<YYYY> list packs; a pack's /raw/ path gets real bytes. "
+            "references/study/ has curated examples on disk already. STYLE.md has house "
+            "conventions AND the actual build sequence (block-in, light-source shading, "
+            "detail texture, background texture, frame, verify against a reference) — "
+            "required reading before your first figurative or ambition-tier piece. A "
+            "human (Tyler) directs this project and leaves either of you direction via "
+            "your inbox. Ground every judgment in something real: look at actual "
+            "reference pieces before accepting or rejecting, not memory or vibes, and "
+            "check against STYLE.md. On curate_piece: accept moves it to "
+            "gallery/unpacked/; reject moves it to rejected/ with a specific critique — "
+            "name what's actually wrong compared to real pieces in the tradition, not "
+            "just 'needs work'. A rejection isn't a failure state; a gallery containing "
+            "everything submitted isn't curated at all. But don't reject reflexively "
+            "either. Use release_pack when gallery/unpacked/ has a real handful of good "
+            "work, not on a fixed schedule. If submissions/ is empty, that's legitimate "
+            "to report — go study references, work in scratch/, or leave a specific idea "
+            "via message_agent. Speak in the first person, always. 'user'-labeled "
+            "messages are automated harness pings, not a person waiting on you in real "
+            "time. Call end_shift when done acting for this shift."
         ),
     },
 }
@@ -917,6 +792,203 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "canvas_new",
+            "description": (
+                "Start a new persistent canvas to draw on directly with tool calls — "
+                "no Python required. One canvas = one piece; it's saved to disk under "
+                "workspace/canvases/ and stays there across tool calls, across shifts, "
+                "even across a harness restart, exactly like a scratch/ file. Pixel "
+                "space is half-block (each cell is 2 pixels tall via ▀), so circles/fills "
+                "drawn with canvas_circle_px/canvas_fill_px come out genuinely round with "
+                "zero aspect math — the same technique halfblock.py's HalfBlockCanvas "
+                "uses, just as direct tool calls instead of code you write and run."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Short lowercase name for this canvas, e.g. 'orb_v2' — lowercase letters/digits/-/_ only."},
+                    "width": {"type": "integer", "description": "Width in cells. House standard is 80."},
+                    "height": {"type": "integer", "description": "Height in cells. Free — a tall piece is fine."},
+                    "bg": {"type": "integer", "description": "Background color index 0-15. Default 0 (black)."},
+                },
+                "required": ["slug", "width", "height"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_fill_px",
+            "description": (
+                "Fill a rectangle on a canvas with a flat color, in PIXEL space (x: "
+                "0..width-1, y: 0..height*2-1 — twice the cell height, since each cell "
+                "is 2 pixels tall). Good for silhouette block-in: lay down flat shapes "
+                "first, verify with canvas_preview, THEN shade with canvas_shade."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on (from canvas_new)."},
+                    "x": {"type": "integer", "description": "Left edge, pixel space."},
+                    "y": {"type": "integer", "description": "Top edge, pixel space."},
+                    "w": {"type": "integer", "description": "Width in pixels."},
+                    "h": {"type": "integer", "description": "Height in pixels."},
+                    "color": {"type": "integer", "description": "Palette color index 0-15."},
+                },
+                "required": ["slug", "x", "y", "w", "h", "color"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_circle_px",
+            "description": (
+                "Fill a circle on a canvas, in PIXEL space, with zero aspect correction "
+                "needed — pixel space is ~square (width x height*2), so this comes out "
+                "genuinely round at the call site. Use for eyes, craniums, orbs, faces, "
+                "any curved/circular shape at any scale — the exact case whole-cell "
+                "circle formulas squash or alias into flat rings."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "cx": {"type": "number", "description": "Center x, pixel space."},
+                    "cy": {"type": "number", "description": "Center y, pixel space."},
+                    "r": {"type": "number", "description": "Radius in pixels."},
+                    "color": {"type": "integer", "description": "Palette color index 0-15."},
+                },
+                "required": ["slug", "cx", "cy", "r", "color"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_shade",
+            "description": (
+                "Apply real density-dither shading (the genuine ACiD ramp/dither "
+                "technique — █▓▒░ carrying the brightness falloff between two colors, "
+                "not a flat color-to-color cutoff) across a rectangular region, in CELL "
+                "space, from from_color nearest light_direction fading to to_color at "
+                "the far edge. This REPLACES whatever was there with a real dither "
+                "glyph — use it as a pass over an already block-in'd region, same as "
+                "STYLE.md/METHODOLOGY.md's shading pass."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "region": {
+                        "type": "array", "items": {"type": "integer"}, "minItems": 4, "maxItems": 4,
+                        "description": "[x0, y0, x1, y1] in CELL space (not pixel space) — the rectangle to shade.",
+                    },
+                    "from_color": {"type": "integer", "description": "Color index nearest the light (bright end)."},
+                    "to_color": {"type": "integer", "description": "Color index farthest from the light (dark end)."},
+                    "light_direction": {
+                        "type": "string",
+                        "enum": ["top", "bottom", "left", "right", "top-left", "top-right", "bottom-left", "bottom-right"],
+                        "description": "Which edge of the region the light comes from — keep this the SAME across a whole piece's shading calls for one coherent light source.",
+                    },
+                },
+                "required": ["slug", "region", "from_color", "to_color", "light_direction"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_text",
+            "description": (
+                "Place literal characters on a canvas starting at cell (x, y), one per "
+                "cell, left to right — for sig blocks, small labels, inline title text. "
+                "Not a large blocky wordmark font (that's scratch/canvas.py's "
+                "block_letters(), still available if a piece wants a big logo)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "x": {"type": "integer", "description": "Starting column, cell space."},
+                    "y": {"type": "integer", "description": "Row, cell space."},
+                    "text": {"type": "string", "description": "The characters to place."},
+                    "fg": {"type": "integer", "description": "Foreground color index 0-15."},
+                    "bg": {"type": "integer", "description": "Background color index 0-15."},
+                },
+                "required": ["slug", "x", "y", "text", "fg", "bg"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_stamp",
+            "description": (
+                "Place a real patch retrieved via find_patches directly onto a canvas "
+                "at cell (x, y) — its actual cell grid (chars/fg/bg), not a description "
+                "of it. Use the patch_id find_patches returns alongside each hit. Good "
+                "for borrowing a real texture/technique wholesale as a starting point, "
+                "then editing on top of it with other canvas_* calls."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "patch_id": {"type": "string", "description": "patch_id from a find_patches result."},
+                    "x": {"type": "integer", "description": "Left column to place the patch at, cell space."},
+                    "y": {"type": "integer", "description": "Top row to place the patch at, cell space."},
+                },
+                "required": ["slug", "patch_id", "x", "y"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_preview",
+            "description": (
+                "Render a canvas as an actual image and see it — same as preview_piece, "
+                "but for an in-progress canvas that hasn't been saved to a file yet. "
+                "Use this after each drawing pass to verify it before the next one, "
+                "exactly the same habit as previewing a .ans WIP."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to preview."},
+                    "offset": {"type": "integer", "description": "Row to start rendering from (0-indexed)."},
+                    "rows": {"type": "integer", "description": "How many rows to render. Default 200."},
+                },
+                "required": ["slug"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_save",
+            "description": (
+                "Write a canvas out as a real, finished .ans file (adds the house "
+                "signature block, hygiene-normal cp437 encoding) — the same file "
+                "submit_piece expects. The canvas itself is NOT deleted; you can keep "
+                "drawing on it and canvas_save again to overwrite, e.g. for a v2."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to save."},
+                    "path": {"type": "string", "description": "Output path, relative to workspace/, e.g. 'scratch/myslug.ans'."},
+                    "title": {"type": "string", "description": "Piece title for the signature block."},
+                    "handles": {"type": "string", "description": "Contributor handle(s) for the signature block, e.g. 'raze' or 'raze,hollis'."},
+                },
+                "required": ["slug", "path", "title"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "preview_piece",
             "description": (
                 "Render an .ans/.asc file as an actual image and see it — real colors, "
@@ -1410,6 +1482,25 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False)
                 for i in range(len(line_cells)):
                     line_cells[i] = (" ", 7, 0)
 
+    note = f" (truncated to first {max_rows} rows of {total_lines}+)" if truncated else ""
+    return _rasterize_rows_to_png_b64(rows, note)
+
+
+def _rasterize_rows_to_png_b64(rows, note=""):
+    """Shared rasterizer: a list of cell-rows (each a list of (char,
+    fg_idx, bg_idx) tuples) -> PNG b64. Split out of
+    render_ans_to_png_b64 (2026-09-22) so a second caller can rasterize
+    rows that never came from an .ans file's cursor-addressed text --
+    specifically canvas_tools.py's persistent canvases (canvas_preview),
+    which already produce a clean cell grid with no ESC[A/B/C/D/H
+    cursor parsing needed. Both callers get the exact same pixel output
+    for the exact same cell data -- one rasterizer, not two copies that
+    could drift."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        return None, "(error: Pillow not installed — pip install Pillow)"
+
     max_width = max((len(r) for r in rows), default=1)
 
     if not rows or max_width == 0:
@@ -1426,7 +1517,7 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False)
         # agent output that happens to be entirely blank in its
         # rendered window hits the exact same crash -- not just an
         # eval-script edge case.
-        return None, "(error: file has no visible content to render — fully blank)"
+        return None, "(error: no visible content to render — fully blank)"
 
     img_w = max_width * _CELL_W
     img_h = len(rows) * _CELL_H
@@ -1468,8 +1559,56 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False)
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     b64 = base64.b64encode(buf.getvalue()).decode()
-    note = f" (truncated to first {max_rows} rows of {total_lines}+)" if truncated else ""
     return b64, note
+
+
+def render_canvas_to_png_b64(workspace, slug, offset=0, max_rows=200):
+    """Preview a persistent canvas (canvas_tools.py) the same way
+    preview_piece previews a saved .ans file. Canvas rows are already a
+    clean grid (canvas_tools never emits cursor-addressing escapes), so
+    this builds (char, fg_idx, bg_idx) rows directly and hands them to
+    the SAME _rasterize_rows_to_png_b64 rasterizer render_ans_to_png_b64
+    uses -- what an agent sees in canvas_preview is pixel-identical to
+    what canvas_save + preview_piece would show afterward."""
+    import canvas_tools
+    try:
+        data = canvas_tools.load_canvas(workspace, slug)
+    except canvas_tools.CanvasError as e:
+        return None, f"(error: {e})"
+    out_lines = canvas_tools.render_canvas(data)  # list of SGR-coded strings
+    total_lines = len(out_lines)
+    offset = max(0, min(offset, total_lines))
+    end_row = min(total_lines, offset + max_rows)
+    truncated = end_row < total_lines
+
+    rows = []
+    for line in out_lines[offset:end_row]:
+        cells = []
+        fg, bg = 7, 0
+        i = 0
+        while i < len(line):
+            m = _CSI_RE.match(line, i)
+            if m:
+                params = [int(c) for c in m.group(1).split(";") if c != ""]
+                for p in (params or [0]):
+                    if p == 0:
+                        fg, bg = 7, 0
+                    elif 30 <= p <= 37:
+                        fg = p - 30
+                    elif 90 <= p <= 97:
+                        fg = p - 90 + 8
+                    elif 40 <= p <= 47:
+                        bg = p - 40
+                    elif 100 <= p <= 107:
+                        bg = p - 100 + 8
+                i = m.end()
+                continue
+            cells.append((line[i], fg % 16, bg % 16))
+            i += 1
+        rows.append(cells)
+
+    note = f" (truncated to first {max_rows} rows of {total_lines}+)" if truncated else ""
+    return _rasterize_rows_to_png_b64(rows, note)
 
 
 def render_comparison_b64(piece_path, reference_path, offset=0, max_rows=60):
@@ -4240,6 +4379,105 @@ def run_shift(conn, agent):
                         (shift_id, fargs.get("decision", ""), fargs.get("path", ""), str(dest.relative_to(WORKSPACE)), fargs.get("critique", ""), time.time()),
                     )
                     conn.commit()
+            elif name == "canvas_new":
+                try:
+                    import canvas_tools as ct
+                    data = ct.new_canvas(str(WORKSPACE), fargs.get("slug", ""),
+                                          fargs.get("width", 80), fargs.get("height", 40),
+                                          bg=fargs.get("bg", 0) or 0)
+                    result = (f"canvas '{fargs.get('slug')}' created, {data['w']}x{data['h_cells']} "
+                              f"cells ({data['w']}x{data['ph']} pixels). Draw with canvas_fill_px/"
+                              "canvas_circle_px/canvas_shade/canvas_text/canvas_stamp, check with "
+                              "canvas_preview, finish with canvas_save.")
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_fill_px":
+                try:
+                    import canvas_tools as ct
+                    ct.fill_px(str(WORKSPACE), fargs.get("slug", ""), fargs.get("x", 0),
+                               fargs.get("y", 0), fargs.get("w", 0), fargs.get("h", 0),
+                               fargs.get("color", 0))
+                    result = f"filled ({fargs.get('x')},{fargs.get('y')}) {fargs.get('w')}x{fargs.get('h')}px on '{fargs.get('slug')}'."
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_circle_px":
+                try:
+                    import canvas_tools as ct
+                    ct.circle_px(str(WORKSPACE), fargs.get("slug", ""), fargs.get("cx", 0),
+                                 fargs.get("cy", 0), fargs.get("r", 1), fargs.get("color", 0))
+                    result = f"drew circle at ({fargs.get('cx')},{fargs.get('cy')}) r={fargs.get('r')} on '{fargs.get('slug')}'."
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_shade":
+                try:
+                    import canvas_tools as ct
+                    region = fargs.get("region") or [0, 0, 0, 0]
+                    ct.shade(str(WORKSPACE), fargs.get("slug", ""), region[0], region[1],
+                             region[2], region[3], fargs.get("from_color", 15),
+                             fargs.get("to_color", 0), fargs.get("light_direction", "top"))
+                    result = (f"shaded region {region} on '{fargs.get('slug')}' from "
+                              f"{fargs.get('from_color')}->{fargs.get('to_color')}, "
+                              f"light from {fargs.get('light_direction')}.")
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_text":
+                try:
+                    import canvas_tools as ct
+                    ct.text(str(WORKSPACE), fargs.get("slug", ""), fargs.get("x", 0),
+                            fargs.get("y", 0), fargs.get("text", ""), fargs.get("fg", 7),
+                            fargs.get("bg", 0))
+                    result = f"placed text {fargs.get('text')!r} at ({fargs.get('x')},{fargs.get('y')}) on '{fargs.get('slug')}'."
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_stamp":
+                try:
+                    import canvas_tools as ct
+                    corpus_dir = str(PROJECT_DIR / "corpus")
+                    if corpus_dir not in sys.path:
+                        sys.path.insert(0, corpus_dir)
+                    from find_patches import decode_patch_id, _load_patch_grids
+                    parent_path, row_off, col_off, w_rows, w_cols = decode_patch_id(fargs.get("patch_id", ""))
+                    grids = _load_patch_grids(parent_path, row_off, col_off, w_rows, w_cols)
+                    if grids is None:
+                        result = f"(error: could not load patch data for {parent_path})"
+                    else:
+                        chars, fg, bg = grids
+                        _, placed = ct.stamp(str(WORKSPACE), fargs.get("slug", ""),
+                                              fargs.get("x", 0), fargs.get("y", 0), chars, fg, bg)
+                        result = f"stamped {placed} cells from {Path(parent_path).name} onto '{fargs.get('slug')}' at ({fargs.get('x')},{fargs.get('y')})."
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_save":
+                try:
+                    import canvas_tools as ct
+                    out_path = ct.save_ans(str(WORKSPACE), fargs.get("slug", ""), fargs.get("path", ""),
+                                            title=fargs.get("title"), handles=fargs.get("handles", "AGENTSCII"))
+                    result = f"saved '{fargs.get('slug')}' to {out_path.relative_to(WORKSPACE)}."
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_preview":
+                try:
+                    offset = max(0, int(fargs.get("offset", 0) or 0))
+                    rows = fargs.get("rows", 200) or 200
+                    rows = max(1, min(int(rows), 200))
+                    b64, note_or_err = render_canvas_to_png_b64(str(WORKSPACE), fargs.get("slug", ""),
+                                                                 offset=offset, max_rows=rows)
+                    if b64 is None:
+                        result = note_or_err
+                    else:
+                        result = f"rendered canvas '{fargs.get('slug')}' rows {offset}-{offset+rows}{note_or_err} — see image."
+                        log_event(conn, agent, shift_id, "tool", result, tool_name=name, tool_call_id=tc.get("id"))
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tc.get("id"),
+                            "content": [
+                                {"type": "text", "text": result},
+                                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                            ],
+                        })
+                        continue
+                except Exception as e:
+                    result = f"(error rendering canvas preview: {e})"
             elif name == "preview_piece":
                 try:
                     p = _resolve_workspace_path(fargs.get("path", ""))
@@ -4298,10 +4536,29 @@ def run_shift(conn, agent):
                             if b64 is None:
                                 result = note_or_err
                             else:
+                                # Per-hit cell data alongside the image (user
+                                # direction, 2026-09-22): "find_patches returns
+                                # cell data (compact RLE text plus a patch_id)
+                                # alongside the image, so raze can study or
+                                # stamp it" -- without this a patch was only
+                                # ever a picture, so using one meant re-typing
+                                # what it looked like in code from memory.
+                                # canvas_stamp(patch_id, x, y) places the exact
+                                # real cells directly, no re-derivation.
+                                detail_lines = []
+                                for h in hits:
+                                    detail_lines.append(
+                                        f"--- {Path(h['parent_path']).name} "
+                                        f"(patch_id={h['patch_id']}, half_block={h.get('half_block_pct', 0):.0f}%, "
+                                        f"shade={h.get('shade_pct', 0):.0f}%) ---\n"
+                                        f"{h.get('rle_text') or '(rle encode failed)'}"
+                                    )
                                 result = (
                                     f"{len(hits)} patches found for {description!r} via {method}{note_or_err} — "
                                     "see image. Each is a real 40x16-cell window from a real archive piece, "
-                                    "not synthetic. Study the technique, don't copy the piece verbatim."
+                                    "not synthetic. Study the technique, don't copy the piece verbatim. "
+                                    "canvas_stamp(patch_id, x, y) places one's exact real cells directly onto "
+                                    "a canvas.\n\n" + "\n\n".join(detail_lines)
                                 )
                                 log_event(conn, agent, shift_id, "tool", result, tool_name=name, tool_call_id=tc.get("id"))
                                 messages.append({
@@ -4473,8 +4730,6 @@ def main():
             "references/         real ACiD/ANSI study material\n"
             "STYLE.md            house style spec\n"
         )
-    if not STYLE_DOC.exists():
-        STYLE_DOC.write_text(STYLE_DOC_CONTENT)
     ref_note = REFERENCES / "what_is_ansi_art.txt"
     if not ref_note.exists():
         src = HOME / "antfarm2" / "references" / "what_is_ansi_art.txt"
