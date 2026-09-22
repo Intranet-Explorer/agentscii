@@ -218,25 +218,16 @@ def main():
         print("No embeddings produced -- aborting.")
         sys.exit(1)
 
+    # Final write reuses _write_checkpoint (which unlinks meta.db before
+    # recreating the table) instead of duplicating the CREATE TABLE logic --
+    # the duplicated version here used to crash with "table meta already
+    # exists" whenever a mid-run checkpoint had already created it (every
+    # run over 50k patches), landing embeddings.npy but never meta.db's
+    # final flush. Found live 2026-09-21: an 871,882-patch run hit exactly
+    # this, stuck at the 850k checkpoint's meta.db with a fully up-to-date
+    # embeddings.npy -- 21,882 embeddings with no queryable metadata.
+    _write_checkpoint(out_dir, embeddings, kept_meta)
     emb_matrix = np.concatenate(embeddings, axis=0)
-    np.save(out_dir / "embeddings.npy", emb_matrix)
-
-    meta_conn = sqlite3.connect(str(out_dir / "meta.db"))
-    meta_conn.execute("""
-        CREATE TABLE meta (
-            row_idx INTEGER PRIMARY KEY,
-            parent_path TEXT, row_offset INTEGER, col_offset INTEGER,
-            window_rows INTEGER, window_cols INTEGER,
-            half_block_pct REAL, shade_pct REAL
-        )
-    """)
-    meta_conn.executemany(
-        "INSERT INTO meta VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [(i, m["parent_path"], m["row_offset"], m["col_offset"], m["window_rows"],
-          m["window_cols"], m["half_block_pct"], m["shade_pct"]) for i, m in enumerate(kept_meta)],
-    )
-    meta_conn.commit()
-    meta_conn.close()
 
     total_time = time.time() - t_start
     print(f"\nDone. {len(kept_meta)} patches embedded in {total_time/60:.1f} min "
