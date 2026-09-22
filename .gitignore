@@ -58,4 +58,5 @@ corpus/mlx_train_data_flatshaded/
 corpus/checkpoint_evals/*/*.ans
 corpus/checkpoint_evals/*/*.png
 corpus/clip_index/
+workspace/canvases/
 

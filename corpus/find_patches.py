@@ -56,6 +56,32 @@ PARSED_DIR = CORPUS_DIR / "parsed"
 OLLAMA_MODEL = "qwen3.8:27b-mlx"
 
 
+def make_patch_id(parent_path, row_offset, col_offset, window_rows, window_cols):
+    """Opaque, self-describing patch identifier -- encodes everything
+    needed to re-fetch a patch's exact cell grid (no server-side cache
+    needed, works even across a harness restart). Attached to every
+    find_patches/find_patches_clip hit so a caller (canvas_stamp) can
+    place the SAME real cells the caller saw rendered, not a
+    re-description of them. User direction, 2026-09-22: "find_patches
+    returns cell data (compact RLE text plus a patch_id) alongside the
+    image, so raze can study or stamp it.\""""
+    payload = json.dumps([parent_path, int(row_offset), int(col_offset),
+                           int(window_rows), int(window_cols)])
+    import base64
+    return base64.urlsafe_b64encode(payload.encode()).decode().rstrip("=")
+
+
+def decode_patch_id(patch_id):
+    import base64
+    try:
+        padded = patch_id + "=" * (-len(patch_id) % 4)
+        payload = base64.urlsafe_b64decode(padded.encode()).decode()
+        parent_path, row_offset, col_offset, window_rows, window_cols = json.loads(payload)
+        return parent_path, row_offset, col_offset, window_rows, window_cols
+    except Exception as e:
+        raise ValueError(f"invalid patch_id {patch_id!r}: {e}")
+
+
 def _load_patch_grids(parent_path, row_offset, col_offset, window_rows, window_cols):
     """Slice the real (chars, fg, bg) arrays for one indexed window out
     of its parent piece's parsed .npz. Returns None if the parent file
@@ -155,6 +181,8 @@ def find_patches_by_technique(
         chars, fg, bg = grids
         hit = dict(row)
         hit["chars"], hit["fg"], hit["bg"] = chars, fg, bg
+        hit["patch_id"] = make_patch_id(row["parent_path"], row["row_offset"],
+                                         row["col_offset"], row["window_rows"], row["window_cols"])
         try:
             hit["rle_text"] = _rle_text(chars, fg, bg)
         except Exception:
