@@ -870,20 +870,21 @@ TOOLS = [
             "description": (
                 "Apply real density-dither shading (the genuine ACiD ramp/dither "
                 "technique — █▓▒░ carrying the brightness falloff between two colors, "
-                "not a flat color-to-color cutoff) across a rectangular region, in CELL "
-                "space, from from_color nearest light_direction fading to to_color at "
-                "the far edge. This REPLACES whatever was there with a real dither "
-                "glyph — use it as a pass over an already block-in'd region, same as "
-                "STYLE.md/METHODOLOGY.md's shading pass."
+                "not a flat color-to-color cutoff) to a SHAPE, not a rectangle. "
+                "Defaults to whatever you drew last with canvas_fill_px/canvas_circle_px "
+                "on this canvas — shading a circle stays clipped to the circle's round "
+                "edge, it will not paint a rectangle over it. Pass region explicitly for "
+                "more control: {\"type\":\"rect\",\"x0\",\"y0\",\"x1\",\"y1\"} (pixel space), "
+                "{\"type\":\"circle\",\"cx\",\"cy\",\"r\"} (pixel space), or "
+                "{\"type\":\"color\",\"color\":N} to shade every pixel currently that color, "
+                "wherever it is on the canvas. Use it as a pass over an already "
+                "block-in'd shape, same as STYLE.md's shading pass — for a lit sphere/"
+                "orb/eye specifically, canvas_sphere_px does fill+shade in one call."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "slug": {"type": "string", "description": "Canvas to draw on."},
-                    "region": {
-                        "type": "array", "items": {"type": "integer"}, "minItems": 4, "maxItems": 4,
-                        "description": "[x0, y0, x1, y1] in CELL space (not pixel space) — the rectangle to shade.",
-                    },
                     "from_color": {"type": "integer", "description": "Color index nearest the light (bright end)."},
                     "to_color": {"type": "integer", "description": "Color index farthest from the light (dark end)."},
                     "light_direction": {
@@ -891,8 +892,119 @@ TOOLS = [
                         "enum": ["top", "bottom", "left", "right", "top-left", "top-right", "bottom-left", "bottom-right"],
                         "description": "Which edge of the region the light comes from — keep this the SAME across a whole piece's shading calls for one coherent light source.",
                     },
+                    "region": {
+                        "type": "object",
+                        "description": "Optional — omit to shade whatever you drew last. Otherwise {\"type\":\"rect\"|\"circle\"|\"color\", ...} as described above.",
+                    },
                 },
-                "required": ["slug", "region", "from_color", "to_color", "light_direction"],
+                "required": ["slug", "from_color", "to_color", "light_direction"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_sphere_px",
+            "description": (
+                "One call: a lit sphere — fills a circle AND shades it with a real "
+                "point-light falloff from (light_x, light_y), so the gradient follows "
+                "the sphere's actual curvature (radial from the light point, not a "
+                "linear wash) and the edge stays genuinely round. Spheres, eyes, heads, "
+                "and orbs are most of what gets drawn — use this instead of composing "
+                "canvas_circle_px + canvas_shade by hand for the common case of a "
+                "simple lit ball."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "cx": {"type": "number", "description": "Center x, pixel space."},
+                    "cy": {"type": "number", "description": "Center y, pixel space."},
+                    "r": {"type": "number", "description": "Radius in pixels."},
+                    "color": {"type": "integer", "description": "Lit-side color index 0-15."},
+                    "light_x": {"type": "number", "description": "Light source x, pixel space — where the brightest point should be."},
+                    "light_y": {"type": "number", "description": "Light source y, pixel space."},
+                    "shadow_color": {"type": "integer", "description": "Dark-side color index 0-15. Defaults to black (0) — pass the dim end of a hue family (e.g. from STYLE.md's palette) for a colored sphere instead of a grayscale one."},
+                },
+                "required": ["slug", "cx", "cy", "r", "color", "light_x", "light_y"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_wordmark",
+            "description": (
+                "Draw text as large 5x7 block letters — a real logo/title, not a "
+                "one-glyph-per-cell label (that's canvas_text). Use scale=2 or higher "
+                "for legible text. Returns the pixel width used so a follow-up call "
+                "can be centered."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "x": {"type": "integer", "description": "Starting x, pixel space."},
+                    "y": {"type": "integer", "description": "Starting y, pixel space."},
+                    "text": {"type": "string", "description": "Text to draw — A-Z, 0-9, space, and basic punctuation."},
+                    "fg": {"type": "integer", "description": "Color index 0-15."},
+                    "scale": {"type": "integer", "description": "Size multiplier. Default 2 (scale=1 renders too small to read clearly)."},
+                },
+                "required": ["slug", "x", "y", "text", "fg"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_mirror",
+            "description": (
+                "Mirror the canvas's authored half onto the other half — draw content "
+                "in the left half (axis='v', the common case for symmetric creatures/"
+                "faces/totems) or top half (axis='h'), then call this once to complete "
+                "the symmetric figure."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "axis": {"type": "string", "enum": ["v", "h"], "description": "'v' mirrors left half to right (vertical split line). 'h' mirrors top half to bottom."},
+                },
+                "required": ["slug"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_strand_shade",
+            "description": (
+                "Directional stroke texture for fur, hair, grain — many short strokes "
+                "in a consistent direction, cycling through 2-4 colors so adjacent "
+                "strokes read as distinct marks instead of blurring into a flat mass. "
+                "Run this AFTER the base shape/shading is in place, as a texture pass "
+                "on top."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "region": {
+                        "type": "array", "items": {"type": "integer"}, "minItems": 4, "maxItems": 4,
+                        "description": "[x0, y0, x1, y1] in CELL space — where strokes can start.",
+                    },
+                    "direction": {
+                        "type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2,
+                        "description": "[dx, dy] stroke direction, e.g. [0,1] combed straight down, [1,1] diagonal.",
+                    },
+                    "colors": {
+                        "type": "array", "items": {"type": "integer"},
+                        "description": "2-4 color indices strokes cycle through.",
+                    },
+                    "n_strands": {"type": "integer", "description": "How many strokes. Default 40."},
+                    "length": {"type": "integer", "description": "Stroke length in cells. Default 6."},
+                },
+                "required": ["slug", "region", "direction", "colors"],
             },
         },
     },
@@ -4472,13 +4584,53 @@ def run_shift(conn, agent):
             elif name == "canvas_shade":
                 try:
                     import canvas_tools as ct
-                    region = fargs.get("region") or [0, 0, 0, 0]
-                    ct.shade(str(WORKSPACE), fargs.get("slug", ""), region[0], region[1],
-                             region[2], region[3], fargs.get("from_color", 15),
-                             fargs.get("to_color", 0), fargs.get("light_direction", "top"))
-                    result = (f"shaded region {region} on '{fargs.get('slug')}' from "
+                    region = fargs.get("region")  # optional; None -> last drawn shape
+                    ct.shade(str(WORKSPACE), fargs.get("slug", ""), fargs.get("from_color", 15),
+                             fargs.get("to_color", 0), fargs.get("light_direction", "top"), region=region)
+                    region_desc = "last drawn shape" if region is None else region
+                    result = (f"shaded {region_desc} on '{fargs.get('slug')}' from "
                               f"{fargs.get('from_color')}->{fargs.get('to_color')}, "
                               f"light from {fargs.get('light_direction')}.")
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_sphere_px":
+                try:
+                    import canvas_tools as ct
+                    ct.sphere_px(str(WORKSPACE), fargs.get("slug", ""), fargs.get("cx", 0),
+                                 fargs.get("cy", 0), fargs.get("r", 1), fargs.get("color", 15),
+                                 fargs.get("light_x", 0), fargs.get("light_y", 0),
+                                 shadow_color=fargs.get("shadow_color"))
+                    result = (f"drew lit sphere at ({fargs.get('cx')},{fargs.get('cy')}) r={fargs.get('r')} "
+                              f"on '{fargs.get('slug')}', light from ({fargs.get('light_x')},{fargs.get('light_y')}).")
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_wordmark":
+                try:
+                    import canvas_tools as ct
+                    _, width = ct.wordmark(str(WORKSPACE), fargs.get("slug", ""), fargs.get("x", 0),
+                                            fargs.get("y", 0), fargs.get("text", ""), fargs.get("fg", 15),
+                                            scale=fargs.get("scale", 2) or 2)
+                    result = f"drew wordmark {fargs.get('text')!r} on '{fargs.get('slug')}', used {width}px wide."
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_mirror":
+                try:
+                    import canvas_tools as ct
+                    ct.mirror(str(WORKSPACE), fargs.get("slug", ""), axis=fargs.get("axis", "v") or "v")
+                    result = f"mirrored '{fargs.get('slug')}' on axis={fargs.get('axis', 'v')}."
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_strand_shade":
+                try:
+                    import canvas_tools as ct
+                    region = fargs.get("region") or [0, 0, 0, 0]
+                    ct.strand_shade(str(WORKSPACE), fargs.get("slug", ""),
+                                     region={"type": "rect", "x0": region[0], "y0": region[1], "x1": region[2], "y1": region[3]},
+                                     direction=fargs.get("direction", [0, 1]),
+                                     fg_list=fargs.get("colors", [15, 7]),
+                                     n_strands=fargs.get("n_strands", 40) or 40,
+                                     length=fargs.get("length", 6) or 6)
+                    result = f"applied strand shading to region {region} on '{fargs.get('slug')}'."
                 except Exception as e:
                     result = f"(error: {e})"
             elif name == "canvas_text":

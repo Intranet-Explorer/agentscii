@@ -77,8 +77,15 @@ shapes and genuinely round circles in half-block pixel space (each
 cell is 2 pixels tall via ▀, so circles need zero aspect correction —
 a normal cell is ~2x taller than wide, so whole-cell curves either
 squash or alias into flat rings); canvas_shade applies real
-density-dither shading from one light direction; canvas_text places
-letters; canvas_stamp places a real find_patches result by its
+density-dither shading to a SHAPE (defaults to whatever you drew
+last, or pass a rect/circle/color-mask region explicitly) — it stays
+clipped to that shape's actual edge, not a bounding rectangle;
+canvas_sphere_px does fill+shade in one call for the common case of a
+simple lit ball (spheres/eyes/orbs are most of what gets drawn);
+canvas_wordmark draws large logo/title text, canvas_text places
+single-cell labels; canvas_mirror completes a symmetric figure from
+one authored half; canvas_strand_shade adds directional fur/hair/
+grain texture; canvas_stamp places a real find_patches result by its
 patch_id (texture regions only — see the build sequence above);
 canvas_preview shows progress; canvas_save writes the finished .ans.
 
@@ -93,11 +100,12 @@ not as libraries to import and run.
 covers yet.** If a piece genuinely needs one of these, say so in your
 note rather than writing a script around it; this list is what
 should turn into new canvas_* tools:
-- Mirroring / kaleidoscope symmetry (old: `mirror()`, `mirror_quad()`)
-- Wordmark/logo lettering, beveled or drop-shadow text (old:
-  `block_letters()`, `bevel_text()`, `drop_shadow_text()`)
-- Directional strand/streak texture for fur, hair, grain, flame (old:
-  `strand_shade()`, `streak_field()`)
+- Vertical noise-streak / flame texture (old: `streak_field()`)
+- Kaleidoscope/mandala 4-way mirroring (old: `mirror_quad()` — plain
+  2-way mirror IS covered now, canvas_mirror)
+- Beveled/chrome or drop-shadow lettering (old: `bevel_text()`,
+  `drop_shadow_text()` — plain block lettering IS covered now,
+  canvas_wordmark)
 - Paint-drip/run marks off an edge (old: `drip()`, `drip_edge()`)
 - Anatomical lit-tube limbs/torsos for body-shaped subjects (old:
   `figure_common.capsule()`, `joint_dot()`, `standing_figure()`,

@@ -155,6 +155,10 @@ def fill_px(workspace, slug, x, y, w, h, color):
         row = pixels[py]
         for px in range(x0c, x1c):
             row[px] = color
+    # Tracked so canvas_shade can default to "shade what I just drew"
+    # without the caller having to restate the shape -- see shade()'s
+    # docstring for why this replaced rectangle-region shading.
+    data["last_shape"] = {"type": "rect", "x0": x0c, "y0": y0c, "x1": x1c, "y1": y1c}
     save_canvas(workspace, slug, data)
     return data
 
@@ -178,6 +182,7 @@ def circle_px(workspace, slug, cx, cy, r, color):
         for px in range(max(0, r0), min(W, r1 + 1)):
             if math.hypot(px - cx, py - cy) <= r:
                 row[px] = color
+    data["last_shape"] = {"type": "circle", "cx": cx, "cy": cy, "r": r}
     save_canvas(workspace, slug, data)
     return data
 
@@ -201,39 +206,170 @@ def _shade_ramp(from_color, to_color, steps=5):
     return stops
 
 
-def shade(workspace, slug, x0, y0, x1, y1, from_color, to_color, light_direction):
-    """Apply real density-dither shading (shade_ramp, see above) across
-    a rectangular region in CELL space, from_color at the edge nearest
-    light_direction fading to to_color at the far edge. Writes
-    glyph_override for every cell in the region -- this REPLACES
-    whatever pixel color was there, since a dither glyph is a full-cell
-    glyph, not a solid half-block color pair."""
+def _pixel_mask_at(data, px, py, mask):
+    """True if pixel (px, py) is inside `mask`. mask is one of:
+    {"type": "rect", "x0","y0","x1","y1"} (PIXEL space),
+    {"type": "circle", "cx","cy","r"} (PIXEL space),
+    {"type": "color", "color"} (any pixel currently equal to this color --
+      shade the region of a given color, per user direction 2026-09-22),
+    or None (falls back to the canvas's last drawn shape)."""
+    if mask is None:
+        mask = data.get("last_shape")
+        if mask is None:
+            raise CanvasError(
+                "no region given and no shape has been drawn on this canvas "
+                "yet (canvas_fill_px/canvas_circle_px set the default shade "
+                "target) -- pass region explicitly"
+            )
+    mtype = mask.get("type")
+    if mtype == "rect":
+        return mask["x0"] <= px < mask["x1"] and mask["y0"] <= py < mask["y1"]
+    if mtype == "circle":
+        return math.hypot(px - mask["cx"], py - mask["cy"]) <= mask["r"]
+    if mtype == "color":
+        return data["pixels"][py][px] == mask["color"]
+    raise CanvasError(f"unknown mask type {mtype!r}")
+
+
+def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=None, light_y=None):
+    """Shared masked-shading core for shade() and sphere_px(). Shape-aware,
+    unlike the original rectangle-only shade() (real bug, found live
+    2026-09-22 on raze's first canvas piece, scratch/_eye_emblem.ans: a
+    circle shaded with the old rectangle shade() came back as a hard
+    rectangular grey/cyan band cutting across the round silhouette,
+    because shade() wrote glyph_override for every cell in its bounding
+    box regardless of what shape was actually there -- and because
+    glyph_override is a full-cell flat glyph, it also WIPED the circle's
+    real half-block edge pixels, which is why half_block_pct collapsed to
+    1.3% on that piece (measured: a circle alone scores ~8.5% half_block
+    in its bbox; the same circle after the old shade() scored 0.27%).
+
+    Fix, two parts:
+    1. Only cells where the mask actually covers get touched at all --
+       shading a circle no longer paints outside it.
+    2. EDGE cells (mask covers exactly one of the cell's two pixels, not
+       both) get a per-PIXEL color write instead of a glyph_override --
+       this preserves the real half-block ▀ boundary (one pixel shaded,
+       one pixel whatever was already there) instead of flattening the
+       whole cell to one glyph. Only fully-interior cells (both pixels
+       inside the mask) get the flat dither glyph, which is correct --
+       that's genuinely one solid surface at that point, not an edge.
+
+    light_x/light_y (pixel-space) override light_direction with a real
+    point light -- used by sphere_px for radial falloff from center
+    instead of a linear directional gradient."""
+    W, PH = data["w"], data["ph"]
+    pixels = data["pixels"]
+    go = data["glyph_override"]
+
+    xs, ys = [], []
+    for py in range(PH):
+        for px in range(W):
+            if _pixel_mask_at(data, px, py, mask):
+                xs.append(px)
+                ys.append(py)
+    if not xs:
+        raise CanvasError("shade region/mask matched zero pixels")
+    x0, x1 = min(xs), max(xs) + 1
+    y0, y1 = min(ys), max(ys) + 1
+    w_span = max(1, x1 - x0 - 1)
+    h_span = max(1, y1 - y0 - 1)
+
+    if light_x is not None and light_y is not None:
+        max_d = math.hypot(x1 - x0, y1 - y0) / 2 or 1.0
+        def light_t(px, py):
+            return min(1.0, math.hypot(px - light_x, py - light_y) / max_d)
+    else:
+        if light_direction not in _DIRECTIONS:
+            raise CanvasError(
+                f"light_direction must be one of {sorted(_DIRECTIONS)}, got {light_direction!r}"
+            )
+        fn = _DIRECTIONS[light_direction]
+        def light_t(px, py):
+            fx = (px - x0) / w_span
+            fy = (py - y0) / h_span
+            return fn(fx, fy)
+
+    stops = _shade_ramp(from_color, to_color, 5)
+
+    def color_at(px, py):
+        t = light_t(px, py)
+        idx = max(0, min(len(stops) - 1, int(t * (len(stops) - 1))))
+        return stops[idx]
+
+    for cell_row in range(data["h_cells"]):
+        py_top, py_bot = cell_row * 2, cell_row * 2 + 1
+        for col in range(W):
+            top_in = _pixel_mask_at(data, col, py_top, mask)
+            bot_in = _pixel_mask_at(data, col, py_bot, mask)
+            if not top_in and not bot_in:
+                continue
+            if top_in and bot_in:
+                ch, fg, bg = color_at(col, (py_top + py_bot) / 2)
+                go[f"{cell_row},{col}"] = [ch, fg, bg]
+            else:
+                # Edge cell: recolor only the masked pixel, leave the
+                # other pixel and any existing glyph_override alone --
+                # this is what keeps the silhouette's round boundary
+                # genuinely round instead of getting square-stepped by
+                # a full-cell glyph at every edge.
+                key = f"{cell_row},{col}"
+                if key in go:
+                    del go[key]  # a stale flat glyph would hide the pixel split
+                py_target = py_top if top_in else py_bot
+                _, fg, _ = color_at(col, py_target)
+                pixels[py_target][col] = fg
+
+
+def shade(workspace, slug, from_color, to_color, light_direction, region=None):
+    """Apply real density-dither shading (shade_ramp) to a SHAPE, not a
+    rectangle -- region defaults to whatever canvas_fill_px/
+    canvas_circle_px drew last on this canvas, or pass {"type":"rect",...}/
+    {"type":"circle",...}/{"type":"color","color":N} explicitly ({"color":N}
+    shades every pixel currently that color, wherever it is -- the "shade
+    the region of a given color" option). Interior cells get a real
+    dither glyph; edge cells get a per-pixel recolor so the shape's
+    boundary (e.g. a circle's round edge) stays genuinely round instead
+    of being square-stepped by a full-cell glyph. See _shade_masked's
+    docstring for the bug this replaced."""
     data = load_canvas(workspace, slug)
     from_color, to_color = _check_color(from_color), _check_color(to_color)
-    if light_direction not in _DIRECTIONS:
-        raise CanvasError(
-            f"light_direction must be one of {sorted(_DIRECTIONS)}, got {light_direction!r}"
-        )
-    fn = _DIRECTIONS[light_direction]
-    W, H = data["w"], data["h_cells"]
-    cx0, cx1 = sorted((int(x0), int(x1)))
-    cy0, cy1 = sorted((int(y0), int(y1)))
-    cx0, cx1 = max(0, cx0), min(W, cx1)
-    cy0, cy1 = max(0, cy0), min(H, cy1)
-    if cx1 <= cx0 or cy1 <= cy0:
-        raise CanvasError(f"region ({x0},{y0})-({x1},{y1}) is empty after clamping to canvas bounds")
-    w_span = max(1, cx1 - cx0 - 1)
-    h_span = max(1, cy1 - cy0 - 1)
-    stops = _shade_ramp(from_color, to_color, 5)
-    go = data["glyph_override"]
-    for row in range(cy0, cy1):
-        fy = (row - cy0) / h_span
-        for col in range(cx0, cx1):
-            fx = (col - cx0) / w_span
-            t = fn(fx, fy)
-            idx = max(0, min(len(stops) - 1, int(t * (len(stops) - 1))))
-            ch, fg, bg = stops[idx]
-            go[f"{row},{col}"] = [ch, fg, bg]
+    _shade_masked(data, region, from_color, to_color, light_direction)
+    save_canvas(workspace, slug, data)
+    return data
+
+
+def sphere_px(workspace, slug, cx, cy, r, color, light_x, light_y, shadow_color=None):
+    """One call: a lit sphere -- draws the circle AND shades it with a
+    real point-light falloff from (light_x, light_y), so the gradient
+    follows the sphere's actual curvature (radial from the light point)
+    instead of a linear directional wash, and the edge stays genuinely
+    round (see _shade_masked). Added 2026-09-22 per user direction:
+    "spheres, eyes, heads and orbs are most of what raze draws, and it
+    shouldn't have to compose one from a fill plus a shade" -- circle_px
+    + shade still work separately for anything that isn't simply "a lit
+    ball", but this is the one-call path for the common case.
+    shadow_color defaults to a darker step of the same hue family via
+    canvas.py's ramp() convention if not given explicitly -- callers
+    should generally just pass the dim end of ramp(hue_name) here."""
+    data = load_canvas(workspace, slug)
+    color = _check_color(color)
+    dark = _check_color(shadow_color if shadow_color is not None else 0)
+    cx, cy, r = float(cx), float(cy), float(r)
+    if r <= 0:
+        raise CanvasError(f"r must be > 0, got {r}")
+    W, PH = data["w"], data["ph"]
+    r0, r1 = int(cx - r) - 1, int(cx + r) + 1
+    c0, c1 = int(cy - r) - 1, int(cy + r) + 1
+    pixels = data["pixels"]
+    for py in range(max(0, c0), min(PH, c1 + 1)):
+        row = pixels[py]
+        for px in range(max(0, r0), min(W, r1 + 1)):
+            if math.hypot(px - cx, py - cy) <= r:
+                row[px] = color
+    mask = {"type": "circle", "cx": cx, "cy": cy, "r": r}
+    data["last_shape"] = mask
+    _shade_masked(data, mask, color, dark, "top-left", light_x=float(light_x), light_y=float(light_y))
     save_canvas(workspace, slug, data)
     return data
 
@@ -241,8 +377,7 @@ def shade(workspace, slug, x0, y0, x1, y1, from_color, to_color, light_direction
 def text(workspace, slug, x, y, text_str, fg, bg):
     """Place literal characters starting at cell (x, y), one per cell,
     left to right -- for sig blocks, labels, title cards. (Not a
-    blocky wordmark font -- that's still scratch/canvas.py's
-    block_letters() inside a script, if a piece wants a large logo.)"""
+    blocky wordmark font -- see canvas_wordmark for that.)"""
     data = load_canvas(workspace, slug)
     fg, bg = _check_color(fg), _check_color(bg)
     W, H = data["w"], data["h_cells"]
@@ -257,6 +392,174 @@ def text(workspace, slug, x, y, text_str, fg, bg):
         if col >= 0:
             go[f"{row},{col}"] = [ch, fg, bg]
         col += 1
+    save_canvas(workspace, slug, data)
+    return data
+
+
+# Same 5x7 block-letter font as workspace/scratch/canvas.py's GLYPHS_5x7,
+# kept as a literal copy here (not imported) for the same reason stated
+# in this module's header docstring -- the harness's own tool dispatch
+# must not depend on agent-editable scratch/ files.
+_GLYPHS_5x7 = {
+'A': [".#...",".###.","#...#","#####","#...#","#...#","#...#"],
+'B': ["####.","#...#","#...#","####.","#...#","#...#","####."],
+'C': [".####","#....","#....","#....","#....","#....",".####"],
+'D': ["####.","#...#","#...#","#...#","#...#","#...#","####."],
+'E': ["#####","#....","#....","####.","#....","#....","#####"],
+'F': ["#####","#....","#....","####.","#....","#....","#...."],
+'G': [".####","#....","#....","#.##.","#...#","#...#",".####"],
+'H': ["#...#","#...#","#...#","#####","#...#","#...#","#...#"],
+'I': ["#####","..#..","..#..","..#..","..#..","..#..","#####"],
+'J': ["....#","....#","....#","....#","#...#","#...#",".###."],
+'K': ["#...#","#..#.","#.#..","##...","#.#..","#..#.","#...#"],
+'L': ["#....","#....","#....","#....","#....","#....","#####"],
+'M': ["#...#","##.##","#.#.#","#...#","#...#","#...#","#...#"],
+'N': ["#...#","##..#","#.#.#","#..##","#...#","#...#","#...#"],
+'O': [".###.","#...#","#...#","#...#","#...#","#...#",".###."],
+'P': ["####.","#...#","#...#","####.","#....","#....","#...."],
+'Q': [".###.","#...#","#...#","#...#","#.#.#","#..#.",".##.#"],
+'R': ["####.","#...#","#...#","####.","#.#..","#..#.","#...#"],
+'S': [".####","#....","#....",".###.","....#","....#","####."],
+'T': ["#####","..#..","..#..","..#..","..#..","..#..","..#.."],
+'U': ["#...#","#...#","#...#","#...#","#...#","#...#",".###."],
+'V': ["#...#","#...#","#...#","#...#","#...#",".#.#.","..#.."],
+'W': ["#...#","#...#","#...#","#.#.#","#.#.#","##.##","#...#"],
+'X': ["#...#",".#.#.","..#..","..#..","..#..",".#.#.","#...#"],
+'Y': ["#...#",".#.#.","..#..","..#..","..#..","..#..","..#.."],
+'Z': ["#####","....#","...#.","..#..",".#...","#....","#####"],
+'0': [".###.","#...#","#..##","#.#.#","##..#","#...#",".###."],
+'1': ["..#..",".##..","..#..","..#..","..#..","..#..","#####"],
+'2': [".###.","#...#","....#","...#.","..#..",".#...","#####"],
+'3': [".###.","#...#","....#",".###.","....#","#...#",".###."],
+'4': ["...#.","..##.",".#.#.","#..#.","#####","...#.","...#."],
+'5': ["#####","#....","####.","....#","....#","#...#",".###."],
+'6': [".###.","#....","#....","####.","#...#","#...#",".###."],
+'7': ["#####","....#","...#.","..#..",".#...","#....","#...."],
+'8': [".###.","#...#","#...#",".###.","#...#","#...#",".###."],
+'9': [".###.","#...#","#...#",".####","....#","....#",".###."],
+' ': [".....",".....",".....",".....",".....",".....","....."],
+'-': [".....",".....",".....","#####",".....",".....","....."],
+':': [".....","..#..",".....",".....",".....","..#..","....."],
+'/': ["....#","...#.","..#..",".#...","#....",".....","....."],
+'!': ["..#..","..#..","..#..","..#..","..#..",".....","..#.."],
+"'": [".#...",".#...",".....",".....",".....",".....","....."],
+'.': [".....",".....",".....",".....",".....",".....","..#.."],
+'&': [".##..","#..#.","#.#..",".#...","#.#.#","#..#.",".##.#"],
+}
+
+
+def wordmark(workspace, slug, x, y, text_str, fg, scale=2, gap=1):
+    """Draw text as large 5x7 block letters -- the wordmark/title-card
+    primitive canvas_text can't do (canvas_text is one glyph per cell,
+    for sig blocks and labels; this is for a real logo/title). Same font
+    and scale-2-for-legibility convention as scratch/canvas.py's
+    block_letters() (kept as a literal copy, see the module docstring
+    for why this file doesn't import scratch/). Returns the total pixel
+    width used, so the caller can center a word before drawing."""
+    data = load_canvas(workspace, slug)
+    fg = _check_color(fg)
+    W, PH = data["w"], data["ph"]
+    pixels = data["pixels"]
+    x0, y0 = int(x), int(y)
+    cur_x = x0
+    for ch_letter in text_str:
+        glyph = _GLYPHS_5x7.get(ch_letter.upper(), _GLYPHS_5x7[" "])
+        for row_i, row in enumerate(glyph):
+            for col_i, cell in enumerate(row):
+                if cell != "#":
+                    continue
+                for sy in range(scale):
+                    for sx in range(scale):
+                        px = cur_x + col_i * scale + sx
+                        py = y0 + row_i * scale + sy
+                        if 0 <= px < W and 0 <= py < PH:
+                            pixels[py][px] = fg
+        cur_x += (5 * scale) + gap
+    save_canvas(workspace, slug, data)
+    return data, cur_x - x0 - gap
+
+
+def mirror(workspace, slug, axis="v"):
+    """Mirror the canvas's authored half onto the other half -- axis='v'
+    (vertical split line, left half -> right, the common case for
+    symmetric creatures/faces/totems) or axis='h' (horizontal split,
+    top half -> bottom). Draw your content in the left/top half only,
+    then call this once. Same convention as scratch/canvas.py's
+    mirror()."""
+    data = load_canvas(workspace, slug)
+    W, PH = data["w"], data["ph"]
+    pixels = data["pixels"]
+    go = data["glyph_override"]
+    if axis == "v":
+        mid = W // 2
+        for py in range(PH):
+            row = pixels[py]
+            for px in range(mid):
+                row[W - 1 - px] = row[px]
+        new_go = dict(go)
+        for key, val in go.items():
+            r, c = key.split(",")
+            c = int(c)
+            if c < mid:
+                new_go[f"{r},{W - 1 - c}"] = val
+        data["glyph_override"] = new_go
+    elif axis == "h":
+        h_cells = data["h_cells"]
+        mid_cell = h_cells // 2
+        for cell_row in range(mid_cell):
+            src_top, dst_top = cell_row * 2, (h_cells - 1 - cell_row) * 2
+            pixels[dst_top] = list(pixels[src_top])
+            pixels[dst_top + 1] = list(pixels[src_top + 1])
+        new_go = dict(go)
+        for key, val in go.items():
+            r, c = key.split(",")
+            r = int(r)
+            if r < mid_cell:
+                new_go[f"{h_cells - 1 - r},{c}"] = val
+        data["glyph_override"] = new_go
+    else:
+        raise CanvasError(f"axis must be 'v' or 'h', got {axis!r}")
+    save_canvas(workspace, slug, data)
+    return data
+
+
+def strand_shade(workspace, slug, region, direction, fg_list, n_strands=40, length=6, seed=None):
+    """Directional stroke texture for fur/hair/grain -- many short strokes
+    following a consistent direction, cycling through fg_list so adjacent
+    strokes read as distinct marks instead of blurring into one mass.
+    Same technique as scratch/canvas.py's strand_shade() (see that
+    docstring for the real-reference studied), simplified to a fixed
+    direction + rectangular region instead of per-point callables (a
+    tool-call argument can't carry a Python function) -- pass region as
+    {"type":"rect","x0","y0","x1","y1"} in CELL space, direction as
+    [dx, dy] (e.g. [0,1] combed downward, [1,1] diagonal)."""
+    import random
+    data = load_canvas(workspace, slug)
+    if region.get("type") != "rect":
+        raise CanvasError("strand_shade region must be {'type':'rect',...} in cell space")
+    x0, y0, x1, y1 = region["x0"], region["y0"], region["x1"], region["y1"]
+    W, H = data["w"], data["h_cells"]
+    x0, x1 = max(0, x0), min(W, x1)
+    y0, y1 = max(0, y0), min(H, y1)
+    if x1 <= x0 or y1 <= y0:
+        raise CanvasError(f"region ({x0},{y0})-({x1},{y1}) is empty")
+    fg_list = [_check_color(c) for c in fg_list]
+    dx, dy = direction
+    mag = (dx * dx + dy * dy) ** 0.5 or 1.0
+    dx, dy = dx / mag, dy / mag
+    px_dir, py_dir = -dy, dx  # perpendicular, for jitter
+    rng = random.Random(seed)
+    go = data["glyph_override"]
+    for i in range(n_strands):
+        x_start = rng.uniform(x0, x1)
+        y_start = rng.uniform(y0, y1)
+        off = rng.uniform(-1, 1)
+        fg = fg_list[i % len(fg_list)]
+        for s in range(length):
+            x = int(round(x_start + dx * s + px_dir * off))
+            y = int(round(y_start + dy * s + py_dir * off))
+            if x0 <= x < x1 and y0 <= y < y1:
+                go[f"{y},{x}"] = [_RAMP[0], fg, data["bg"]]
     save_canvas(workspace, slug, data)
     return data
 
