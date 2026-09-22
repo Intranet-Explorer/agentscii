@@ -1148,6 +1148,19 @@ def init_db():
         note TEXT,
         timestamp REAL NOT NULL
     )""")
+    # User direction, 2026-09-22 project review, task 5: "Log tool usage per
+    # shift: counts for each tool, and how many .py files raze wrote." The
+    # raw counts are already derivable from `events` (every tool call is
+    # logged there with tool_name+tool_args -- see log_event's call site in
+    # the dispatch loop), but a per-shift summary row means a query doesn't
+    # have to re-aggregate the full events table every time, and survives
+    # even if `events` ever gets pruned/archived. One row per (shift,tool).
+    conn.execute("""CREATE TABLE IF NOT EXISTS shift_tool_summary (
+        shift_id INTEGER NOT NULL,
+        tool_name TEXT NOT NULL,
+        call_count INTEGER NOT NULL,
+        PRIMARY KEY (shift_id, tool_name)
+    )""")
     conn.execute("""CREATE TABLE IF NOT EXISTS agent_identity (
         seat TEXT PRIMARY KEY,
         handle TEXT NOT NULL,
@@ -1242,6 +1255,54 @@ def log_event(conn, agent, shift_id, role, content=None, reasoning=None, tool_na
     conn.execute(
         "INSERT INTO events (agent, shift_id, role, content, reasoning, tool_name, tool_args, tool_call_id, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
         (agent, shift_id, role, content, reasoning, tool_name, tool_args, tool_call_id, time.time()),
+    )
+    conn.commit()
+
+
+def _record_shift_tool_summary(conn, shift_id):
+    """Aggregate this shift's tool calls (from `events`, already logged at
+    every dispatch -- see log_event's call site) into shift_tool_summary:
+    one row per tool with its call count, plus a synthetic 'write_file:.py'
+    row counting write_file calls whose path argument ends in .py, AND a
+    synthetic 'bash:.py_write' row for bash calls that look like they wrote
+    a .py file (heredoc into a .py path, or a python open(...,'w')/
+    write_text call targeting .py) -- checked directly against real
+    history: .py files got written via bash heredocs as often as via
+    write_file (see e.g. `cat > scratch/foo.py <<'EOF'` and
+    `python3 - <<'PY' ... open('scratch/foo.py','w').write(...)`), so
+    counting write_file alone would badly undercount "how many .py files
+    did raze write" (the user's task 5 ask). Called once at shift end."""
+    rows = conn.execute(
+        "SELECT tool_name, tool_args FROM events WHERE shift_id=? AND role='assistant' AND tool_name IS NOT NULL",
+        (shift_id,),
+    ).fetchall()
+    counts = {}
+    py_writes = 0
+    bash_py_writes = 0
+    py_write_re = re.compile(r"\.py['\"]?\s*(,\s*['\"]w)|>\s*[^\s]*\.py\b|write_text\([^)]*\.py")
+    for tool_name, tool_args in rows:
+        counts[tool_name] = counts.get(tool_name, 0) + 1
+        if tool_name == "write_file" and tool_args:
+            try:
+                path = json.loads(tool_args).get("path", "")
+            except Exception:
+                path = ""
+            if path.endswith(".py"):
+                py_writes += 1
+        elif tool_name == "bash" and tool_args:
+            try:
+                command = json.loads(tool_args).get("command", "")
+            except Exception:
+                command = ""
+            if py_write_re.search(command):
+                bash_py_writes += 1
+    if py_writes:
+        counts["write_file:.py"] = py_writes
+    if bash_py_writes:
+        counts["bash:.py_write"] = bash_py_writes
+    conn.executemany(
+        "INSERT OR REPLACE INTO shift_tool_summary (shift_id, tool_name, call_count) VALUES (?,?,?)",
+        [(shift_id, name, n) for name, n in counts.items()],
     )
     conn.commit()
 
@@ -4711,6 +4772,7 @@ def run_shift(conn, agent):
          last_reasoning if note else None, shift_id),
     )
     conn.commit()
+    _record_shift_tool_summary(conn, shift_id)
     print(f"=== {agent} shift {shift_id} ended ({ended_at - started_at:.1f}s): {note} ===")
     return wants_continue
 
