@@ -50,10 +50,16 @@ colors, place shapes, done) is what produces flat, thin work.
 4. **Background/negative-space texture** — whatever ISN'T the subject
    gets real texture, not flat black. This is the single most common
    gap between house work and real ACiD references — check with
-   inspect_piece's background texture flag. canvas_stamp with a
-   texture-region patch (sky, ground, dithered field — never a
-   subject) is the current way to do this densely; canvas_shade also
-   works for a simpler gradient field.
+   inspect_piece's background texture flag.
+   **Lay a base tone FIRST, then put texture on top of it.** Strokes
+   or stamps straight onto black read as rain on black, not as sky —
+   measured live 2026-09-22 on a toolcheck composite: the same
+   strand_shade pass over a dim canvas_slab_px base read as sky, over
+   bare black it read as streaks. A background needs ground/air
+   separation before it needs detail.
+   canvas_stamp with a texture-region patch (sky, ground, dithered
+   field — never a subject) is the current way to do this densely;
+   canvas_shade also works for a simpler gradient field.
 5. **Frame/title** — a border or title card (canvas_fill_px for bars,
    canvas_text for the title line), as its own pass. Real packs are
    framed more often than not.
@@ -82,6 +88,15 @@ last, or pass a rect/circle/color-mask region explicitly) — it stays
 clipped to that shape's actual edge, not a bounding rectangle;
 canvas_sphere_px does fill+shade in one call for the common case of a
 simple lit ball (spheres/eyes/orbs are most of what gets drawn);
+**canvas_slab_px draws a lit BOX and canvas_capsule_px a lit capsule —
+use these for ANY flat-sided or limb-shaped form (torsos, limbs,
+buildings, panels, frames, pipes) instead of fill+shade, which bands
+them into flat fills with faint noise. Each face takes its brightness
+from its orientation to the light, so a shared light_direction across
+every form in a piece actually holds together as one scene.**
+canvas_metrics measures the live canvas with the same function the
+gate uses — use it instead of computing your own numbers, which have
+come out ~3x off;
 canvas_wordmark draws large logo/title text, canvas_text places
 single-cell labels; canvas_mirror completes a symmetric figure from
 one authored half; canvas_strand_shade adds directional fur/hair/

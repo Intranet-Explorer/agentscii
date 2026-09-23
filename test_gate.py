@@ -79,10 +79,16 @@ def test_flat_forms_pack_halfblocks():
     assert m['half_block_pct'] > 8, f"capsule half_block too low: {m}"
 
 
-def test_subject_regions_separates_known_pieces():
-    """The one signal that distinguishes the work: v59=6, beast=3,
-    watcher_final=1. Cell metrics could not tell these apart."""
+def test_disconnected_masses_is_soft_only():
+    """Honest name and honest scope: counts spatially disconnected
+    masses, NOT forms (a 5-form composite where everything touches
+    scores 1). Soft signal only -- must never gate or tripwire."""
     import harness as h
+    import inspect
     v59 = h._compute_piece_metrics('workspace/gallery/pack53/_orb.v59.ans')
-    wf = h._compute_piece_metrics('workspace/submissions/_watcher_final.ans')
-    assert v59['subject_regions'] > wf['subject_regions']
+    assert 'disconnected_masses' in v59
+    assert 'subject_regions' not in v59
+    src = inspect.getsource(h._check_regression_tripwire)
+    # check the QUERY, not the docstring that explains the exclusion
+    sql = src.split('"""')[2] if src.count('"""') >= 2 else src
+    assert 'disconnected_masses' not in sql
