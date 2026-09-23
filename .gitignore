@@ -62,3 +62,4 @@ workspace/canvases/
 
 corpus/mem_log.jsonl
 corpus/mem_watchdog_kill_report.json
+corpus/clip_index_highcraft/

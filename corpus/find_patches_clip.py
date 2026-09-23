@@ -107,15 +107,24 @@ def find_patches_clip(query, n=5, index_dir=None, half_block_min=None, shade_min
         order = np.argsort(-scores)
 
     hits = []
+    # Overlapping windows from the SAME file land in adjacent rows and
+    # score near-identically, so a 3-result set routinely came back with
+    # the same patch two or three times -- measured 2026-09-23 across the
+    # 5-query grid, in both the full and filtered indexes. Dedupe by
+    # source file so n results mean n distinct references.
+    seen_sources = set()
     for idx in order:
         if len(hits) >= n:
             break
         row = conn.execute("SELECT * FROM meta WHERE row_idx = ?", (int(idx),)).fetchone()
         if row is None:
             continue
+        if row["parent_path"] in seen_sources:
+            continue
         grids = _load_patch_grids(row["parent_path"], row["row_offset"], row["col_offset"], row["window_rows"], row["window_cols"])
         if grids is None:
             continue
+        seen_sources.add(row["parent_path"])
         chars, fg, bg = grids
         hit = dict(row)
         hit["score"] = float(scores[idx])
