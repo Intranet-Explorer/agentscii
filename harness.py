@@ -1755,6 +1755,14 @@ def init_db():
     except sqlite3.OperationalError:
         pass
     try:
+        # Artist of record. The seat that SUBMITS is not always the seat
+        # that DREW: raze submitted CROSSING, which Opus drew during the
+        # Opus-as-artist experiment (2026-09-23). Credits files carry
+        # this too, but a file is easy to overwrite and a column is not.
+        conn.execute("ALTER TABLE subjects ADD COLUMN contributor TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
         conn.execute("ALTER TABLE piece_metrics ADD COLUMN accepted INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass
@@ -2585,8 +2593,15 @@ FLAT_REGION_CELL_THRESHOLD = 40
 # every submission -- never enforced as a threshold. User direction,
 # 2026-09-22: "any floor set where the house can't already reach gets
 # gamed rather than met."
-HOUSE_BAR = {"name": "_orb.v59", "half_block": 37.9, "shade": 32.1,
-             "colors": 6, "regions": 6, "ink_share": 56}
+# House bar replaced 2026-09-23 after the Opus-as-artist experiment. The
+# three Opus pieces won 5 of 6 blind pairwise comparisons against the
+# best Qwen work while scoring LOWER on half_block -- CROSSING is 12.7%
+# whole-canvas against _keeper's 16.4% and still reads as a real scene.
+# The numbers here are therefore reference points, NOT targets: the bar
+# is what the reference pieces LOOK like, which is why
+# compare_to_reference against them is the mechanism and no threshold is.
+HOUSE_BAR = {"name": "_opus_CROSSING", "half_block": 26.1, "shade": 27.9,
+             "colors": 12, "regions": 6, "ink_share": 48}
 CORPUS_MEDIAN = {"half_block": 15.0, "shade": 9.4}
 # User direction, 2026-09-18, load-bearing measurement behind this whole
 # check: every version of _orb (v5-v8) and _phosphor.v3 measured at 0.0%
@@ -3417,25 +3432,27 @@ def run_tool(name, args, agent, shift_id=None):
             # --- required v59 comparison before submit ----------------------
             # User direction, 2026-09-22: the house bar is raised through
             # REFERENCE, not through a metric threshold. A figurative piece
-            # must be looked at side by side with _orb.v59 before it can be
+            # must be looked at side by side with one of the Opus reference
+            # pieces before it can be
             # submitted. Checked against this shift's own logged
             # compare_to_reference calls (events already records tool_name +
             # tool_args at the single dispatch site) rather than new state.
             db_cmp = sqlite3.connect(DB_PATH)
             try:
-                seen_v59 = db_cmp.execute(
+                seen_ref = db_cmp.execute(
                     "SELECT COUNT(*) FROM events WHERE shift_id=? "
                     "AND tool_name='compare_to_reference' "
-                    "AND tool_args LIKE '%_orb.v59%'", (shift_id,)
+                    "AND tool_args LIKE '%_opus_%'", (shift_id,)
                 ).fetchone()[0]
             finally:
                 db_cmp.close()
-            if not seen_v59:
+            if not seen_ref:
                 return (
                     "(error: submit_piece blocked — call compare_to_reference "
-                    "with reference_path='references/study/_orb.v59.ans' and "
-                    "actually look at the result first. v59 is the house bar: "
-                    "match or beat it on structure and half-block use. This is "
+                    "with one of references/study/_opus_CROSSING.ans, "
+                    "_opus_AQUEDUCT.ans or _opus_PROSPECTOR.ans and "
+                    "actually look at the result first. These are the house bar: "
+                    "match them on whether a SUBJECT RESOLVES and on scene depth. Do not chase their metrics -- they score lower than pieces they beat. This is "
                     "a look-before-you-submit requirement, not a metric "
                     "threshold — nothing about your numbers is being enforced.)"
                 )

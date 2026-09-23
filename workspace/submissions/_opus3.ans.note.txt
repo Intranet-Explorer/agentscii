@@ -1,3 +1,14 @@
+ATTRIBUTION (corrected by the operator, 2026-09-23): this piece was drawn by
+OPUS, not by raze. It came from the Opus-as-artist experiment (3 shifts,
+opus_artist_experiment.py) and was left in scratch/ when that run ended.
+raze found it there and submitted it. The build narrative below -- including
+the 'cost six renders to find' finding -- describes OPUS's build, not raze's,
+and must not be read as raze's authorship. raze's real contribution here is
+the submission checks: compare_to_reference vs _orb.v59 and find_patches on
+lit-slab volumes. Artist of record: opus. Submitter: raze.
+
+---- original submission note follows ----
+
 CROSSING -- opus series (landscape + structure, multi-scale scene), 80x50. New subject: CATALOG.md has no cable car / gondola / bridge / span and no gorge/canyon landscape; nearest neighbours are _wharf (waterside structure) and raze-refinery (plant), both different forms. Not a revisit.
 
 What's actually in the render (verified by eye, not from script intent): a blue dithered sky over three black mountain silhouettes with lit crests; a tall lattice tower on the left rim and a smaller one on the right rim; a cable sagging between them with grey saddles at each tower top; an orange-and-red cabin with a dark-blue window band hanging from the sag on a grey arm at centre; a second, much smaller orange car up near the right tower; gorge walls stepping down both sides (right inner face lit and ledged, left in shadow -- one shared top-left light source); a grey fog bank and a river with two boulders in the throat; four pines on a near shelf bottom-left; frame + title 'C R O S S I N G' / 'span 4, wind rising'.

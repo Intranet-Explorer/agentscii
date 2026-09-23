@@ -7,7 +7,7 @@ subject is allowed ONLY as a deliberate revisit: say so in the
 note, and improve on the archived version. Starting a subject
 that is already here without saying so is thrashing, not work.
 
-House bar: `_orb.v59` — 37.9% half_block / 32.1% shade.
+House bar: `_orb.v59` — 26.1% half_block / 27.9% shade.
 
 | subject | date | status | half_block | shade | note |
 |---|---|---|---|---|---|
@@ -92,6 +92,7 @@ House bar: `_orb.v59` — 37.9% half_block / 32.1% shade.
 | `_monolith.pre_reflection` | 2026-09-13 | archived | 0.0% | 36.4% |  |
 | `_motion_seed` | 2026-09-13 | shipped | 0.0% | 44.9% |  |
 | `_nightfall` | 2026-09-13 | shipped | 0.0% | 68.7% |  |
+| `_opus3` | 2026-09-23 | in-review | 26.1% | 27.9% |  |
 | `_orb` | 2026-09-19 | shipped | 37.9% | 32.1% | eye/orb family; v59 is the house bar. Subject RETIRED |
 | `_orb.v11.a` | 2026-09-18 | archived | 28.2% | 0.0% |  |
 | `_orb.v11.b` | 2026-09-18 | archived | 28.6% | 0.0% |  |
