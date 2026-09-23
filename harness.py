@@ -4275,26 +4275,62 @@ def _kill_stale_claude_login(max_age_s=300):
     return killed
 
 
-def _extract_intended_title(path):
-    """Best-effort extraction of the piece's own declared title, from
-    its in-file title-card text (the same convention _reads_figurative
-    checks) -- used only to log what the artist INTENDED next to what
-    Opus blindly saw, for a human-readable report. Never fed to the
-    blind check itself."""
+def _extract_intended_title(path, title=None):
+    """The piece's declared title, for logging next to what Opus blindly
+    saw. Never fed to the blind check itself.
+
+    Order: explicit argument, then the .note.txt sidecar, then the
+    subjects table, then the in-file title card. Found live
+    2026-09-23: CROSSING returned None because its title sits in a
+    framed row rather than the first three lines, so the check could
+    only DESCRIBE the piece and had nothing to verify intent against --
+    which is half the point of it. The file is the LAST resort now, not
+    the only source.
+    """
+    if title:
+        return title.strip()
+
+    slug = core_slug(Path(path).stem)
+
+    # The piece's own sig-block title row is the most reliable source:
+    # it is what the artist actually wrote on the canvas. Scan ALL rows,
+    # not just the first three (CROSSING's sits in a framed row near the
+    # bottom, which is why this returned None). Redaction does not
+    # affect this -- it reads the raw file, not the render.
     try:
-        raw = Path(path).read_bytes()
+        text = _decode_ans_bytes(Path(path).read_bytes())
+        lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+        cands = []
+        for line in lines:
+            clean = _SGR_RE.sub("", line).strip().strip("\u2550\u2580\u2584\u2588 ")
+            if not (3 <= len(clean) <= 60):
+                continue
+            alpha = sum(1 for ch in clean if ch.isascii() and ch.isalpha())
+            if alpha < 3 or alpha / len(clean) < 0.5:
+                continue
+            if "AGENTSCII" in clean.upper() or "/" in clean:
+                continue  # credit line, not the title
+            cands.append(" ".join(clean.split()))
+        if cands:
+            # the title card is normally the shortest all-caps line
+            caps = [c for c in cands if c.upper() == c]
+            return (caps or cands)[0]
     except Exception:
-        return None
-    text = _decode_ans_bytes(raw)
-    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
-    for line in lines[:3]:
-        clean = _SGR_RE.sub("", line).strip()
-        if len(clean) >= 4 and sum(1 for ch in clean if ch.isascii() and ch.isalpha()) / len(clean) > 0.5:
-            return clean
+        pass
+
+    try:
+        db = sqlite3.connect(DB_PATH)
+        row = db.execute("SELECT slug FROM subjects WHERE slug=?", (slug,)).fetchone()
+        db.close()
+        if row:
+            return row[0].lstrip("_").replace("_", " ").upper()
+    except Exception:
+        pass
+
     return None
 
 
-def opus_subject_check(path):
+def opus_subject_check(path, title=None):
     """Blind subject-recognition gate (user direction, 2026-09-19):
     'Send Opus the render with no title, note, or subject name, and
     ask: What is this an image of? If its answer doesn't match the
@@ -4325,7 +4361,7 @@ def opus_subject_check(path):
     """
     import subprocess, json, tempfile, shutil, base64
 
-    intended_title = _extract_intended_title(path)
+    intended_title = _extract_intended_title(path, title)
 
     # Check the SAME daily Opus cost/count cap opus_curate_review uses --
     # this check makes up to 2 additional real Opus calls per submission,

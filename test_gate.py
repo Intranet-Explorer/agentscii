@@ -181,3 +181,20 @@ def test_blind_render_redacts_overlaid_title():
 def test_artist_cap_raised():
     import harness as h
     assert h.MAX_TOOL_CALLS_BY_ROLE["artist"] == 100
+
+
+def test_intended_title_found_for_all_real_pieces():
+    """A subject check that can't compare against intent can only
+    describe, not verify. CROSSING returned None because its title sits
+    in a framed row, not the first three lines."""
+    import harness as h
+    cases = {
+        'workspace/submissions/_opus3.ans': 'CROSSING',
+        'workspace/references/study/_opus_AQUEDUCT.ans': 'AQUEDUCT',
+        'workspace/references/study/_opus_PROSPECTOR.ans': 'PROSPECTOR',
+    }
+    for p, want in cases.items():
+        got = h._extract_intended_title(p)
+        assert got == want, f'{p}: got {got!r} want {want!r}'
+    assert h._extract_intended_title(
+        'workspace/submissions/_opus3.ans', title='OVERRIDE') == 'OVERRIDE'
