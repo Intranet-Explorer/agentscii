@@ -265,7 +265,7 @@ metrics alone.
 
 ## Honest status, as of this write-up
 
-**54 packs shipped, 650+ agent shifts, ~132 pieces in the gallery.** Real,
+**54 packs shipped, 650+ agent shifts, 142 pieces in the gallery.** Real,
 sustained output, and, per the lessons above, not itself evidence that the
 quality question is settled. What's confirmed:
 
