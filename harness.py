@@ -345,6 +345,78 @@ def _reads_figurative(path):
     return bool(_FIGURATIVE_WORDS_RE.search(visible))
 
 
+def _subject_fingerprint(path):
+    """Content-based subject identity: a coarse 8x8 occupancy+hue hash of
+    the rendered grid. Renaming a file cannot change it.
+
+    User direction, 2026-09-22: "track subject identity by content
+    similarity or an explicit subject field, not the filename slug, so
+    renaming can't reset the revision count." Found live: _watcher.v7
+    hit the revision cap, was re-slugged _watcher_final, and sailed
+    through as a fresh subject with zero content change.
+
+    ponytail: 8x8 coarse grid, not a perceptual hash -- it only has to
+    catch "same piece, new name", and a real pHash would need the
+    rendered image, not the cell grid.
+    """
+    try:
+        grid, _ = _parse_ans_grid(path)
+    except Exception:
+        return None
+    if not grid:
+        return None
+    rows = [r for (r, c) in grid]
+    cols = [c for (r, c) in grid]
+    r0, r1 = min(rows), max(rows) + 1
+    c0, c1 = min(cols), max(cols) + 1
+    rh = max(1, (r1 - r0) / 8.0)
+    cw = max(1, (c1 - c0) / 8.0)
+    buckets = [[0, 0] for _ in range(64)]
+    for (r, c), (ch, fg, bg) in grid.items():
+        if ch == " " and bg == 0:
+            continue
+        br = min(7, int((r - r0) / rh))
+        bc = min(7, int((c - c0) / cw))
+        b = buckets[br * 8 + bc]
+        b[0] += 1
+        b[1] |= 1 << ((bg if (ch == " " and bg != 0) else fg) & 7)
+    peak = max((b[0] for b in buckets), default=0) or 1
+    bits = "".join(
+        ("1" if b[0] * 4 >= peak else "0") + f"{b[1]:02x}" for b in buckets
+    )
+    return hashlib.sha1(bits.encode()).hexdigest()[:16]
+
+
+# Subjects retired by the human -- a new piece on any of these is
+# blocked outright. User direction, 2026-09-22: "no eye, orb, or sphere
+# subject until three different subjects have been accepted." 60+
+# versions since Sep 18 across _orb/_watcher/_watcher_final, the last
+# of which was a re-slug that dodged the revision cap.
+RETIRED_SUBJECT_WORDS = ("eye", "orb", "sphere", "watcher", "iris", "pupil")
+RETIRED_UNTIL_ACCEPTS = 3
+
+
+def _retired_subject_block(conn, slug, title=""):
+    """None when allowed, else the refusal text."""
+    hay = f"{slug} {title}".lower()
+    hit = next((w for w in RETIRED_SUBJECT_WORDS if w in hay), None)
+    if hit is None:
+        return None
+    n = conn.execute(
+        "SELECT COUNT(DISTINCT slug) FROM subjects WHERE status='accepted'"
+    ).fetchone()[0]
+    if n >= RETIRED_UNTIL_ACCEPTS:
+        return None
+    return (
+        f"subject retired — '{hit}' is part of the eye/orb/sphere family, "
+        f"which has had 60+ versions since Sep 18 and is shelved. "
+        f"{n} of {RETIRED_UNTIL_ACCEPTS} required different subjects have "
+        f"been accepted so far. Draw something else: a scene, a creature "
+        f"with limbs, a logo with lettering — several distinct forms at "
+        f"different scales, not a single centered round object."
+    )
+
+
 def core_slug(name_noext):
     """Strip a trailing version suffix (.v3, -v4, _v12) to find the
     underlying piece identity, e.g. '_orb.v5' and '_orb' are the same
@@ -475,14 +547,20 @@ def _compute_piece_metrics(path):
             "distinct_colors_in_subject": 0,
             "subject_bbox_rows": 0, "subject_bbox_cols": 0,
             "subject_cell_count": 0,
-            "subject_regions": 0, "ink_canvas_share": 0.0,
+            "disconnected_masses": 0, "ink_canvas_share": 0.0,
         }
 
-    # Compositional signals (user direction, 2026-09-22): the real
-    # difference between _watcher_final (one centered blob, 5 colors)
-    # and the work worth shipping is COMPOSITIONAL, and no half_block/
-    # shade threshold can see it -- both measured 0.0%/78.2%, identical
-    # to the accepted hollis-raze-boot. Reported as soft signals only.
+    # Compositional soft signals (user direction, 2026-09-22). NOTE the
+    # honest name: this counts SPATIALLY DISCONNECTED masses, not forms.
+    # Measured -- v59=6, _watcher_final=1 looked like a form count, but a
+    # 5-form composite where everything touches the ground scores 1, and
+    # hue-segmenting to fix that gives v59 and _watcher_final nearly
+    # identical profiles (1199/308/120/114/109/60 vs
+    # 1199->1114/316/159/89/79/40), so it cannot separate the one pair it
+    # existed to separate. Kept as a soft signal because scattered-vs-
+    # single-mass is real information; deliberately NOT in the
+    # regression tripwire, and not worth image segmentation to improve:
+    # composition quality is Opus's and hollis's judgment, not a metric.
     # ponytail: 4-connected flood fill over the subject mask, O(cells);
     # swap for a real labeler only if pieces get big enough to matter.
     _MIN_REGION = 12  # smaller blobs are detail/noise, not separate forms
@@ -524,7 +602,7 @@ def _compute_piece_metrics(path):
         "subject_bbox_rows": (max(rows) - min(rows) + 1) if rows else 0,
         "subject_bbox_cols": (max(cols) - min(cols) + 1) if cols else 0,
         "subject_cell_count": subject_ct,
-        "subject_regions": regions,
+        "disconnected_masses": regions,
         "ink_canvas_share": ink_share,
     }
 
@@ -599,20 +677,86 @@ def _touch_subject(conn, slug, version, path, status="open"):
     curate_piece (accept/reject -> update status)."""
     existing = _get_subject(conn, slug)
     now = time.time()
+    fp = _subject_fingerprint(path) if path else None
     if existing is None:
         conn.execute(
             "INSERT INTO subjects (slug, status, opened_at, last_version, "
-            "last_path, updated_at) VALUES (?,?,?,?,?,?)",
-            (slug, status, now, version, str(path), now),
+            "last_path, updated_at, fingerprint) VALUES (?,?,?,?,?,?,?)",
+            (slug, status, now, version, str(path), now, fp),
         )
     else:
         new_version = max(existing["last_version"], version)
         conn.execute(
             "UPDATE subjects SET status=?, last_version=?, last_path=?, "
-            "updated_at=? WHERE slug=?",
-            (status, new_version, str(path), now, slug),
+            "updated_at=?, fingerprint=COALESCE(?, fingerprint) WHERE slug=?",
+            (status, new_version, str(path), now, fp, slug),
         )
     conn.commit()
+
+def _check_regression_tripwire(conn, n_back=3):
+    """After each accept: score the new piece against the last three
+    accepted on half_block, shade-of-ink and distinct colors. Two
+    consecutive accepts below the reference bar halts submissions and
+    reports instead of continuing.
+
+    User direction, 2026-09-22. Deliberately only these three metrics:
+    they behave consistently across all 142 shipped pieces.
+    disconnected_masses is excluded on purpose -- it reads spatial
+    disconnection, not form count, so a composed scene scores 1 and a
+    tripwire on it would punish exactly the work we want.
+
+    Returns None when fine, else the halt message.
+    """
+    rows = conn.execute(
+        "SELECT slug, version, half_block_pct, shade_char_pct, "
+        "distinct_colors_in_subject FROM piece_metrics "
+        "WHERE accepted=1 ORDER BY id DESC LIMIT ?", (n_back + 1,)
+    ).fetchall()
+    if len(rows) < n_back + 1:
+        return None
+    newest, prior = rows[0], rows[1:]
+    ref = {
+        i: sorted(p[i] for p in prior)[len(prior) // 2]
+        for i in (2, 3, 4)
+    }
+    below = [
+        label for i, label in ((2, "half_block"), (3, "shade-of-ink"),
+                               (4, "distinct colors"))
+        if newest[i] < ref[i]
+    ]
+    if len(below) < 2:
+        return None
+    strikes = conn.execute(
+        "SELECT COUNT(*) FROM tripwire_strikes WHERE cleared=0"
+    ).fetchone()[0]
+    conn.execute(
+        "INSERT INTO tripwire_strikes (slug, version, detail, ts, cleared) "
+        "VALUES (?,?,?,?,0)",
+        (newest[0], newest[1], ", ".join(below), time.time()),
+    )
+    conn.commit()
+    if strikes + 1 < 2:
+        return None
+    return (
+        f"REGRESSION TRIPWIRE: two consecutive accepted pieces fell below "
+        f"the recent-accept bar. Latest ('{newest[0]}' v{newest[1]}) is "
+        f"below on: {', '.join(below)}. Reference is the median of the "
+        f"last {n_back} accepts: half_block {ref[2]:.1f}%, shade "
+        f"{ref[3]:.1f}%, colors {ref[4]}. House bar {HOUSE_BAR['name']}: "
+        f"{HOUSE_BAR['half_block']}% / {HOUSE_BAR['shade']}%. Submissions "
+        f"are HALTED — report to the human rather than continuing."
+    )
+
+
+def _tripwire_halted(conn):
+    """True when an uncleared two-strike halt is in force."""
+    try:
+        return conn.execute(
+            "SELECT COUNT(*) FROM tripwire_strikes WHERE cleared=0"
+        ).fetchone()[0] >= 2
+    except sqlite3.OperationalError:
+        return False
+
 
 TOOLS = [
     {
@@ -1439,6 +1583,21 @@ def init_db():
         conn.execute("ALTER TABLE subjects ADD COLUMN pinned_version INTEGER")
     except sqlite3.OperationalError:
         pass
+    try:
+        # Content identity, so a rename can't reset a subject's revision
+        # count (see _subject_fingerprint).
+        conn.execute("ALTER TABLE subjects ADD COLUMN fingerprint TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE piece_metrics ADD COLUMN accepted INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+    conn.execute("""CREATE TABLE IF NOT EXISTS tripwire_strikes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT, version INTEGER, detail TEXT,
+        ts REAL, cleared INTEGER DEFAULT 0
+    )""")
     # piece_metrics: per-VERSION quality metrics, tracked at every
     # submit_piece call (not just accepted ones) so a revision's real
     # progress -- or regression -- is measurable, not just "Opus said
@@ -3066,12 +3225,12 @@ def run_tool(name, args, agent, shift_id=None):
                     f"enforced): half_block {_sm['half_block_pct']:.1f}%, "
                     f"shade-of-ink {_sm['shade_char_pct']:.1f}%, "
                     f"colors {_sm['distinct_colors_in_subject']}, "
-                    f"separate forms {_sm['subject_regions']}, "
+                    f"disconnected masses {_sm['disconnected_masses']}, "
                     f"ink {_sm['ink_canvas_share']:.0f}% of canvas. "
                     f"House bar {HOUSE_BAR['name']}: "
                     f"{HOUSE_BAR['half_block']}% / {HOUSE_BAR['shade']}%, "
                     f"{HOUSE_BAR['colors']} colors, "
-                    f"{HOUSE_BAR['regions']} forms, "
+                    f"{HOUSE_BAR['regions']} masses, "
                     f"{HOUSE_BAR['ink_share']}% ink. "
                     f"Corpus median: {CORPUS_MEDIAN['half_block']}% / "
                     f"{CORPUS_MEDIAN['shade']}%. Match or beat "
@@ -3105,6 +3264,51 @@ def run_tool(name, args, agent, shift_id=None):
                     "a look-before-you-submit requirement, not a metric "
                     "threshold — nothing about your numbers is being enforced.)"
                 )
+
+            # --- tripwire halt ----------------------------------------------
+            _db_h = sqlite3.connect(DB_PATH)
+            try:
+                if _tripwire_halted(_db_h):
+                    return (
+                        "(error: submissions are HALTED by the regression "
+                        "tripwire — two consecutive accepted pieces fell "
+                        "below the recent-accept bar. Report to the human "
+                        "with what changed rather than submitting more.)"
+                    )
+            finally:
+                _db_h.close()
+
+            # --- retired subject + re-slug identity ------------------------
+            # Both are one question: what subject IS this? Filename slug
+            # was the only answer before, which is exactly what the
+            # _watcher.v7 -> _watcher_final rename exploited.
+            db_sub = sqlite3.connect(DB_PATH)
+            try:
+                _title = ""
+                _note_p = src.with_suffix(src.suffix + ".note.txt")
+                if _note_p.exists():
+                    _title = _note_p.read_text(errors="replace")[:400]
+                retired = _retired_subject_block(db_sub, src.stem, _title)
+                if retired:
+                    return f"(error: {retired})"
+
+                fp = _subject_fingerprint(src)
+                if fp:
+                    prior = db_sub.execute(
+                        "SELECT slug FROM subjects WHERE fingerprint=? "
+                        "AND slug!=?", (fp, core_slug(src.stem))
+                    ).fetchone()
+                    if prior:
+                        return (
+                            f"(error: submit_piece blocked — this is the same "
+                            f"piece as subject '{prior[0]}' under a new name. "
+                            f"Subject identity is tracked by CONTENT, not "
+                            f"filename, so renaming does not reset a revision "
+                            f"count. Either revise '{prior[0]}' as the same "
+                            f"subject, or draw something genuinely different.)"
+                        )
+            finally:
+                db_sub.close()
 
             # --- revision-over-novelty + open-subject cap gate ---------------
             # User direction, 2026-09-17: a rejected piece must come back as
@@ -3619,9 +3823,25 @@ def curate_piece_opus_gated(src, decision, critique):
         dest = _move_with_sidecars(src, GALLERY_UNPACKED, new_critique=critique)
         _sync_subject("accepted")
         agree = "" if decision == "accept" else " (Qwen's own read was REJECT — Opus overrode it)"
+        halt = ""
+        _db_tw = sqlite3.connect(DB_PATH)
+        try:
+            _db_tw.execute(
+                "UPDATE piece_metrics SET accepted=1 WHERE slug=? AND id="
+                "(SELECT MAX(id) FROM piece_metrics WHERE slug=?)",
+                (core_slug(src.stem), core_slug(src.stem)),
+            )
+            _db_tw.commit()
+            tw = _check_regression_tripwire(_db_tw)
+            if tw:
+                halt = f"\n\n{tw}"
+        except Exception:
+            pass
+        finally:
+            _db_tw.close()
         return (
             f"accepted: moved to gallery/unpacked/{dest.name}, pending next "
-            f"pack release. Opus verdict: ACCEPT{agree}.\n\n{result['message']}"
+            f"pack release. Opus verdict: ACCEPT{agree}.\n\n{result['message']}{halt}"
         ), dest
     if status == "reject":
         dest = _move_with_sidecars(src, REJECTED, new_critique=critique)
@@ -4910,11 +5130,11 @@ def run_shift(conn, agent):
                         f"canvas '{fargs.get('slug')}': half_block {m['half_block_pct']:.1f}%, "
                         f"shade-of-ink {m['shade_char_pct']:.1f}%, "
                         f"colors {m['distinct_colors_in_subject']}, "
-                        f"separate forms {m['subject_regions']}, "
+                        f"disconnected masses {m['disconnected_masses']}, "
                         f"ink {m['ink_canvas_share']:.0f}% of canvas. "
                         f"House bar {HOUSE_BAR['name']}: {HOUSE_BAR['half_block']}% / "
                         f"{HOUSE_BAR['shade']}%, {HOUSE_BAR['colors']} colors, "
-                        f"{HOUSE_BAR['regions']} forms."
+                        f"{HOUSE_BAR['regions']} masses."
                     )
                 except Exception as e:
                     result = f"(error: {e})"
