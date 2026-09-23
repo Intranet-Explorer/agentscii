@@ -4145,6 +4145,12 @@ OPUS_MAX_REVIEWS_PER_PIECE = 3  # condition 3 (user): one re-review per
 
 
 def _run_claude_p(args_list, timeout=120, retries=1, **run_kwargs):
+    # NOTE (2026-09-23): 120s is fine for short calls but NOT for the
+    # defect review, which writes a 14-item table with cell coordinates
+    # and routinely needs 3-7 minutes. Measured: the CLI itself answers
+    # a trivial prompt in 3.7s, so these were real generation time, not
+    # a hang -- five "timeouts" in a row were the budget, not a fault.
+    # That call site passes timeout=420 explicitly.
     """Hard-timeout wrapper for every `claude -p` subprocess call (user
     direction, 2026-09-20: 'wrap every claude -p call in a hard timeout
     (120s, retry once, then record as unjudged) -- a hung gate call
@@ -4867,7 +4873,7 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
             result = _run_claude_p(
                 ["claude", "-p", prompt, "--model", "claude-opus-5",
                  "--allowedTools", "Read", "--output-format", "json"],
-                cwd=tmpdir,
+                cwd=tmpdir, timeout=420,
             )
             if result is not None and result.returncode != 0:
                 # A stuck/orphaned `claude login` process holds
@@ -4887,7 +4893,7 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                         result = _run_claude_p(
                             ["claude", "-p", prompt, "--model", "claude-opus-5",
                              "--allowedTools", "Read", "--output-format", "json"],
-                            cwd=tmpdir,
+                            cwd=tmpdir, timeout=420,
                         )
             if result is None:
                 # _run_claude_p already retried once internally (120s x2)

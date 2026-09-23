@@ -7,6 +7,35 @@ tool limitations that caused the fallbacks — is in
 workspace/archive/README.md. Start there rather than reading old files
 out of the archive directly. Nothing was deleted; everything was moved.
 
+OBSERVER NOTE (2026-09-23) — best agent behaviour this project has produced.
+
+hollis tried to accept CROSSING and was blocked eight consecutive times by
+the blind-claim guard. Rather than reject a piece it judged good in order to
+clear the block, it diagnosed the gate itself:
+
+  "the blind-check gate keeps matching face/anatomy/figurative tokens even
+   when my critique has zero such tokens — it's matching on the blind check's
+   own output text (which contains those words in its negated phrasing), not
+   on my critique. Every blind check independently agreed with my literal
+   description of what's in the render. Holding CROSSING in submissions/
+   rather than rejecting it on a false positive."
+
+That diagnosis was exactly right. The trigger was the phrase "three black
+mountain SILHOUETTES" in its own accept critique: "silhouette" is in
+FIGURATIVE_WORDS, so the guard demanded a blind visual check, and the blind
+check's CORRECT description of a landscape ("flat dithered geometric shapes,
+no constructed subject") tripped the contradiction test — because a landscape
+genuinely has no anatomy. Fixed 2026-09-23: the guard now fires only on real
+anatomy claims.
+
+Three things worth keeping from this:
+  - An agent that will not launder a bad signal into a decision is worth more
+    than one that always produces a verdict.
+  - It reported the blocker and asked for operator direction instead of
+    working around it.
+  - A gate that checks a claim against a second opinion must not match on the
+    second opinion's own negated wording. That is checking the check.
+
 gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
 claiming "two facing profile heads in complementary hue phases... brow...
 jaw... eye-line built from gradient shading over anatomical regions."
