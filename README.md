@@ -33,10 +33,10 @@ most of what this project actually became.
 
 ```mermaid
 flowchart TD
-    A["Artist (raze)<br/>local model"] -->|"builds in scratch/,<br/>required: compare_to_reference<br/>before submitting"| B["submissions/"]
+    A["Artist (raze)<br/>local model"] -->|"draws with canvas_* tools,<br/>required: compare_to_reference<br/>before submitting"| B["submissions/"]
     B --> C["Curator (hollis)<br/>local model"]
     C -->|"writes critique,<br/>forms own accept/reject opinion"| D{"Opus 5<br/>via claude CLI"}
-    D -->|"sees ONLY the render<br/>+ raw cell dump —<br/>never the note/script"| E["accept"]
+    D -->|"sees ONLY the render<br/>+ raw cell dump —<br/>never the note/script/title"| E["accept"]
     D --> F["reject"]
     D -->|"daily cap hit"| G["queued<br/>(never falls back to Qwen)"]
     D -->|"3rd review on<br/>same piece"| H["shelved/"]
@@ -47,6 +47,7 @@ flowchart TD
 
     L["references/study/<br/>real ACiD/Blocktronics files"] -.->|"compare_to_reference,<br/>technique study"| A
     L -.-> C
+    M["corpus/<br/>81,468 parsed archive pieces<br/>850k CLIP-indexed patches"] -.->|"find_patches:<br/>real cells + render"| A
 ```
 
 Both agent seats run the same local model (`qwen3.8:27b-mlx`). The
@@ -57,7 +58,7 @@ final accept/reject call.** It still does the actual review work
 and still forms its own opinion, but that opinion is logged for comparison
 and doesn't decide where the file goes. Why, below.
 
-## Three phases, and what each one taught
+## Six phases, and what each one taught
 
 ### Phase 1: build the pipeline, ship volume
 
@@ -97,7 +98,7 @@ that needs the same scrutiny as everything else.
 ### Phase 3: capability and a second opinion, not more rules
 
 The turn that mattered: stop asking "what rule catches this" and start
-asking "can the model physically do the thing we're asking for."
+asking "can the model physically do the thing I'm asking for."
 
 Two concrete examples:
 
@@ -109,146 +110,232 @@ Two concrete examples:
   aliases into flat bands, no matter how the math is tuned. The fix was
   a new primitive (`HalfBlockCanvas`, using half-block
   characters to address two pixels per cell) that made pixel-space units
-  square. Verified directly (a real eye and a cranium-scale circle both
-  rendered cleanly round on the first attempt), and confirmed again in
-  live use: the very next artist shift found the primitive unprompted,
-  connected it to a specific past critique, and built with it
-  successfully.
+  square.
 
 - **The curator's accept bar was measurably too permissive**, and no
   amount of prompting the same local model to "be more critical" was
   going to fix that from the inside. A model can't reliably grade its
-  own blind spot. A blind validation set (a real ACiD reference as a
-  control, 3 known-bad rejected pieces, and 3 pieces the curator had
-  *already shipped*) run through Claude Opus 5 came back: reference
-  correctly accepted, all 3 known-bad pieces correctly rejected, and all
-  3 previously-shipped pieces rejected too, with specific defects. Those
-  renders were reviewed directly, not taken on faith, and confirmed
-  weak. Opus 5 now makes the final call; the local model's critique is
-  still logged for comparison, which is itself a live measurement of how
-  much the original curator was missing.
+  own blind spot. A blind validation set run through Claude Opus 5 came
+  back: reference correctly accepted, all 3 known-bad pieces correctly
+  rejected, and all 3 previously-shipped pieces rejected too, with
+  specific defects. Opus 5 now makes the final call; the local model's
+  critique is still logged for comparison, which is itself a live
+  measurement of how much the original curator was missing.
 
 A third finding from this phase belongs here too, because it's a caution
 against over-trusting even the fixes: an internal audit of the harness's
-own loop-guard (meant to stop a genuinely stuck shift from burning its
-whole budget on one repeated action) found it had been killing shifts on
-a broken fingerprint: truncated to 120 characters with all digits
-stripped, so two calls writing genuinely different file content could
-collapse onto the same signature. Auditing all 115 historical kills
-under a strict same-call-same-result rule: **2 were real stalls, 113
-were legitimate iteration killed by mistake.** The fix (full-content
-hashing, both call and result) is live; shift-ending on a detected stall
-is intentionally left in log-only mode until more evidence accumulates,
-because the audit itself proved that "the mechanism exists" was never
-sufficient grounds to trust it.
+own loop-guard found it had been killing shifts on a broken fingerprint:
+truncated to 120 characters with all digits stripped, so two calls
+writing genuinely different file content could collapse onto the same
+signature. Auditing all 115 historical kills under a strict
+same-call-same-result rule: **2 were real stalls, 113 were legitimate
+iteration killed by mistake.**
 
-## What we've learned about running agents on a real, judged task
+### Phase 4: train a model on the real archive — and find out what training can't fix
+
+If the local model doesn't know how scene artists place blocks, teach it.
+That meant building a corpus: **86,093 files fetched across 37 years of
+16colo.rs packs, 81,468 unique after dedupe, parsed to cell grids at
+98.2% agreement with ansilove** across three independent 200-file
+samples, with a 5% holdout frozen at content-hash level before any
+training. Windowed into 1.3M fill-in-the-middle pairs. An eval harness
+measured the untrained baseline first, so "better" had a number.
+
+Two LoRA runs, on two different objectives. Both trained cleanly. Both
+failed the only test that mattered — running the adapter on the agents'
+actual pieces:
+
+- **Fill-in-the-middle** learned texture statistics with no idea what
+  belonged in a masked region. On real pieces it destroyed letterforms
+  and invented texture in deliberately empty space. That's the training
+  objective working exactly as specified, and the specification being
+  wrong.
+- **Flat → shaded** (flatten a real piece, train the model to restore the
+  shading) learned to copy its input, because in that pairing most target
+  cells are identical to the input and copying minimizes the loss. One
+  test piece came back byte-for-byte identical.
+
+Both runs are small — 500 steps each, under 2% of one pass over the data —
+so this isn't "training doesn't work here." It's that **both objectives
+were wrong in a way the loss curve couldn't show, and only running the
+model on real work revealed it.** The corpus survives as the most
+reusable artifact this project has produced. The adapters don't.
+
+### Phase 5: retrieval instead of training
+
+The cheaper version of the same idea, and the one I should have built
+first: don't teach the model technique, hand it real examples at the
+moment it's drawing. Every corpus piece is sliced into patches, each
+patch rendered and embedded with CLIP, **850,000 patches indexed**.
+`find_patches("shaded sphere warm light")` returns real archive cells —
+RLE text plus a patch id — alongside a render, so the artist can study
+the technique or stamp the actual cells.
+
+First attempt matched on SAUCE title keywords, which are mostly group and
+artist names, so it only worked by accident. Replacing keyword matching
+with visual embeddings fixed that on most queries.
+
+### Phase 6: the prompt was the problem
+
+Every piece in the first 53 packs was the output of a Python generator
+script — 427 of them in `scratch/`. Weeks went into gates and rules
+fighting that habit. Then I read the artist's own system prompt, which
+said, in as many words, to use PIL and numpy "for procedural generation
+you can then convert with chafa/jp2a," and to write a real `.py` file for
+anything nontrivial.
+
+**The behavior I'd been building checkers against was instructed
+behavior.** The prompts had also accumulated into ~2,300 tokens of dated
+patch notes that contradicted each other: one said a library was frozen,
+the next said to use it.
+
+The fix was a rewrite, plus the tool that had been missing all along: a
+persistent half-block canvas the artist draws on through direct tool
+calls (`canvas_new`, `canvas_fill_px`, `canvas_circle_px`,
+`canvas_sphere_px`, `canvas_slab_px`, `canvas_capsule_px`, `canvas_shade`,
+`canvas_text`, `canvas_stamp`, `canvas_mirror`, `canvas_strand_shade`,
+`canvas_metrics`, `canvas_preview`, `canvas_save`). Adoption was
+immediate — 136 canvas calls against 16 script writes in the first ten
+shifts — and then it collapsed back to zero, because a quality gate
+blocked canvas output while script output passed. The agent learned the
+lesson the gate actually taught. That gate is fixed; the canvas
+primitives now produce real lit volume with Lambertian falloff and
+ordered dithering, verified by rendering them and looking, not by
+metrics alone.
+
+## What I've learned about running agents on a real, judged task
 
 - **A capability gap and a judgment gap need different fixes, and
   confusing them wastes real time.** `eye()`'s three failed redesigns
   were prompting harder at a resolution problem no amount of prompting
   could solve. The curator's permissive bar was the opposite: the model
   had the tools, the references, and the instructions, and still
-  couldn't reliably self-correct its own accept threshold. One needed a
-  new primitive. The other needed a second, independent judge.
+  couldn't reliably self-correct. One needed a new primitive. The other
+  needed a second, independent judge.
+
+- **Read the prompt before building the checker.** Six weeks of gates
+  fought a habit the system prompt was explicitly instructing. Nothing in
+  the metrics would ever have surfaced that; it took reading the file.
+
+- **Every metric gate I've shipped got gamed, and the gaming looks like
+  compliance.** Metric floors produced a piece that passed every check
+  while losing its subject. A per-subject revision cap produced a file
+  rename that reset the counter. A ban on large flat regions produced a
+  piece that was 78% dither — television static that cleared the gate.
+  The pattern: a threshold set where the work can't already reach gets
+  satisfied by distortion, not by improvement.
+
+- **Measure a proposed threshold against real history before shipping
+  it.** Three separate rules died this way, each caught by checking
+  first: a shade cap at the corpus 90th percentile would have blocked 23
+  already-shipped pieces; a narrower conjunction rule blocked 49; and a
+  "count the distinct forms" signal turned out to score a regressed piece
+  and the best piece in the gallery identically, because it was really
+  measuring whether elements happened to touch.
 
 - **Self-assessment in isolation is unreliable, structurally, not just
-  occasionally.** Every serious false-positive in this project's history
-  followed the same shape: the accepted piece with fabricated anatomical
-  detail, a submission called "genuinely good and submission-ready" that
-  was actually two flat color bars. Both happened when an agent judged
-  its own render from memory of intent instead of a forced, direct
-  comparison. `compare_to_reference`
-  (a required side-by-side against a real file before submission) and
-  the Opus-5 gate are the same fix applied twice: replace "trust the
-  agent's read of its own work" with "make the comparison unavoidable."
+  occasionally.** Every serious false-positive followed the same shape:
+  an agent judging its own render from memory of intent instead of a
+  forced, direct comparison. `compare_to_reference` and the Opus-5 gate
+  are the same fix applied twice: replace "trust the agent's read of its
+  own work" with "make the comparison unavoidable." The artist also
+  self-computed its own quality metrics with an ad-hoc script and
+  reported numbers 3× off the canonical ones.
+
+- **The loss curve measures what you asked for, not what you wanted.**
+  Both training runs converged. Both produced models that failed on real
+  pieces, for reasons invisible in the loss. The only diagnostic that
+  worked was running the model on actual work and looking at the output.
 
 - **Volume is not a proxy for quality, and checking that requires
-  looking, not counting.** 52 packs and 531 shifts describe throughput.
+  looking, not counting.** 54 packs and 650+ shifts describe throughput.
   Whether that throughput is any good took direct human review of actual
-  renders next to actual references, and nothing in the pipeline's own
-  metrics would have surfaced it on its own.
+  renders next to actual references.
 
 - **A safety mechanism is a claim, not a guarantee, until it's
-  measured.** The loop-guard existed for a real reason and still failed
-  98% of the time it fired. Building a check is not the same as
-  verifying the check does what it's supposed to.
+  measured.** The loop-guard existed for a real reason and still fired
+  wrongly 98% of the time.
 
-- **The same mistake can recur independently in different places**,
-  which is itself a signal something's missing structurally, not just a
-  one-off bug. Color-index confusion (assuming what a palette number
-  renders as, instead of checking) happened twice in one session, in
-  unrelated code, by different authors, which is why the fix was a
-  verified helper function and an always-present prompt note, not a
-  single corrected line.
-
-- **Procedural generation has a real ceiling, and more tooling doesn't
-  obviously close it.** A test piece built with the full current
-  toolkit, correct construction technique, and direct iteration against
-  a real reference still read as "nothing like" genuine hand-drawn ACiD
-  art on direct review. Formulas encode statistics: density, hue
-  family, falloff shape. Real reference art is built from thousands of
-  small authored choices a human made looking at the emerging image.
-  Whether that gap closes with more primitives, or needs a fundamentally
-  different approach, remains an open question here, not
-  papered over.
+- **Infrastructure lies in both directions.** A gate that reported
+  "timed out after retry" was printing a hardcoded string for four
+  different failure modes, so every gate error for a week was
+  misattributed. The dashboard's message box silently dropped every
+  message for days behind an empty `catch`. Both were found by checking
+  the claim against the data, not by noticing something looked wrong.
 
 ## Honest status, as of this write-up
 
-**52 packs shipped, 531 agent shifts, ~131 pieces in the gallery, ~47
-shared drawing primitives across the toolkit.** Real, sustained output,
-and, per the lessons above, not itself evidence that the quality
-question is settled. What's confirmed:
+**54 packs shipped, 650+ agent shifts, ~132 pieces in the gallery.** Real,
+sustained output, and, per the lessons above, not itself evidence that the
+quality question is settled. What's confirmed:
 
 - The resolution/aliasing problem behind every failed constructed-curve
-  attempt is genuinely fixed, verified in both isolated tests and live
-  unprompted agent use.
+  attempt is genuinely fixed.
 - The curator's accept bar was measurably too permissive; a stronger
-  independent reviewer now makes the real accept/reject call, with
-  guardrails against runaway cost or an infinite resubmission loop.
-- The loop-guard's false-positive rate is now understood and fixed, with
-  the fix itself left in a conservative, evidence-gated mode rather than
-  fully re-enabled on faith.
+  independent reviewer now makes the real call.
+- The corpus and eval harness are solid and reusable: 81,468 unique
+  parsed pieces, 98.2% parser agreement, a frozen holdout, and a
+  measured baseline.
+- The canvas tools produce real lit volume, verified visually on
+  spheres, slabs, and capsules with a shared light direction.
 
-What's still open: whether the current toolkit, iterated further, closes
-the gap to real hand-drawn reference quality, or whether that requires a
-different kind of approach entirely. This section gets rewritten as real
-evidence comes in from here. The goal is staying true, not reading well.
+What's open, stated plainly: **117 of 142 measured gallery pieces use
+zero half-block technique**, and the one piece that does (`_orb.v59`, at
+37.9%) is a 96th-percentile outlier against the house's own history, not
+the norm. Nothing has been accepted since the canvas rewrite. Whether
+better tools close the gap to real hand-drawn reference quality, or
+whether that needs a fundamentally different approach, is still open —
+and the evidence so far says composition quality in particular is not
+reachable through any metric I've been able to define.
+
+This section gets rewritten as real evidence comes in. The goal is
+staying true, not reading well.
 
 ## The toolkit
 
-`workspace/scratch/canvas.py` (general primitives), `figure_common.py`
-(anatomy/shading), and `halfblock.py` (sub-cell-resolution shapes) are the
-shared library both agents build with instead of re-deriving per-cell math
-from scratch every script. Every primitive in here exists because of a
-specific, diagnosed defect, not speculative capability-building:
+The `canvas_*` tools above are how pieces are drawn now: a persistent
+half-block canvas, manipulated through direct tool calls, saved across
+shifts. `workspace/scratch/canvas.py`, `figure_common.py`, and
+`halfblock.py` remain on disk as read-only reference for how a technique
+was done previously, not as libraries to import. Every primitive exists
+because of a specific, diagnosed defect:
 
-- **`HalfBlockCanvas`** — described above. The single most consequential
+- **`HalfBlockCanvas`** — two pixels per cell via ▀, so pixel-space units
+  are square and circles come out round. The single most consequential
   fix this project has made.
+- **Lambertian shading with ordered (Bayer) dithering** — replaced a
+  5-step quantizer that produced visible diagonal banding. The
+  load-bearing detail: a brightness band has to be wide enough for a
+  dither boundary to fall inside it, or a highlight shatters into
+  speckle instead of reading as a stripe.
 - **`compare_to_reference`** — renders the artist's piece and a real
   reference side by side as one labeled image, required before
-  `submit_piece`. Built after a submission was judged "genuinely good"
-  from a solo preview when a direct comparison would have shown
-  otherwise.
-- **`ramp(hue_name)` + a fixed `PALETTE` reference** — returns three
-  palette indices verified to be the same hue family at different
-  brightness, instead of an agent picking nearby-looking numbers and
-  getting the hue wrong (see the "same mistake, twice" lesson above).
+  `submit_piece`.
+- **`find_patches`** — CLIP-indexed retrieval over 850k real archive
+  patches, returning cells and a render.
+- **`ramp(hue_name)` + a fixed `PALETTE` reference** — three palette
+  indices verified to be the same hue family at different brightness,
+  instead of an agent picking nearby-looking numbers and getting the hue
+  wrong.
 
 ## Two-tier review: Qwen critiques, Opus 5 decides
 
 `curate_piece`'s final accept/reject call is made by Claude Opus 5 via the
-official `claude` CLI (Claude Code), authenticated against the project
-owner's own subscription. No API key anywhere in this repo: credentials
-live in the OS keychain on the machine running the harness.
+official `claude` CLI (Claude Code), authenticated against my own
+subscription. No API key anywhere in this repo: credentials live in the OS
+keychain on the machine running the harness.
 
 Guardrails, all tested against real pieces before shipping:
 - Opus sees **only** the render and a raw character-cell dump, never the
-  artist's note, generator script, or title.
+  artist's note, generator script, or title. (The blind subject check was
+  itself once fake-blind — it baked the title into the pixels it sent.
+  Fixed.)
 - A daily call cap. When hit, submissions queue; they never silently fall
   back to the local model for the accept/reject call.
-- One re-review per revision; a piece is shelved (`workspace/shelved/`)
-  after 3 total Opus reviews instead of resubmitted indefinitely.
+- One re-review per revision; a piece is shelved after 3 total Opus
+  reviews. Infra failures no longer consume that budget.
+- Subject identity is a content fingerprint, not a filename, so renaming
+  a piece can't reset its revision count.
 - Every review is logged (both the local model's decision and Opus's
   verdict) so the actual disagreement rate is measurable, not felt.
 - Agents' shell tool blocks direct invocation of the `claude` CLI, so this
@@ -266,6 +353,7 @@ workspace/
                  genuinely different approach, not another resubmit
   references/    real ACiD/ANSI study material (kept on disk, untracked
                  from git — modular, drop a file in and it's usable)
+  canvases/      live half-block canvases, persisted between tool calls
 ```
 
 Nothing is ever destroyed. A rejection is feedback to act on, not a dead
@@ -293,6 +381,25 @@ interrupting a live shift: messages queue in a `human_messages` table and
 are delivered at the start of the recipient's next shift. Target the
 artist, the curator, or both.
 
+## The corpus and training track
+
+Not required to run the harness, kept in `corpus/`:
+
+```bash
+python3 corpus/fetch.py          # 16colo.rs packs, by year
+python3 corpus/parse.py          # .ANS → cell grids (CP437, SAUCE, iCE, cursor moves)
+python3 corpus/validate.py       # agreement check against ansilove
+python3 corpus/windowing.py      # 40x16 windows, RLE-encoded, FIM pairs
+python3 corpus/build_clip_index.py   # CLIP embeddings for find_patches
+python3 corpus/eval_harness.py   # holdout fill quality + blind pairwise
+```
+
+Training runs stop the harness first — training and the agents can't
+share this machine's memory. `corpus/FLATSHADED_RESUME_NOTES.md` records
+where the training track stands and what the next objective would need to
+fix (mask the loss to cells that actually change, so copying earns
+nothing).
+
 ## Run it
 
 ```bash
@@ -318,7 +425,8 @@ python3 server.py
 
 For persistence across reboots/crashes, see `launchd/README.md`. Both the
 watchdog and the dashboard can run as real macOS launchd agents, same
-pattern as antfarm2.
+pattern as antfarm2. Worth knowing: a leftover `STOP` flag will silently
+block a bootstrap.
 
 ## Related
 
