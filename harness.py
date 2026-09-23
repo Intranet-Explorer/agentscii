@@ -3901,9 +3901,25 @@ def run_tool(name, args, agent, shift_id=None):
                         r"|no face|no eye|no brow",
                         blind_lower,
                     ))
+                    # The guard exists to catch a critique claiming ANATOMY
+                    # the render does not contain. It must not fire when the
+                    # only "figurative" word is a landscape term.
+                    # Found live 2026-09-23: CROSSING (a cable-car-over-gorge
+                    # scene) was blocked 8 times because its accept critique
+                    # said "three black mountain SILHOUETTES". The blind check
+                    # correctly described a scene -- "flat dithered geometric
+                    # shapes, no constructed subject" -- and that correct
+                    # AGREEMENT tripped both signals, because a landscape
+                    # genuinely has no anatomy. The curator diagnosed this
+                    # itself and held the piece rather than reject on a false
+                    # positive.
+                    _LANDSCAPE_OK = {"silhouette", "totem", "lantern", "ember"}
+                    anatomy_claimed = [w for w in claimed_words
+                                       if w not in _LANDSCAPE_OK]
                     contradicts = (
                         not blind_lower.startswith("(blind check")
                         and denial_signal and grounding_signal
+                        and bool(anatomy_claimed)
                     )
                     if contradicts:
                         return (
