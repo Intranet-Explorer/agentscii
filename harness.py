@@ -449,6 +449,7 @@ def _compute_piece_metrics(path):
     half_ct_subj = 0
     shade_ct_subj = 0
     rows, cols = [], []
+    subject_coords = []
     for (r, c), (ch, fg, bg) in grid.items():
         if ch in half_block_chars:
             half_ct_whole += 1
@@ -459,6 +460,7 @@ def _compute_piece_metrics(path):
         subject_ct += 1
         rows.append(r)
         cols.append(c)
+        subject_coords.append((r, c))
         if ch in half_block_chars:
             half_ct_subj += 1
         if ch in shade_chars:
@@ -473,7 +475,45 @@ def _compute_piece_metrics(path):
             "distinct_colors_in_subject": 0,
             "subject_bbox_rows": 0, "subject_bbox_cols": 0,
             "subject_cell_count": 0,
+            "subject_regions": 0, "ink_canvas_share": 0.0,
         }
+
+    # Compositional signals (user direction, 2026-09-22): the real
+    # difference between _watcher_final (one centered blob, 5 colors)
+    # and the work worth shipping is COMPOSITIONAL, and no half_block/
+    # shade threshold can see it -- both measured 0.0%/78.2%, identical
+    # to the accepted hollis-raze-boot. Reported as soft signals only.
+    # ponytail: 4-connected flood fill over the subject mask, O(cells);
+    # swap for a real labeler only if pieces get big enough to matter.
+    _MIN_REGION = 12  # smaller blobs are detail/noise, not separate forms
+    subject_set = set(subject_coords)
+    seen = set()
+    regions = 0
+    for start in subject_set:
+        if start in seen:
+            continue
+        stack = [start]
+        seen.add(start)
+        size = 0
+        while stack:
+            r, c = stack.pop()
+            size += 1
+            for nb in ((r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)):
+                if nb in subject_set and nb not in seen:
+                    seen.add(nb)
+                    stack.append(nb)
+        if size >= _MIN_REGION:
+            regions += 1
+
+    canvas_rows = max(r for r, c in grid) + 1
+    canvas_cols = max(c for r, c in grid) + 1
+    canvas_cells = canvas_rows * canvas_cols
+    # Ink density, not bbox: every framed piece spans the full canvas,
+    # so a bbox-share number reads 100% for all of them and says
+    # nothing (measured 2026-09-22 -- v59, _beast.v7 and
+    # _watcher_final all reported 100%). Share of canvas actually
+    # INKED does separate a sparse scroll from a dense composition.
+    ink_share = 100.0 * subject_ct / canvas_cells if canvas_cells else 0.0
 
     return {
         "half_block_pct": 100.0 * half_ct_subj / subject_ct if subject_ct else 0.0,
@@ -484,6 +524,8 @@ def _compute_piece_metrics(path):
         "subject_bbox_rows": (max(rows) - min(rows) + 1) if rows else 0,
         "subject_bbox_cols": (max(cols) - min(cols) + 1) if cols else 0,
         "subject_cell_count": subject_ct,
+        "subject_regions": regions,
+        "ink_canvas_share": ink_share,
     }
 
 
@@ -927,6 +969,94 @@ TOOLS = [
                     "shadow_color": {"type": "integer", "description": "Dark-side color index 0-15. Defaults to black (0) — pass the dim end of a hue family (e.g. from STYLE.md's palette) for a colored sphere instead of a grayscale one."},
                 },
                 "required": ["slug", "cx", "cy", "r", "color", "light_x", "light_y"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_slab_px",
+            "description": (
+                "One call: a lit BOX, not a flat fill. Flat-sided forms — torsos, "
+                "limbs, buildings, panels, frames, lettering blocks — have no "
+                "curvature, so each face takes a base brightness from its "
+                "orientation vs the light, then a gradient ACROSS the face from "
+                "its lit edge to its far edge, with light-facing edges getting a "
+                "brighter rim. Pass side='left'/'right' with side_w to draw a "
+                "second visible face (the classic two-face monolith/box), which "
+                "is what makes a slab read as a solid volume instead of a "
+                "rectangle with noise in it. Use this for ANY flat-sided form "
+                "instead of canvas_fill_px + canvas_shade."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "x": {"type": "integer", "description": "Left edge, pixel space."},
+                    "y": {"type": "integer", "description": "Top edge, pixel space."},
+                    "w": {"type": "integer", "description": "Width in pixels."},
+                    "h": {"type": "integer", "description": "Height in pixels."},
+                    "color": {"type": "integer", "description": "Body color index 0-15."},
+                    "light_direction": {"type": "string", "description": "One of top, bottom, left, right, top-left, top-right, bottom-left, bottom-right. Default top-left."},
+                    "shadow_color": {"type": "integer", "description": "Dark-side color index 0-15. Defaults to black (0)."},
+                    "hi_color": {"type": "integer", "description": "Lit-face color index 0-15 — pass the bright end of the same hue family for a real lit face."},
+                    "side": {"type": "string", "description": "'left' or 'right' to draw a second visible face of the box."},
+                    "side_w": {"type": "integer", "description": "Width of that second face, in pixels."},
+                },
+                "required": ["slug", "x", "y", "w", "h", "color"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_capsule_px",
+            "description": (
+                "One call: a lit capsule — a rectangle with rounded ends, shaded "
+                "as a CYLINDER (the normal curves across the short axis and is "
+                "constant along the length), so it reads as a round limb rather "
+                "than a flat bar. This is the most common figure element: arms, "
+                "legs, necks, fingers, pipes, tubes, cables. Draw from (ax,ay) to "
+                "(bx,by) with radius r — the axis can run at any angle."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "ax": {"type": "number", "description": "Axis start x, pixel space."},
+                    "ay": {"type": "number", "description": "Axis start y, pixel space."},
+                    "bx": {"type": "number", "description": "Axis end x, pixel space."},
+                    "by": {"type": "number", "description": "Axis end y, pixel space."},
+                    "r": {"type": "number", "description": "Radius in pixels (half the limb's thickness)."},
+                    "color": {"type": "integer", "description": "Body color index 0-15."},
+                    "light_direction": {"type": "string", "description": "One of top, bottom, left, right, top-left, top-right, bottom-left, bottom-right. Default top-left."},
+                    "shadow_color": {"type": "integer", "description": "Dark-side color index 0-15. Defaults to black (0)."},
+                    "hi_color": {"type": "integer", "description": "Highlight color index 0-15. Defaults to 15 (bright white)."},
+                },
+                "required": ["slug", "ax", "ay", "bx", "by", "r", "color"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_metrics",
+            "description": (
+                "Measure the CURRENT canvas with the same function the gate and "
+                "the submit report use — half_block %, shade-of-ink %, distinct "
+                "colors, separate forms (connected subject regions), and ink "
+                "share of canvas, next to the house bar's numbers. Use this "
+                "instead of computing your own numbers with a script: "
+                "self-computed metrics have come out ~3x off the real value. "
+                "'separate forms' is the signal that distinguishes a real "
+                "composition from one centered blob."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to measure."},
+                },
+                "required": ["slug"],
             },
         },
     },
@@ -2113,6 +2243,13 @@ _BRIGHTNESS_STEPS = [0, 2, 2, 2, 2, 2, 2, 3, 1, 4, 4, 4, 4, 4, 4, 5]
 # step" means.
 
 FLAT_REGION_CELL_THRESHOLD = 40
+# House bar (_orb.v59) and corpus medians, reported as SOFT signals on
+# every submission -- never enforced as a threshold. User direction,
+# 2026-09-22: "any floor set where the house can't already reach gets
+# gamed rather than met."
+HOUSE_BAR = {"name": "_orb.v59", "half_block": 37.9, "shade": 32.1,
+             "colors": 6, "regions": 6, "ink_share": 56}
+CORPUS_MEDIAN = {"half_block": 15.0, "shade": 9.4}
 # User direction, 2026-09-18, load-bearing measurement behind this whole
 # check: every version of _orb (v5-v8) and _phosphor.v3 measured at 0.0%
 # RAMP (░▒▓) density characters -- literally zero dithering anywhere.
@@ -2188,7 +2325,12 @@ def _flat_region_check(path):
     # not just genuinely flat subject fills. Same box_chars set already
     # used by inspect_piece's separate frame-detection check, reused
     # here rather than redefined.
-    _box_chars = set("═║╔╗╚╝╠╣╦╩╬─│┌┐└┘├┤┬┴┼")
+    # Full U+2500 box-drawing block, not a hand-typed subset: the old
+    # literal set was missing 18 real CP437 glyphs (╡╞╟╢╤╧╥╨╪╫╕╖╘╙╛╜╒╓),
+    # which is why a 72-cell '╡' title rule on _cyclops read as a flat
+    # SUBJECT region -- found live 2026-09-22 while checking the gate
+    # against the shipped gallery.
+    _box_chars = {chr(cp) for cp in range(0x2500, 0x2580)}
     rows_seen = {}
     for (r, c), (ch, fg, bg) in grid.items():
         if ch == " " and bg == 0:
@@ -2220,6 +2362,15 @@ def _flat_region_check(path):
         if ch == " " and bg == 0:
             continue
         if r in border_rows:
+            continue
+        if ch in _box_chars:
+            # Box-drawing glyphs are FRAME, never shaded subject surface
+            # -- found live 2026-09-22: 12 shipped gallery pieces
+            # (raze-traveler-v1, hollis-portrait, the agent-sci banners
+            # ...) were blocked by a 72-cell run of '╡' on a title rule.
+            # The border_rows filter above only catches rows that are
+            # >70% box chars, so a rule sharing its row with title text
+            # slipped through and got flood-filled as a "flat region."
             continue
         if ch in "\u2593\u2592\u2591":  # ▓▒░ -- partial-density dither
             # glyphs are themselves evidence of real shading (that's
@@ -2275,23 +2426,101 @@ def _flat_region_check(path):
                 "cells": region,
             })
 
+    # Connected components of dither cells (4-connected), computed once
+    # and shared by BOTH checks below -- a "bridge" is one dither
+    # component that physically connects two different brightness
+    # levels. This is what makes a large solid region legitimate: a
+    # flat fill that ramps into another brightness through a dithered
+    # transition IS a gradient (flat-dim -> dithered-mid -> flat-bright
+    # = 3 apparent brightness steps, which is achievable on a 16-color
+    # palette, unlike 3 distinct FLAT steps within one hue family).
+    dither_components = []
+    dither_visited = set()
+    for start in dither_cells:
+        if start in dither_visited:
+            continue
+        stack = [start]
+        comp = set()
+        dither_visited.add(start)
+        while stack:
+            cur = stack.pop()
+            comp.add(cur)
+            r, c = cur
+            for nr, nc in ((r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)):
+                nxt = (nr, nc)
+                if nxt in dither_cells and nxt not in dither_visited:
+                    dither_visited.add(nxt)
+                    stack.append(nxt)
+        dither_components.append(comp)
+
+    def _touches(cells_a, comp):
+        # 4-connected adjacency (not just overlap) between a cell set
+        # and a dither component's cell set.
+        for (r, c) in cells_a:
+            for nr, nc in ((r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)):
+                if (nr, nc) in comp:
+                    return True
+        return False
+
+    # Which brightness steps does each dither component reach? Computed
+    # against ALL subject cells, not just large regions, so a big fill
+    # ramping into a small highlight still counts as a real gradient.
+    comp_steps = []
+    for comp in dither_components:
+        steps_touched = set()
+        for (r, c) in comp:
+            for nr, nc in ((r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)):
+                nb = subject_cells.get((nr, nc))
+                if nb is not None:
+                    steps_touched.add(_BRIGHTNESS_STEPS[nb[1] % 16])
+        comp_steps.append(steps_touched)
+
+    def _in_gradient(reg):
+        """True when this region ramps into a DIFFERENT brightness level
+        through a dithered bridge. Large solid regions are fine when
+        part of a gradient (user direction, 2026-09-22) -- the old gate
+        failed every region over 40 cells unconditionally, which is what
+        drove pieces toward wall-to-wall ░▒▓ static."""
+        own = _BRIGHTNESS_STEPS[reg["visible_idx"] % 16]
+        for comp, steps in zip(dither_components, comp_steps):
+            if steps - {own} and _touches(reg["cells"], comp):
+                return True
+        return False
+
     failures = []
-    if large_regions:
-        large_regions.sort(key=lambda x: -x["size"])
+    unshaded = [reg for reg in large_regions if not _in_gradient(reg)]
+    if unshaded:
+        unshaded.sort(key=lambda x: -x["size"])
         examples = "; ".join(
             f"{r['size']} cells at rows {r['rows'][0]}-{r['rows'][1]}, "
             f"cols {r['cols'][0]}-{r['cols'][1]} (char {r['char']!r}, "
             f"visible color index={r['visible_idx']})"
-            for r in large_regions[:3]
+            for r in unshaded[:3]
         )
-        more = f" (+{len(large_regions) - 3} more)" if len(large_regions) > 3 else ""
+        more = f" (+{len(unshaded) - 3} more)" if len(unshaded) > 3 else ""
         failures.append(
-            f"{len(large_regions)} contiguous flat region(s) over "
+            f"{len(unshaded)} contiguous flat region(s) over "
             f"{FLAT_REGION_CELL_THRESHOLD} cells found inside the drawn "
-            f"subject: {examples}{more}. A real lit surface shades "
-            f"across itself -- a same-color patch this large reads as an "
-            f"unshaded flat fill, not a lit form."
+            f"subject with NO dithered ramp to any other brightness "
+            f"level: {examples}{more}. A real lit surface shades across "
+            f"itself -- a same-color patch this large with no gradient "
+            f"off it reads as an unshaded flat fill, not a lit form. "
+            f"(A large solid region is fine when a ░▒▓ ramp connects it "
+            f"to a different brightness step.)"
         )
+
+    # NOTE (2026-09-22): a standalone shade-share hard block was tried and
+    # REMOVED. Measured against the 142 shipped gallery pieces: shade p50
+    # = 54.5%, p90 = 83.0%, and 117/142 ship at 0.0% half_block. Every
+    # threshold tested false-positived accepted work -- corpus p90 (38%)
+    # blocked 23 pieces, p99 (65%) blocked 23, and the narrower
+    # conjunction (hb<5 AND shade>65) blocked 49, including raze-oracle,
+    # hollis-warden and raze-aperture. _watcher_final (hb 0.0 / shade
+    # 78.2) is metrically IDENTICAL to the accepted hollis-raze-boot
+    # (hb 0.0 / shade 78.2); no cell-level metric separates them.
+    # Reported as soft signals in submit_piece instead -- a floor the
+    # house cannot already reach gets gamed rather than met, which is
+    # what produced the re-slugging and the static in the first place.
 
     # Lit-to-shadow transition check: with a real 16-color ANSI palette,
     # each hue family (fg & 7) has only 2 real members (e.g. dim vs
@@ -2320,37 +2549,8 @@ def _flat_region_check(path):
             hue_key = reg["visible_idx"] & 7
             by_hue.setdefault(hue_key, []).append(reg)
 
-        # Connected components of dither cells (4-connected), computed
-        # once -- a "bridge" is one dither component that touches both
-        # of two differing-brightness regions' boundaries.
-        dither_components = []
-        dither_visited = set()
-        for start in dither_cells:
-            if start in dither_visited:
-                continue
-            stack = [start]
-            comp = set()
-            dither_visited.add(start)
-            while stack:
-                cur = stack.pop()
-                comp.add(cur)
-                r, c = cur
-                for nr, nc in ((r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)):
-                    nxt = (nr, nc)
-                    if nxt in dither_cells and nxt not in dither_visited:
-                        dither_visited.add(nxt)
-                        stack.append(nxt)
-            dither_components.append(comp)
-
-        def _touches(cells_a, comp):
-            # 4-connected adjacency (not just overlap) between a
-            # region's cell set and a dither component's cell set.
-            for (r, c) in cells_a:
-                for nr, nc in ((r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)):
-                    if (nr, nc) in comp:
-                        return True
-            return False
-
+        # dither_components / _touches are computed once above and
+        # shared with the flat-region check -- not recomputed here.
         for hue_key, regs in by_hue.items():
             if len(regs) < 2:
                 continue
@@ -2430,7 +2630,7 @@ def _move_with_sidecars(src, dest_dir, new_critique=None):
     return dest
 
 
-def run_tool(name, args, agent):
+def run_tool(name, args, agent, shift_id=None):
     if name == "abandon_subject":
         if agent != "artist":
             return "(error: only the artist seat can abandon_subject)"
@@ -2852,6 +3052,60 @@ def run_tool(name, args, agent):
             if flat_fail:
                 return f"(error: {flat_fail})"
 
+            # --- soft technique signals (NEVER a block) ---------------------
+            # User direction, 2026-09-22: report half_block and shade-of-ink
+            # on every submission next to the house bar and the corpus
+            # medians, so the curator and Opus can judge -- enforcing them
+            # as a threshold is what produced the re-slugging and the
+            # static. Appended to the submit result, not returned as error.
+            soft_signal = ""
+            _sm = _compute_piece_metrics(src)
+            if _sm is not None:
+                soft_signal = (
+                    f"\n\ntechnique (SOFT SIGNAL — not a gate, nothing is "
+                    f"enforced): half_block {_sm['half_block_pct']:.1f}%, "
+                    f"shade-of-ink {_sm['shade_char_pct']:.1f}%, "
+                    f"colors {_sm['distinct_colors_in_subject']}, "
+                    f"separate forms {_sm['subject_regions']}, "
+                    f"ink {_sm['ink_canvas_share']:.0f}% of canvas. "
+                    f"House bar {HOUSE_BAR['name']}: "
+                    f"{HOUSE_BAR['half_block']}% / {HOUSE_BAR['shade']}%, "
+                    f"{HOUSE_BAR['colors']} colors, "
+                    f"{HOUSE_BAR['regions']} forms, "
+                    f"{HOUSE_BAR['ink_share']}% ink. "
+                    f"Corpus median: {CORPUS_MEDIAN['half_block']}% / "
+                    f"{CORPUS_MEDIAN['shade']}%. Match or beat "
+                    f"{HOUSE_BAR['name']} on structure and half-block use — "
+                    f"one centered blob in few colors is what the weakest "
+                    f"recent work looked like."
+                )
+
+            # --- required v59 comparison before submit ----------------------
+            # User direction, 2026-09-22: the house bar is raised through
+            # REFERENCE, not through a metric threshold. A figurative piece
+            # must be looked at side by side with _orb.v59 before it can be
+            # submitted. Checked against this shift's own logged
+            # compare_to_reference calls (events already records tool_name +
+            # tool_args at the single dispatch site) rather than new state.
+            db_cmp = sqlite3.connect(DB_PATH)
+            try:
+                seen_v59 = db_cmp.execute(
+                    "SELECT COUNT(*) FROM events WHERE shift_id=? "
+                    "AND tool_name='compare_to_reference' "
+                    "AND tool_args LIKE '%_orb.v59%'", (shift_id,)
+                ).fetchone()[0]
+            finally:
+                db_cmp.close()
+            if not seen_v59:
+                return (
+                    "(error: submit_piece blocked — call compare_to_reference "
+                    "with reference_path='references/study/_orb.v59.ans' and "
+                    "actually look at the result first. v59 is the house bar: "
+                    "match or beat it on structure and half-block use. This is "
+                    "a look-before-you-submit requirement, not a metric "
+                    "threshold — nothing about your numbers is being enforced.)"
+                )
+
             # --- revision-over-novelty + open-subject cap gate ---------------
             # User direction, 2026-09-17: a rejected piece must come back as
             # the SAME file at v+1, not reappear under a fresh slug to dodge
@@ -3114,7 +3368,10 @@ def run_tool(name, args, agent):
                         db3.commit()
             finally:
                 db3.close()
-            return f"submitted: moved {src.relative_to(WORKSPACE)} -> {dest.relative_to(WORKSPACE)}"
+            return (
+                f"submitted: moved {src.relative_to(WORKSPACE)} -> "
+                f"{dest.relative_to(WORKSPACE)}{soft_signal}"
+            )
         except Exception as e:
             return f"(error: {e})"
 
@@ -3471,6 +3728,16 @@ def _run_claude_p(args_list, timeout=120, retries=1, **run_kwargs):
     import os as _os
     import signal as _signal
 
+    def _fail(reason):
+        # Never return a bare None: callers used to report every failure
+        # as "timed out after retry", which was actively misleading --
+        # found live 2026-09-22, three _watcher.v7 reviews logged as
+        # "timed out after retry (120s x2)" only 32s apart, which is
+        # arithmetically impossible. Carry the REAL reason in stderr on
+        # a returncode=-1 result so each call site's existing
+        # `returncode != 0` branch logs the truth for free.
+        return _sp.CompletedProcess(args_list, -1, "", reason)
+
     for attempt in range(retries + 1):
         try:
             proc = _sp.Popen(
@@ -3478,7 +3745,7 @@ def _run_claude_p(args_list, timeout=120, retries=1, **run_kwargs):
                 start_new_session=True, **run_kwargs,
             )
         except Exception as e:
-            return None
+            return _fail(f"spawn failed: {type(e).__name__}: {e}")
         try:
             stdout, stderr = proc.communicate(timeout=timeout)
             return _sp.CompletedProcess(args_list, proc.returncode, stdout, stderr)
@@ -3493,14 +3760,17 @@ def _run_claude_p(args_list, timeout=120, retries=1, **run_kwargs):
                 pass
             if attempt < retries:
                 continue
-            return None
-        except Exception:
+            return _fail(
+                f"timed out after {retries + 1} attempt(s) x {timeout}s "
+                "(process group killed)"
+            )
+        except Exception as e:
             try:
                 _os.killpg(_os.getpgid(proc.pid), _signal.SIGKILL)
             except Exception:
                 pass
-            return None
-    return None
+            return _fail(f"{type(e).__name__}: {e}")
+    return _fail("exhausted retries with no result")
 
 
 def _kill_stale_claude_login(max_age_s=300):
@@ -4045,7 +4315,8 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
 
         prior_reviews = conn.execute(
             "SELECT COUNT(*) FROM opus_reviews WHERE piece_slug=? "
-            "AND qwen_decision NOT IN ('subject_check', 'pairwise_check')", (slug,)
+            "AND qwen_decision NOT IN ('subject_check', 'pairwise_check') "
+            "AND opus_verdict IS NOT NULL", (slug,)
         ).fetchone()[0]
         if prior_reviews >= OPUS_MAX_REVIEWS_PER_PIECE:
             return {
@@ -4536,7 +4807,7 @@ def run_shift(conn, agent):
                     conn.commit()
                     result = f"handle set: you're now known as '{handle}'"
             elif name == "submit_piece":
-                result = run_tool(name, fargs, agent)
+                result = run_tool(name, fargs, agent, shift_id=shift_id)
                 if isinstance(result, str) and result.startswith("submitted:"):
                     conn.execute(
                         "INSERT INTO curation_events (shift_id, action, path, dest_path, note, timestamp) VALUES (?,?,?,?,?,?)",
@@ -4544,7 +4815,7 @@ def run_shift(conn, agent):
                     )
                     conn.commit()
             elif name == "curate_piece":
-                out = run_tool(name, fargs, agent)
+                out = run_tool(name, fargs, agent, shift_id=shift_id)
                 result, dest = out if isinstance(out, tuple) else (out, None)
                 if dest is not None:
                     conn.execute(
@@ -4602,6 +4873,49 @@ def run_shift(conn, agent):
                                  shadow_color=fargs.get("shadow_color"))
                     result = (f"drew lit sphere at ({fargs.get('cx')},{fargs.get('cy')}) r={fargs.get('r')} "
                               f"on '{fargs.get('slug')}', light from ({fargs.get('light_x')},{fargs.get('light_y')}).")
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_slab_px":
+                try:
+                    import canvas_tools as ct
+                    ct.slab_px(str(WORKSPACE), fargs.get("slug", ""), fargs.get("x", 0),
+                               fargs.get("y", 0), fargs.get("w", 1), fargs.get("h", 1),
+                               fargs.get("color", 15),
+                               light_direction=fargs.get("light_direction", "top-left") or "top-left",
+                               shadow_color=fargs.get("shadow_color"),
+                               hi_color=fargs.get("hi_color"),
+                               side=fargs.get("side"), side_w=fargs.get("side_w", 0) or 0)
+                    result = (f"drew lit slab at ({fargs.get('x')},{fargs.get('y')}) "
+                              f"{fargs.get('w')}x{fargs.get('h')} on '{fargs.get('slug')}'.")
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_capsule_px":
+                try:
+                    import canvas_tools as ct
+                    ct.capsule_px(str(WORKSPACE), fargs.get("slug", ""), fargs.get("ax", 0),
+                                  fargs.get("ay", 0), fargs.get("bx", 0), fargs.get("by", 0),
+                                  fargs.get("r", 1), fargs.get("color", 15),
+                                  light_direction=fargs.get("light_direction", "top-left") or "top-left",
+                                  shadow_color=fargs.get("shadow_color"),
+                                  hi_color=fargs.get("hi_color"))
+                    result = (f"drew lit capsule ({fargs.get('ax')},{fargs.get('ay')})->"
+                              f"({fargs.get('bx')},{fargs.get('by')}) r={fargs.get('r')} on '{fargs.get('slug')}'.")
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_metrics":
+                try:
+                    import canvas_tools as ct
+                    m = ct.metrics(str(WORKSPACE), fargs.get("slug", ""))
+                    result = (
+                        f"canvas '{fargs.get('slug')}': half_block {m['half_block_pct']:.1f}%, "
+                        f"shade-of-ink {m['shade_char_pct']:.1f}%, "
+                        f"colors {m['distinct_colors_in_subject']}, "
+                        f"separate forms {m['subject_regions']}, "
+                        f"ink {m['ink_canvas_share']:.0f}% of canvas. "
+                        f"House bar {HOUSE_BAR['name']}: {HOUSE_BAR['half_block']}% / "
+                        f"{HOUSE_BAR['shade']}%, {HOUSE_BAR['colors']} colors, "
+                        f"{HOUSE_BAR['regions']} forms."
+                    )
                 except Exception as e:
                     result = f"(error: {e})"
             elif name == "canvas_wordmark":
@@ -4850,7 +5164,7 @@ def run_shift(conn, agent):
                 replied_final = replied
                 wants_continue = bool(fargs.get("continue_same_agent"))
             else:
-                result = run_tool(name, fargs, agent)
+                result = run_tool(name, fargs, agent, shift_id=shift_id)
 
             log_event(conn, agent, shift_id, "tool", result, tool_name=name, tool_call_id=tc.get("id"))
             messages.append({"role": "tool", "tool_call_id": tc.get("id"), "content": result})
