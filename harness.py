@@ -164,6 +164,7 @@ AGENTS = {
             "verify against a reference) — required reading before your first figurative "
             "or ambition-tier piece. A human (Tyler) directs this project and leaves "
             "either of you direction via your inbox. This is directed, quality-focused "
+            "Check workspace/CATALOG.md before starting a new subject — it lists every subject ever attempted, with status and technique numbers. Repeating a past subject is allowed ONLY as a deliberate revisit: say so in the note, and improve on the archived version. "
             "work, not idle equilibrium — if nothing's in flight, start a new subject "
             "via random_direction, or revise a piece rejected in the LAST 5 SHIFTS with "
             "its critique in mind. Do NOT revive older work without direction from the "
@@ -226,6 +227,7 @@ AGENTS = {
             "everything submitted isn't curated at all. But don't reject reflexively "
             "either. Use release_pack when gallery/unpacked/ has a real handful of good "
             "work, not on a fixed schedule. If submissions/ is empty, that's legitimate "
+            "Check workspace/CATALOG.md before starting a new subject — it lists every subject ever attempted, with status and technique numbers. Repeating a past subject is allowed ONLY as a deliberate revisit: say so in the note, and improve on the archived version. "
             "to report — go study references, add a pass to a piece rejected in the "
             "LAST 5 SHIFTS, or leave a specific idea via message_agent. Do NOT revive "
             "older work without operator direction; closed subjects are archived, with "
@@ -699,9 +701,106 @@ def _touch_subject(conn, slug, version, path, status="open"):
             (status, new_version, str(path), now, fp, slug),
         )
     conn.commit()
-    # Scratch hygiene at the single point every close routes through.
-    if status in ("accepted", "abandoned", "shelved"):
-        _archive_subject_scratch(slug)
+    # Scratch hygiene + catalog, at the single point every close routes
+    # through.
+    if status in ("accepted", "abandoned", "shelved", "rejected"):
+        if status != "rejected":
+            _archive_subject_scratch(slug)
+        try:
+            _rebuild_catalog()
+        except Exception:
+            pass  # the catalog must never break a curation decision
+
+def _rebuild_catalog():
+    """Regenerate workspace/CATALOG.md: every subject ever attempted.
+
+    User direction, 2026-09-23: the agents need one place to check
+    before starting a new subject, so a past subject is only repeated
+    as a deliberate revisit. Sourced from the real directories plus the
+    subjects table -- never hand-maintained, since a hand-maintained
+    catalog drifts and then gets ignored.
+
+    ponytail: full rewrite on every subject close; the catalog is ~100
+    lines and this runs a handful of times a day.
+    """
+    import collections
+    areas = [
+        ("in-review", SUBMISSIONS),
+        ("shipped", WORKSPACE / "gallery"),
+        ("accepted-unpacked", GALLERY_UNPACKED),
+        ("rejected", REJECTED),
+        ("shelved", SHELVED),
+        ("archived", WORKSPACE / "archive"),
+    ]
+    seen = collections.OrderedDict()
+    for status, root in areas:
+        if not root.exists():
+            continue
+        for f in sorted(root.rglob("*.ans")):
+            slug = core_slug(f.stem)
+            if slug in seen:
+                continue
+            try:
+                m = _compute_piece_metrics(f)
+                mt = time.strftime("%Y-%m-%d", time.localtime(f.stat().st_mtime))
+            except Exception:
+                m, mt = None, "?"
+            seen[slug] = {
+                "status": status, "date": mt, "path": f,
+                "hb": m["half_block_pct"] if m else 0.0,
+                "sh": m["shade_char_pct"] if m else 0.0,
+            }
+    db = sqlite3.connect(DB_PATH)
+    try:
+        for slug, st in db.execute("SELECT slug, status FROM subjects"):
+            if slug in seen:
+                # Location wins over DB status for anything that actually
+                # shipped or was accepted: _beast is in gallery/ but its
+                # subject row still reads 'rejected' from an earlier
+                # version, and the catalog should report where the work
+                # IS, not the last transition it recorded.
+                if (seen[slug]["status"] not in ("shipped", "accepted-unpacked")
+                        and st in ("abandoned", "shelved", "rejected")):
+                    seen[slug]["status"] = st
+            else:
+                seen[slug] = {"status": st, "date": "?", "path": None,
+                              "hb": 0.0, "sh": 0.0}
+    finally:
+        db.close()
+
+    lines = [
+        "# CATALOG — every subject ever attempted",
+        "",
+        "Auto-generated on every subject close. Do not hand-edit.",
+        "",
+        "**Check this before starting a new subject.** Repeating a past",
+        "subject is allowed ONLY as a deliberate revisit: say so in the",
+        "note, and improve on the archived version. Starting a subject",
+        "that is already here without saying so is thrashing, not work.",
+        "",
+        f"House bar: `_orb.v59` — {HOUSE_BAR['half_block']}% half_block / "
+        f"{HOUSE_BAR['shade']}% shade.",
+        "",
+        "| subject | date | status | half_block | shade | note |",
+        "|---|---|---|---|---|---|",
+    ]
+    notes = {
+        "_departure": "168-row ambition-tier scroll; abandoned, scope before capability",
+        "_orb": "eye/orb family; v59 is the house bar. Subject RETIRED",
+        "_watcher": "eye family, 60+ versions; re-slug dodged the revision cap. RETIRED",
+        "_watcher_final": "same content as _watcher.v7 under a new name. RETIRED",
+        "_keeper": "first piece drawn with the fixed canvas primitives",
+        "_wasteland": "dying-sun dunes atmospheric study",
+    }
+    for slug, d in sorted(seen.items()):
+        lines.append(
+            f"| `{slug}` | {d['date']} | {d['status']} | "
+            f"{d['hb']:.1f}% | {d['sh']:.1f}% | {notes.get(slug, '')} |"
+        )
+    lines.append("")
+    (WORKSPACE / "CATALOG.md").write_text("\n".join(lines))
+    return len(seen)
+
 
 def _archive_subject_scratch(slug):
     """Move a closed subject's scratch files to workspace/archive/.

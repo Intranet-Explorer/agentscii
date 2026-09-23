@@ -112,3 +112,16 @@ def test_scratch_hygiene_moves_not_deletes():
         assert keeper.exists(), 'helper module was archived -- must stay'
     finally:
         dest.unlink(missing_ok=True)
+
+
+def test_catalog_rebuilds_and_location_wins():
+    """CATALOG.md regenerates from real directories, and where a piece
+    IS beats the last status its subject row recorded (_beast sits in
+    gallery/ but its subject row still reads 'rejected')."""
+    import harness as h
+    n = h._rebuild_catalog()
+    assert n > 50, f"catalog suspiciously small: {n}"
+    txt = (h.WORKSPACE / 'CATALOG.md').read_text()
+    assert '| `_beast` |' in txt
+    beast = [l for l in txt.splitlines() if l.startswith('| `_beast` |')][0]
+    assert 'shipped' in beast, beast
