@@ -5727,8 +5727,16 @@ def run_shift(conn, agent):
             import canvas_tools as _ct
             for _slug in _ct.list_canvases(str(WORKSPACE)):
                 try:
+                    # NO extra underscore: the canvas slug already
+                    # carries the house prefix when there is one, and
+                    # prepending another made "_pipe1.autosave.ans" for
+                    # canvas "pipe1" -- a filename that groups as its own
+                    # phantom piece in the dashboard instead of under the
+                    # real one (found live 2026-09-23: the operator and I
+                    # were looking at two different files for the same
+                    # piece).
                     _ct.save_ans(str(WORKSPACE), _slug,
-                                 f"scratch/_{_slug}.autosave.ans",
+                                 f"scratch/{_slug}.autosave.ans",
                                  title=None, add_sig=False)
                 except Exception:
                     pass
