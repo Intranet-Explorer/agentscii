@@ -131,11 +131,13 @@ shade_ramp(8, 0, 60, 80, 84, "top-right", 7, 0, t_lo=0.15, t_hi=0.95)
 # ---- NEAR WATER (7): lit crest tops + right faces, troughs dark. Full ramp. ----
 shade_ramp(7, 0, 84, 80, 100, "top-right", 7, 8, t_lo=0.15, t_hi=0.95)
 
-# ---- warm lamp rim on the crown's upward face (spec permits 11 as a rim only). ----
-for cell_row in range(31, 34):
-    for col in range(50, 64):
-        if orig[cell_row * 2][col] == 3:
-            out_go[f"{cell_row},{col}"] = ["\u2588", 11, 3]
+# ---- warm lamp rim on the crown's TOP lip only. Spec point 5: 11 is a rim
+# highlight at most, NEVER a field. So this is 1px tall (the crown's top edge,
+# pixel row 62), bright-yellow over brown via \u2580 -- a thin warm line where the
+# lamp catches the rock's upper lip, not a block of solid yellow. ----
+for col in range(50, 65):
+    if orig[62][col] == 3:                      # crown top edge is brown
+        out_go["31,%d" % col] = ["\u2580", 11, 3]   # \u2580: bright rim over brown
 
 data["pixels"] = out_px
 data["glyph_override"] = out_go
