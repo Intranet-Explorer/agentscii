@@ -60,3 +60,5 @@ corpus/checkpoint_evals/*/*.png
 corpus/clip_index/
 workspace/canvases/
 
+corpus/mem_log.jsonl
+corpus/mem_watchdog_kill_report.json
