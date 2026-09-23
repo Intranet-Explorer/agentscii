@@ -99,3 +99,41 @@ work first, verify on a small re-rendered pair set (same "render 5
 pairs, judge before training" discipline used earlier), THEN resume
 training only after the masked-loss design is confirmed to target the
 right cells.
+
+## Era/group corpus filter (recorded 2026-09-23, NOT applied to training)
+
+Built and measured for retrieval, kept here for whenever training
+resumes. Do NOT treat this as a fix for either training failure: both
+were objective-design problems (texture-without-content, then
+copy-the-input), and corpus curation would not have changed either.
+
+Index composition, all 850k patches in corpus/clip_index:
+
+  1990-1995 (BBS ads / NFO era)   263,008   30.9%
+  1996-2000 (scene peak)          317,667   37.4%
+  2001-2004                        37,036    4.4%
+  2005+ (modern illustration)     232,289   27.3%
+
+68% is pre-2001. Top group by volume is Blocktronics (~60k across all
+its packs), then gutter-20th, TCF20, laz12, fire-*, fuel*.
+
+Filter implemented in corpus/build_highcraft_index.py -- union, any one
+qualifies: shade or half_block at/above the index p90 (65.1 / 46.5),
+year >= 2005, or a known illustration group (Blocktronics, ACiD, iCE,
+Fuel, Mistigris, Impure, ansi_love). Selects 357,189 patches (42.0%),
+shifting the era mix to 65% modern. Shares the parent index's
+embeddings by row index, so rebuilding costs seconds rather than the
+original 4 GPU-hours.
+
+Retrieval result: NOT better, and not adopted as the default. Measured
+on the 5-query grid, full vs filtered: 1 marginal win, 1 clear loss
+(the tower query lost two real spire references for a flat grey panel
+and a dark silhouette), 3 ties. CLIP already ranks by visual-semantic
+similarity, so crude BBS ads rarely win against a query describing lit
+form -- the era skew in the INDEX does not translate into era skew in
+the RESULTS. The filter mostly removed patches CLIP was not returning
+anyway, while occasionally deleting a genuinely good pre-2005 hit.
+
+If training resumes and a curated corpus is wanted, this filter is a
+reasonable starting point -- but the evidence above says its value is
+in dataset composition, not in retrieval quality.

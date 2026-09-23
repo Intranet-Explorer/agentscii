@@ -144,3 +144,16 @@ def test_find_patches_required_before_submit():
     src = inspect.getsource(h.run_tool)
     assert "tool_name='find_patches'" in src
     assert 'call find_patches at' in src
+
+
+def test_find_patches_returns_distinct_sources():
+    """Overlapping windows from one file scored near-identically, so a
+    3-result set came back with the same patch 2-3 times. n results must
+    mean n distinct references."""
+    import sys
+    sys.path.insert(0, 'corpus')
+    from find_patches_clip import find_patches_clip
+    hits = find_patches_clip('shaded sphere warm light', n=3,
+                             index_dir='corpus/clip_index')
+    paths = [h['parent_path'] for h in hits]
+    assert len(paths) == len(set(paths)), f'duplicate sources: {paths}'
