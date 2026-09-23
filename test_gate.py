@@ -210,3 +210,15 @@ def test_landscape_terms_dont_trip_anatomy_guard():
     src = inspect.getsource(h.curate_piece_opus_gated) + inspect.getsource(h.run_tool)
     assert '_LANDSCAPE_OK' in src
     assert 'anatomy_claimed' in src
+
+
+def test_autosave_groups_with_its_piece():
+    """The cap-handoff autosave must not become a phantom piece. It
+    wrote scratch/_<slug>.autosave.ans for canvas <slug>, and the
+    dashboard grouped that as its own entry -- and since autosaves are
+    the newest file, every one outranked the real piece it came from.
+    The operator and I spent a round looking at two different files."""
+    import inspect, harness as h
+    src = inspect.getsource(h.run_shift)
+    assert 'scratch/{_slug}.autosave.ans' in src, 'extra underscore is back'
+    assert 'scratch/_{_slug}.autosave.ans' not in src
