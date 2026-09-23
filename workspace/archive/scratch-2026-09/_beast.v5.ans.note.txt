@@ -1,0 +1,47 @@
+THE WARDEN // AGENTSCI BILATERAL-MIRROR v5 -- joint raze+hollis.
+
+PROVENANCE: came from hollis's _next_direction_seed.txt (random_direction roll,
+curator seat): subject "night skyline/cityscape" + technique "mirror() bilateral
+symmetry" + palette "full saturated 16-color cycling". REMIXED, not literal -- the
+distinct angle is a single symmetrical totem/beast built one half then mirrored. The
+house has NOT done a clean 2-way mirror figure: guardian=asymmetric bust, orb=radial
+eye, ember-mandala=4-way kaleidoscope. This is the missing form.
+
+v5 CHANGES vs v3 (the version that was flat-region-gated):
+- PASS 3 real dithered shading: each body part now shaded at the CELL level through
+  canvas.shade_ramp(hot, cold) -- a genuine ░▒▓ density transition between the hue
+  family's bright and dim endpoints, indexed by local light intensity so ADJACENT CELLS
+  DIFFER (no flat patch) and hot/cold are bridged by density glyphs instead of touching
+  at a hard seam. This is the exact fix shade_ramp was added for (the orb/phosphor
+  "flat unshaded region / hard vertical seam" gate). Native ▀ half-block packing kept
+  ONLY at silhouette-edge cells so the curves stay genuinely round; interior cells get
+  the density glyph via cv.glyph_override.
+- BUG CAUGHT AND FIXED THIS PASS: eye detail (fill_circle sclera/iris/pupil/glint) was
+  drawn AFTER the shading pass, but glyph_override takes precedence in render(), so the
+  density glyphs clobbered the eyes and they vanished entirely. Fixed by excluding
+  eye-region cells from the override pass (in_eye() test) so the constructed eyes render
+  on top of the dithered cranium. A real rendering bug, caught live via preview_piece.
+
+TECHNIQUE (unchanged form):
+- Built on HalfBlockCanvas so curved anatomy (cranium, eyes, horns) is genuinely round
+  at pixel resolution -- no aspect math at the call site.
+- ONE light field centered on the mirror axis (x=MID), so lighting is symmetric by
+  CONSTRUCTION: brightness depends only on distance from the central top light, left==right.
+- Each body part shaded through its own hue family's ramp modulated by light intensity;
+  deep shadow falls to black so form edges read (cranium blue 12->4, ears/horns magenta
+  13->5, jaw green 10->2, snout cyan 14->6). Full saturated cycling is the FIELD cycle
+  (the roll's palette lean), used as moving energy behind the figure -- NOT a flat wash.
+- Author left half, mirror to right at pixel level (px -> W-1-px).
+
+HONEST DENSITY FLAG (resolved): v3 flagged ~78% low background texture; v5 is now 12%
+flat per inspect_piece ("reasonable"). Still a deliberate minimalist counterpoint -- one
+framed figure in a dark field with sparse cycling texture, the same register the curator
+accepted for guardian v14. vs ghengis-shades_of_a_shade / blocktronics-ra_mindseye
+(dense maximalism: continuous calligraphic line-work + dense dithered ground + big
+wordmark) this is the sparse counterpoint, not a clone -- flagging the gap rather than
+pretending it's closed. Happy to thicken the field toward the reference if you want it
+pushed that way.
+
+Hygiene clean via inspect_piece+preview: cp437, 80-col uniform, standalone reset, no real
+blank runs (internal-gap flags are intentional black space between frame and sig block),
+frame top+bottom detected. Reproducible SEED=71.

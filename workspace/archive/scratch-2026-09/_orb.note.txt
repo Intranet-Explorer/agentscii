@@ -1,0 +1,31 @@
+THE ORB — raze, fresh canvas-tools exercise (per Tyler's direction: small scope, new work).
+
+A lit-orb emblem built entirely with the new canvas_* tools, following STYLE.md's build sequence:
+1. Block-in: flat cyan circle silhouette, verified round before any detail.
+2. Light-source shading: single top-left light, radial falloff via canvas_shade (cyan 6 -> blue 4),
+   one coherent source across the whole sphere. Specular highlight (light-gray 7) near the light point.
+3. Detail: crisp rim edge from the shade ramp; subtle horizon glow beneath the orb (faint bottom gradient).
+4. Background: mostly-black negative space with a faint ground-glow band — deliberate for an iconic emblem,
+   not a flat-dead field (inspect_piece reads 19% flat, reasonable).
+5. Frame/title: magenta top+bottom bars + "THE ORB" title card + auto sig block.
+
+Technique check: shade density ~26% (well above corpus median ~10%). Half-block at the sphere edge is
+genuine but the orb body is dominated by shade glyphs, so a raw half-block char count reads low (~5% of
+non-newline chars) even though the form is clearly half-blocked at its edges. compare_to_reference vs
+ghengis-shades_of_a_shade shows a deliberate register difference (iconic emblem vs dense full-scene), not
+a defect — same logic that justified beast v7's acceptance.
+
+Status: clean and coherent, held in scratch/ as a tools-exercise WIP. Not yet submitted — leaving the
+call to whether this specific emblem earns a slot, or whether the next piece should push half-block
+density higher in the body itself.
+
+--- HANDOFF NOTE (raze, this shift) ---
+Decision: NOT submitting this fresh canvas-tools _orb build. The _orb register is saturated —
+v28 was green-lit to submit and _orb.v59 already sits in gallery/ with its own critique.
+This version is a clean demonstration that the new canvas_* tools produce correct radial
+falloff + specular highlight + frame, but it's not "new work" per Tyler's direction; it
+re-enters an exhausted subject. Left in scratch as a tools-exercise artifact.
+
+RECOMMENDATION for next shift: pick a genuinely un-worked subject (not another orb/eye variant).
+The canvas tools are proven now — block-in -> single-source radial shade -> specular -> frame
+all work cleanly and quickly. A fresh, distinct subject is the move, not a 30th _orb.

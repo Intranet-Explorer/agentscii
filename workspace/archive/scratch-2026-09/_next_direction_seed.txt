@@ -1,0 +1,154 @@
+NEXT-PIECE SEED (hollis, curator seat) — for after guardian resolves, NOT to touch raze's active iteration.
+
+random_direction roll: subject "night skyline/cityscape" + technique "canvas.py mirror() bilateral symmetry" + palette "full saturated 16-color cycling".
+
+TAKE / REJECT split (honest):
+- Cityscape itself is partly owned already: hollis-city, hollis-raze-wharf-scroll. Don't re-do a skyline for its own sake.
+- EMBER MANDALA (pack53) just took the 4-way kaleidoscope mandala register — so a symmetric *mandala* would duplicate it.
+- The distinct angle: a BILATERAL-MIRROR CREATURE/figure (mirror() left<->right), full saturated cycling, NOT a mandala and NOT a skyline. Think a single symmetrical totem/beast built one half then mirrored — the house hasn't done a clean 2-way mirror figure yet (guardian is asymmetric; orb is radial; ember-mandala is 4-way).
+
+If taken:
+- Build on HalfBlockCanvas (house direction, frozen figure_common.py) so any curved anatomy is genuinely round.
+- ONE light_field at the mirror axis so lighting is symmetric by construction.
+- Full saturated cycling is the palette lean — use it as the *cycle*, not a flat wash; ramp within each hue family via canvas.ramp() to avoid the rainbow-flood defect that's bitten us before.
+- Pass 5 texture_fill on the negative space (don't leave flat black), frame + sig block, compare_to_reference vs a real figurative piece before submit_piece.
+- Note in the submission that it came from a random_direction roll (provenance).
+
+This is a seed, not a mandate. Guardian v20 is the priority; this is what's next when that resolves.
+
+--- UPDATE (hollis, curator seat) after beast v5 reject ---
+beast v5 (THE WARDEN // BILATERAL-MIRROR) was submitted and REJECTED on the blind subject check:
+technique clean & ship-grade, but a title-less viewer read the silhouette as "neon pixel-art cat face,"
+not a warden/guardian. The two sweeping horns/ears + rounded cyan jaw read feline; "warden" implies
+guard/keeper/watchful presence. Reject is SUBJECT-READING only, NOT the form.
+
+The bilateral-mirror CREATURE FORM is still the open catalog gap (guardian=asymmetric, orb=radial,
+mandala=4-way). It just needs a silhouette that reads as its title WITHOUT the title card doing the work.
+Concrete fix directions (pick ONE, don't churn all):
+  1. Kill the cat-ear read: shorten horns / make them angular crown-crest ridges, not smooth cones.
+  2. Cyan jaw -> faceplate/masked lower plate + angular brow ridge over eyes = "masked guard," not muzzle.
+  3. Or lean the whole thing toward a hooded/watchful masked figure rather than an animal head.
+Do NOT resubmit v5 as-is (fails same check) and do NOT churn it into a 6th version of the same silhouette.
+If the form isn't clicking, drop a fresh non-duplicate seed instead.
+
+--- UPDATE (hollis, curator seat) after beast v6 review ---
+beast v6 (THE WARDEN // CROWNED-MASK, joint raze+hollis): subject-reading axis SOLVED — crowned-mask silhouette
+reads as guardian, not cat. Technique ship-grade. BUT blind second-opinion pass overrode my ACCEPT -> REJECT,
+and on raw-grid verification it found ONE real blocker I missed: DUPLICATED FOOTER WITH TWO SPELLINGS
+(rows 43-44 "AGENTSCI/CROWNED-MASK v6" vs rows 48-49 "AGENTSCII/AGENTSCI CROWNED-MASK v6"). Proofing bug.
+Rejected on proofing ONLY; full verified critique appended to rejected/_beast.v6.ans.critique.txt.
+
+LESSON (for me, curator): my own acceptance reasoning missed a duplicated/mis-spelled footer — I read the
+render top-to-bottom for subject+technique and didn't diff the two footer bands against each other or against
+STYLE.md's AGENTSCII spelling. Before accepting any framed piece: explicitly check the sig/footer block is
+stamped ONCE, with the correct house name (AGENTSCII) and a single title line. The blind override caught it;
+that mechanism is doing its job — don't treat an override as noise, verify each of its claims against the grid
+(it got 1 of 3 specific claims right: footer dup = real, "missing chin scanline row 38" = wrong label [gap is
+row 37, a jaw taper], "crown clipped at col1/80" = wrong [both sides have margin]).
+
+NEXT for raze: v7 = v6 minus the duplicate footer (single sig block, AGENTSCII). No silhouette churn.
+When v7 lands clean it should ACCEPT and fill the open catalog gap (clean 2-way bilateral-mirror figure).
+
+--- UPDATE (hollis, curator seat) after beast v7 ROUTING CORRECTION ---
+beast v7 (THE WARDEN // CROWNED-MASK, joint raze+hollis): the v6 proofing bug (duplicated footer / two
+house-name spellings) is GONE — verified myself this shift (grep: 3 AGENTSCI hits all double-I, single
+footer band; inspect clean; preview+compare vs mindseye reads as crowned-masked guardian, not cat).
+ROUTING CORRECTED: the piece had been misfiled in rejected/ despite its own critique reading as an ACCEPT.
+Moved _beast.v7.ans + sidecars to gallery/unpacked/ this shift. It is now correctly pending next pack release.
+
+GAP CLOSED: beast v7 IS the "bilateral-mirror creature/figure, NOT mandala NOT skyline" seed above — a clean
+2-way mirror figure (guardian=asymmetric, orb=radial, ember-mandala=4-way). That open catalog gap is now filled.
+Do NOT start another 2-way bilateral-mirror figure as the next piece; that register is taken.
+
+LESSON (for me, curator): I wrote an ACCEPT on v7's critique but the file never left rejected/ — a routing
+error, not a curation decision. When a critique reads as accept, the piece must actually move to unpacked/.
+Verify the move happened, don't assume it did. raze caught this; good catch.
+
+NEXT ANGLE (for raze, post-routing): pick a fresh NON-duplicate register. Taken/owned: bilateral-mirror figure
+(just closed), 4-way mandala (ember), radial orb, two-figure diptych (warden-vessel), skyline/cityscape
+(hollis-city, wharf-scroll). Open registers worth trying: (a) a single asymmetric FIGURATIVE character with
+genuine half-block shaded anatomy (frozen figure_common.py -> HalfBlockCanvas, round cranium/eye), NOT mirror;
+(b) a scene/composition piece (interior/exterior, one light source, texture_fill negative space); (c) an
+abstract-but-not-mandala generative field with real density ramp. Build on HalfBlockCanvas, ONE light_field,
+ramp within hue families via canvas.ramp(), pass-5 texture_fill, frame+sig, compare_to_reference before submit.
+
+--- UPDATE (hollis, curator seat) _departure re-verification ---
+Scanned all rejected/ critique sidecars for the "reads as ACCEPT but sits in rejected/" pattern. Found:
+- beast v6: superseded by v7 (v7 is the accepted one). Correctly stays in rejected/ as history. NOT a misroute.
+- beast v7: WAS a genuine misroute — routed to unpacked/ this shift (see above). DONE.
+- _departure: reads as an old ACCEPT but on FRESH verification has TWO real proofing defects that block it under
+  the current house standard: (1) single-I "AGENTSCI" in the credit block (the exact bug class that killed beast
+  v6/v7, STYLE.md specifies AGENTSCII double-I); (2) joint-credit gap — credits.txt says raze,hollis but the piece's
+  own sig block only credits raze. Left in rejected/ with an actionable critique; NOT routed. Needs a 2-line fix
+  pass (AGENTSCI->AGENTSCII, add hollis to credit line) before it can join beast v7 in unpacked/.
+
+PACK TIMING: unpacked/ currently holds ONLY beast v7 — one strong piece, not yet a "handful." Holding the pack
+release until _departure's 2-line fix lands so we ship both together as a small dim/industrial + bilateral-mirror
+figure batch. Don't release a 1-piece pack on autopilot.
+
+--- UPDATE (hollis, curator seat) — reconciliation after forced shift-end ---
+State moved since the last cut-off. Re-verified on disk this shift:
+- _departure.v10: BOTH defects my prior note flagged are NOW RESOLVED in v10 -- joint "raze + hollis"
+  credit present (title card + closing sig), and footer reads AGENTSCII double-I (the single-I bug is
+  gone; the "AGENTSCI" I saw in a preview was a render-truncation artifact, not in the bytes). Structure
+  clean: cp437, standalone reset, valid SGRs, top+bottom frame, bg texture only 4% flat (Pass 5 done),
+  full narrative arc (SCROLL//01 title -> rail-yard-at-dusk horizon -> THE KEEPER/PWR//LAMP ON lit
+  figure -> PWR//OFF -> DEPARTURE closing credit). Genuinely complete. NOT submitted -- raze's active
+  iteration, artist seat.
+- _wasteland.v1 (THE LAST LIGHT): my last-shift co-passes (Pass 3b lone-wanderer silhouette + Pass 4
+  sky texture: stars/embers/glow) HOLD and verified by eye this shift. High-contrast "mostly black with
+  bright accents" lean is DELIBERATE per the random_direction roll -- the LOW BACKGROUND TEXTURE flag
+  (88%) is an intentional minimal composition, not a dropped pass; chasing it would betray the roll.
+  Structure clean: cp437, standalone reset, uniform 80-col, valid SGRs, bottom frame. NOT submitted.
+
+PACK TIMING (revised): unpacked/ still holds ONLY _beast.v7 -- one strong piece, not a handful. Holding
+the pack release. The two joint WIPs above are both complete+clean but UNsubmitted; once raze pushes
+_departure + _wasteland through submit_piece and they clear curator review into unpacked/, we'll have
+3 (beast.v7 dim/industrial figure + departure scene-scroll + wasteland high-contrast scene) = a real
+batch to ship together. Don't release a 1-piece pack on autopilot; don't submit raze's active WIPs for
+them -- that's the artist seat.
+
+OPEN REGISTER (unchanged, still valid when it comes up): bilateral-mirror CREATURE form is the catalog
+gap, but beast v5/v6 proved the silhouette must READ as its title without the title card doing the work
+(crown-crest not cat-ears; masked guard not muzzle). Don't churn a 7th version of the same silhouette.
+
+--- UPDATE (hollis, curator seat) — eye_emblem read + reconciliation ---
+raze started a NEW WIP this shift: scratch/_eye_emblem.ans "THE WATCHER" (signed raze / AGENTSCII).
+Circular iris/limbus emblem — purple ring, cyan/blue scanline-banded iris, dark pupil on black.
+- Structure clean end-to-end (cp437, standalone reset, valid SGRs, uniform 80-col, bottom frame).
+- inspect_piece "sparse rows / internal gaps" flags = legitimate negative space around a centered
+  circular emblem, NOT a paint-loop bug (verified by eye with preview_piece).
+- FOOTER CLEAN: single "AGENTSCII" double-I, single title line "THE WATCHER", boxed by rules.
+  The dup/mis-spelled-footer bug class that killed beast v6/v7 is NOT present here.
+- Subject reads as "THE WATCHER" without the title card doing the work — legible single motif,
+  ship-grade technique. Flagged to raze as ready to push through submit_piece IF they're done iterating.
+Did NOT submit on raze's behalf (artist seat) and did NOT churn over the active iteration.
+
+PACK TIMING (unchanged): unpacked/ still holds ONLY _beast.v7. Three joint WIPs now complete+clean but
+UNsubmitted: _departure.v10, _wasteland.v1, _eye_emblem. Once raze pushes them through submit_piece and
+they clear review into unpacked/, that's a real 3-4 piece batch (dim/industrial figure + scene-scroll +
+high-contrast scene + emblem) to ship together. Holding the pack release; not releasing a 1-piece pack.
+
+--- UPDATE (hollis, curator seat) — reconciliation/verification shift ---
+submissions/ EMPTY -> nothing to curate this shift. unpacked/ holds ONLY _beast.v7
+(confirmed = the resolved crowned-mask warden: angular 5-pt crown + dark brow over red eyes +
+gold faceplate; subject-reading axis SOLVED, technique ship-grade, single AGENTSCII footer).
+1 piece is not a pack batch -> HOLDING release_pack.
+
+Verified by eye+grid this shift that the 3 joint WIPs are complete, clean, and FOOTER-CLEAN
+(the dup/mis-spelled-footer bug class that killed beast v6/v7 is ABSENT from all three):
+- _departure.v10: single "raze + hollis / AGENTSCII" footer band, correct double-I. Structure
+  clean (cp437, standalone reset, valid SGRs, top+bottom frame, 4% flat bg = Pass5 done).
+- _wasteland.v1: single "raze / AGENTSCII" + "THE LAST LIGHT // AGENTSCII WASTELAND v1" line.
+  Structure clean (cp437, standalone reset, uniform 80-col, bottom frame).
+- _eye_emblem (THE WATCHER): reads as its title without the card; footer single/correct.
+All three are raze's ACTIVE ITERATION (artist seat) -- I do NOT submit on their behalf or churn
+over it. Once raze pushes departure+wasteland(+maybe eye) through submit_piece and they clear
+review into unpacked/, we'll have 3-4 strong pieces = a real batch to ship together.
+
+_orb / orb2..orb5 canvases + scratch/_orb.ans: raze's fresh canvas-tools exercise, explicitly
+NOT submitted (register saturated -- _orb.v59 already in gallery with its own critique). It's a
+clean tools-exercise artifact proving block-in->single-source radial shade->specular->frame all
+work; left in scratch as-is. Not a submission candidate, not new work per Tyler's direction.
+
+No pending peer message this shift (no inbox dir). No action taken beyond verification + record.

@@ -1,0 +1,19 @@
+_departure — ABANDONED, do not revive.
+
+168-row ambition-tier scroll, pre-canvas generator. _departure.ans
+measures 0.0% half-block / 75.3% shade across 168 rows: mostly empty
+canvas with dithering standing in for content.
+
+Shifts 634-636 and 640 all went into this piece for no reason other
+than that it was sitting in scratch/. That is the specific loop this
+archival exists to break.
+
+Not to be revived without explicit operator direction. The ambition
+tier (collaborative scroll pieces) is gated in STYLE.md behind three
+consecutive accepts at or above corpus-median technique.
+
+Honest note: _departure.v10.ans measures 55.2% half-block, above the
+house bar (_orb.v59, 37.9%). The later versions were not technically
+weak. The dead end was scale and emptiness, not cell technique.
+
+See workspace/archive/README.md for the full record.

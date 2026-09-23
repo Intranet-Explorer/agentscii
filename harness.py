@@ -130,8 +130,9 @@ AGENTS = {
             "not two agents quietly working past each other. Your seat is 'artist': you "
             "call submit_piece when something's ready. That's the only hard boundary "
             "between you and your collaborator — everything upstream is shared. "
-            "workspace/: scratch/ is shared unrestricted WIP space — extend or remix "
-            "anything there, no permission needed; submissions/ holds a finished piece "
+            "workspace/: scratch/ holds CURRENT work only (closed subjects are archived "
+            "automatically) plus shared helper modules — extend or remix what's there, "
+            "no permission needed; submissions/ holds a finished piece "
             "awaiting curator review (artist seat only, via submit_piece); "
             "gallery/unpacked/ holds accepted pieces not yet shipped; gallery/packNN/ "
             "holds shipped releases with a FILE_ID.DIZ crediting everyone — the real unit "
@@ -163,9 +164,12 @@ AGENTS = {
             "verify against a reference) — required reading before your first figurative "
             "or ambition-tier piece. A human (Tyler) directs this project and leaves "
             "either of you direction via your inbox. This is directed, quality-focused "
-            "work, not idle equilibrium — if nothing's in flight, look at what your "
-            "collaborator left in scratch/, revise a rejected piece with its critique in "
-            "mind, study a reference, or start something new. Don't submit unfinished "
+            "work, not idle equilibrium — if nothing's in flight, start a new subject "
+            "via random_direction, or revise a piece rejected in the LAST 5 SHIFTS with "
+            "its critique in mind. Do NOT revive older work without direction from the "
+            "operator: four shifts were spent reviving an abandoned piece purely because "
+            "it sat in scratch/. Closed subjects are archived automatically; the reasons "
+            "are in workspace/archive/README.md. Don't submit unfinished "
             "work to pad activity. Speak in the first person, always. 'user'-labeled "
             "messages are automated harness pings and inbox deliveries, not a person "
             "waiting on you in real time. Call end_shift when done acting for this shift."
@@ -182,8 +186,9 @@ AGENTS = {
             "That's the only hard boundary between you and your collaborator — everything "
             "upstream is shared, and you're a full contributor there too; jump into "
             "scratch/ and add a pass to anything your collaborator started whenever you "
-            "want. workspace/: scratch/ is shared unrestricted WIP space — extend or "
-            "remix anything there, no permission needed; submissions/ holds a finished "
+            "want. workspace/: scratch/ holds CURRENT work only (closed subjects are "
+            "archived automatically) plus shared helper modules — extend or remix what's "
+            "there, no permission needed; submissions/ holds a finished "
             "piece awaiting curator review (artist seat only, via submit_piece); "
             "gallery/unpacked/ holds accepted pieces not yet shipped; gallery/packNN/ "
             "holds shipped releases with a FILE_ID.DIZ crediting everyone — the real unit "
@@ -221,8 +226,10 @@ AGENTS = {
             "everything submitted isn't curated at all. But don't reject reflexively "
             "either. Use release_pack when gallery/unpacked/ has a real handful of good "
             "work, not on a fixed schedule. If submissions/ is empty, that's legitimate "
-            "to report — go study references, work in scratch/, or leave a specific idea "
-            "via message_agent. Speak in the first person, always. 'user'-labeled "
+            "to report — go study references, add a pass to a piece rejected in the "
+            "LAST 5 SHIFTS, or leave a specific idea via message_agent. Do NOT revive "
+            "older work without operator direction; closed subjects are archived, with "
+            "reasons in workspace/archive/README.md. Speak in the first person, always. 'user'-labeled "
             "messages are automated harness pings, not a person waiting on you in real "
             "time. Call end_shift when done acting for this shift."
         ),
@@ -692,6 +699,41 @@ def _touch_subject(conn, slug, version, path, status="open"):
             (status, new_version, str(path), now, fp, slug),
         )
     conn.commit()
+    # Scratch hygiene at the single point every close routes through.
+    if status in ("accepted", "abandoned", "shelved"):
+        _archive_subject_scratch(slug)
+
+def _archive_subject_scratch(slug):
+    """Move a closed subject's scratch files to workspace/archive/.
+
+    User direction, 2026-09-22: "when a subject is accepted, rejected
+    past the revision cap, or abandoned, its scratch files move to
+    workspace/archive/ automatically. Scratch holds current work only."
+
+    Stale scratch is not inert: shifts 634-636 and 640 all went into
+    _departure purely because it was sitting there. Moves, never
+    deletes. Shared helper modules stay put -- they are read-reference
+    per STYLE.md, not per-piece work.
+    """
+    keep = {"canvas.py", "figure_common.py", "halfblock.py", "curve_common.py"}
+    dest = WORKSPACE / "archive" / "scratch-2026-09"
+    moved = []
+    try:
+        dest.mkdir(parents=True, exist_ok=True)
+        for f in sorted(SCRATCH.iterdir()):
+            if not f.is_file() or f.name in keep:
+                continue
+            if core_slug(f.name.split(".")[0]) != slug:
+                continue
+            target = dest / f.name
+            if target.exists():
+                target = dest / f"{f.stem}.dup{int(time.time())}{f.suffix}"
+            f.rename(target)
+            moved.append(f.name)
+    except Exception:
+        pass  # hygiene must never break a curation decision
+    return moved
+
 
 def _check_regression_tripwire(conn, n_back=3):
     """After each accept: score the new piece against the last three

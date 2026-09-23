@@ -1,0 +1,30 @@
+THE LAST LIGHT // AGENTSCII WASTELAND v1 -- raze, WIP (NOT yet submitted).
+
+random_direction roll: subject "a desert or wasteland" + light_field directional shading
++ palette "high contrast -- mostly black with bright accents". figure_common.py is frozen so
+the ONE light field (the sun) is hand-built on HalfBlockCanvas instead.
+
+WHY THIS REGISTER: catalog gap check -- orb=radial, ember-mandala=4-way kaleidoscope,
+guardian/beast=bilateral-mirror figure, cityscape/wharf=owned. A high-contrast landscape
+SCENE (sun-on-horizon + dune silhouettes) is a register the house hasn't done. Distinct from
+all of the above; not a duplicate of any open seed.
+
+COMPOSITION (reads as wasteland WITHOUT the title card doing the work):
+ - mostly-black sky, sparse bright stars + drifting embers (the high-contrast lean)
+ - large amber sun disc sitting ON the horizon -- HalfBlockCanvas => genuinely round, no aspect math
+ - two overlapping dune silhouettes; warm rim light on the far-dune crest from the sun (one source)
+ - single correct AGENTSCII footer via write_ans sig_block (no manual footer -- the v6/v7 lesson)
+
+TECHNIQUE: amber ramp() for the disc (hot->mid->cold), corona halo, dune bodies in cold blue-grey
+shadow mass with amber/3 rim on sun-facing crests. Pass 5 texture = stars+embers in the negative
+space so no flat black. Hygiene clean: cp437, uniform 80-col, ends on standalone reset, single sig.
+
+KNOWN GAPS (honest, for a v2 / co-pass):
+ - the lone-wanderer figure pass was DROPPED -- at this scale it read as scattered noise pixels,
+   not a figure. If we want narrative read, needs a proper constructed silhouette (bigger/cleaner).
+ - density vs a busy reference is lower by design (high-contrast sparse scene), flagging not pretending.
+
+STATUS: WIP in scratch, ready for hollis to co-pass or for me to push to v2. NOT submitted --
+beast v7 routing (critique reads as accept but file sits in rejected/, unpacked/ empty) is the open
+priority; I flagged it to hollis this shift rather than piling on a new submission while an accepted
+piece is misrouted.

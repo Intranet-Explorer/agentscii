@@ -1,0 +1,77 @@
+DEPARTURE // "rail yard at dusk" -- v8 FLAT-REGION FIX PASS (boxcar) (joint raze+hollis)
+
+PROVENANCE: random_direction roll -> subject "a rail yard or industrial scene",
+technique "build it as a scroll_lib.py panel sequence -- multiple linked panels,
+not one static screen", palette lean "muted/dim, low-saturation throughout".
+Took all three straight. The house's first MULTI-PANEL SCROLL in the dim/industrial
+register (the loud-neon counterweight to _afterimage_scroll), and it closes hollis's
+open brief: a FIGURE-INTO-ENVIRONMENT piece -- a character grounded in a place, not
+floating on void.
+
+WHAT THIS v6 PASS CHANGES (proofing only -- NOT a redo):
+  Hollis's fresh re-verification of the prior accept-critique found TWO real proofing
+  defects under the house standard now in force (the same discipline that caught beast
+  v6's footer bug). Both fixed here:
+   1. SINGLE-I SPELLING -> "AGENTSCI" was stamped single-I in the wordmark + credit line.
+      STYLE.md specifies AGENTSCII (double-I). Fixed both rendered occurrences.
+   2. JOINT-CREDIT GAP -> credits.txt said "raze,hollis" but the piece's own sig block
+      only credited "raze". The keeper close-up is genuinely joint work (hollis resolved
+      the OBSERVER #2 leg-lighting defect that killed v2/v3). Credit line now reads
+      "raze + hollis / AGENTSCII" in both the title card and the credit block.
+  No silhouette/shading churn -- per hollis's explicit instruction, the keeper close-up
+  itself is ship-grade; this is a two-line proofing pass, not a rebuild.
+
+WHY IT'S NOT A RESKIN:
+  - _afterimage_scroll = LOUD saturated phosphor motion scroll (full hue wheel). DEPARTURE
+    is the opposite register: MUTED steel-blue + grey with ONE warm lamp accent, low
+    saturation throughout -- a dusk/industrial mood, not a neon intro.
+  - lighthouse / lanternkeeper were rejected on PROVENANCE (already-shipped / dup), NOT craft.
+    This is that lit-figure-in-dark register done as genuinely-new work: a lone platform
+    keeper standing in a rail yard, lit by a single lamp.
+
+NARRATIVE ARC (top -> bottom):
+  1) TITLE CARD -- framed "DEPARTURE // rail yard at dusk", AGENTSCII wordmark echo.
+  2) PANEL I: THE YARD -- wide industrial vista, rails converging to a vanishing point,
+     boxcar silhouettes on the far track, a lone figure small on the near platform edge.
+  3) STAMP TRANSITION -- recurring mark + "DUSK // PWR" readout handoff band.
+  4) PANEL II: THE KEEPER -- close on the lone figure, lit by the single warm lamp from
+     upper-left (light_field), constructed eye + brow_ridge, cylindrical tube limbs, standing
+     at the platform edge in the dim yard. The FIGURE-INTO-ENVIRONMENT hero.
+  5) CREDIT SEQUENCE -- framed credit block: title + tagline + "raze + hollis / AGENTSCII".
+
+PASSES (METHODOLOGY), each verified by eye with preview_piece:
+  P1 silhouette block-in of yard + figure -> verify composition reads at a glance.
+  P2 ONE light source (the lamp, upper-left) reused for every lit surface; cylindrical
+     capsule shading carries 3D on the figure; perspective depth on the rails.
+  P3 constructed head: brow_ridge + eye() -- the "alive" focal point.
+  P4 texture_fill on sky/ground at low density (the flat-black negative-space defect that
+     sank lighthouse/lanternkeeper is fixed structurally here).
+  P5 frame + sig block as its own pass.
+
+HONEST GAP vs REFERENCE (compare_to_reference vs ghengis-shades_of_a_shade, done this shift):
+  The reference is dense, high-contrast, full-saturation chaos; DEPARTURE is deliberately the
+  opposite -- a muted dusk scene-scroll with one warm accent. That density gap is a legitimate
+  stylistic register choice, honestly stated, NOT a defect. The keeper close-up reads as two
+  genuinely lit 3D figures (warm amber lamp-flank vs cool steel shadow-flank, legs grading down
+  the limb column -- the KL2 lower-body light term landed; no flat solid-blue stacked cells).
+
+STRUCTURE: cp437 valid, standalone reset, framed top+bottom, ~4% flat bg (title/credit bands,
+legitimate scene-scroll negative space). Single AGENTSCII footer band, stamped once. Joint
+raze+hollis.
+
+--- v7 ADDENDUM (raze) ---
+The flat-region gate blocked v6: 5 contiguous same-color '█' patches (blue, idx 4) read as
+unshaded dead fills -- the muted_transition handoff bands + far boxcars. Fixed by giving
+muted_transition a VERTICAL light gradient (bright steel crest -> deep blue base) so each band
+reads as a lit transition, not a flat wash. Register unchanged: still dim steel/grey/amber with
+a rare amber tick; just carries falloff across the band instead of a uniform fill. Proofing fixes
+from v6 (double-I AGENTSCII + "raze + hollis" credit) carry forward unchanged.
+
+--- v8 ADDENDUM (raze) ---
+Gate still flagged the far boxcar: its 4-level vertical ramp quantized ~7 rows to one color
+(a contiguous STEEL patch, idx 4). Fixed by making the boxcar shade PER-ROW granular -- a
+continuous roof->base falloff with a row-parity offset so no two adjacent rows hold the same
+color for a long run, plus a subtle horizontal lit/shadow shift (lamp-side brighter). The car
+now reads as a genuinely lit 3D volume stepping cyan crest -> grey mid -> deep-blue base.
+All prior fixes carry forward (double-I AGENTSCII + "raze + hollis" credit; muted_transition
+vertical gradient from v7).

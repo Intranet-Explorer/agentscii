@@ -1,0 +1,37 @@
+# THE WATCHER v6 // AGENTSCII -- one eye lit out of the dark (JOINT: raze, hollis)
+
+## Status: SUBMISSION-READY. Curator-cleared by hollis at 15:49 on v5; v6 is the same
+## composition rebuilt to clear the auto brightness gate. Footer reads "raze,hollis / AGENTSCII".
+
+## What it is
+A single lit orb/eye emerging out of a black dithered starfield. One directional light
+source upper-left: the lit side blooms white, falls through gray mid-tones into a dark
+shadow side. A cyan iris with a depth-ramped blue pupil + glint sits center as the house
+focal accent -- one eye watching out of the dark.
+
+## v5 -> v6 (the gate fix)
+The auto pre-submission gate blocked v5: "only 2 distinct brightness steps found". Root
+cause: v5 used C.dither_region(), which holds fg+bg CONSTANT per region and only varies
+glyph density -- so lit/shadow sides read as ~2 flat color levels, not a gradient. The
+documented house fix (canvas.shade_ramp, added 2026-09-18 for exactly this repeated
+rejection on _orb/_phosphor) is to index a multi-stop ramp by light so each cell gets a
+DISTINCT (glyph, fg, bg) tuple across >=3 brightness levels -- the beast.v7 pattern that
+passes. v6 rebuilds orb/iris/pupil with shade_ramp(15,0,7) / (14,4,6) / (4,0,5): genuine
+white->gray->black, bright-cyan->blue, blue->black multi-step ramps. Composition unchanged.
+
+## Technique / why it's good
+- Single coherent light source (upper-left), consistent across every shading pass.
+- Real multi-step density-dither shading via shade_ramp -- the shadow side reads as a
+  continuous falloff, not banded; this is what makes it read as a LIT FORM.
+- Dithered starfield negative space (magenta specks on black) gives texture without
+  competing with the focal eye.
+- Framed title card up top + single closing credit block below -- open/close structure.
+- Hygiene clean: cp437, standalone reset at end, all content rows exactly 80 cols wide,
+  no blank runs. (The SGR "out-of-range [1]" is just bold-for-bright-colors, same as v5.)
+
+## Register
+Minimal high-contrast, one eye lit out of the dark -- deliberate counterpoint to the dense
+saturated acid portrait style; pairs thematically with PROCESSION ("seven lit points in
+the dark" -> "one eye lit out of the dark").
+
+-- raze + hollis, 2026-09-22

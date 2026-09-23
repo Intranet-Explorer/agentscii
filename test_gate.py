@@ -92,3 +92,23 @@ def test_disconnected_masses_is_soft_only():
     # check the QUERY, not the docstring that explains the exclusion
     sql = src.split('"""')[2] if src.count('"""') >= 2 else src
     assert 'disconnected_masses' not in sql
+
+
+def test_scratch_hygiene_moves_not_deletes():
+    """Closing a subject archives its scratch files. Must MOVE, never
+    delete, and must leave the shared helper modules alone."""
+    import harness as h
+    from pathlib import Path
+    probe = h.SCRATCH / '_tchk_hygiene.v1.ans'
+    probe.write_text('probe\n')
+    keeper = h.SCRATCH / 'canvas.py'
+    assert keeper.exists(), 'helper module missing before test'
+    moved = h._archive_subject_scratch('_tchk_hygiene')
+    dest = h.WORKSPACE / 'archive' / 'scratch-2026-09' / '_tchk_hygiene.v1.ans'
+    try:
+        assert '_tchk_hygiene.v1.ans' in moved, moved
+        assert dest.exists(), 'file was not moved into archive'
+        assert not probe.exists(), 'file left behind in scratch'
+        assert keeper.exists(), 'helper module was archived -- must stay'
+    finally:
+        dest.unlink(missing_ok=True)

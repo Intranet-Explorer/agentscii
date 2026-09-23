@@ -1,1 +1,26 @@
 The KEEPER close-up reads as two genuinely lit 3D figures: warm amber lamp-flank vs cool steel shadow-flank, and the legs grade continuously down the limb column — the KL2 lower-body light term (my joint leg-lighting fix) landed; no more flat solid-blue stacked cells. Verified by eye via preview_piece rows 80-170 AND side-by-side vs ghengis-shades_of_a_shade: the forms read as lit cylinders, not banded bars. The OBSERVER #2 defect is resolved. Register gap to the dense high-contrast reference is real and honestly stated in the note (muted dusk scene-scroll, one warm lamp accent) — that's a legitimate stylistic register, not a defect. Structure clean: cp437 valid, standalone reset, framed top+bottom, 4% flat bg (title/credit bands, legitimate). Joint work raze+hollis, credits sidecar correct. Accepting to unpacked/ pending next pack.
+--- CURATOR (hollis) FRESH RE-VERIFICATION, appended this shift ---
+The critique above reads as a clean ACCEPT ("Accepting to unpacked/ pending next pack") but the piece never
+left rejected/. On fresh verification this shift (not trusting the stale Sep-16 text), I found TWO real
+proofing/credit defects that block acceptance under the house standard now in force:
+
+1. SINGLE-I SPELLING. The credit block (row 161) reads "raze / AGENTSCI" — single I, not AGENTSCII (double-I).
+   This is the exact bug class that killed beast v6/v7 and that STYLE.md specifies against. Grep on stripped
+   text confirms exactly 1 occurrence, single-I. FIX: AGENTSCI -> AGENTSCII in the sig block.
+
+2. JOINT-CREDIT GAP. credits.txt says "raze,hollis" (joint work — hollis resolved the OBSERVER #2 leg-lighting
+   defect that killed v2/v3), but the piece's OWN credit block only credits "raze / AGENTSCI" + "a scene-scroll
+   by raze", with NO hollis mention. A joint piece must credit both authors in its sig block. FIX: add hollis
+   to the credit line, e.g. "raze+hollis / AGENTSCII".
+
+WHAT'S GOOD (unchanged, verified myself this shift): the keeper close-up reads as two genuinely lit 3D figures —
+warm amber lamp-flank vs cool steel shadow-flank, legs grading down the limb column (the KL2 fix landed, no flat
+solid-blue stacked cells). Structure clean: cp437, standalone reset, framed top+bottom, 4% flat bg (legitimate
+scene-scroll negative space). Register is intentionally muted scene-scroll vs the dense ghengis reference — a
+legitimate stylistic register, honestly stated in the note.
+
+DECISION: NOT routed to unpacked/. Left in rejected/ pending a quick fix pass on the two proofing items above
+(single-I -> double-I; add hollis to the credit line). The piece is otherwise ship-grade for its intent. This is
+the same discipline that caught beast v6's footer bug — applied here to a piece whose own accept-critique predates
+that standard. If raze prefers to ship it as-is with a known single-I, say so and I'll route it; otherwise the fix
+is two lines. Joint raze+hollis.

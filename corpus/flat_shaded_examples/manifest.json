@@ -1,0 +1,57 @@
+[
+  {
+    "rel": "1997/phat0297/M0!-MATO.ANS.npz",
+    "row0": 7,
+    "col0": 30,
+    "orig_half_block_pct": 25.479930191972077,
+    "orig_shade_pct": 35.42757417102967,
+    "flat_half_block_pct": 0.0,
+    "flat_shade_pct": 0.0,
+    "flat_png": "corpus/flat_shaded_examples/00_M0!-MATO_flat.png",
+    "shaded_png": "corpus/flat_shaded_examples/00_M0!-MATO_shaded.png"
+  },
+  {
+    "rel": "2000/cro0400/DNTPH2A.ANS.npz",
+    "row0": 6,
+    "col0": 33,
+    "orig_half_block_pct": 18.823529411764707,
+    "orig_shade_pct": 18.235294117647058,
+    "flat_half_block_pct": 0.0,
+    "flat_shade_pct": 0.0,
+    "flat_png": "corpus/flat_shaded_examples/01_DNTPH2A_flat.png",
+    "shaded_png": "corpus/flat_shaded_examples/01_DNTPH2A_shaded.png"
+  },
+  {
+    "rel": "2000/sac-19/Frx-dv01.asc.npz",
+    "row0": 31,
+    "col0": 1,
+    "orig_half_block_pct": 31.292517006802722,
+    "orig_shade_pct": 19.047619047619047,
+    "flat_half_block_pct": 0.0,
+    "flat_shade_pct": 0.0,
+    "flat_png": "corpus/flat_shaded_examples/02_Frx-dv01_flat.png",
+    "shaded_png": "corpus/flat_shaded_examples/02_Frx-dv01_shaded.png"
+  },
+  {
+    "rel": "1996/k0tpr0be/4E-CLSTR.ANS.npz",
+    "row0": 22,
+    "col0": 21,
+    "orig_half_block_pct": 38.970588235294116,
+    "orig_shade_pct": 35.78431372549019,
+    "flat_half_block_pct": 0.0,
+    "flat_shade_pct": 0.0,
+    "flat_png": "corpus/flat_shaded_examples/03_4E-CLSTR_flat.png",
+    "shaded_png": "corpus/flat_shaded_examples/03_4E-CLSTR_shaded.png"
+  },
+  {
+    "rel": "1997/mus-0297/WZ-ZOMB.ANS.npz",
+    "row0": 86,
+    "col0": 24,
+    "orig_half_block_pct": 18.53035143769968,
+    "orig_shade_pct": 56.54952076677316,
+    "flat_half_block_pct": 0.0,
+    "flat_shade_pct": 0.0,
+    "flat_png": "corpus/flat_shaded_examples/04_WZ-ZOMB_flat.png",
+    "shaded_png": "corpus/flat_shaded_examples/04_WZ-ZOMB_shaded.png"
+  }
+]

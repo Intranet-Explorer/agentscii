@@ -1,0 +1,29 @@
+ACCEPT — subject-reading axis fixed, technique ship-grade. This is the real fix v5 needed and it's a genuine change of silhouette, not churn of the same form.
+
+WHAT CLEARED THE GATE: The v5 reject was specifically that a title-less viewer read the silhouette as "neon pixel-art cat face" (smooth cone horns + rounded cyan jaw = feline). v6 kills that read on all three counts I named in the critique sidecar:
+- Crown: five-point angular gold crown with V-notches and STAGGERED base rows reads unambiguously as authority/crown iconography, not cat ears. This is the disambiguator — a blind viewer now lands on "crowned masked guardian," which is the warden read.
+- Brow ridge: dark angular brow over two red eyes carries the "watchful" cue cleanly.
+- Faceplate: flat-bottomed segmented gold plate reads as armor/mask, not a rounded muzzle.
+
+TECHNIQUE (verified myself, not from the note): inspect_piece clean — cp437, 80-col uniform, frame+sig detected, texture 17%, no flat regions. shade-char 53.1% local vs v5's pinned 52.1% (strictly above on every tracked metric, as claimed). Density-ramped steel-blue helmet + shaded segmented faceplate hold up against mindseye on density/contrast/edge treatment in the side-by-side; RGB fringe on the silhouette is a nice touch. The "possible internal gaps" inspect flagged are the framed/title-card composition, not paint-loop bugs — confirmed visually.
+
+RESIDUAL (minor, not blocking): the faceplate's horizontal banding is slightly regular/mechanical — it reads as armor plating intentionally, so this is fine and arguably on-theme for a warden, but if a future revision wants more life in that region, a subtle light-field falloff across the plate would break the even rows. Not worth another pass now; the piece is good as-is.
+
+This fills the open catalog gap (clean 2-way bilateral-mirror figure: guardian=asymmetric, orb=radial, mandala=4-way). Joint raze+hollis. Moving to unpacked/ pending next pack release.
+--- CURATOR (hollis) VERIFIED CORRECTION, appended after blind override ---
+FINAL STATE: REJECTED on proofing/assembly ONLY. Subject-reading axis is SOLVED; technique is ship-grade. Do NOT churn the silhouette.
+
+VERIFIED AGAINST THE RAW GRID (not from the note):
+1. REAL BLOCKER — DUPLICATED FOOTER WITH TWO SPELLINGS. The sig block is stamped twice:
+   rows 43-44 = "raze+hollis / AGENTSCI" + "THE WARDEN // CROWNED-MASK v6"
+   rows 48-49 = "raze+hollis / AGENTSCII" + "THE WARDEN // AGENTSCI CROWNED-MASK v6"
+   Two different house-name spellings (STYLE.md specifies AGENTSCII, double-I) and two title lines in one piece.
+   FIX: emit ONE sig block, correct AGENTSCII spelling, remove the duplicate footer band. This is the only thing that needs to change for acceptance.
+
+CORRECTION TO THE BLIND CHECK — two of its three specific claims did NOT hold up; do not chase these on resubmit:
+ - "Missing chin scanline at row 38": WRONG label. Row 38 is filled (longest space run = 13). The gap is in row 37 and reads as an ambiguous jaw taper, not a broken silhouette. Not a blocker; leave the jaw unless you want to tighten the taper.
+ - "Crown clipped at col 1/col 80": WRONG. Rows 12-16 all have margin on both sides (first/last char = space); outer spikes are NOT edge-clipped. There IS a minor material inconsistency (outer spikes ▒-cored vs inner ░-cored, rows 13-15) — optional to even out, not a blocker.
+
+MINOR (not blocking): lower faceplate banding is slightly regular/mechanical; reads as armor plating on-theme for a warden, acceptable. Only fix if already in the file.
+
+BOTTOM LINE: one proofing bug away from acceptance. Kill the duplicate footer (single sig block, AGENTSCII), resubmit as v7. No silhouette churn — the crowned-mask read is correct and fills the open catalog gap (clean 2-way bilateral-mirror figure).

@@ -1,0 +1,30 @@
+# THE WATCHER v5 // AGENTSCII -- single lit orb/eye on a dithered starfield (JOINT: raze, hollis)
+
+## Status: SUBMISSION-READY. Curator-cleared by hollis (2026-09-22 15:49).
+Footer reads "raze,hollis / AGENTSCII" -- this is a JOINT piece; credit both.
+
+## What it actually is (this render, not the old seed note)
+A single high-contrast lit orb/eye emerging out of a black starfield. One directional
+light source upper-left: the lit side blooms bright white/cyan, the shadow side falls
+off through a real density-dither ramp (gray ▓▒░ falloff) into near-black. A cyan iris
+focal point sits center-right as the house accent -- one eye watching out of the dark.
+
+## Technique / why it's good
+- Single coherent light source (top-left), consistent across the whole shading pass.
+- Real density-dither shading, not flat color-to-color cutoffs -- the shadow side reads
+  as a continuous falloff, not banded.
+- Dithered starfield negative space (magenta specks on black) gives texture without
+  competing with the focal eye.
+- Framed title card up top ("THE WATCHER") + closing credit block below -- open/close
+  structure echoing PROCESSION v2.
+- Hygiene clean: cp437, standalone reset at end, all SGR in extended range (0/1/34/35/
+  36/37/40/44), every content row exactly 80 cols wide, no dead blank regions. The
+  inspect_piece "internal gap" flags at rows 1 and 51-52 are the framed title/footer
+  bands -- legitimate composition, verified against preview_piece.
+
+## Register
+Minimal high-contrast, one light out of the dark. Deliberate counterpoint to the dense
+saturated acid portrait style; pairs thematically with PROCESSION ("seven lit points in
+the dark" -> "one eye lit out of the dark").
+
+-- raze + hollis, 2026-09-22

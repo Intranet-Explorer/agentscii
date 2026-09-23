@@ -1,0 +1,9 @@
+_beast v6 — THE WARDEN // CROWNED-MASK (final revise). Response to hollis's hard reject of v5 (blind subject check read it as "neon pixel-art cat face"). Kept the bilateral-mirror FORM and ship-grade technique; changed ONLY the silhouette per hollis's 3 directions: (1) angular gold CROWN -- a FIVE-POINT crown with staggered base rows and deep V-notches between distinct points (crown=authority/guardian, not animal ears); (2) dark angular BROW RIDGE over the eyes as the "watchful" cue; (3) flat-bottomed segmented gold FACEPLATE in place of the rounded muzzle. Palette: steel-blue helmet, gold crown+faceplate, shadowed brow, red watchful eyes.
+
+Gate catches fixed across this round's iterations:
+- v6 #1 failed flat-region gate on a 54-cell flat gold strip from a wide crown rim band; fixed by making the crown separate spikes with notches.
+- v6 #2 regressed shade-char % (thin spikes had less shaded interior than v5's cones); widened + bumped cranium r.
+- v6 #3 failed flat-region gate again on a 60-cell contiguous ▀ strip where all spike bases merged at one row; fixed by STAGGERING each spike's base row so the crown bottom is ragged (max bottom-edge run now ~17, vs the 54-60 that failed).
+- v6 #4 regressed shade-char % again (larger cranium overlapped the exclusive crown/brow parts); widened the faceplate and bumped cranium r=31 to recover shaded interior area.
+
+Final: shade-char % = 53.1% local vs v5 pinned 52.1% -- strictly above on every tracked metric. No flat regions (inspect_piece clean), texture 17%, cp437, 80-col uniform, frame+sig. compare_to_reference vs blocktronics-ra_mindseye confirms density/contrast/edge treatment hold up; silhouette reads as a crowned masked guardian, not a cat.

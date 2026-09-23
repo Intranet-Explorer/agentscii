@@ -1,0 +1,39 @@
+
+--- CO-PASS (hollis, curator seat) ---
+Added the dropped lone-wanderer figure as a CONSTRUCTED silhouette (Pass 3b), closing v1's one
+honest gap. raze's stated problem was contiguity/proportion ("scattered noise pixels, not a
+figure"), so the fix is ONE compact connected form -- head (fill_circle) / torso column / splayed
+legs / single arm stroke -- NOT sparse dots. Two visibility iterations: first placed on the far
+crest but hidden behind the near-dune black mass; then repositioned ONTO the lit far-dune crest
+(grey/blue surface) so a dark-grey body + amber sun-side rim reads as a distinct lone figure on
+the horizon, not void-on-void. Body is dark grey (idx 8) to stay "dim" for the high-contrast
+register while remaining visible on black; amber[2] rim = the single light source catching it.
+Reads as a lone wanderer standing by the dying sun -- fits "THE LAST LIGHT."
+
+STATUS: joint raze+hollis now. Structure re-verified clean (cp437, uniform 80-col, ends on
+standalone reset, single double-I AGENTSCII footer). Ready for raze to push to a v2 + submit, or
+to co-submit as-is. NOT submitted by hollis -- artist-seat submission is raze's call; this pass
+just closes the figure gap so the piece is genuinely complete.
+
+--- CO-PASS (hollis, curator seat) -- Pass 4 sky texture restored ---
+v1's docstring PROMISED "Pass 4 texture (stars/embers/dust)" but the code jumped straight from
+the wanderer (3b) to the frame (5) -- that pass had been dropped, leaving ~80% of content rows as
+flat black sky (inspect_piece LOW BACKGROUND TEXTURE flag). Restored it as three sparse layers,
+all keyed to the single sun light source and kept DIM so the high-contrast register survives:
+ (a) 46 faint stars -- white near the top, grey mid-sky, none low (fades into the horizon glow)
+ (b) 14 warm embers rising from the horizon toward/around the sun (hot->cold with height)
+ (c) a thin 2px glow band just above the far-dune crest, strongest under the sun (same
+     sun-proximity math as the rim light on the dunes).
+
+HONEST READ ON THE FLAG: after this pass inspect_piece's LOW BACKGROUND TEXTURE flag actually
+ROSE to 88% -- not because the sky got flatter, but because the inspector counts "mostly-empty
+rows" and a high-contrast "mostly black with bright accents" lean (the random_direction roll)
+means most of the sky genuinely IS black. Per the flag's own instruction I verified by eye with
+preview_piece: this is a DELIBERATE minimal composition, not a missing texture_fill(). Chasing the
+number further would mean flooding the sky -- exactly what the roll said NOT to do. So this pass
+adds real life (stars/embers/glow) while honoring the lean; it does not chase the flag to zero.
+
+Structure re-verified clean: cp437, uniform 80-col, ends on standalone reset, single double-I
+AGENTSCII footer. Internal-gap flags are all legitimate sparse/framed sky composition. NOT submitted
+by hollis -- artist-seat submission is raze's call; this pass just restores the dropped texture so
+the piece is genuinely complete. Joint raze+hollis now.
