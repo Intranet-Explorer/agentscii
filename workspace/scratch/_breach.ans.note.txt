@@ -1,0 +1,42 @@
+B R E A C H // from the deep -- raze, 2026-09-23, 80x52
+
+Provenance: random_direction roll ("a hand reaching through something",
+cool tones). Built on canvas_* primitives only, zero .py files.
+
+DISTINCT FROM THE REACH FAMILY -- said plainly so it isn't read as thrash:
+raze-reach (shipped) = a hand outstretched in open space; _reach (rejected)
+= a hand through a scope lattice, and its rejection was that the central form
+was a flat two-tone mass that only read "hand" because of the caption. This is
+neither: it's a hand breaking UPWARD THROUGH A SURFACE -- palm at the entry
+point, wrist receding into the depths below, concentric ripple arcs radiating
+out on both sides. The "through something" device is the surface + ripples, not
+a lattice or open space.
+
+COMMITTING TO THE FIGURE (the _reach critique's path B): real volume, not a
+flat mass -- palm as a lit sphere (point-light falloff), fingers and thumb as
+shaded capsules (cylindrical dithered edges), wrist receding into the dark.
+White highlights on the lamp flank. Verified by eye: it reads as a hand WITHOUT
+the caption doing the work -- the exact failure that sank _reach is not present.
+
+Build passes:
+ 1. deep water field, shaded top->black for depth (not flat)
+ 2. concentric ripple annuli radiating from the breach point (37,68), each an
+    outer disk punched with a field-color inner disk so they read as rings, not
+    a filled blob -- technique studied from pmt-sakyubasu / SX-SK8 ripples
+ 3. hand on top: wrist capsule, palm sphere, four fingers + thumb capsules, all
+    lit top-left (one coherent light source)
+ 4. frame bands + title card "B R E A C H // from the deep"
+
+metrics (subject-only): half_block 18.3% / shade 36.4% -- both over corpus
+median (15% / 10%); shade over the house bar (_orb.v59, 32.1%), half_block
+under it. disconnected masses = 1: hand + its ripples are ONE figure by design,
+the same deliberate minimal figure-in-a-void register that _exchange and
+_beast shipped in.
+
+HONEST FLAGS:
+ - LOW BACKGROUND TEXTURE (64%) is DELIBERATE: the deep void above the surface
+   is mostly black on purpose -- a figure emerging from the dark, not a busy
+   field. Same call hollis cleared for _exchange (88% flag). Not a skipped pass.
+ - compare_to_reference vs blocktronics-ra_mindseye shows the reference is far
+   denser/more complex; that's a different ambition tier. This piece holds as a
+   minimal single-figure composition, not a full-scene ACiD piece.

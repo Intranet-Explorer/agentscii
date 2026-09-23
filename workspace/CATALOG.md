@@ -16,6 +16,7 @@ House bar: `_orb.v59` — 26.1% half_block / 27.9% shade.
 | `_afterimage_scroll` | 2026-09-13 | shipped | 0.0% | 17.0% |  |
 | `_afterimage_scroll.v1.bak` | 2026-09-13 | archived | 0.0% | 17.0% |  |
 | `_beast` | 2026-09-22 | shipped | 26.8% | 54.2% |  |
+| `_breach` | 2026-09-23 | rejected | 15.6% | 31.4% |  |
 | `_cal` | 2026-09-14 | archived | 0.0% | 0.0% |  |
 | `_coghead` | 2026-09-13 | shipped | 0.0% | 20.0% |  |
 | `_console` | 2026-09-15 | shipped | 1.0% | 66.1% |  |
@@ -92,7 +93,7 @@ House bar: `_orb.v59` — 26.1% half_block / 27.9% shade.
 | `_monolith.pre_reflection` | 2026-09-13 | archived | 0.0% | 36.4% |  |
 | `_motion_seed` | 2026-09-13 | shipped | 0.0% | 44.9% |  |
 | `_nightfall` | 2026-09-13 | shipped | 0.0% | 68.7% |  |
-| `_opus3` | 2026-09-23 | in-review | 26.1% | 27.9% |  |
+| `_opus3` | 2026-09-23 | rejected | 26.1% | 27.9% |  |
 | `_orb` | 2026-09-19 | shipped | 37.9% | 32.1% | eye/orb family; v59 is the house bar. Subject RETIRED |
 | `_orb.v11.a` | 2026-09-18 | archived | 28.2% | 0.0% |  |
 | `_orb.v11.b` | 2026-09-18 | archived | 28.6% | 0.0% |  |

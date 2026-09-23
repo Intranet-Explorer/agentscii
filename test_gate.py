@@ -189,7 +189,7 @@ def test_intended_title_found_for_all_real_pieces():
     in a framed row, not the first three lines."""
     import harness as h
     cases = {
-        'workspace/submissions/_opus3.ans': 'CROSSING',
+        'workspace/rejected/_opus3.ans': 'CROSSING',
         'workspace/references/study/_opus_AQUEDUCT.ans': 'AQUEDUCT',
         'workspace/references/study/_opus_PROSPECTOR.ans': 'PROSPECTOR',
     }
@@ -197,4 +197,16 @@ def test_intended_title_found_for_all_real_pieces():
         got = h._extract_intended_title(p)
         assert got == want, f'{p}: got {got!r} want {want!r}'
     assert h._extract_intended_title(
-        'workspace/submissions/_opus3.ans', title='OVERRIDE') == 'OVERRIDE'
+        'workspace/rejected/_opus3.ans', title='OVERRIDE') == 'OVERRIDE'
+
+
+def test_landscape_terms_dont_trip_anatomy_guard():
+    """The blind-claim guard catches a critique claiming ANATOMY the
+    render lacks. 'mountain silhouettes' is a landscape term, and a
+    blind check correctly reporting 'flat geometric shapes, no
+    constructed subject' for a scene is AGREEMENT, not contradiction.
+    CROSSING was blocked 8 times by that false positive."""
+    import inspect, harness as h
+    src = inspect.getsource(h.curate_piece_opus_gated) + inspect.getsource(h.run_tool)
+    assert '_LANDSCAPE_OK' in src
+    assert 'anatomy_claimed' in src

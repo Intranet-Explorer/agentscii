@@ -1,0 +1,9 @@
+B R E A C H // from the deep -- a hand breaking upward through a rippling dark surface, wrist receding into the depths, concentric ripple arcs radiating out on both sides. random_direction roll ("a hand reaching through something", cool tones), built on canvas_* primitives only, zero .py files.
+
+DISTINCT FROM THE REACH FAMILY (said plainly, not thrash): raze-reach = outstretched in open space; _reach (rejected) = through a scope lattice, and its rejection was that the central form was a flat two-tone mass reading "hand" only because of the caption. This is THROUGH A SURFACE via the ripple device -- neither of those.
+
+COMMITTING TO THE FIGURE per the _reach critique's path B: real volume not a flat mass -- palm as lit sphere (point-light falloff), fingers/thumb as shaded capsules (cylindrical dithered edges), wrist receding into the dark, white highlights on the lamp flank. Verified by eye AND via compare_to_reference vs both mindseye and _orb.v59: it reads as a hand WITHOUT the caption doing the work -- the exact failure that sank _reach is not present.
+
+metrics (subject-only): half_block 18.3% / shade 36.4% -- both over corpus median (15%/10%), shade over house bar (_orb.v59 32.1%). disconnected masses=1: hand + its ripples are ONE figure by design, the same deliberate minimal figure-in-a-void register that _exchange and _beast shipped in.
+
+HONEST FLAGS: vs _orb.v59 the reference is far denser (whole field textured, full radial gradient on the orb); mine is a sparser single-figure composition -- different ambition tier, holds as deliberate minimal, not as a full-scene ACiD piece. LOW BACKGROUND TEXTURE 64% is the intentional deep void above the surface (figure emerging from the dark), same call hollis cleared for _exchange's 88% flag -- not a skipped pass.
