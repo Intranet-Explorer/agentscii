@@ -187,6 +187,58 @@ def circle_px(workspace, slug, cx, cy, r, color):
     return data
 
 
+_LIGHT_VECTORS = {
+    "top":          (0.0, -0.85, 0.53),
+    "bottom":       (0.0, 0.85, 0.53),
+    "left":         (-0.85, 0.0, 0.53),
+    "right":        (0.85, 0.0, 0.53),
+    "top-left":     (-0.6, -0.6, 0.53),
+    "top-right":    (0.6, -0.6, 0.53),
+    "bottom-left":  (-0.6, 0.6, 0.53),
+    "bottom-right": (0.6, 0.6, 0.53),
+}
+
+# Face normals in the same 2D screen convention: which way each side of
+# a slab points. A flat form has no curvature, so its brightness comes
+# from face orientation vs the light, not from a surface normal that
+# varies per pixel.
+_FACE_NORMALS = {
+    "top": (0.0, -1.0), "bottom": (0.0, 1.0),
+    "left": (-1.0, 0.0), "right": (1.0, 0.0),
+}
+
+
+def _face_band(face, light_direction):
+    """(t_lo, t_hi) brightness band for one face of a flat form under a
+    given light. Lambert on the face normal sets the base brightness;
+    the band's WIDTH is what still lets the face carry a gradient across
+    itself (lit edge -> far edge) instead of being one flat tone."""
+    lv = _LIGHT_VECTORS.get(light_direction, (-0.6, -0.6, 0.53))
+    nx, ny = _FACE_NORMALS[face]
+    lam = max(0.0, nx * lv[0] + ny * lv[1])       # 0 = edge-on/away
+    base = 1.0 - (0.15 + 0.85 * lam)              # 0 = brightest
+    # Band width drives half-block packing: a vertical Bayer pair differs
+    # by ~0.75 step, so the two pixels of a cell only land on different
+    # ramp steps when the band spans enough steps for boundaries to fall
+    # inside the face. 0.22 gave 5.1% half_block (measured); 0.40 spans
+    # ~3 steps and packs real ▀ cells through the face.
+    half = 0.40
+    return max(0.0, base - half), min(1.0, base + half)
+
+
+_BAYER8 = [
+    [0, 32, 8, 40, 2, 34, 10, 42], [48, 16, 56, 24, 50, 18, 58, 26],
+    [12, 44, 4, 36, 14, 46, 6, 38], [60, 28, 52, 20, 62, 30, 54, 22],
+    [3, 35, 11, 43, 1, 33, 9, 41], [51, 19, 59, 27, 49, 17, 57, 25],
+    [15, 47, 7, 39, 13, 45, 5, 37], [63, 31, 55, 23, 61, 29, 53, 21],
+]
+
+
+def _bayer(px, py):
+    """Ordered-dither threshold in [-0.5, 0.5) for pixel (px, py)."""
+    return _BAYER8[py % 8][px % 8] / 64.0 - 0.5
+
+
 def _shade_ramp(from_color, to_color, steps=5):
     """Byte-for-byte the same algorithm as workspace/scratch/canvas.py's
     shade_ramp(): fg is ALWAYS from_color, bg is ALWAYS to_color, and
@@ -226,12 +278,19 @@ def _pixel_mask_at(data, px, py, mask):
         return mask["x0"] <= px < mask["x1"] and mask["y0"] <= py < mask["y1"]
     if mtype == "circle":
         return math.hypot(px - mask["cx"], py - mask["cy"]) <= mask["r"]
+    if mtype == "capsule":
+        # distance from pixel to the axis SEGMENT (rect with round ends)
+        ax, ay, bx, by = mask["ax"], mask["ay"], mask["bx"], mask["by"]
+        vx, vy = bx - ax, by - ay
+        L2 = vx * vx + vy * vy
+        t = 0.0 if L2 == 0 else max(0.0, min(1.0, ((px - ax) * vx + (py - ay) * vy) / L2))
+        return math.hypot(px - (ax + t * vx), py - (ay + t * vy)) <= mask["r"]
     if mtype == "color":
         return data["pixels"][py][px] == mask["color"]
     raise CanvasError(f"unknown mask type {mtype!r}")
 
 
-def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=None, light_y=None):
+def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=None, light_y=None, sphere=None, t_lo=0.0, t_hi=1.0, cull_band=True, cyl=None, rim=False, face_grad=False):
     """Shared masked-shading core for shade() and sphere_px(). Shape-aware,
     unlike the original rectangle-only shade() (real bug, found live
     2026-09-22 on raze's first canvas piece, scratch/_eye_emblem.ans: a
@@ -276,26 +335,118 @@ def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=Non
     h_span = max(1, y1 - y0 - 1)
 
     if light_x is not None and light_y is not None:
-        max_d = math.hypot(x1 - x0, y1 - y0) / 2 or 1.0
-        def light_t(px, py):
-            return min(1.0, math.hypot(px - light_x, py - light_y) / max_d)
+        if sphere is not None:
+            # True Lambertian sphere shading: the gradient follows the
+            # SURFACE NORMAL, not 2D distance from a point. The old
+            # version used hypot(px-light_x, py-light_y)/max_d, which
+            # is a flat radial wash -- combined with a 5-step hard ramp
+            # it produced the straight diagonal bands the user flagged.
+            scx, scy, sr = sphere["cx"], sphere["cy"], max(1e-6, sphere["r"])
+            lvx, lvy = light_x - scx, light_y - scy
+            lvz = sr * 0.85  # light sits in front of the sphere
+            llen = math.sqrt(lvx * lvx + lvy * lvy + lvz * lvz) or 1.0
+            lvx, lvy, lvz = lvx / llen, lvy / llen, lvz / llen
+
+            def light_t(px, py):
+                nx, ny = (px - scx) / sr, (py - scy) / sr
+                # pixels are half as tall as wide -- normals must use
+                # the same aspect the renderer packs at, or the
+                # terminator reads as an ellipse on a round silhouette
+                d2 = nx * nx + ny * ny
+                nz = math.sqrt(max(0.0, 1.0 - d2))
+                lam = nx * lvx + ny * lvy + nz * lvz
+                lam = max(0.0, min(1.0, lam))
+                # Wrapped/soft lighting + ambient: pure Lambert drives
+                # most of the lit hemisphere to full brightness, which
+                # renders as one big FLAT highlight blob with all the
+                # gradient crammed into the terminator (seen live on
+                # the first test render). Remapping spreads the ramp
+                # across the whole visible surface, which is what a
+                # real ACiD sphere looks like -- and gives the gate a
+                # genuine gradient to find instead of a flat cap.
+                lam = 0.12 + 0.88 * (0.5 + 0.5 * (2.0 * lam - 1.0) ** 0.6
+                                     if lam >= 0.5 else
+                                     0.5 - 0.5 * (1.0 - 2.0 * lam) ** 0.6)
+                return 1.0 - lam
+        elif cyl is not None:
+            # Cylinder: the normal curves across the SHORT axis only and
+            # is constant along the length -- that's what makes a limb or
+            # a pipe read as round rather than as a flat bar.
+            ax, ay, bx, by = cyl["ax"], cyl["ay"], cyl["bx"], cyl["by"]
+            cr = max(1e-6, cyl["r"])
+            vx, vy = bx - ax, by - ay
+            vlen = math.hypot(vx, vy) or 1.0
+            ux, uy = vx / vlen, vy / vlen       # along axis
+            nx_a, ny_a = -uy, ux                # perpendicular in-plane
+            lv = _LIGHT_VECTORS.get(light_direction, (-0.6, -0.6, 0.53))
+
+            def light_t(px, py):
+                t = ((px - ax) * vx + (py - ay) * vy) / (vlen * vlen)
+                t = max(0.0, min(1.0, t))
+                ox, oy = px - (ax + t * vx), py - (ay + t * vy)
+                d = (ox * nx_a + oy * ny_a) / cr
+                d = max(-1.0, min(1.0, d))
+                nz = math.sqrt(max(0.0, 1.0 - d * d))
+                lam = (d * nx_a) * lv[0] + (d * ny_a) * lv[1] + nz * lv[2]
+                lam = max(0.0, min(1.0, lam))
+                return 1.0 - (0.12 + 0.88 * lam)
+        else:
+            max_d = math.hypot(x1 - x0, y1 - y0) / 2 or 1.0
+
+            def light_t(px, py):
+                return min(1.0, math.hypot(px - light_x, py - light_y) / max_d)
     else:
         if light_direction not in _DIRECTIONS:
             raise CanvasError(
                 f"light_direction must be one of {sorted(_DIRECTIONS)}, got {light_direction!r}"
             )
         fn = _DIRECTIONS[light_direction]
+
         def light_t(px, py):
             fx = (px - x0) / w_span
             fy = (py - y0) / h_span
-            return fn(fx, fy)
+            t = fn(fx, fy)
+            if face_grad:
+                # Flat faces: add a mild distance falloff from the lit
+                # corner so the face varies along BOTH axes. Without it
+                # a tall face is uniform down its length and packs no
+                # half-blocks (measured: 5.2% on the first monolith).
+                t = 0.65 * t + 0.35 * min(1.0, math.hypot(fx - (0.0 if "left" in light_direction or light_direction in ("top","bottom") else 1.0), fy - (0.0 if "top" in light_direction else 1.0)) / 1.414)
+            return t
 
     stops = _shade_ramp(from_color, to_color, 5)
+    last = len(stops) - 1
 
-    def color_at(px, py):
+    def step_at(px, py):
+        """Continuous ramp position + ordered (Bayer) dither, per PIXEL.
+        The old code quantised one t per CELL to 5 hard steps, so a
+        gradient became 5 visible bands and every interior cell was a
+        whole-cell glyph (half_block stuck near 0). Bayer breaks the
+        bands up, and resolving per pixel means the two pixels in a
+        cell can land on different steps -- which is exactly what
+        produces a real ▀ half-block interior."""
         t = light_t(px, py)
-        idx = max(0, min(len(stops) - 1, int(t * (len(stops) - 1))))
-        return stops[idx]
+        if cull_band:
+            t = (t - t_lo) / max(1e-6, t_hi - t_lo)
+        else:
+            # face mode: squeeze the whole face into its brightness band
+            # instead of culling -- a face lit edge-on must still show a
+            # gradient ACROSS itself, just a darker one.
+            t = t_lo + max(0.0, min(1.0, t)) * (t_hi - t_lo)
+        s = max(0.0, min(1.0, t)) * last
+        return max(0, min(last, int(math.floor(s + _bayer(px, py) + 0.5))))
+
+    def _in_band(px, py):
+        if not cull_band:
+            return True
+        t = light_t(px, py)
+        return t_lo <= t < t_hi or (t_hi >= 1.0 and t >= t_hi)
+
+    def solid_of(step):
+        """The solid color a pixel at this step represents, for when the
+        two pixels of a cell disagree and we pack them as a half-block
+        instead of a dither glyph."""
+        return from_color if step * 2 <= last else to_color
 
     for cell_row in range(data["h_cells"]):
         py_top, py_bot = cell_row * 2, cell_row * 2 + 1
@@ -304,21 +455,57 @@ def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=Non
             bot_in = _pixel_mask_at(data, col, py_bot, mask)
             if not top_in and not bot_in:
                 continue
+            key = f"{cell_row},{col}"
+            if not (_in_band(col, py_top) or _in_band(col, py_bot)):
+                continue
             if top_in and bot_in:
-                ch, fg, bg = color_at(col, (py_top + py_bot) / 2)
-                go[f"{cell_row},{col}"] = [ch, fg, bg]
+                st_t, st_b = step_at(col, py_top), step_at(col, py_bot)
+                if st_t == st_b:
+                    ch, fg, bg = stops[st_t]
+                    go[key] = [ch, fg, bg]
+                else:
+                    # Interior cell whose two pixels sit on different
+                    # ramp steps -> pack as a REAL half-block pair
+                    # instead of flattening to one glyph. This is where
+                    # half_block% actually comes from (_orb.v59, the
+                    # house bar, is 37.9% ▀ and 32.1% ░▒▓ -- both, not
+                    # one or the other).
+                    if key in go:
+                        del go[key]
+                    pixels[py_top][col] = solid_of(st_t)
+                    pixels[py_bot][col] = solid_of(st_b)
             else:
                 # Edge cell: recolor only the masked pixel, leave the
                 # other pixel and any existing glyph_override alone --
                 # this is what keeps the silhouette's round boundary
                 # genuinely round instead of getting square-stepped by
                 # a full-cell glyph at every edge.
-                key = f"{cell_row},{col}"
                 if key in go:
                     del go[key]  # a stale flat glyph would hide the pixel split
                 py_target = py_top if top_in else py_bot
-                _, fg, _ = color_at(col, py_target)
-                pixels[py_target][col] = fg
+                pixels[py_target][col] = solid_of(step_at(col, py_target))
+
+    if rim:
+        # Edges facing the light get a brighter rim -- without it a slab
+        # reads as a flat fill with noise, because nothing marks where
+        # one face stops and the next begins.
+        lv = _LIGHT_VECTORS.get(light_direction, (-0.6, -0.6, 0.53))
+        for py in range(PH):
+            for px in range(W):
+                if not _pixel_mask_at(data, px, py, mask):
+                    continue
+                ox = 1 if lv[0] > 0.2 else (-1 if lv[0] < -0.2 else 0)
+                oy = 1 if lv[1] > 0.2 else (-1 if lv[1] < -0.2 else 0)
+                out_x, out_y = px + ox, py + oy
+                outside = (
+                    not (0 <= out_x < W and 0 <= out_y < PH)
+                    or not _pixel_mask_at(data, out_x, out_y, mask)
+                )
+                if outside:
+                    cell_row, key = py // 2, f"{py // 2},{px}"
+                    if key in go:
+                        del go[key]
+                    pixels[py][px] = from_color
 
 
 def shade(workspace, slug, from_color, to_color, light_direction, region=None):
@@ -339,7 +526,7 @@ def shade(workspace, slug, from_color, to_color, light_direction, region=None):
     return data
 
 
-def sphere_px(workspace, slug, cx, cy, r, color, light_x, light_y, shadow_color=None):
+def sphere_px(workspace, slug, cx, cy, r, color, light_x, light_y, shadow_color=None, hi_color=None):
     """One call: a lit sphere -- draws the circle AND shades it with a
     real point-light falloff from (light_x, light_y), so the gradient
     follows the sphere's actual curvature (radial from the light point)
@@ -369,7 +556,21 @@ def sphere_px(workspace, slug, cx, cy, r, color, light_x, light_y, shadow_color=
                 row[px] = color
     mask = {"type": "circle", "cx": cx, "cy": cy, "r": r}
     data["last_shape"] = mask
-    _shade_masked(data, mask, color, dark, "top-left", light_x=float(light_x), light_y=float(light_y))
+    # Two-band shading. One band (bright -> dark) can only ramp from a
+    # SOLID █ at the lit end, so the highlight renders as a flat cap no
+    # matter how smooth the falloff is -- measured live on the first
+    # test render: a solid █ run straight across the highlight row.
+    # Shading the lit half from hi_color down to color, then the dark
+    # half from color down to shadow, gives the bright side a real
+    # dithered gradient too. hi_color defaults to 15 (bright white),
+    # the usual ACiD specular.
+    hi = _check_color(hi_color if hi_color is not None else 15)
+    _shade_masked(data, mask, hi, color, "top-left",
+                  light_x=float(light_x), light_y=float(light_y),
+                  sphere=mask, t_lo=0.0, t_hi=0.55)
+    _shade_masked(data, mask, color, dark, "top-left",
+                  light_x=float(light_x), light_y=float(light_y),
+                  sphere=mask, t_lo=0.55, t_hi=1.0)
     save_canvas(workspace, slug, data)
     return data
 
@@ -684,3 +885,118 @@ def save_ans(workspace, slug, out_path, title=None, handles="AGENTSCII", add_sig
     full_path.parent.mkdir(parents=True, exist_ok=True)
     full_path.write_text(raw, encoding="cp437", errors="replace")
     return full_path
+
+
+def metrics(workspace, slug):
+    """Real measured metrics for the CURRENT canvas, using the harness's
+    own _compute_piece_metrics -- the same function the gate and the
+    submit report use. Added 2026-09-22: raze was self-reporting
+    half_block numbers computed by ad-hoc scripts that came out ~3x off
+    the canonical value (claimed 15.9%/12.1% on watcher v2/v3, actually
+    4.7%/4.2%), so there is now one number and one source for it.
+    Renders to a temp .ans rather than reimplementing the metric."""
+    import tempfile
+    import harness
+    data = load_canvas(workspace, slug)
+    out = render_canvas(data)
+    with tempfile.NamedTemporaryFile("w", suffix=".ans", delete=False,
+                                     encoding="utf-8") as fh:
+        fh.write("\n".join(out) + "\x1b[0m\n")
+        tmp = fh.name
+    try:
+        return harness._compute_piece_metrics(tmp)
+    finally:
+        Path(tmp).unlink(missing_ok=True)
+
+
+def slab_px(workspace, slug, x, y, w, h, color, light_direction="top-left",
+            shadow_color=None, hi_color=None, side=None, side_w=0):
+    """A lit BOX, not a flat fill. Flat-sided forms (torsos, limbs,
+    buildings, panels, frames) have no curvature, so shading comes from
+    each face's orientation vs the light plus a gradient across the face
+    from its lit edge to its far edge, with Bayer carrying the
+    transition and light-facing edges getting a brighter rim.
+
+    side/side_w optionally draw a second visible face (the classic
+    two-face monolith): side is "left"/"right", side_w its width in
+    pixels. The two faces take DIFFERENT brightness bands from their
+    normals, which is what makes the form read as a solid volume rather
+    than a rectangle with noise in it.
+    """
+    data = load_canvas(workspace, slug)
+    color = _check_color(color)
+    dark = _check_color(shadow_color if shadow_color is not None else 0)
+    hi = _check_color(hi_color if hi_color is not None else color)
+    x, y, w, h = int(x), int(y), int(w), int(h)
+    if w <= 0 or h <= 0:
+        raise CanvasError(f"w and h must be > 0, got {w}x{h}")
+
+    faces = []
+    if side in ("left", "right") and side_w > 0:
+        side_w = min(int(side_w), w - 1)
+        if side == "left":
+            faces.append(("left", x, side_w))
+            faces.append(("right", x + side_w, w - side_w))
+        else:
+            faces.append(("right", x + w - side_w, side_w))
+            faces.append(("left", x, w - side_w))
+    else:
+        faces.append(("right", x, w))
+
+    W, PH = data["w"], data["ph"]
+    pixels = data["pixels"]
+    for _face, fx, fw in faces:
+        for py in range(max(0, y), min(PH, y + h)):
+            row = pixels[py]
+            for px in range(max(0, fx), min(W, fx + fw)):
+                row[px] = color
+
+    for face, fx, fw in faces:
+        mask = {"type": "rect", "x0": fx, "y0": y, "x1": fx + fw, "y1": y + h}
+        t_lo, t_hi = _face_band(face, light_direction)
+        _shade_masked(data, mask, hi if t_lo < 0.35 else color, dark,
+                      light_direction, t_lo=t_lo, t_hi=t_hi,
+                      cull_band=False, rim=True, face_grad=True)
+    data["last_shape"] = {"type": "rect", "x0": x, "y0": y,
+                          "x1": x + w, "y1": y + h}
+    save_canvas(workspace, slug, data)
+    return data
+
+
+def capsule_px(workspace, slug, ax, ay, bx, by, r, color,
+               light_direction="top-left", shadow_color=None, hi_color=None):
+    """A lit capsule: rectangle with rounded ends, shaded as a CYLINDER
+    (normal curves across the short axis, constant along the length).
+    The most common figure element -- arms, legs, necks, pipes, tubes.
+    One call, because composing it from a rect plus two circles plus a
+    shade never produced a form that read as round."""
+    data = load_canvas(workspace, slug)
+    color = _check_color(color)
+    dark = _check_color(shadow_color if shadow_color is not None else 0)
+    hi = _check_color(hi_color if hi_color is not None else 15)
+    ax, ay, bx, by, r = float(ax), float(ay), float(bx), float(by), float(r)
+    if r <= 0:
+        raise CanvasError(f"r must be > 0, got {r}")
+    mask = {"type": "capsule", "ax": ax, "ay": ay, "bx": bx, "by": by, "r": r}
+
+    W, PH = data["w"], data["ph"]
+    pixels = data["pixels"]
+    for py in range(PH):
+        for px in range(W):
+            if _pixel_mask_at(data, px, py, mask):
+                pixels[py][px] = color
+
+    cyl = dict(mask)
+    # two bands, same reason as sphere_px: a single band ramps from a
+    # SOLID glyph at the lit end and renders the highlight as a flat cap
+    # Narrow highlight bands shatter into speckle: the specular lands
+    # thinner than a cell and Bayer scatters it (seen live -- the first
+    # capsule render was white dots, not a band). 0.30 keeps the bright
+    # band wide enough to read as a continuous stripe down the length.
+    _shade_masked(data, mask, hi, color, light_direction, light_x=ax, light_y=ay,
+                  cyl=cyl, t_lo=0.0, t_hi=0.30)
+    _shade_masked(data, mask, color, dark, light_direction, light_x=ax, light_y=ay,
+                  cyl=cyl, t_lo=0.30, t_hi=1.0)
+    data["last_shape"] = mask
+    save_canvas(workspace, slug, data)
+    return data
