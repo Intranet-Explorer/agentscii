@@ -1,0 +1,62 @@
+[
+  {
+    "shift": 1,
+    "slug": "opus1",
+    "seconds": 588.2098140716553,
+    "cost_usd": 2.9810885000000003,
+    "result_tail": "ft` light coming off the sun disc. Arches are cut back to the backdrop with `circle_px`/`fill_px` after being ringed in white, and the gradient passes run by **colour mask** afterwards so the sky and fog seen *through* the arches carry the same gradient as the sky and fog around them.\n\nMetrics, subject-only: **22.6% half_block / 34.2% shade** \u2014 both over corpus median (15%/10%); shade clears the `_orb.v59` house bar (32.1%), half_block does not (37.9%).\n\nTwo things worth flagging:\n- The first two passes had the stone in brown with `hi_color=11`; `slab_px` uses `hi` as the *whole* lit-face gradient start, so the piece came out solid yellow stripes. Recolouring to limestone (7/8/15 upper, 8/8/7 base, near-black walls) is what made it read as masonry rather than banding.\n- No tool covers a water reflection. I faked it with dark bars under the piers, lit bars under the arches and a horizontal `strand_shade` \u2014 a region copy/flip primitive (already on STYLE.md's gaps list as `copy_region`/`paste_block`) would do it properly. Noted in `_opus1.ans.note.txt`.\n\nLeft in `scratch/`, not submitted \u2014 `find_patches` and `compare_to_reference` are the harness's gate for that and I didn't run them.",
+    "metrics": {
+      "half_block_pct": 21.51761517615176,
+      "shade_char_pct": 32.49322493224932,
+      "half_block_pct_whole_canvas": 18.49522478453296,
+      "shade_char_pct_whole_canvas": 27.929187048683904,
+      "distinct_colors_in_subject": 9,
+      "subject_bbox_rows": 55,
+      "subject_bbox_cols": 80,
+      "subject_cell_count": 3690,
+      "disconnected_masses": 2,
+      "ink_canvas_share": 83.86363636363636
+    },
+    "gate": "PASS"
+  },
+  {
+    "shift": 2,
+    "slug": "opus2",
+    "seconds": 975.9513289928436,
+    "cost_usd": 7.298319499999999,
+    "result_tail": " just under the house bar (32.1), half_block under it (37.9).\n\nWhat the piece contains, at three scales: hull + solar deck + three wheels (large), mast/camera head with cyan lenses and the sampling arm (mid), lander, pebbles, wheel tracks receding to the horizon (small). One light, top-left, from the sun in frame.\n\nThree things that cost real passes, now written into the script docstring and note:\n- A shade ramp's **bright end is a solid glyph** \u2014 shading a large field from color 1 or 3 floods it. The first renders were walls of red and gold bars. Background fields need dim from_colors (8, 4).\n- The subject separates from a dithered plain only by **owning a value nothing else has**: white hull, lower field dropped to black.\n- A fully dithered slab is speckle at this size. Added `plate()` \u2014 slab for the lit rim, core forced flat via `flat()`, which shades a color *to itself* because `fill_px` can't clear an existing dither glyph.\n\nGaps flagged: no way to clear a glyph override (wants `canvas_clear_glyphs`/`flat=True`); `strand_shade` strokes are solid bars, so running one after the subject punches holes in it \u2014 only safe short, dim, and before the subject; still no region copy/flip.",
+    "metrics": {
+      "half_block_pct": 20.258922323303008,
+      "shade_char_pct": 29.251224632610217,
+      "half_block_pct_whole_canvas": 13.487071977638015,
+      "shade_char_pct_whole_canvas": 19.473561611926392,
+      "distinct_colors_in_subject": 11,
+      "subject_bbox_rows": 53,
+      "subject_bbox_cols": 80,
+      "subject_cell_count": 2858,
+      "disconnected_masses": 2,
+      "ink_canvas_share": 64.95454545454545
+    },
+    "gate": "PASS"
+  },
+  {
+    "shift": 3,
+    "slug": "opus3",
+    "seconds": 1197.0892760753632,
+    "cost_usd": 9.078301500000004,
+    "result_tail": "the throat; pines on a near shelf; frame and title.\n\nMetrics (subject-only): **28.6% half_block / 30.6% shade** \u2014 both well over corpus median (15/10), shade just under the house bar, half_block under it (37.9%).\n\nThe find worth keeping: **a dither glyph whose fg is colour 0 is emitted as bold black \u2014 grey 8**. Every \"black\" mass drawn with `shade()` was rendering as grey speckle over the whole lower frame, and redrawing on top never fixed it. Black has to be real space cells (`canvas_stamp`). Two related traps: `fill_px` onto an already-shaded cell is invisible (the old glyph keeps rendering \u2014 this silently ate the mountains, rim lines, river and window frames for four renders), and shading a colour to itself lets stale pixels show through where the ramp drops its glyph.\n\nGaps flagged rather than scripted around: no `canvas_clear(region)` / `flat=True` on the volume tools (every piece now hand-rolls `mark()`/`void()`), the fg=0-as-bold-black behaviour looks like a `save_ans` bug worth checking, and still no region copy/flip. Weakest parts named in the note: left tower base merges with the left rim band, chunky pines, and a large empty gorge below the fog compared to the reference.",
+    "metrics": {
+      "half_block_pct": 26.10978520286396,
+      "shade_char_pct": 27.9236276849642,
+      "half_block_pct_whole_canvas": 12.741672490100163,
+      "shade_char_pct_whole_canvas": 13.626834381551364,
+      "distinct_colors_in_subject": 12,
+      "subject_bbox_rows": 55,
+      "subject_bbox_cols": 80,
+      "subject_cell_count": 2095,
+      "disconnected_masses": 6,
+      "ink_canvas_share": 47.61363636363637
+    },
+    "gate": "PASS"
+  }
+]

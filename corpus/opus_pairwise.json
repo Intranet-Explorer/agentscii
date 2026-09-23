@@ -1,0 +1,62 @@
+[
+  {
+    "A": "qwen/_keeper.v7",
+    "B": "opus/AQUEDUCT",
+    "verdict": "B",
+    "winner": "opus/AQUEDUCT",
+    "cost": 0.231977,
+    "reasoning": "genuinely good \u2014 that's someone who understands a light source. Then nothing else obeys it. The arcade's gray is one flat mid-tone across the entire span, no gradient away from the moon, no cast shadow from the columns. The foreground masses are brightest in the *center*, not on their moon-facing left.\n- **The arches are a stamp.** Identical width, identical spacing, and the fill inside them just darkens left-to-right in even steps. It's a repeat with a ramp applied, not six arches receding.\n- **Edge noise.** The left and right margins of the lower half are scattered garbage pixels that read as damage, not texture.\n- Same problem as A: the bottom is dead black, unresolved.\n\n**Verdict**\n\nBoth are unfinished in the same place, and both mis-light their subject. But A is one flat outlined object sitting on decorative noise \u2014 remove the background dither and you lose nothing. B commits to spatial arrangement: foreground, midground, sky, with a real light source rendered convincingly at least once. B also shows tonal range \u2014 a gray family that isn't just \"background color.\" A has one good passage (the flame) attached to a hollow object; B has one good passage (the moon) attached to an actual composition, plus a structural idea holding the frame together.\n\nIn a pack, A would read as a single small piece of filler art. B would read as a scene someone laid out on purpose and then didn't finish rendering. The second failure is the more ambitious one, and more of it survives.\n\nWINNER: B",
+    "opus_piece": "opus/AQUEDUCT",
+    "base_piece": "qwen/_keeper.v7"
+  },
+  {
+    "A": "qwen/_lastlight.v3",
+    "B": "opus/AQUEDUCT",
+    "verdict": "B",
+    "winner": "opus/AQUEDUCT",
+    "cost": 0.278976,
+    "reasoning": "so has four stacked registers \u2014 sky, cornice, arcade, lower story \u2014 so there's an actual architecture to the composition rather than objects floating on a field.\n\nWhat's wrong:\n- The bottom two-thirds is where it loses the plot. The three teal forms do not resolve. Robed figures? Fountains? Bells? They're bounded by uniform white outlines, which is outline, not light \u2014 and the moon at upper-left has no say in how they're shaded.\n- The lower-left and lower-right margins are scattered black/grey/white dither that resolves into nothing under any reading. That's noise standing in for detail, and it's the clearest sign of an under-resolved passage.\n- The arcade is inconsistent: three niches filled blue, one half-filled, two solid black. Could be unlit windows; could equally be the artist running out of patience. Nothing in the lighting disambiguates it.\n- The registers are stacked bands with hard horizontal seams, not recession. Depth by layering, not by space.\n\n**Call**\n\nA has the more legible subject and one clean sphere, but it's thin, its ground band ignores its own light source, and its second major element is pattern noise. B is noisier and its foreground is genuinely illegible \u2014 but it commands the dither ramp, builds a sky with directional falloff from a light source it actually renders, and stacks a composition with more than one idea in it. A pack would run B and hold A back as filler.\n\nNeither is strong work. B loses on legibility; it wins on everything else.\n\nWINNER: B",
+    "opus_piece": "opus/AQUEDUCT",
+    "base_piece": "qwen/_lastlight.v3"
+  },
+  {
+    "A": "opus/PROSPECTOR",
+    "B": "qwen/_keeper.v7",
+    "verdict": "A",
+    "winner": "opus/PROSPECTOR",
+    "cost": 0.2445425,
+    "reasoning": " it is thirty rows up. No glow, no bounce onto the interior walls, no warm falloff into the surrounding dark. That is the single clearest lighting failure across both pieces \u2014 it has a light source drawn *in frame* and ignores it.\n- Rigid bilateral symmetry, object dead-center, nothing in front of it, nothing behind it. It's a silhouette on a backdrop. Zero occlusion, zero overlap, zero spatial arrangement.\n- The magenta bar and the small cyan marks below it are unattached to anything. Pure high-chroma magenta against an otherwise blue/cyan palette, floating in empty space. It looks like a caption rule left behind after the credit line was removed, not a compositional element.\n- The background gradient is the majority of the canvas and it's mechanical \u2014 one dither cell per row, uniform across the width, no variation, no atmosphere. It's a ramp, not a sky.\n\n**Depth:** None. Flat block on flat gradient.\n\n## Would either survive a pack?\n\nA would \u2014 with the middle blue bar as the thing every reviewer would flag. It has a legible subject, a technically competent focal passage, and actual spatial layering, which is what separates a finished ANSI piece from a color study.\n\nB would read as a background plate or a work-in-progress. The dither ramp is executed cleanly, so the artist can handle the medium; there's just nothing standing on top of it that survives being looked at.\n\nA's flaws are execution errors inside a real picture. B's flaw is that the picture never arrives.\n\nWINNER: A",
+    "opus_piece": "opus/PROSPECTOR",
+    "base_piece": "qwen/_keeper.v7"
+  },
+  {
+    "A": "qwen/_lastlight.v3",
+    "B": "opus/PROSPECTOR",
+    "verdict": "B",
+    "winner": "opus/PROSPECTOR",
+    "cost": 0.2706255,
+    "reasoning": "alues, stacked like venetian blinds, and the banding is so regular it reads as texture fill rather than atmosphere. The blue slab cutting across the midground at the rover's shoulder height is the same hue and value as the sky, so it fights the horizon and flattens exactly where depth mattered most. The chassis is blown to near-flat white with almost no modeling, so a machine that should have a lit face and a shaded face reads as a paper cutout pasted onto a shaded scene \u2014 the lighting logic that the sun and the cast shadow establish never reaches the object itself. The scattered red pixels across the midground and the grey blob at the left horizon are unexplained and look like leftovers. The wheel spokes are dithered into mush at a size where they needed cleaner strokes.\n\n**Judgment**\n\nA is a stronger single idea \u2014 figure, void, light source \u2014 and has the better rim-lighting decision, but it fails the first test on its largest element and never builds a space. Two thirds of its canvas is unmodulated black and a stamped repeating floor.\n\nB is cluttered and has a genuinely lazy sky, and its subject is underlit for its own scene. But a thing is unambiguously there, built from parts that occlude each other, sitting in ground it casts a shadow onto, under a source placed where the shadow says it is. That's the harder problem, and it's mostly solved. In a pack, A's blast would draw comment for the wrong reason; B would sit in the middle of the run without embarrassment.\n\nWINNER: B",
+    "opus_piece": "opus/PROSPECTOR",
+    "base_piece": "qwen/_lastlight.v3"
+  },
+  {
+    "A": "qwen/_keeper.v7",
+    "B": "opus/CROSSING",
+    "verdict": "B",
+    "winner": "opus/CROSSING",
+    "cost": 0.341851,
+    "reasoning": " them. The bottom third disintegrates into grey noise with a couple of small shapes that read as nothing.\n\nThe central color block is the piece's worst offense. Pure yellow, pure red, pure blue, a single cyan pixel patch \u2014 unmodulated, unlit, hard-edged, sitting in a scene where everything else is carefully value-stepped grey. It looks like a placeholder that never got finished, and because it's the highest-chroma thing in a dark frame it grabs the eye first and rewards it with nothing. Lighting is also inconsistent: the left mass takes highlights on its right face, the right columns take them on their left, and the color block emits nothing while being brightest. There's no single source you can point to.\n\n**Verdict**\n\nA is cleaner, and that's the trap: its legibility is bought by containing almost nothing. Two geometric primitives, a symmetry axis, and a gradient. Its one genuine opportunity \u2014 a fire that should have lit the whole vessel \u2014 is thrown away, and it has no depth at all. In a pack it's competent filler you scroll past.\n\nB is a mess in places and its focal object is crude, but it's actually built: overlapping planes, occlusion, value-modeled masses, one genuinely well-drawn form. Its failures are failures of execution on a real attempt. A's failures are the absence of an attempt. On depth and arrangement B wins outright, on lighting both are incoherent, and on subject resolution A's edge is narrower than it first looks because its own read is unstable.\n\nWINNER: B",
+    "opus_piece": "opus/CROSSING",
+    "base_piece": "qwen/_keeper.v7"
+  },
+  {
+    "A": "qwen/_lastlight.v3",
+    "B": "opus/CROSSING",
+    "verdict": "A",
+    "winner": "qwen/_lastlight.v3",
+    "cost": 0.24336449999999998,
+    "reasoning": "ment suggests something; nothing adds up. After a long look I still can't tell you what I'm seeing, and that's the whole ballgame.\n\n**Lighting.** Incoherent. The gray structures carry white highlights up-left and gray falloff, which is a real attempt. But the black in the middle two-thirds is *empty*, not shadow \u2014 no bounce, no reflected fill, no gradation into it. Objects sit in voids rather than in darkness. And the central colored panel is lit by nothing at all: flat saturated blocks with zero shading relationship to the dithered grays touching it. It's a different rendering language dropped into the middle of the piece.\n\n**What's wrong with it.** Density mistaken for depth. There's more texture vocabulary here than in A \u2014 several dither weights, a wider palette \u2014 but most of it is noise that doesn't describe form. No focal hierarchy: the brightest, most saturated object is the one I can least identify, and the blue band at top is the loudest value in the frame while being pure background. The small object at the bottom floats in unrelated space.\n\n## Call\n\nA is the smaller, thinner piece and it has a fake light and a filler explosion. B has more labor in it and more ambition. But B fails the first test \u2014 nothing resolves, and the black is absence rather than shadow \u2014 while A puts a genuinely modeled sphere next to a legible figure under a mostly-consistent key. In a pack, A survives as a moody sci-fi plate with a weak upper third; B reads as an unfinished study.\n\nWINNER: A",
+    "opus_piece": "opus/CROSSING",
+    "base_piece": "qwen/_lastlight.v3"
+  }
+]
