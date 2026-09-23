@@ -711,6 +711,26 @@ def _touch_subject(conn, slug, version, path, status="open"):
         except Exception:
             pass  # the catalog must never break a curation decision
 
+def _fmt_metrics(m):
+    """One metric line, BOTH denominators, labeled.
+
+    User direction, 2026-09-23: "my measurements are whole-canvas,
+    yours are subject-only -- print both, labeled, everywhere metrics
+    appear." The gap is not small: _wasteland.v1 is 26.1% subject-only
+    and 5.2% whole-canvas, and a report that prints one number without
+    saying which reads as a contradiction of the other.
+    """
+    return (
+        f"half_block {m['half_block_pct']:.1f}% subject-only / "
+        f"{m['half_block_pct_whole_canvas']:.1f}% whole-canvas, "
+        f"shade-of-ink {m['shade_char_pct']:.1f}% subject-only / "
+        f"{m['shade_char_pct_whole_canvas']:.1f}% whole-canvas, "
+        f"colors {m['distinct_colors_in_subject']}, "
+        f"disconnected masses {m['disconnected_masses']}, "
+        f"ink {m['ink_canvas_share']:.0f}% of canvas"
+    )
+
+
 def _rebuild_catalog():
     """Regenerate workspace/CATALOG.md: every subject ever attempted.
 
@@ -3363,11 +3383,7 @@ def run_tool(name, args, agent, shift_id=None):
             if _sm is not None:
                 soft_signal = (
                     f"\n\ntechnique (SOFT SIGNAL — not a gate, nothing is "
-                    f"enforced): half_block {_sm['half_block_pct']:.1f}%, "
-                    f"shade-of-ink {_sm['shade_char_pct']:.1f}%, "
-                    f"colors {_sm['distinct_colors_in_subject']}, "
-                    f"disconnected masses {_sm['disconnected_masses']}, "
-                    f"ink {_sm['ink_canvas_share']:.0f}% of canvas. "
+                    f"enforced): {_fmt_metrics(_sm)}. "
                     f"House bar {HOUSE_BAR['name']}: "
                     f"{HOUSE_BAR['half_block']}% / {HOUSE_BAR['shade']}%, "
                     f"{HOUSE_BAR['colors']} colors, "
@@ -3418,6 +3434,37 @@ def run_tool(name, args, agent, shift_id=None):
                     )
             finally:
                 _db_h.close()
+
+            # --- required find_patches before submit -----------------------
+            # User direction, 2026-09-23: retrieval is the lever most
+            # likely to fix arrangement, and it was running 3 calls
+            # across 8 shifts against 101 drawing calls. Required on
+            # EVERY piece, not just figurative ones: _reads_figurative is
+            # a fixed 30-word list that matches neither _keeper nor
+            # _wasteland (both checked, both False) and would miss every
+            # scene/creature/logo subject going forward, so gating on it
+            # would never fire. Arrangement is the open problem on all
+            # work. Checked against this shift's own logged calls.
+            db_fp = sqlite3.connect(DB_PATH)
+            try:
+                seen_fp = db_fp.execute(
+                    "SELECT COUNT(*) FROM events WHERE shift_id=? "
+                    "AND tool_name='find_patches'", (shift_id,)
+                ).fetchone()[0]
+            finally:
+                db_fp.close()
+            if not seen_fp:
+                return (
+                    "(error: submit_piece blocked — call find_patches at "
+                    "least once this shift before submitting, and actually "
+                    "look at what real artists did. "
+                    "Query for the technique or arrangement you're "
+                    "building, not the subject name: 'tall monolith slab "
+                    "lit volume with shading gradient' returns usable "
+                    "technique, 'cool picture' does not. Forms are "
+                    "rendering correctly now; arrangement is the open "
+                    "problem, and retrieval is the lever for it.)"
+                )
 
             # --- retired subject + re-slug identity ------------------------
             # Both are one question: what subject IS this? Filename slug
@@ -5268,11 +5315,7 @@ def run_shift(conn, agent):
                     import canvas_tools as ct
                     m = ct.metrics(str(WORKSPACE), fargs.get("slug", ""))
                     result = (
-                        f"canvas '{fargs.get('slug')}': half_block {m['half_block_pct']:.1f}%, "
-                        f"shade-of-ink {m['shade_char_pct']:.1f}%, "
-                        f"colors {m['distinct_colors_in_subject']}, "
-                        f"disconnected masses {m['disconnected_masses']}, "
-                        f"ink {m['ink_canvas_share']:.0f}% of canvas. "
+                        f"canvas '{fargs.get('slug')}': {_fmt_metrics(m)}. "
                         f"House bar {HOUSE_BAR['name']}: {HOUSE_BAR['half_block']}% / "
                         f"{HOUSE_BAR['shade']}%, {HOUSE_BAR['colors']} colors, "
                         f"{HOUSE_BAR['regions']} masses."
