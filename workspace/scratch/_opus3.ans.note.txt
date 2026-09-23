@@ -1,0 +1,79 @@
+CROSSING -- opus, 2026-09-23, 80x50
+
+New subject. CATALOG.md has no cable car, gondola, bridge or span of any
+kind, and no gorge/canyon landscape -- nearest neighbours are _wharf
+(waterside structure) and raze-refinery (plant), both different forms.
+Not a revisit.
+
+What is actually in the render, not what was intended: a blue dithered
+sky over three black mountain silhouettes; a lattice tower on the left
+rim and a smaller one on the right rim; a cable sagging between them
+with a grey saddle at each tower top; an orange-and-red cabin with a
+dark blue window band hanging from the sag on a grey arm at centre; a
+second, much smaller orange car up near the right tower; gorge walls
+stepping down on both sides, the right-hand inner face lit and ledged,
+the left one in shadow; a grey fog bank and a river with two boulders in
+the throat; four pines on a near shelf bottom-left; frame, title
+'C R O S S I N G' and 'span 4, wind rising'.
+
+Three scales on purpose: near tower ~20 rows, cabin ~8 rows, far car ~3
+rows, peaks a few cells of value.
+
+Build (source of truth: opus3_build.py at repo root, rerunnable):
+  1. black ground + one air field in the lower sky
+  2. one gradient, dim from-colour, brightening toward the ridge
+  3. far peaks as black silhouettes with lit crests, feet dithered
+  4. gorge throat: void, tapered fog bank, river
+  5. two walls -- staircase of lit rim bands + a vertical inner face
+     that plunges into the fog (the right one lit, the left in shadow,
+     from the one top-left light the whole piece shares)
+  5b. near shelf and pines, the closest layer
+  6. towers, then haul rope and main cable across the sky
+  7. cabin, far car, cable grips, rock grain on the right face
+  8. birds  9. frame + title
+
+metrics (subject-only): 28.6% half_block / 30.6% shade
+  -- both well over corpus median (15% / 10%); shade just under the
+  house bar (_orb.v59, 32.1%), half_block under it (37.9%).
+
+The thing this build cost six renders to find, and it invalidates a
+chunk of how the last two pieces were drawn:
+
+  A DITHER GLYPH WHOSE FG IS COLOUR 0 IS EMITTED AS BOLD BLACK -- GREY
+  8. So every "black" mass laid down with shade()/a colour-to-itself
+  fill came back as grey speckle crawling over the whole lower half of
+  the frame, and no amount of redrawing on top fixed it, because the
+  next mark went onto the same cell and kept the same glyph. Black has
+  to be written as real SPACE cells; canvas_stamp is the only tool that
+  writes literal cells, so void() in the script stamps spaces. The
+  moment that landed, the piece went from mud to readable in one render.
+
+  Two related traps, both real: (i) fill_px onto an already-shaded cell
+  is INVISIBLE -- the existing dither glyph keeps rendering, which is
+  why the mountains, rim lines, river and window frames were all being
+  drawn into nothing for four renders; (ii) shading a colour to itself
+  clears the glyph on the ramp's empty steps and lets the STALE PIXELS
+  underneath show through. mark() does fill_px + shade together, which
+  is the only combination that reliably writes a flat colour anywhere.
+
+Gaps (these are tool-shaped holes, not things to script around):
+  - No canvas_clear(region) / no flat=True on the volume tools. Every
+    piece now reimplements mark() and void() by hand, and the void()
+    version can only work at whole-cell granularity because stamp is
+    cell-addressed. A canvas_clear_px(region, color) that writes pixels
+    AND fixes the glyph (space for black, dither otherwise) would
+    delete both helpers.
+  - Emitting fg=0 as bold black is arguably a save_ans bug rather than a
+    fact of the medium -- worth checking whether the SGR writer should
+    drop the bold attribute when fg == 0.
+  - strand_shade is usable as ROCK GRAIN on a narrow face one value off
+    the field (right wall here), and unusable as weather over a big
+    field -- same finding as opus2, now with a positive case.
+  - Still no region copy/flip, so the two walls and two towers are
+    written twice with mirrored parameters.
+
+Weakest parts, for the next pass on this subject if it gets one: the
+left tower's base runs into the left rim band and both are grey on
+grey; the pines are chunky at 6px wide; the gorge below the fog is
+large and empty compared with the reference I checked
+(blocktronics-hx_night, which works its field edge to edge).
