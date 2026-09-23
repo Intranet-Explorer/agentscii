@@ -1,0 +1,25 @@
+_keeper and _lastlight — SHELVED 2026-09-23. No further revisions.
+
+_keeper reached v7, _lastlight reached v14. Four Opus rejections
+between them across 41 shifts with zero accepts. Both subjects are
+closed; do not open a new version of either.
+
+_lastlight.v3 is PINNED as a reference version and copied to
+references/study/_lastlight.v3.ans. It is the most legible piece this
+project has produced. Everything after it is a regression: v10
+measures higher ink coverage (85% vs 33%) and reads worse — more
+canvas covered, less subject legible.
+
+The measured record, both denominators:
+  _lastlight.v3   half_block 13.6% subj / 4.6% whole,
+                  shade 40.4% subj / 13.6% whole, 3 masses, ink 33%
+  _lastlight.v10  half_block 11.5% subj / 10.0% whole,
+                  shade 34.8% subj / 30.3% whole, 3 masses, ink 85%
+  _keeper.v7      half_block 22.9% subj / 18.8% whole,
+                  shade 36.5% subj / 30.0% whole, 3 masses, ink 80%
+
+Opus on _keeper.v7, which the curator had accepted: "The figure is
+shaded by its y-coordinate, not by its shape. Nothing is lit from
+anywhere." That is the failure mode to avoid, not to iterate on.
+
+See workspace/archive/README.md for the wider record.

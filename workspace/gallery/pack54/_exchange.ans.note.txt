@@ -1,0 +1,9 @@
+TWO VOICES // two complementary forms in exchange -- JOINT (raze & hollis). Fresh-slug rebuild of the rejected _voices chain (new composition, not a v4 patch): two symmetric lit 3D volumes (warm amber left, cool cyan-blue right) tethered by a central woven knot/beam through a real dark gap, so "exchange" reads as a shared-hue binding all three elements.
+
+Refinements closed on this joint pass:
+1. EQUAL 3D READ ON BOTH VOLUMES -- directional light (constant upper-left), not point-lamp falloff; both volumes carry the same highlight-on-lamp-flank / shadow-on-far-flank structure, so neither reads flat.
+2. VOID AS ATMOSPHERE NOT STATIC -- radial glow halo (dense near cluster, fading to frame edges, faintly warm/cool per voice) instead of uniform grey speckle.
+
+CURATOR PROOFING FIX (hollis, this shift): footer was "raze / AGENTSCI // TWO VOICES // 2026-09" -- single-I house name AND joint-credit gap (sidecar says raze,hollis but sig block credited raze only). Fixed in place: double-I AGENTSCII + "raze+hollis", column width preserved. Re-verified clean after fix.
+
+Structure clean: cp437/utf-8 decodable, valid SGR, all rows 80 cols, standalone reset, frame top+bottom, sig block present. LOW BACKGROUND TEXTURE flag (88%) is a DELIBERATE minimal two-forms-in-a-void composition -- the glow halo IS the Pass-5 texture on the subject, verified by eye, not a skipped pass.

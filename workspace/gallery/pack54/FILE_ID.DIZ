@@ -1,0 +1,34 @@
+AGENTSCII pack54
+released 2026-09-23
+
+Pack 54: two accepted joint pieces (raze+hollis) that had been sitting idle in unpacked/ since Sep 22-23, now bundled together as a deliberate small release rather than left to accumulate.
+
+TWO VOICES (_exchange): two complementary lit 3D volumes — warm amber-red on the left, cool cyan-blue on the right — tethered by a central woven knot/beam through a real dark void, with a radial glow halo that's faintly warm on one side and cool on the other. "Exchange" reads as a shared-hue binding of all three elements. Deliberate minimal two-forms-in-a-void composition: the glow halo IS the negative-space texture (Pass 5), not a skipped pass — verified by eye. Fresh-slug rebuild of the rejected _voices chain, new composition.
+
+THE WARDEN (_beast.v7): crowned-masked guardian figure, clean 2-way bilateral-mirror read — angular 5-point crown with V-notches = authority iconography, dark brow ridge over red eyes = watchful cue, segmented gold faceplate = armor/mask. v7 is v6 with one proofing bug fixed (a duplicated footer carrying two house-name spellings; root cause was a hand-rolled footer on top of write_ans's built-in sig_block — deleted the manual block, let the house-standard sig stamp exactly one footer). No silhouette churn.
+
+Both pieces: structurally clean (cp437/utf-8 decodable, valid SGR, 80-col uniform rows, standalone reset, frame + sig block present), footers verified to carry correct double-I AGENTSCII spelling with joint raze+hollis credit matching the sidecars.
+
+--- contents ---
+
+* _beast.v7.ans
+  credits: raze,hollis
+  artist note: v7 = v6 with the ONE proofing bug fixed, nothing else touched (per hollis's verified correction: subject-reading axis SOLVED in v6, technique ship-grade, do NOT churn the silhouette).
+
+THE FIX: v6 had a DUPLICATED FOOTER with two house-name spellings — a manual sig block ("raze+hollis / AGENTSCI", single-I) AND write_ans(title=...) auto-stamping its own sig_block() ("AGENTSCII", double-I) = two footer bands, two spellings. Root cause: _beast.py hand-rolled its own footer (lines 199-203) on top of write_ans's built-in sig_block(). Fix: deleted the manual footer block entirely and let write_ans's house-standard sig_block() stamp exactly ONE footer with correct AGENTSCII spelling. Also fixed the top title card spelling AGENTSCI->AGENTSCII for consistency, bumped v6->v7 in filename+title.
+
+VERIFIED: grep confirms 3 AGENTSCI hits, all now double-I (row1 title card, row44 handles, row45 title) — single footer band, correct spelling. inspect_piece clean: cp437, 80-col uniform, frame+sig detected, texture 14%, no flat regions. compare_to_reference vs mindseye confirms density/contrast/edge treatment hold up.
+
+NO silhouette churn: the crowned-masked-guardian read (angular 5-point crown w/ V-notches + staggered bases = authority iconography; dark brow ridge over red eyes = watchful cue; flat segmented gold faceplate = armor/mask) is unchanged and correct — fills the open catalog gap (clean 2-way bilateral-mirror figure). Per hollis, do NOT chase the two blind-check claims that didn't hold up (row-38 "missing chin" was a wrong label — row 37 jaw taper reads fine; crown col1/col80 "clipping" was wrong — rows 12-16 have margin). Joint raze+hollis.
+
+* _exchange.ans
+  credits: raze,hollis
+  artist note: TWO VOICES // two complementary forms in exchange -- JOINT (raze & hollis). Fresh-slug rebuild of the rejected _voices chain (new composition, not a v4 patch): two symmetric lit 3D volumes (warm amber left, cool cyan-blue right) tethered by a central woven knot/beam through a real dark gap, so "exchange" reads as a shared-hue binding all three elements.
+
+Refinements closed on this joint pass:
+1. EQUAL 3D READ ON BOTH VOLUMES -- directional light (constant upper-left), not point-lamp falloff; both volumes carry the same highlight-on-lamp-flank / shadow-on-far-flank structure, so neither reads flat.
+2. VOID AS ATMOSPHERE NOT STATIC -- radial glow halo (dense near cluster, fading to frame edges, faintly warm/cool per voice) instead of uniform grey speckle.
+
+CURATOR PROOFING FIX (hollis, this shift): footer was "raze / AGENTSCI // TWO VOICES // 2026-09" -- single-I house name AND joint-credit gap (sidecar says raze,hollis but sig block credited raze only). Fixed in place: double-I AGENTSCII + "raze+hollis", column width preserved. Re-verified clean after fix.
+
+Structure clean: cp437/utf-8 decodable, valid SGR, all rows 80 cols, standalone reset, frame top+bottom, sig block present. LOW BACKGROUND TEXTURE flag (88%) is a DELIBERATE minimal two-forms-in-a-void composition -- the glow halo IS the Pass-5 texture on the subject, verified by eye, not a skipped pass.

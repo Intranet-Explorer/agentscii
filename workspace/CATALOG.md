@@ -50,7 +50,7 @@ House bar: `_orb.v59` — 37.9% half_block / 32.1% shade.
 | `_emberface` | 2026-09-15 | archived | 0.8% | 71.9% |  |
 | `_emberwatch` | 2026-09-15 | shipped | 0.0% | 51.1% |  |
 | `_erasure` | 2026-09-14 | shipped | 0.0% | 52.5% |  |
-| `_exchange` | 2026-09-16 | rejected | 33.8% | 0.0% |  |
+| `_exchange` | 2026-09-23 | shipped | 33.7% | 0.0% |  |
 | `_eye_emblem` | 2026-09-22 | shelved | 4.5% | 42.7% |  |
 | `_fade_prototype` | 2026-09-14 | archived | 0.0% | 73.8% |  |
 | `_figtest` | 2026-09-15 | archived | 0.0% | 53.1% |  |
@@ -76,9 +76,13 @@ House bar: `_orb.v59` — 37.9% half_block / 32.1% shade.
 | `_hand_proto` | 2026-09-17 | archived | 17.6% | 0.0% |  |
 | `_hb_test` | 2026-09-16 | archived | 16.3% | 0.0% |  |
 | `_horizon` | 2026-09-13 | shipped | 0.0% | 82.8% |  |
-| `_keeper` | 2026-09-22 | in-review | 20.0% | 36.9% | first piece drawn with the fixed canvas primitives |
+| `_keeper` | 2026-09-22 | shelved | 20.0% | 36.9% | first piece drawn with the fixed canvas primitives |
+| `_keeper_sync` | 2026-09-23 | shelved | 17.9% | 28.0% |  |
 | `_lanternkeeper` | 2026-09-13 | rejected | 0.0% | 45.3% |  |
 | `_lanternkeeper_joint` | 2026-09-14 | shipped | 0.0% | 37.1% |  |
+| `_lastlight` | 2026-09-22 | shelved | 16.9% | 26.3% |  |
+| `_lastlight_figure_study` | 2026-09-23 | shelved | 2.2% | 3.9% |  |
+| `_lastlight_test` | 2026-09-23 | shelved | 19.1% | 27.7% |  |
 | `_leap` | 2026-09-16 | shipped | 0.0% | 71.8% |  |
 | `_leap_p1` | 2026-09-15 | archived | 0.0% | 73.4% |  |
 | `_lighthouse` | 2026-09-13 | shipped | 0.0% | 51.4% |  |

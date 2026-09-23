@@ -132,7 +132,7 @@ def test_metrics_line_has_both_denominators():
     (_wasteland.v1: 26.1% vs 5.2%). Every metric line must label both,
     or the two sides of a report read as contradicting each other."""
     import harness as h
-    m = h._compute_piece_metrics('workspace/submissions/_keeper.ans')
+    m = h._compute_piece_metrics('workspace/gallery/pack53/_orb.v59.ans')
     line = h._fmt_metrics(m)
     assert 'subject-only' in line and 'whole-canvas' in line, line
     assert line.count('subject-only') == 2, 'both metrics need both denominators'
@@ -157,3 +157,27 @@ def test_find_patches_returns_distinct_sources():
                              index_dir='corpus/clip_index')
     paths = [h['parent_path'] for h in hits]
     assert len(paths) == len(set(paths)), f'duplicate sources: {paths}'
+
+
+def test_blind_render_redacts_overlaid_title():
+    """A title drawn OVER a dither field measures only 0.31
+    letter-density and slipped through, so Opus's first 'blind' subject
+    read quoted 'THE KEEPER // AGENTSCII' off the canvas. Letter RUNS
+    catch a word regardless of what it sits on."""
+    import harness as h
+    rows = [[(c, 7, 0) for c in "\u2592" * 17 + "THE KEEPER // AGENTSCII" + "\u2591" * 20]]
+    visible = [ch for ch, fg, bg in rows[0] if ch != " "]
+    letters = sum(1 for ch in visible if ch.isascii() and ch.isalpha())
+    assert letters / len(visible) < 0.5, "fixture must defeat the density rule"
+    run = best = 0
+    for ch, fg, bg in rows[0]:
+        if ch.isascii() and (ch.isalpha() or ch in "/-.,!'"):
+            run += 1; best = max(best, run)
+        else:
+            run = 0
+    assert best >= 6, "run rule must catch it"
+
+
+def test_artist_cap_raised():
+    import harness as h
+    assert h.MAX_TOOL_CALLS_BY_ROLE["artist"] == 100

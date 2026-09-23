@@ -244,7 +244,11 @@ MAX_TOOL_CALLS_PER_SHIFT = 40
 # shift data, not a guess). Give the artist real extra room rather than
 # raising the cap uniformly and diluting the loop-guard's effectiveness for
 # the curator, whose job is comparatively bounded (read, judge, decide).
-MAX_TOOL_CALLS_BY_ROLE = {"artist": 60, "curator": 40}
+# Artist raised 60 -> 100 on 2026-09-23: 20 of 41 shifts were ending in
+# a forced cap handoff, which fragments a piece across shifts and leaves
+# the debris Opus flagged in _keeper.v7 (duplicated caption blocks,
+# orphan fragments, trailing junk -- all interrupted-work artifacts).
+MAX_TOOL_CALLS_BY_ROLE = {"artist": 100, "curator": 40}
 BASH_TIMEOUT = 60
 
 MAX_REVISIONS_PER_SUBJECT = 8  # user direction, 2026-09-19: "Cap revisions
@@ -2101,7 +2105,21 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False)
             if len(visible_chars) < 8:
                 continue
             letters = sum(1 for ch in visible_chars if ch.isascii() and ch.isalpha())
-            if letters / len(visible_chars) > 0.5:
+            # Density alone is NOT enough: a title card drawn OVER a
+            # dither field measures only 0.31 letter-fraction and slipped
+            # through unredacted -- found live 2026-09-23, Opus's first
+            # blind subject read came back quoting "THE KEEPER //
+            # AGENTSCII" straight off the canvas, so the check had never
+            # actually been blind. Also look for a RUN of letters, which
+            # is what a word is regardless of what it sits on.
+            run = best = 0
+            for ch, fg, bg in line_cells:
+                if ch.isascii() and (ch.isalpha() or ch in "/-.,!'"):
+                    run += 1
+                    best = max(best, run)
+                else:
+                    run = 0
+            if letters / len(visible_chars) > 0.5 or best >= 6:
                 for i in range(len(line_cells)):
                     line_cells[i] = (" ", 7, 0)
 
@@ -5627,6 +5645,21 @@ def run_shift(conn, agent):
             break
     else:
         note = "(hit max tool calls for this shift, forced handoff)"
+        # Force-save every open canvas before handing off, so a
+        # cap-interrupted shift leaves a coherent .ans rather than
+        # half-written debris.
+        try:
+            import canvas_tools as _ct
+            for _slug in _ct.list_canvases(str(WORKSPACE)):
+                try:
+                    _ct.save_ans(str(WORKSPACE), _slug,
+                                 f"scratch/_{_slug}.autosave.ans",
+                                 title=None, add_sig=False)
+                except Exception:
+                    pass
+            note += " [open canvases auto-saved]"
+        except Exception:
+            pass
 
     ended_at = time.time()
     # Save last_reasoning on any FORCED end (note is non-empty: stop request,
