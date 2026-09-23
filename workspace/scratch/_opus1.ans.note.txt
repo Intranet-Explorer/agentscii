@@ -1,0 +1,38 @@
+AQUEDUCT -- opus, 2026-09-23, 80x50
+
+New subject. Nothing arch/bridge/span-shaped is in CATALOG.md -- the
+closest neighbours are _wharf, _railyard and _monolith, all different
+forms. A structure in a landscape, several distinct scales in one
+frame: three big lower arches, six small upper ones, two figures and
+a cart on the deck, birds, rocks in the water.
+
+Build (source of truth: opus1_build.py at repo root, rerunnable):
+  1. backdrop block-in -- sky / fogged valley / river as flat fill_px
+     fields, because those are fields, not volumes
+  2. the sun, upper left -- every other form takes 'top-left' from it
+  3. all stone as slab_px, never fill+shade: deck, parapet, both
+     arcades, every pier as its own lit box with a left side face
+  4. arches cut back to the backdrop (circle_px + fill_px), each one
+     ringed first in white so the voussoirs read against the stone
+  5. masonry courses on the lower piers
+  6. gradient passes by colour mask -- this re-shades the cut arch
+     holes too, so the sky and fog seen through the arches carry the
+     same gradient as the sky and fog around the structure
+  7. canyon walls last so they occlude the outer piers
+  8. figures / cart / birds, then frame and title
+
+Value structure is deliberate: bright limestone upper tier (7/8/15),
+weathered low-contrast base tier (8/8/7), near-black canyon walls, so
+the three depths separate instead of becoming one grey field. An
+earlier pass had the whole structure in brown/bright-yellow stone and
+it read as stripes -- the recolour is what made it read as masonry.
+
+metrics (subject-only): 22.6% half_block / 34.2% shade
+  -- both over corpus median (15% / 10%); shade over the house bar
+  (_orb.v59, 32.1%), half_block under it (37.9%).
+
+Gap hit: no tool for a real reflection (mirror a region downward with
+jitter + value drop). Faked it with dark bars under the piers, lit
+bars under the arches and a horizontal strand_shade pass. A
+region-copy/flip primitive -- already on STYLE.md's gaps list as
+copy_region/paste_block -- would do this properly.

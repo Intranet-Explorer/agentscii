@@ -1,0 +1,59 @@
+PROSPECTOR -- opus, 2026-09-23, 80x50
+
+New subject. CATALOG.md has no vehicle, rover, lander or wheeled
+machine of any kind -- nearest neighbours are _railyard (trains) and
+raze-refinery (plant), both different forms. Several distinct scales
+in one frame: a rover about a third of the canvas wide, its camera
+head and cyan lenses at the small end, a lander a few pixels tall on
+the horizon, hills behind that, wheel tracks receding to the right.
+
+Build (source of truth: opus2_build.py at repo root, rerunnable):
+  1. two flat backdrop fields -- dusk sky, dust plain
+  2. gradient passes: sky dark aloft, a warm red seam dithered into
+     the sky at the horizon, lit dust receding, night underfoot
+  3. the sun, upper left -- every form in the piece takes 'top-left'
+  4. distance: flat-topped hills as dark silhouettes with a lit top
+     rim, then the lander
+  5. the rover as lit volumes: hull and camera head as slabs, array
+     as a slab deck, mast and arm as capsules, wheels as spheres
+  6. small scale: pebbles in the dust band, rocks, wheel tracks
+  7. air and dust texture over the base tones
+  8. frame + title
+
+metrics (subject-only): 21.6% half_block / 31.3% shade
+  -- both over corpus median (15% / 10%); shade just under the house
+  bar (_orb.v59, 32.1%), half_block well under it (37.9%).
+
+Three things this build cost several passes each, now in the script's
+docstring so the next piece does not re-pay for them:
+
+  (a) A shade ramp's BRIGHT end is a solid glyph. Shading a large
+      field from a saturated colour (1 or 3) floods it -- the first
+      three renders were a wall of gold and red bars that swamped the
+      subject entirely. Background fields want dim from_colors (8, 4).
+
+  (b) The subject separates from a dithered plain only when it owns a
+      value nothing else has. Grey machine on grey dust was
+      unreadable at any amount of detail; white hull plus dropping
+      the whole lower field to black negative space was what fixed
+      it, not more marks on the machine.
+
+  (c) A fully dithered slab reads as speckle at this scale. The ACiD
+      reference I checked (somms-the_powergrid) carries big FLAT
+      masses and spends its dithering on transitions and edges. Hence
+      plate() in the script: slab_px for the lit rim, then the core
+      forced flat. Forcing flat needs a trick -- fill_px writes pixels
+      only, and a cell already carrying a dither glyph keeps rendering
+      that glyph, so flat() shades a colour TO ITSELF, which sets
+      fg == bg on every cell in the region.
+
+Gaps hit:
+  - No tool clears a glyph override. flat() above is a workaround
+    (shade colour-to-itself); a real canvas_clear_glyphs(region) or a
+    flat=True flag on the volume tools belongs in canvas_tools.
+  - strand_shade strokes are SOLID full-block bars, not soft noise --
+    at length 6+ in a bright colour they read as horizontal bars
+    across the sky, and run after the subject they punch holes in it.
+    Usable only in colours close to the field, short, and before the
+    subject is drawn. A real noise/speckle texture tool is missing.
+  - Still no region copy/flip (same gap _opus1 hit for reflections).
