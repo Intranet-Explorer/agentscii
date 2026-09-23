@@ -125,3 +125,22 @@ def test_catalog_rebuilds_and_location_wins():
     assert '| `_beast` |' in txt
     beast = [l for l in txt.splitlines() if l.startswith('| `_beast` |')][0]
     assert 'shipped' in beast, beast
+
+
+def test_metrics_line_has_both_denominators():
+    """Whole-canvas and subject-only differ by 5x on real pieces
+    (_wasteland.v1: 26.1% vs 5.2%). Every metric line must label both,
+    or the two sides of a report read as contradicting each other."""
+    import harness as h
+    m = h._compute_piece_metrics('workspace/submissions/_keeper.ans')
+    line = h._fmt_metrics(m)
+    assert 'subject-only' in line and 'whole-canvas' in line, line
+    assert line.count('subject-only') == 2, 'both metrics need both denominators'
+
+
+def test_find_patches_required_before_submit():
+    import harness as h
+    import inspect
+    src = inspect.getsource(h.run_tool)
+    assert "tool_name='find_patches'" in src
+    assert 'call find_patches at' in src

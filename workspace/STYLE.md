@@ -36,6 +36,15 @@ colors, place shapes, done) is what produces flat, thin work.
    (canvas_fill_px/canvas_circle_px), no shading yet. Correct
    proportions and composition, verified with canvas_preview BEFORE
    any detail work.
+   **Any form with VOLUME — a body, limb, head, rock, structure,
+   vessel — is drawn with canvas_sphere_px / canvas_slab_px /
+   canvas_capsule_px, never with canvas_fill_px.** canvas_fill_px is
+   for FLAT elements only: background fields, frames, bands, bars.
+   This one choice is the difference between 20.0% and 11.5%
+   half-block on two real pieces a shift apart (_keeper vs
+   _wasteland.v2, measured subject-only) — fill_px block-in plus a
+   shade pass cannot produce lit volume, because a flat fill has no
+   face orientation to shade from.
 2. **Light-source shading** — BEFORE shading any form, call
    find_patches to see how real artists shaded something similar,
    then reproduce that technique with canvas_shade. Use the SAME
@@ -63,7 +72,9 @@ colors, place shapes, done) is what produces flat, thin work.
 5. **Frame/title** — a border or title card (canvas_fill_px for bars,
    canvas_text for the title line), as its own pass. Real packs are
    framed more often than not.
-6. **Verify against a reference, then sign** — compare_to_reference
+6. **Verify against a reference, then sign** — find_patches is
+   REQUIRED at least once per shift before submit_piece (the harness
+   blocks the submission otherwise), and compare_to_reference
    against something in references/study/ is REQUIRED before
    submit_piece. Judging your own render alone is unreliable — look
    at density, contrast, and edge treatment directly, not from memory
