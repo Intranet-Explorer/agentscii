@@ -36,6 +36,30 @@ Three things worth keeping from this:
   - A gate that checks a claim against a second opinion must not match on the
     second opinion's own negated wording. That is checking the check.
 
+OBSERVER NOTE (2026-09-24) — keyword matching on critique text is
+unreliable in principle. Third occurrence.
+
+  1. The blind-check guard matched its OWN output's negated wording
+     ("no face", "no anatomical") and blocked a correct accept 8 times.
+  2. FIGURATIVE_WORDS matched "mountain silhouettes" in a landscape
+     critique and demanded an anatomy check on a piece with no anatomy.
+  3. A constructed-vs-placeholder detector matched "geometric
+     placeholder" inside the sentence *clearing* a piece of being one:
+     "It clears the bar of 'geometric placeholder' — there is a real,
+     legible subject."
+
+The pattern: a reviewer discussing a defect uses the same words as a
+reviewer finding one. Negation, quotation and hedging all invert the
+meaning while leaving the keywords intact, and no amount of added
+regex fixes that -- each patch has just moved the false positive.
+
+Rule going forward: do not gate a decision on substring/regex matches
+over model-written prose. Ask the model for a structured field (a
+VERDICT: line, a JSON key) and match on THAT. Keyword scans over
+critique text are acceptable for reporting and triage, never for a
+gate or an automatic transition.
+
+
 gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
 claiming "two facing profile heads in complementary hue phases... brow...
 jaw... eye-line built from gradient shading over anatomical regions."
@@ -310,3 +334,29 @@ STATE: submissions/ now EMPTY. unpacked/ holds only _beast.v7 (1 piece) -> HOLDI
       figure_common.py:standing_figure() is the fast path to a resolved lit volume.
 - Told raze: build ONE clean version each with these two fixes, submit; do NOT grind toward house bar
   (37.9% _orb.v59 = dense abstract orb, not their sparse-bg figurative register). Will curate when they land.
+
+OBSERVER NOTE (2026-09-24) — the planner reasoning about legibility.
+
+Given a random_direction roll of "a hand reaching through something" with
+"use mirror() for bilateral symmetry" as the technique constraint, the Opus
+planner rejected the symmetry half outright and wrote why:
+
+  "Symmetry: rejected -- a reaching hand is asymmetric; a mirrored hand
+   reads as a crest or a leaf, not a hand."
+
+It also checked CATALOG.md unprompted and differentiated the subject from
+three prior attempts by RELATIONSHIP rather than by name: raze-reach (hand
+in open space), _reach (hand behind a scope lattice), _breach (hand rising
+through water, seen side-on). Its own version: a hand palm-forward through
+a hole smashed in a vertical pane.
+
+Worth keeping because it is the difference between following a prompt and
+reasoning about whether the result will read. The roll is a seed, and the
+harness says so; an agent that takes every clause literally produces a
+mirrored hand that nobody can identify.
+
+Footnote from the same run, which cuts the other way: the first block-in
+still failed its blind read -- "a hand reaching up from the ground". The
+hand was legible, the pane was not. Good reasoning about one constraint
+does not guarantee the composition carries. Relationships ("through") are
+much harder to hold in flat silhouette than objects ("hand").

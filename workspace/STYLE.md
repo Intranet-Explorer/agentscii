@@ -27,6 +27,31 @@ before considering a piece done. Below median on both means the piece
 hasn't really used half-block/dither technique yet, whatever it looks
 like in preview.
 
+**The glyph layer must carry the form, not the background colour.**
+A cell whose two pixels match renders as space+background — correct
+encoding, but colour-carried, not glyph-carried. Measured 2026-09-24
+across real archive work and house pieces:
+
+| piece | glyph-carried |
+|---|---|
+| blocktronics-ra_mindseye (ACCEPTED) | 98.3% |
+| asphyx-acid_logo (ACCEPTED) | 98.2% |
+| we-One_love (ACCEPTED) | 96.0% |
+| _orb.v59 (best house piece) | 82.3% |
+| duo1 (drawn with canvas_* only) | 28.6% |
+
+A reviewer put it as "strip the glyphs and you lose nothing" — that
+piece was a bitmap that happened to be made of cells, and it was
+rejected for it despite a legible subject.
+
+This is NOT a tool limit. A test canvas where every cell's pixel pair
+differs renders 100% glyph-carried. The bg-carried share is just the
+share of the drawing made of internally-uniform cells, i.e. large flat
+fills. Break up the fills: strand_shade over a filled form lifts a
+sphere from 66% to 79% glyph-carried in one pass, and hand-placed
+density work goes further. Aim for 80%+; the archive sits above 95%.
+
+
 ## The build sequence (block-in, then passes — not one generative shot)
 
 Real ANSI art is built in passes. A single generative pass (pick
@@ -69,6 +94,22 @@ colors, place shapes, done) is what produces flat, thin work.
    canvas_stamp with a texture-region patch (sky, ground, dithered
    field — never a subject) is the current way to do this densely;
    canvas_shade also works for a simpler gradient field.
+**Occlusion is the only depth cue that survives flat silhouette.**
+A block-in has no value, no gradient and no atmosphere, so plane and
+depth relationships must be carried by OVERLAP — one form passing
+behind another — not by shading you intend to add later. Measured
+2026-09-24: a block-in of a hand through a broken pane read blind as
+"a hand reaching up from the ground" (wrong plane entirely) with the
+pane as a flat field. Adding a mullion and transom that pass BEHIND
+the fingers, running edge to edge, changed the blind read to "a hand
+pressed against a window" with nothing else altered. Shape did the
+work value could not.
+Corollary: a RELATIONSHIP ("through", "behind", "emerging from") is
+much harder to carry than an OBJECT. If two revisions of a block-in
+cannot get a relationship to read, simplify the subject to one an
+object can express rather than piling on more cues.
+
+
 5. **Frame/title** — a border or title card (canvas_fill_px for bars,
    canvas_text for the title line), as its own pass. Real packs are
    framed more often than not.
