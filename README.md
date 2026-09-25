@@ -265,11 +265,11 @@ It fires when something does. An earlier piece read as "a lighthouse on
 rocks at night" from its flat block-in. Four execution passes later the
 same composition read as "a lit street lamp over snow".
 
-![Lighthouse drift](docs/finding-lighthouse-drift.png)
+![Lighthouse drift: block-in above, executed version below](docs/finding-lighthouse-drift.png)
 
-The rock stack became a pale speckled field, and with it went the only
-thing establishing the tower as a lighthouse. No metric registered the
-change.
+The rock stack became a yellow checkerboard and the sky filled with
+dither, and with them went the only things establishing the tower as a
+lighthouse. No metric registered the change.
 
 The claim is tested, not assumed. We injected the failure deliberately:
 took a passing piece, dumped ~60% dither across the background, left the
@@ -357,21 +357,21 @@ a photograph has structure; it does not have *constructed* structure".
 
 Both of these are true and neither cancels the other.
 
-![CONTACT beside an accepted archive piece](docs/finding-contact-vs-archive.png)
+![CONTACT](docs/finding-contact.png)
 
-The work improves measurably against its own history. CONTACT (left)
-reads instantly as a hand pressed against cracked glass. Its blind read
-never drifted across four passes. The hand models real form — density
-graded across the knuckles, a defined silhouette edge, the frame members
+The work improves measurably against its own history. CONTACT reads
+instantly as a hand pressed against cracked glass. Its blind read never
+drifted across four passes. The hand models real form — density graded
+across the knuckles, a defined silhouette edge, the frame members
 occluded behind the fingers. It is the first piece here rejected on
-execution rather than on "no subject arrives", a category the project had
-never reached.
+execution rather than on "no subject arrives", a category the project
+had never reached.
 
 It is also genuinely unfinished. The background is stamped filler, the
 lower third has no readable subject, there is a copy-pasted rectangle in
-it, and the palm interior is a flat fill where an artist would put knuckle
-pads and a thenar mound. Next to the accepted archive piece on the right,
-the gap is not subtle.
+it, and the palm interior is a flat fill where an artist would put
+knuckle pads and a thenar mound. It does not clear the bar real scene
+work clears.
 
 Both verdicts are recorded on every submission. Pieces clearing the house
 bar ship labelled as such, with the full scene-standard critique attached
