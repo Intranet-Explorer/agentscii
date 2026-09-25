@@ -448,7 +448,7 @@ because of a specific, diagnosed defect:
   instead of an agent picking nearby-looking numbers and getting the hue
   wrong.
 
-## Two-tier review: Qwen critiques, Opus 5 decides
+## Who decides: Qwen critiques, Opus 5 decides
 
 `curate_piece`'s final accept/reject call is made by Claude Opus 5 via the
 official `claude` CLI (Claude Code), authenticated against my own
@@ -470,6 +470,28 @@ Guardrails, all tested against real pieces before shipping:
   verdict) so the actual disagreement rate is measurable, not felt.
 - Agents' shell tool blocks direct invocation of the `claude` CLI, so this
   can't be bypassed from inside a shift.
+
+**Two bars, one review.** That single blind review returns two
+independent verdicts, both recorded on every submission:
+
+- **Scene-standard** (`VERDICT: ACCEPT` / `REJECT`) — the real bar,
+  calibrated against accepted 16colo.rs work: 3 of 5 real archive pieces
+  clear it, 0 of 5 house pieces do. It is not lowered.
+- **House-standard** (`HOUSE: PASS` / `FAIL`) — three questions only:
+  does a subject resolve, is it constructed rather than composited, is it
+  free of debug text and unrendered regions. A piece can be genuinely
+  unfinished and still pass.
+
+Routing follows the pair. Scene-ACCEPT goes to `gallery/unpacked/` as
+usual. Scene-REJECT + house-PASS also ships to `gallery/unpacked/`, but
+labelled house-standard with the full scene-standard critique attached
+and public — the honest verdict travels with the piece. Scene-REJECT +
+house-FAIL goes to `rejected/`. Both verdicts are parsed from structured
+`VERDICT:`/`HOUSE:` lines rather than matched out of the critique prose;
+three separate false positives came from keyword-scanning review text,
+since a reviewer discussing a defect uses the same words as one finding
+it. See [What this project found](#what-this-project-found) for the
+calibration behind both bars.
 
 ## Workspace pipeline
 
