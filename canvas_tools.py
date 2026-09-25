@@ -1000,3 +1000,112 @@ def capsule_px(workspace, slug, ax, ay, bx, by, r, color,
     data["last_shape"] = mask
     save_canvas(workspace, slug, data)
     return data
+
+
+def crop(workspace, slug, x, y, w, h, scale=6):
+    """Magnified render of a w x h CELL region, plus that region's cell
+    data. Returns (png_b64, text_dump).
+
+    The gap Opus named when asked what it needed (2026-09-25):
+
+      "I cannot see my own work at the scale where craft lives. The
+       preview rasterizes at 9x18 pixels per cell... I cannot
+       distinguish a light shade from a lighter one in a cheek shadow.
+       I cannot see whether two adjacent cells form a clean diagonal
+       edge or a staircase with a hole in it. What I can see is the
+       silhouette -- and the reviewer's verdict is that the silhouette
+       is doing all the work. That is not a coincidence; it is the only
+       channel my feedback loop has."
+
+    Hand-work needs the loop: place a few cells -> look -> adjust. That
+    loop cannot close at 9x18 per cell. scale=6 renders each cell at
+    54x108, where a glyph's ink shape and a cell seam are both visible.
+    """
+    data = load_canvas(workspace, slug)
+    rows_all = render_canvas_cells(data)
+    x, y, w, h = int(x), int(y), int(w), int(h)
+    sub = [r[x:x + w] for r in rows_all[y:y + h]]
+    if not sub or not sub[0]:
+        raise CanvasError(f"crop region ({x},{y},{w},{h}) is empty or off-canvas")
+
+    import harness
+    b64, _ = harness._rasterize_rows_to_png_b64(sub)
+    if b64:
+        import base64, io
+        from PIL import Image
+        im = Image.open(io.BytesIO(base64.b64decode(b64)))
+        im = im.resize((im.width * scale, im.height * scale), Image.NEAREST)
+        buf = io.BytesIO(); im.save(buf, "PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode()
+
+    lines = [f"cells ({x},{y}) {w}x{h} — glyph | fg,bg per cell:"]
+    for ry, row in enumerate(sub):
+        lines.append(f"  row {y+ry:2d}: " + " ".join(
+            f"{ch if ch != ' ' else '_'}{fg:X}{bg:X}" for ch, fg, bg in row))
+    return b64, "\n".join(lines)
+
+
+def render_canvas_cells(data):
+    """render_canvas() as (char, fg, bg) tuples instead of SGR strings --
+    the same packing logic, without stringifying. crop() and the
+    self-checks need cells, not escape codes."""
+    w, h_cells = data["w"], data["h_cells"]
+    pixels, go = data["pixels"], data["glyph_override"]
+    out = []
+    for cell_row in range(h_cells):
+        top_row, bot_row = pixels[cell_row * 2], pixels[cell_row * 2 + 1]
+        row = []
+        for x in range(w):
+            key = f"{cell_row},{x}"
+            if key in go:
+                ch, fg, bg = go[key]
+            else:
+                top, bot = top_row[x], bot_row[x]
+                ch, fg, bg = (" ", 7, top) if top == bot else ("\u2580", top, bot)
+            row.append((ch, fg, bg))
+        out.append(row)
+    return out
+
+
+def self_check(workspace, slug):
+    """The reviewer's own two cheapest tests, run on yourself mid-build.
+
+    Opus, asked what it needed (2026-09-25): "I have never looked at my
+    own canvas under the conditions it is judged in. 'Strip the glyphs
+    and you lose nothing' and 'remove the color and nothing survives'
+    are both literally runnable tests over data I already hold... I get
+    a verdict on a finished piece instead of running the reviewer's two
+    cheapest tests on myself, mid-build, for free."
+
+    Returns (glyphs_only_b64, colour_only_b64, density_report).
+      glyphs_only : every cell forced to one fg on black. If the picture
+                    survives, the GLYPHS are carrying it.
+      colour_only : every glyph forced to a full block. If the picture
+                    survives, COLOUR is carrying it and the glyph layer
+                    is doing nothing -- the exact rejection.
+    Plus per-row density variance, because "near-uniform row" is a
+    measurement, not an opinion.
+    """
+    import harness
+    rows = render_canvas_cells(load_canvas(workspace, slug))
+    glyphs_only = [[(ch, 7, 0) for ch, fg, bg in r] for r in rows]
+    colour_only = [[("\u2588" if not (ch == " " and bg == 0) else " ",
+                     bg if ch == " " else fg, bg) for ch, fg, bg in r]
+                   for r in rows]
+    g_b64, _ = harness._rasterize_rows_to_png_b64(glyphs_only)
+    c_b64, _ = harness._rasterize_rows_to_png_b64(colour_only)
+
+    INK = {"\u2588": 1.0, "\u2593": .75, "\u2592": .5, "\u2591": .25,
+           "\u2580": .5, "\u2584": .5, " ": 0.0}
+    lines = ["per-row ink density (a flat run of identical numbers is a "
+             "'near-uniform row' before anyone calls it one):"]
+    flat = 0
+    for ry, row in enumerate(rows):
+        vals = [INK.get(ch, .6) for ch, fg, bg in row]
+        mean = sum(vals) / len(vals)
+        var = sum((v - mean) ** 2 for v in vals) / len(vals)
+        if var < 0.004 and mean > 0.05:
+            flat += 1
+            lines.append(f"  row {ry:2d}: mean {mean:.2f} var {var:.4f}  <-- FLAT")
+    lines.append(f"{flat} of {len(rows)} rows are near-uniform.")
+    return g_b64, c_b64, "\n".join(lines)
