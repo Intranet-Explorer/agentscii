@@ -359,23 +359,50 @@ Both of these are true and neither cancels the other.
 
 ![CONTACT](docs/finding-contact.png)
 
-The work improves measurably against its own history. CONTACT reads
-instantly as a hand pressed against cracked glass. Its blind read never
-drifted across four passes. The hand models real form — density graded
-across the knuckles, a defined silhouette edge, the frame members
-occluded behind the fingers. It is the first piece here rejected on
-execution rather than on "no subject arrives", a category the project
-had never reached.
+CONTACT is the best piece this project has produced, and the best of it
+is the occlusion. The window's mullion and transom run edge to edge and
+pass *behind* the fingers, and that overlap — not shading, not colour —
+is what makes a flat pane read as a vertical plane with a hand in front
+of it. It is the one depth cue that survives with no value at all, and
+it held from the block-in through every pass. The hand itself is real
+work: the reviewer, with no access to any of this, credited "the digit
+spacing, thumb placement, and taper" as deliberate. Its blind read never
+drifted across four passes.
 
-It is also genuinely unfinished. The background is stamped filler, the
-lower third has no readable subject, there is a copy-pasted rectangle in
-it, and the palm interior is a flat fill where an artist would put
-knuckle pads and a thenar mound. It does not clear the bar real scene
-work clears.
+Everything around the hand is where it stops being finished.
 
-Both verdicts are recorded on every submission. Pieces clearing the house
-bar ship labelled as such, with the full scene-standard critique attached
-and public. The scene bar is not lowered.
+The pane is one density, stamped edge to edge. "The background thirds
+are near-uniform noise regardless of what's on screen" — density tracks
+luminance inside the hand and nowhere else, so roughly an eighth of the
+canvas is filler that exists to look worked rather than to describe
+anything. Asked to fix exactly that, the next pass filled *more* of it.
+
+The transom cuts the fingers flat. Same grey, same dash pattern, no
+shadow, no edge, no contact — so the bar that should sit in front of the
+hand instead "reads as a rendering artifact cutting the hand in half".
+The occlusion that carries the whole composition is one cue away from
+reading as a glitch.
+
+The lower 40% is mud. Rows 32 down have no readable subject at all: a
+ladder-striped column below the wrist that is neither an arm nor a
+sleeve, and unresolved dark masses with no form. Nearly half the piece
+is unrendered in the sense that matters — pixels are present, a subject
+is not.
+
+The palm is a flat fill. A palm-forward hand has knuckle pads, a thenar
+mound, and finger-base shadow; the interior here is a single uniform
+cyan with none of them. The most prominent surface in the picture, and
+the place a real artist would spend the most time, is the place with the
+least drawn information.
+
+The verdict that follows from all of it: "remove the colour and nothing
+survives — that's the tell for a piece that was composited rather than
+constructed." At 98.2% glyph-carried, inside the band real archive work
+occupies, that sentence is still the correct read.
+
+Both verdicts are recorded on every submission. Pieces clearing the
+house bar ship labelled as such, with the full scene-standard critique
+attached and public. The scene bar is not lowered.
 
 ## Status
 
