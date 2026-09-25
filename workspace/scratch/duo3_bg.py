@@ -42,11 +42,13 @@ for y, row in enumerate(grid):
         # half keeps the dark it was modelled against.
         if x < HEAD_L + 16 and 1 <= y <= 26:
             continue
-        # AND no glow within ten cells of the front, on either side of
-        # it. The dissolve has to end against black or its gaps are not
-        # gaps -- they are a slightly darker lavender, and the face
-        # simply fades into the air it is supposed to be leaving.
-        if 3 <= y <= 24 and x < t.front(y) + 11:
+        # AND no glow anywhere inside the dissolve. The field has to
+        # end against black or its gaps are not gaps -- they are a
+        # slightly darker lavender, and the face simply fades into the
+        # air it is supposed to be leaving. Session 4: this was a flat
+        # front+11 and the dissolve now reaches past that at the brow
+        # and the cheekbone, so it asks reach() where the row ends.
+        if 3 <= y <= 24 and x <= t.reach(y) + 2:
             continue
         # cells are about twice as tall as wide, so vertical distance
         # counts double or the falloff comes out as an ellipse
@@ -56,10 +58,14 @@ for y, row in enumerate(grid):
         elif d < 18:
             cells.append((x, y, '░', 1, 0))
         elif d < 22 and (x + y) % 2 == 0:
-            # the outermost band is thinned on a checker -- a solid
-            # ring of magenta read as a lavender edge around the glow,
-            # where what it should do is run out of light
-            cells.append((x, y, '░', 5, 0))
+            # The outermost band is thinned on a checker AND spelled in
+            # the dimmest glyph there is: · over black is four percent
+            # ink, a sixth of ░, so it is a real step further out
+            # without being a step into another hue. It was ░ in
+            # magenta, which is the violet the review caught -- I had
+            # reached for a colour to say 'less light' when less ink
+            # says it in the palette the fire is already in.
+            cells.append((x, y, '\u00b7', 1, 0))
 
 # Embers off the temple: a plume, not a scatter. Bright and dense where
 # they leave the face, cooling and thinning as they rise.

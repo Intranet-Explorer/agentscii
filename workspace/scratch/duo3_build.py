@@ -12,8 +12,20 @@ if '--fresh' in sys.argv:
 # quantises the value twice and flattens the surface it is respelling.
 # That is not hypothetical -- it happened live, and the cheek came back as
 # eighteen identical cells. A fresh deterministic rebuild is the fix.
+# Session 4 appends five and replaces one. duo3_right2 supersedes
+# duo3_right entirely (same territory, prominence-driven), and duo3_bg
+# must follow it because it asks duo3_tools.reach() where each row's
+# dissolve ends. The rebuilt features run AFTER their session-3
+# versions rather than instead of them: duo3_eye3 owns rows 12-14 and
+# leaves duo3_eye2's eyebrow and socket floor alone, so eye2 still has
+# to lay those down first. duo3_hue is last and is a no-op on a fresh
+# build -- BANDS and duo3_bg no longer make a magenta cell -- but its
+# assert is the guard that says so.
 for name in ['duo3_blockin', 'duo3_left', 'duo3_nose', 'duo3_mouth',
-             'duo3_fore', 'duo3_right', 'duo3_bg',
-             'duo3_reencode', 'duo3_model', 'duo3_eye2', 'duo3_mouth2', 'duo3_planes']:
+             'duo3_fore', 'duo3_right2', 'duo3_bg',
+             'duo3_reencode', 'duo3_model', 'duo3_eye2', 'duo3_mouth2',
+             'duo3_planes',
+             'duo3_nose2', 'duo3_eye3', 'duo3_mouth3', 'duo3_planes2',
+             'duo3_hue']:
     print(name, subprocess.run([sys.executable, str(HERE / (name + '.py'))],
                                capture_output=True, text=True).stdout.strip())

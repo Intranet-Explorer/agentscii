@@ -6,6 +6,7 @@ list of cells and does one load/save. grid() is the other half of the
 loop: read what is already under a region so the next cell's glyph can be
 chosen from the value that is actually there.
 """
+import math
 import base64
 import sys
 
@@ -125,17 +126,29 @@ RAMP = {
 LUM = {0: 0.00, 1: 0.32, 3: 0.48, 5: 0.30, 7: 0.66, 8: 0.33,
        9: 0.62, 11: 0.88, 13: 0.60, 15: 0.95}
 COVER = {'\u00b7': 0.04, '\u2591': 0.25, '\u2592': 0.50,
-         '\u2593': 0.75, '\u2588': 1.00, ' ': 0.0}
+         '\u2593': 0.75, '\u2588': 1.00, ' ': 0.0,
+         # The four half blocks are half a cell of ink, same as the
+         # medium shade -- the difference is that the ink is LANDED on
+         # one side of the cell instead of scattered through it, which
+         # is how an edge falls BETWEEN two cells rather than on the
+         # line between them.
+         '\u2580': 0.50, '\u2584': 0.50, '\u258c': 0.50, '\u2590': 0.50}
 GLYPHS = '\u00b7\u2591\u2592\u2593\u2588'
+# Session 4, the review: "the hue breaks the palette: violet against an
+# otherwise red/orange/yellow fire scheme. Embers don't go purple."
+# There was an 'ambient': (5, [0]) band here for surfaces turned fully
+# away from the fire, and magenta was the wrong answer to a real
+# question. A surface facing away from the only light in a picture does
+# not change hue; it runs out of light. 'cool' already spells that in
+# the right hue and the far side of the head simply clamps to it now.
 BANDS = {
-    'ambient': (5, [0]),
     'cool': (1, [0]),
     'dark': (3, [0, 1]),
     'mid': (9, [0, 1, 3]),
     'hot': (11, [0, 1, 9]),
 }
 BANDS_BY_HEAT = [(0.90, 'hot'), (0.72, 'mid'), (0.30, 'dark'),
-                 (0.18, 'cool'), (0.00, 'ambient')]
+                 (0.00, 'cool')]
 EMBER_X, EMBER_Y = 47.0, 13.0
 
 
@@ -227,3 +240,61 @@ def levels(x0, y0, rows, width=None):
                 ch, fg, bg = RAMP[lv]
                 out.append((x0 + c, y0 + r, ch, fg, bg))
     return out
+
+
+# PROMINENCE (session 4). How far the flesh stood FORWARD at the burning
+# edge, row by row. The reviewer on the burning side: "Thirteen rows,
+# same ramp, no vertical variation. Charitably it's the head dissolving
+# into embers -- but a dissolve needs form to dissolve FROM, and this is
+# a gradient applied uniformly per row."
+#
+# That is right, and FRONT was not enough on its own. FRONT says where
+# the skin stops; it says nothing about what KIND of skin stopped there,
+# and it only moves three cells over the whole height of the head, so a
+# rule written in terms of it alone comes out the same in every row.
+# This is the missing term. A brow ridge is bone standing proud of the
+# fire and it comes off in big hot chips that carry a long way; a temple
+# hollow and an eye socket have less material, stand further back, and
+# the burn went through them first, so they shed small and thin and the
+# field falls short there.
+#
+# Nothing here is a number chosen to make a texture. Each one is a
+# statement about the head that duo3_model already draws on the intact
+# side, read across to the side that is coming apart.
+PROMINENCE = {
+    3: 4, 4: 5, 5: 5,          # crown, curving away over the top
+    6: 5, 7: 4, 8: 3,          # forehead falling into the TEMPLE HOLLOW
+    9: 8, 10: 9,               # the BROW RIDGE: the most proud bone up here
+    11: 3, 12: 2, 13: 2,       # the SOCKET -- a hole. The front notches
+    14: 3, 15: 4,              # inward at 12-14 for the same reason.
+    16: 8, 17: 9,              # the CHEEKBONE: widest plane on the face
+    18: 4, 19: 3,              # the hollow under it
+    20: 5, 21: 6, 22: 5,       # the barrel of the mouth and jaw
+    23: 7, 24: 6,              # the JAW LINE and the chin's corner
+}
+
+
+def prom(y):
+    return PROMINENCE.get(y, 4)
+
+
+def _silhouette(y):
+    """Right edge of the block-in's head mass, in cells, for this row."""
+    best = 0.0
+    for py in (2 * y, 2 * y + 1):
+        for cx, cy, r in ((38, 20, 14), (44, 30, 8), (38, 34, 6), (38, 42, 6)):
+            d = r * r - (py - cy) ** 2
+            if d > 0:
+                best = max(best, cx + math.sqrt(d))
+    return best
+
+
+def reach(y):
+    """Last column this row's shed material gets to: the block-in's
+    silhouette, pushed out or pulled in by how proud the form was. Lives
+    here rather than in duo3_right2 because duo3_bg has to agree with it
+    -- the background may not glow inside the dissolve, or the gaps stop
+    being gaps and become a slightly darker lavender, which is the exact
+    thing that made session 2's version have no readable edge.
+    """
+    return int(max(_silhouette(y), front(y) + 4) + round((prom(y) - 4.5) * 1.6))

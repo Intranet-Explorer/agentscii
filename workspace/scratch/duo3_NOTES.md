@@ -241,3 +241,193 @@ glyphs. It is not a scoring problem. It is that the plane breaks in
 one whole cell to the next -- where a real edge lands mid-cell. Seventeen
 cells of `duo3_planes` are the only landed edges in the intact half.
 That is the next pass and it is a real one, not a number to chase.
+
+---
+
+# Session 4
+
+The defect review arrived mid-build with budget left, which is the
+first time that has happened, and the useful part is not the fourteen
+items. It is that they changed category. The previous piece was
+rejected for copy-pasted rectangles, stamped borders, seventeen
+identical rows, unrendered regions -- artifacts of region tools. These
+are "no nose", "one stamp does all three features", "a dissolve needs
+form to dissolve from". Those are drawing problems. Harder, and better.
+
+## 1. The nose (`duo3_nose2`)
+
+"Cols 37-45, rows 16-20 -- the exact center of the face -- is
+undifferentiated mid-density fill."
+
+True, and the cause was in my own source. `duo3_model.G` has a nose in
+its COMMENT -- "a dark near side at x36-x38, a one-cell lit ridge at
+x39-x40" -- and what the grid actually contains is a dip of one rung
+running unchanged from row 11 to row 17, then nothing. A vertical
+stripe of constant width. Below row 17, where the ball and the base and
+the shadow live, it is a plain ramp 5,5,6,6,7,8,8,8. I had written down
+an intention and then not drawn it, and the comment let me believe I
+had for two sessions.
+
+The first thing that had to be settled was where the midline is.
+`duo3_mouth2` crowns the lower lip at x37-39 and pockets both corners
+at x33 and x43, so the mouth's centre is x38; the old ridge sat at
+x39-40. A cell and a half off the midline is the entire width of a
+nostril on a head this size. Everything is built around x38 now and the
+wings land at x35 and x41, which is where the inner corners of the eyes
+are.
+
+Three things make it a form rather than a stripe. It is WIDER AT THE
+BOTTOM -- four cells at row 12, seven at row 18, and the crest edge
+drifts left as it descends (x38.5, x38.5, x38.0, x37.5, x37.5) as a ▐
+half block in the rows where it lands mid-cell. It ENDS -- five cells
+of ▄ at row 18 whose top half is black and whose bottom half is the
+upper lip, with the near nostril dropping below that line as a whole
+dark cell and the far one only as a ░. And it CASTS A SHADOW, down and
+left off the near wing, hard outer edge stepping x35.5, x34.5, x33.5,
+one half cell per row, landed with ▌.
+
+The cast shadow is the part that matters most and I nearly did not see
+why. It is the only mark in the piece that says the light is a
+direction in three dimensions rather than a gradient in two. A turned
+edge could be a ramp; a thrown one could not.
+
+Got it wrong once on the way. The first version put · -- two percent
+ink -- down the whole near flank for six rows, and the middle of the
+face came back as a black channel from the socket to the mouth. A
+nose's shadow side is a lit plane turned away, not a hole. It is .24
+.12 .31 .465 .24 across the bridge now: wall, dark flank, crest edge,
+lit facet, groove, with · kept for three cells that have earned it.
+
+One rule broken on purpose. Session 3's law is hue from the heat field
+and nothing else. Eight cells -- the ball and tip, x37-39 at rows 15-17
+-- are spelled fg 9 where `heat()` gives fg 3. The heat field is a
+distance in the picture plane and the tip of a nose is not in the
+picture plane; it is the part of the face that sticks furthest toward
+the fire. Left on the brown band the tip renders at .48 against a cheek
+at .55, and the brightest point on the face is its flattest part.
+
+## 2. Three features, one stamp (`duo3_eye3`, `duo3_mouth3`)
+
+"An eye and a mouth are different objects and should not be built
+identically."
+
+Checked it against the source rather than arguing. duo3_eye2: row 12 a
+run of ▀, row 13 a run of aperture cells, row 14 a run of ▄.
+duo3_mouth2: row 20 a run of ▀, row 21 a run of lip cells, row 22 a run
+of ▄. Same three rows, same order, same glyphs. It is one motif.
+
+The tempting fix is three parameterisations of that motif, which is the
+same defect with more knobs. So each is rebuilt from one fact about
+what it IS, and the two facts are opposites:
+
+AN EYE IS A SPHERE SET INTO A HOLE. A sphere lit from one side has one
+bright pole and shades away from it. The old aperture was ░ █ █ ▒ · ▒ █
+-- symmetric about the pupil, which is a sphere lit from the front by a
+light that does not exist in this picture. It is .12 .24 .40 .24 .02
+.24 .48 now. A lid DRAPES, so it covers more of the ball at the corners
+and less over the iris: the lash line sits at 13.0 at x28-29, rises to
+12.5 across x30-34. And a lid CASTS A SHADOW ON THE BALL -- completely
+absent before, and the reason the old eye read as a slot, because the
+aperture went from lash straight to full-value sclera with no turn
+between them. It is the top half of the sclera cells now.
+
+A MOUTH IS TWO SOFT MASSES LYING ON A CYLINDER. Not set into anything.
+The eye's dark is a hole; the mouth's dark is a seam and two corner
+pockets, and the corners go deep on BOTH sides for a reason that has
+nothing to do with where the light is. The upper lip had no existence
+at all before -- its cells were ▀ 3,0, whose top half is full-value
+skin, so it was a line drawn under the philtrum. It is a mass now, and
+the darker of the two, because it faces down and away. The seam CHANGES
+HEIGHT: 21.0 under x34-35, 20.5 across x36-39, 21.0 again at x40-43.
+And the highlight is one cell at x39, not three centred on x38 -- a
+highlight placed by symmetry is not placed by light.
+
+## 3. The burning side (`duo3_right2`, `duo3_tools.PROMINENCE`)
+
+"Thirteen rows, same ramp, no vertical variation."
+
+I said this myself at the end of session 2 and thought session 3 had
+fixed it. It had not, and the reason is worth keeping because I could
+make it again. Session 3's fix was to measure the plates from a stated
+edge, d = x - front(y), instead of from the left margin. That IS the
+right move. But front(y) only travels three cells over the whole height
+of the head, so for a given d the rule produced nearly the same
+plate-and-gap sentence in all twenty-two rows. I had replaced a
+function of x with a function of d and both are functions of ONE
+variable. The picture needed a second one.
+
+`PROMINENCE` is it: how far the flesh stood forward at the burning
+edge, row by row, read across from the form duo3_model draws on the
+intact side. Brow ridge 9, cheekbone 9, eye socket 2, temple hollow 3.
+It sizes the plates, the gaps, the heat, and -- the one that actually
+shows -- the REACH. Bone standing proud of the fire throws its chips
+clear; a hollow sheds into itself. The field's outer boundary was the
+block-in's circle in every row and is now a profile of the head: seven
+cells past the old silhouette at the brow and the cheekbone, four cells
+short of it at the socket. Eleven cells of undulation where there were
+none.
+
+And the violet is gone. `BANDS` had an 'ambient': (5, [0]) for surfaces
+turned fully away from the fire, and magenta was the wrong answer to a
+real question -- a surface facing away from the only light in a picture
+does not change hue, it runs out of light. The background's outermost
+ring is · in dark red rather than ░ in magenta: four percent ink, a
+sixth of ░, a real step further out without being a step into another
+hue. Same mistake in both places, which is that I reached for a colour
+to say "less light" when less ink says it in the palette the fire is
+already in. Five colours in the subject now, all of them fire.
+
+## 4. The plane breaks (`duo3_planes2`)
+
+My own NEXT from session 3, and the review's "the forehead is terraced
+bands" and "the silhouette is straight-edged", are the same thing seen
+from two sides: the intact half steps from one whole cell to the next
+and a real edge lands in the middle of one.
+
+The brow ridge was seven identical ▓ 3,0 in a row -- the heaviest bone
+on the upper face drawn as a flat band. Its lower edge is a
+supraorbital rim and it arches, so it rides up to 9.5 across x31-33 and
+hangs at 10.5 either side; under the crown of the arch, where the rim
+is highest, the socket's shadow is deepest. The jaw was five identical
+▒ 3,0 under the chin; the mandible's lower border is the hardest edge
+on a face and gets a ▀ the whole way, dropping to 24.5 under the chin
+and rising to 23.5 at the angle. The crown was a dead straight row
+boundary from x33 to x44 and is a dome at three heights now.
+
+The forehead got a different treatment because it is a different
+defect: those bands are quantisation, not plane breaks, and a forehead
+has no edges in it. What it has is a frontal eminence, so the boundary
+between two density levels is pushed left over the bump at rows 5-7 and
+pulled back above and below, with a few single-cell notches. An
+interlocked band edge is what dithering IS in this medium; a perfectly
+straight one is the defect.
+
+half_block 8.0% -> 10.7%, against a corpus median of 15%. Still short.
+Every one of those cells is a real edge and none of it is filler, which
+is the only way I want that number to move, but it is short.
+
+## 5. What held
+
+The colour-only render still does not read as a face: a head-shaped
+mass in four concentric heat bands, no eye, no nose, no mouth. The
+glyph-only render carries the whole model. That is the relationship
+this project has been trying to get for four sessions and it survived
+adding a nose, rebuilding two features and repainting the entire
+burning side. Zero near-uniform rows.
+
+`duo3_build.py --fresh` still reproduces the piece from nothing, now in
+seventeen passes, verified this session against the live canvas: ten
+cells differ and all ten are an ad-hoc background patch I made by hand
+and did not write into a script.
+
+## 6. Where it still falls short
+
+The head is exactly the same width from row 7 to row 15. A straight
+vertical wall nine rows long is not a silhouette, and I deliberately
+did not paper over it with half-blocks this session: no amount of
+mid-cell landing fixes a contour that is in the wrong place. The skull
+has to get wider at the temple and narrower at the jaw first, and the
+cheekbone has to be the widest point of the face rather than the ninth
+identical row of a wall. That is the next pass and it is the same kind
+of thing the nose turned out to be -- a structure I have been asserting
+in comments and have not drawn.
