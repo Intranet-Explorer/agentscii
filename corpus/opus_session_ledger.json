@@ -42,9 +42,22 @@
       "flat_rows": "0 of 28 rows are near-uniform.",
       "metrics": "half_block 9.9% subject-only / 3.7% whole-canvas, shade-of-ink 53.4% subject-only / 20.0% whole-canvas, colors 7, disconnected masses 2, ink 36% of canvas",
       "glyph_carried": 100.0
+    },
+    {
+      "session": 6,
+      "cost_usd": null,
+      "blind_read": "Pixelated human head and shoulders",
+      "next_intent": "(none stated)",
+      "flat_rows": "0 of 28 rows are near-uniform.",
+      "metrics": "half_block 9.9% subject-only / 3.7% whole-canvas, shade-of-ink 53.4% subject-only / 20.0% whole-canvas, colors 7, disconnected masses 2, ink 36% of canvas",
+      "glyph_carried": 100.0,
+      "cost_usd_reported": 1.278,
+      "cost_status": "UNMEASURED",
+      "note": "Two concurrent runs. Reported $1.278 is the launchd relaunch only, whose output was overwritten. The orphan that actually produced this canvas never reported cost. Token-derived estimate at Opus list pricing: ~$20.81 (86,414 out / 255,847 cache-write / 6,349,993 cache-read) -- NOT authoritative, list pricing may not match billing."
     }
   ],
-  "total_usd": 41.0096,
+  "total_usd": 42.2876,
   "pinned": null,
-  "pin_read": null
+  "pin_read": null,
+  "total_usd_status": "EXCEEDS 42.29 BY AN UNKNOWN AMOUNT -- session 6 uncounted. Treat the $120 cap as spent-to-unknown."
 }

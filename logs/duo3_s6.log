@@ -1,0 +1,13 @@
+{
+  "session": 6,
+  "cost_usd": 1.278,
+  "blind_read": "Pixelated human head and shoulders",
+  "next_intent": "(none stated)",
+  "flat_rows": "0 of 28 rows are near-uniform.",
+  "metrics": "half_block 9.9% subject-only / 3.7% whole-canvas, shade-of-ink 53.4% subject-only / 20.0% whole-canvas, colors 7, disconnected masses 2, ink 36% of canvas",
+  "glyph_carried": 100.0
+}
+
+session $1.28 | total $42.29 of $120.0
+
+PIN: currently "None" -- operator decides whether this session's read is better.
