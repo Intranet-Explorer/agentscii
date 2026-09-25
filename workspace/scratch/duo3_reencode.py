@@ -48,111 +48,78 @@ hand-placed half-block: lid lines, the mouth line, the eye's sclera, the
 silhouette rim -- are edges rather than surface, their colour is doing
 edge work, and they are skipped.
 """
-import math
 import sys
 sys.path.insert(0, '/Users/octo/agentscii/workspace/scratch')
 import duo3_tools as t
 
-# Approximate luminance of the palette indices this piece uses.
-LUM = {0: 0.00, 1: 0.32, 3: 0.48, 5: 0.30, 7: 0.66, 8: 0.33,
-       9: 0.62, 11: 0.88, 13: 0.60, 15: 0.95}
-COVER = {'░': 0.25, '▒': 0.50, '▓': 0.75, '█': 1.00, ' ': 0.0}
+# The two fields and the ladders now live in duo3_tools, because
+# duo3_model needs them too. This pass is the SAFETY NET: it respells
+# whatever the block-in and the session-1 level passes left behind, so
+# no cell on the intact half is a flat fill or carries its value in a
+# hue. duo3_model, which runs next, is where the value field is
+# actually decided.
+LUM, GLYPHS = t.LUM, t.GLYPHS
+value, spell = t.value, t.spell
 
 
-def value(glyph, fg, bg):
-    f = COVER[glyph]
-    return f * LUM[fg] + (1 - f) * LUM[bg]
+# The intact half was authored in session 1 against a ramp whose top was
+# bright yellow, so its cheek values sit at the ceiling of the brown
+# band. Under a one-hue-per-region rule that leaves a face with no
+# headroom: a sclera cannot be brighter than the cheek it is set into.
+# Pulling the surface down opens the range back up, and it is also true
+# -- this half of the head is turned away from the only light there is.
+def compress(v):
+    return v ** 1.2
 
 
-# Each heat band is one FOREGROUND and two backgrounds. The foreground is
-# the whole of what the colour-only render sees, and it is a function of
-# heat alone -- that is the property this pass exists for. The second
-# background is there because four density steps over a black ground
-# quantise a cheek into .12/.24/.36/.48 and crush every subtlety between,
-# which the first version of this pass did: the intact half came back
-# flatter than session 1 had it. The lighter ground interleaves steps
-# where the face actually lives.
-#
-# Being straight about it: the background is doing the last increment of
-# value work here, so the split between the layers is not total. The glyph
-# carries the coarse value and the ground carries the final step. That is
-# how the medium actually works -- you choose a pair AND a density -- and
-# I would rather say so than pretend to a cleanliness the drawing does not
-# have.
-BANDS = {
-    'ambient': (5, [0]),
-    'dark': (3, [0, 1]),
-    'mid': (9, [1, 3]),
-    'hot': (11, [1, 9]),
-}
-STEPS = {name: sorted(((g, bg, value(g, fg, bg)) for g in '░▒▓█'
-                       for bg in bgs), key=lambda s: s[2])
-         for name, (fg, bgs) in BANDS.items()}
-
-# Which band a cell would PREFER, hottest first, by how close it is to
-# the ember. The first preference whose range actually contains the
-# value wins; the overlap between neighbouring bands is where heat gets
-# to decide something.
-# First cut of these thresholds put 'mid' -- bright red on red -- across
-# the whole centre of the face, and the intact half rendered as a hot pink
-# mask with the brown midtone gone. Heat is a real field but it is not a
-# strong one at this distance: brown skin stays brown until you are close
-# enough to the dissolve to be glowing. Only the last four columns before
-# the front are hot.
-PREFERENCE = [
-    (0.86, ['hot', 'mid', 'dark', 'ambient']),
-    (0.74, ['mid', 'hot', 'dark', 'ambient']),
-    (0.40, ['dark', 'mid', 'ambient', 'hot']),
-    (0.00, ['ambient', 'dark', 'mid', 'hot']),
-]
-
-EMBER_X, EMBER_Y = 47.0, 13.0
-
-
-def heat(x, y):
-    # cells are about twice as tall as wide
-    d = math.hypot(x - EMBER_X, 2 * (y - EMBER_Y))
-    return max(0.0, min(1.0, 1.0 - d / 34.0))
-
-
-def spell(v, h):
-    """Value + heat -> (glyph, fg, bg)."""
-    for threshold, order in PREFERENCE:
-        if h >= threshold:
-            break
-    def miss(name):
-        lo, hi = STEPS[name][0][2], STEPS[name][-1][2]
-        return max(0.0, lo - v, v - hi)
-    # first preference that can actually express this value; if none can,
-    # the one that comes closest
-    band = next((n for n in order if miss(n) <= 0.02), min(order, key=miss))
-    glyph, bg, _ = min(STEPS[band], key=lambda s: abs(s[2] - v))
-    return glyph, BANDS[band][0], bg
-
-
-# Only the intact half, and only inside the head. x44+ belongs to the
-# dissolve pass, whose colour IS its subject and stays untouched.
-X0, X1, Y0, Y1 = 24, 43, 3, 24
+# Only the intact half, and only inside the head -- which as of session 3
+# means everything left of THE FRONT, row by row, rather than everything
+# left of a column number I picked once. Right of the front belongs to
+# the dissolve pass, whose colour IS its subject and stays untouched.
+X0, Y0, Y1 = 24, 3, 26
 RAMP_CELLS = {v: k for k, v in t.RAMP.items()}
+FLIP = {'\u2580': '\u2584', '\u2584': '\u2580', '\u258c': '\u2590', '\u2590': '\u258c'}
 
 data = t.ct.load_canvas(t.W, 'duo3')
 go = data['glyph_override']
+# Read from the RENDERED grid, not from glyph_override. The block-in
+# draws into the pixel layer, so a cell it left as a flat fill has no
+# override entry at all -- and those were exactly the cells this pass
+# kept missing: eight of them along the crown at the front, and the
+# whole neck. A flat fill is the one thing in the piece with no ink in
+# it whatsoever, so the pass that exists to put value into ink cannot
+# be the one pass that cannot see them.
+GRID = t.ct.render_canvas_cells(data)
 changed = same = skipped = 0
 for y in range(Y0, Y1 + 1):
-    for x in range(X0, X1 + 1):
-        cur = go.get(f'{y},{x}')
-        if cur is None:
+    for x in range(X0, t.front(y) + 2):
+        glyph, fg, bg = GRID[y][x]
+        if glyph == ' ' and bg == 0:
             continue
-        glyph, fg, bg = cur[0], int(cur[1]), int(cur[2])
-        # Re-runnable: a cell this pass has already respelled is still
-        # readable as (value, band), so tuning the thresholds and running
-        # it again works. Feature cells use half-blocks and never match.
-        banded = glyph in '░▒▓█' and any(
-            fg == f and bg in bgs for f, bgs in BANDS.values())
-        if not banded and RAMP_CELLS.get((glyph, fg, bg), '0') == '0':
-            skipped += 1                    # a feature cell, or empty
+        # A half-block is an EDGE: its two halves are two different
+        # colours on purpose, and no single-hue ladder can express that.
+        # What it can be forced to do is carry the surface's colour in
+        # the foreground. \u2580 a,b and \u2584 b,a are the same two pixels, so
+        # taking whichever spelling puts the lighter colour in fg costs
+        # the picture nothing. Being straight about it: this is a change
+        # of encoding and not of drawing, and it is the one place in this
+        # pass where the colour-only render moves without the render
+        # moving. The rest of the session is the other thing.
+        if glyph in FLIP:
+            if LUM.get(bg, 0) > LUM.get(fg, 0):
+                go[f'{y},{x}'] = [FLIP[glyph], bg, fg]
+                changed += 1
+            else:
+                same += 1
             continue
-        new = spell(value(glyph, fg, bg), heat(x, y))
+        if glyph == ' ' and bg != 0:
+            # a bg-carried cell: both pixels the same colour, so the cell
+            # is a flat fill with no ink in it at all. Respell it.
+            glyph, fg = '\u2588', bg
+        elif glyph not in GLYPHS or fg not in LUM or bg not in LUM:
+            skipped += 1                    # empty, or something authored
+            continue
+        new = spell(compress(value(glyph, fg, bg)), x, y)
         if list(new) == [glyph, fg, bg]:
             same += 1
         else:

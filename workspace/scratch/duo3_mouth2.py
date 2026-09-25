@@ -1,62 +1,53 @@
-"""duo3 session 2, pass 2: the mouth, rebuilt at cell level.
+"""duo3 session 3: the mouth, respelled the same way as the socket.
 
-Magnified, the session-1 mouth was one black bar, eleven cells, dead
-straight, square at both ends, with a lit lip under it. Four things were
-missing and all four are cheap:
+Session 2 gave this mouth corners, a vermilion border and a crease, and
+all three were real improvements -- but they arrived as fg 0 for the
+line and fg 11 for the lower lip, so in the colour-only render the mouth
+was a black bar with a yellow bar under it, which is to say the mouth
+was still legible with every glyph thrown away.
 
-  CORNERS.  A mouth corner is a pocket, not the end of a line. It sits
-  deeper than the line and it goes DOWN -- below the level the lower lip
-  occupies. That is drawn here by taking the corner cell dark through
-  BOTH half-rows (the line's row and the lip's row), at x33 and x43. The
-  side effect is the one I actually wanted: the ends of the line now drop
-  away from the middle, so the bar stops being a bar.
-
-  THE UPPER LIP AS A MASS.  It was the same value as the cheek above it,
-  which means there was no lip up there at all -- just a line drawn on
-  skin. It goes a step darker than the skin it sits in, keeping the
-  left-to-right grade, because the light is still the ember.
-
-  THE LOWER LIP IS ROUND.  It graded monotonically left to right, which
-  is a cylinder, not a lip. It now rises to its brightest a little past
-  centre and falls again at x42-43, because that corner is turning back
-  and away however much fire is over there.
-
-  THE CREASE.  A shadow under the lower lip, shorter than the mouth and
-  sitting under its middle only, so the lip has something to sit proud
-  of. Kept to the top half of row 22 so it cannot read as a fourth
-  horizontal bar -- the chin's lit surface is directly under it.
+Same correction as the socket: one foreground (3), value carried by
+ink. The lower lip is bright because it is a FULL cell; the line between
+the lips is dark because it is the bottom half of a cell whose top half
+is skin; the corners are dark because they are ·, two percent ink. The
+lip's crown still sits a little past centre and still falls off before
+the corner rather than at it -- that shape is what makes it a lip
+instead of a cylinder, and none of it depended on the hue.
 """
 import sys
 sys.path.insert(0, '/Users/octo/agentscii/workspace/scratch')
 import duo3_tools as t
 
 U, D = '▀', '▄'
+DOT, L1, L2, L3, FULL = '·', '░', '▒', '▓', '█'
+SK = 3
+
 F = []
 
-# --- row 20: the line where the lips meet, over the upper lip ---------
-# ▓ over red at the corners: a 75%-black cell is a deeper pocket than the
-# line itself is, and it still carries ink rather than going flat black.
-F.append((33, 20, '▓', 0, 1))                      # near corner
-for x, bg in zip(range(34, 43), [1, 1, 3, 3, 3, 3, 3, 9, 9]):
-    F.append((x, 20, D, 0, bg))
-F.append((43, 20, '▓', 0, 3))                      # far corner
+# --- row 20: the line where the lips meet, over the upper lip ----------
+# The line is the bottom half of the cell. It is broken at x37 by the
+# tubercle of the upper lip, which is the one place a mouth line is
+# interrupted, and it deepens to a full dark cell at both corners.
+LINE = [(33, DOT, 0), (34, L2, 0), (35, U, 0), (36, U, 0), (37, L3, 0),
+        (38, U, 0), (39, U, 0), (40, U, 0), (41, U, 1), (42, L2, 0),
+        (43, DOT, 0)]
+for x, g, bg in LINE:
+    F.append((x, 20, g, SK, bg))
 
-# --- row 21: the lower lip's lit top surface over its body ------------
-LIP = [
-    (33, 0, 1),     # no lip at the corner -- the pocket continues down
-    (34, 3, 1), (35, 3, 1), (36, 9, 1),
-    (37, 9, 3), (38, 9, 3),
-    (39, 11, 3), (40, 11, 3), (41, 11, 3),
-    (42, 9, 3),     # falling off before the corner, not at it
-    (43, 0, 3),     # far corner: a dark note against the lit cheek
-]
-for x, fg, bg in LIP:
-    F.append((x, 21, U, fg, bg))
+# --- row 21: the lower lip -------------------------------------------
+# Crown past centre at x37-39 (full cells, the most ink in the lower
+# face); a lit top edge over a dark under-turn toward each corner; the
+# pocket at both ends carried down from row 20 so the ends of the mouth
+# drop away instead of squaring off.
+LIP = [(33, DOT, 0), (34, L2, 0), (35, U, 1), (36, U, 1), (37, FULL, 1),
+       (38, FULL, 1), (39, FULL, 0), (40, U, 0), (41, U, 0), (42, L2, 0),
+       (43, DOT, 0)]
+for x, g, bg in LIP:
+    F.append((x, 21, g, SK, bg))
 
-# --- row 22: the crease under the lip, over the chin's lit front ------
-for x, fg, bg in [(35, 1, 3), (36, 1, 3), (37, 1, 3), (38, 1, 3),
-                  (39, 1, 3), (40, 3, 9), (41, 3, 9)]:
-    F.append((x, 22, U, fg, bg))
+# --- row 22: the crease under the lip, over the chin's lit front -------
+for x, bg in [(35, 1), (36, 1), (37, 1), (38, 0), (39, 0), (40, 1), (41, 1)]:
+    F.append((x, 22, D, SK, bg))
 
 t.paint(F)
 print('cells', len(F))

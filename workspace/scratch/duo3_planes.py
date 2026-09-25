@@ -39,7 +39,11 @@ MANDIBLE = [(30, 20), (31, 21), (32, 21), (33, 22), (34, 22)]
 # rung, which is what a bone catching light does.
 LIT = [(29, 15), (30, 16), (31, 16), (32, 17), (33, 17), (34, 18)]
 
-cells = ([(x, y, '▄', 1, 3) for x, y in ZYGOMATIC]
+# ▄ 1,3 and ▀ 3,1 are the SAME two pixels. Session 3 takes the second
+# spelling everywhere, because the colour-only render keeps the
+# foreground and throws the background away, and the foreground of a
+# cell in a cheek should be the cheek.
+cells = ([(x, y, '▀', 3, 1) for x, y in ZYGOMATIC]
          + [(x, y, '▀', 3, 1) for x, y in MANDIBLE]
          + [(x, y, '█', 3, 1) for x, y in LIT])
 t.paint(cells)

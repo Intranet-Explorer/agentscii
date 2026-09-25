@@ -42,6 +42,12 @@ for y, row in enumerate(grid):
         # half keeps the dark it was modelled against.
         if x < HEAD_L + 16 and 1 <= y <= 26:
             continue
+        # AND no glow within ten cells of the front, on either side of
+        # it. The dissolve has to end against black or its gaps are not
+        # gaps -- they are a slightly darker lavender, and the face
+        # simply fades into the air it is supposed to be leaving.
+        if 3 <= y <= 24 and x < t.front(y) + 11:
+            continue
         # cells are about twice as tall as wide, so vertical distance
         # counts double or the falloff comes out as an ellipse
         d = math.hypot(x - EMBER_X, 2 * (y - EMBER_Y))

@@ -130,3 +130,114 @@ Seventeen cells is not a fix for that and I am not going to pretend it
 is. The intact half is a continuous dithered gradient with almost no
 landed edges, and a face is not a gradient: it is a few planes meeting
 along lines. That is a pass of its own.
+
+
+---
+
+# Session 3
+
+Two things were asked for and both landed, but not in the order I
+expected and not without breaking the picture in the middle.
+
+## 1. The front
+
+`duo3_tools.FRONT` states it: one column per row where intact skin
+stops, leaning 43 at the crown to 46 at the jaw, with a notch inward at
+rows 12-14 where the socket broke through first. Everything on the
+burning side is now measured from it:
+
+    x <  front   intact skin, one rung down at front-1: a groove
+    x == front   THE LIP, two rungs up -- skin at the edge of a break
+                 faces the fire more squarely than the surface behind it
+    x == front+1 THE CRACK, half a cell of black with the first plate's
+                 lit edge against it, unbroken crown to jaw
+    x >  front+1 plates and gaps, both sized by d = x - front(y).
+                 Plates five cells to one, gaps one to six.
+
+The old version's gap pattern was a function of x and I called it a
+gradient of striation. This one is a function of distance from a stated
+edge, and the difference is visible: there is now a line down the face
+that you can point at and say the skin stops here.
+
+Three smaller things that the front made possible. `duo3_fore`'s B
+block is gone -- it and `duo3_right` were two rules writing the same
+cells and the seam between them was half of why the dissolve had no
+readable edge. The background glow is pulled back to front+11, so the
+gaps in the dissolve are black and not a slightly darker lavender; the
+face has air to end against. And the plates past the old silhouette are
+thinned by half, so what has already come off the head reads as embers
+rather than as a second texture.
+
+## 2. The colour-only render
+
+It no longer reads as a face. Head-shaped mass, four concentric heat
+bands, no eye, no nose, no mouth, no socket. The glyph-only render is
+the strongest it has been. That is the way round it is supposed to be
+and it is the first time this project has had it.
+
+What actually did it, in order of how much each was worth:
+
+**Hue from heat ALONE.** The old `spell` picked the first band that
+could EXPRESS the cell's value, so a cell at .36 got brown and its
+neighbour at .30 got dark red -- hue reading value back out through the
+side door. It showed up as horizontal stripes of alternating hue down
+the shadow side. Band is now `next(n for thr, n in BANDS_BY_HEAT if
+heat >= thr)` and nothing else. If a value is brighter than the band
+can carry, it clamps, which is a true statement about a surface that
+far from the fire.
+
+**Every feature respelled in the hue of the skin it sits in.** The eye
+socket was fg 0 and fg 7/8; the nostrils were fg 0; the mouth line was
+fg 0 and the lower lip fg 11. Black and grey and yellow were never in
+this face for a physical reason -- they were there because I wanted
+those cells dark or light and reached for a hue to say so. They are all
+fg 3 now and the value is a glyph choice. The extra rung that made it
+possible is `·` (CP437 0xFA): two percent ink, so a brow shadow can be
+nearly black and still be spelled in skin.
+
+**A rule about where sparse glyphs are allowed.** Over a non-black
+ground a `·` is four percent ink and ninety-six percent background --
+a flat fill wearing a speck. Sixty-eight of them turned the middle of
+this face into one red mass the first time I ran the new ladder. Over a
+lit ground a cell now has to be at least half ink.
+
+**Half-block orientation.** `▀ a,b` and `▄ b,a` are the same two
+pixels, and the colour-only test keeps the foreground. Taking whichever
+spelling puts the lighter colour in fg costs the picture nothing. Being
+straight about it: this is a change of encoding and not of drawing, and
+it is the one move here where the number improves without the render
+moving. It is worth maybe a fifth of the total. The rest is the other
+thing.
+
+## 3. What the colour fix broke, and the pass that fixed it back
+
+Locking hue to heat took the intact half apart. Not because the
+encoding was wrong -- because the encoding had been the only thing
+carrying the modelling. Session 2 said so and I did not believe how
+completely until the render came back as a head-shaped mass with no
+head in it.
+
+So `duo3_model.py` is the pass of its own I said this needed: ten rungs
+of value, one character per cell, the face's LIGHT written out as a
+picture. The brow ridge shelves at rows 9-10 and is what the socket is
+dark against. The cheekbone is the brightest plane on this side and the
+hollow at row 18 takes back two rungs. The nose has three planes and
+not a ramp. Every rung becomes a glyph density in whatever hue the heat
+field has there, so none of it can leak back into colour.
+
+Two live failures worth keeping. Rung 9 clamps to `█` in the brown
+band, so five rows of rung-9 lip rendered as a solid two-cell column --
+fixed by lifting only the front cell and dropping the one behind it
+into a groove. And three cells of black iris was a hole, not an eye;
+one dark cell between two mid ones and two bright ones is a pupil.
+
+## 4. Where it still falls short
+
+half_block 8.0% against a corpus median of 15%, shade 76% against a
+median of 10%. I flagged exactly this at the end of session 2 and it
+has not moved, because everything this session did was spelled in shade
+glyphs. It is not a scoring problem. It is that the plane breaks in
+`duo3_model`'s grid land on cell boundaries -- a value that steps from
+one whole cell to the next -- where a real edge lands mid-cell. Seventeen
+cells of `duo3_planes` are the only landed edges in the intact half.
+That is the next pass and it is a real one, not a number to chase.

@@ -22,10 +22,11 @@ Two blocks, because the two halves are different problems:
      the brow because the dome tilts away up there, and the flush near
      the burning side is uneven cell to cell, the way heat in skin
      actually is.
-  B  x42..x52, the crown on the burning side, where the dissolve that
-     starts at row 7 has to continue up over the top of the skull --
-     otherwise the transformation stops at a horizontal line halfway up
-     the head, which no process does.
+  B  was the crown on the burning side. Removed in session 3: that
+     block and duo3_right were two different rules writing the same
+     cells, and the seam between them was one of the reasons the
+     dissolve had no readable edge. Everything right of the front is
+     now authored in one place, from the front.
 """
 import sys
 sys.path.insert(0, '/Users/octo/agentscii/workspace/scratch')
@@ -41,14 +42,6 @@ A = [
     'm' + '1234' + '566656567789',      # 8 hollow above the brow's inner end
 ]
 
-B_X, B_Y = 42, 3
-B = [
-    'AC000000000',                      # 3 the crown's corner is already gone
-    'ABC0B000000',                      # 4
-    'ABC0B0C0000',                      # 5
-    '9ABC0B0C000',                      # 6
-]
-
-cells = t.levels(A_X, A_Y, A, width=17) + t.levels(B_X, B_Y, B, width=11)
+cells = t.levels(A_X, A_Y, A, width=17)
 t.paint(cells)
 print('cells', len(cells))

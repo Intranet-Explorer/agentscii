@@ -149,8 +149,28 @@ def main():
     sub = harness.opus_subject_check(str(path))
     read = sub.get("blind_subject")
 
+    # Archive every session's canvas and both self-check renders. Cheap
+    # now, impossible to reconstruct later -- and the blind read has
+    # SATURATED as a progress signal ("a human face" is the correct read
+    # at session 1 and at session 10), so it is kept only as a
+    # destruction tripwire. The colour-only render is the live measure.
+    import canvas_tools as ct
+    arch = WORKSPACE / "scratch" / f"{slug}_sessions"
+    arch.mkdir(parents=True, exist_ok=True)
+    n = len(led["sessions"]) + 1
+    shutil.copy2(path, arch / f"{slug}.s{n}.ans")
+    try:
+        g_b64, c_b64, density = ct.self_check(str(WORKSPACE), slug)
+        import base64
+        (arch / f"{slug}.s{n}.glyphs-only.png").write_bytes(base64.b64decode(g_b64))
+        (arch / f"{slug}.s{n}.colour-only.png").write_bytes(base64.b64decode(c_b64))
+        flat = density.strip().splitlines()[-1]
+    except Exception as e:
+        flat = f"(self_check failed: {e})"
+
     rec = {"session": len(led["sessions"]) + 1, "cost_usd": round(cost, 4),
            "blind_read": read, "next_intent": nxt,
+           "flat_rows": flat,
            "metrics": harness._fmt_metrics(harness._compute_piece_metrics(path)),
            "glyph_carried": round(harness._glyph_carried_pct(path), 1)}
     led["sessions"].append(rec)

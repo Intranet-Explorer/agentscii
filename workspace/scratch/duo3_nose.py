@@ -37,14 +37,19 @@ ROWS = [
 cells = t.levels(X0, Y0, ROWS, width=10)
 
 U, D = '▀', '▄'
+# Session 3: every foreground in this block is now 3, the hue of the
+# skin it sits in. A nostril is a hole -- no light comes out of it -- and
+# a hole spelled as fg 0 is a colour event that survives having its glyph
+# thrown away. Spelled as the BOTTOM half of a cell whose top half is
+# skin, it is a glyph event, and the cell is still skin-coloured.
 F = [
     # the tip's underside: a hard edge mid-cell, lit on the ember side.
-    (38, 17, U, 3, 1), (39, 17, U, 3, 1), (40, 17, U, 11, 1), (41, 17, U, 11, 1),
-    # nostrils -- holes, so they sit in the lower half of the cell
-    (36, 17, D, 0, 1), (42, 17, D, 0, 3),
+    (38, 17, U, 3, 1), (39, 17, U, 3, 1), (40, 17, '█', 3, 1), (41, 17, U, 3, 1),
+    # nostrils -- holes, so they take the lower half of the cell
+    (36, 17, U, 3, 0), (42, 17, U, 3, 0),
     # the cast shadow off the nose, falling left across the cheek
-    (34, 17, '▒', 1, 0), (33, 17, '░', 1, 0),
-    (34, 18, '░', 1, 0), (35, 19, '▒', 1, 0),
+    (34, 17, '░', 3, 0), (33, 17, '·', 3, 0),
+    (34, 18, '·', 3, 0), (35, 19, '░', 3, 0),
 ]
 t.paint(cells + F)
 print('cells', len(cells) + len(F))

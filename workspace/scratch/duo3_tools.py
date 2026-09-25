@@ -105,6 +105,118 @@ RAMP = {
 }
 
 
+# ---------------------------------------------------------------------
+# THE TWO FIELDS (moved here in session 3 from duo3_reencode, because a
+# second pass now needs them: a face's value has to be AUTHORED, not
+# only respelled).
+#
+#   GLYPH DENSITY -> VALUE. How the surface is turned relative to the
+#   light. Sixteen colours, intermediate brightness faked with density:
+#   the actual craft of the medium.
+#
+#   COLOUR PAIR   -> HEAT.  How close that patch is to the ember. A
+#   cheekbone facing away from the fire and a jaw facing into it can be
+#   the same brightness and are not the same colour.
+#
+# The band is chosen from heat ALONE. The first version picked the first
+# band that could express the cell's value, which let hue read value
+# back out through the side door and showed up as stripes of alternating
+# hue down the shadow side.
+LUM = {0: 0.00, 1: 0.32, 3: 0.48, 5: 0.30, 7: 0.66, 8: 0.33,
+       9: 0.62, 11: 0.88, 13: 0.60, 15: 0.95}
+COVER = {'\u00b7': 0.04, '\u2591': 0.25, '\u2592': 0.50,
+         '\u2593': 0.75, '\u2588': 1.00, ' ': 0.0}
+GLYPHS = '\u00b7\u2591\u2592\u2593\u2588'
+BANDS = {
+    'ambient': (5, [0]),
+    'cool': (1, [0]),
+    'dark': (3, [0, 1]),
+    'mid': (9, [0, 1, 3]),
+    'hot': (11, [0, 1, 9]),
+}
+BANDS_BY_HEAT = [(0.90, 'hot'), (0.72, 'mid'), (0.30, 'dark'),
+                 (0.18, 'cool'), (0.00, 'ambient')]
+EMBER_X, EMBER_Y = 47.0, 13.0
+
+
+def value(glyph, fg, bg):
+    f = COVER[glyph]
+    return f * LUM[fg] + (1 - f) * LUM[bg]
+
+
+def _allowed(glyph, bg):
+    # Over a non-black ground a \u00b7 is four percent ink and ninety-six
+    # percent background -- a flat fill wearing a speck. Sparse glyphs
+    # earn their place against black; over a lit ground a cell has to be
+    # at least half ink or it is not spelling anything.
+    return bg == 0 or COVER[glyph] >= 0.5
+
+
+STEPS = {name: sorted(((g, bg, value(g, fg, bg)) for g in GLYPHS
+                       for bg in bgs if _allowed(g, bg)), key=lambda s: s[2])
+         for name, (fg, bgs) in BANDS.items()}
+
+
+def heat(x, y):
+    import math
+    d = math.hypot(x - EMBER_X, 2 * (y - EMBER_Y))   # cells are 2x tall
+    return max(0.0, min(1.0, 1.0 - d / 34.0))
+
+
+def spell(v, x, y):
+    """A value at a place -> (glyph, fg, bg). Hue from heat, ink from value."""
+    band = next(n for thr, n in BANDS_BY_HEAT if heat(x, y) >= thr)
+    glyph, bg, _ = min(STEPS[band], key=lambda s: abs(s[2] - v))
+    return glyph, BANDS[band][0], bg
+
+
+# Ten rungs, dark to light, for writing a value field by hand. The top
+# rung is 0.58 and not 0.88: nothing on the intact half of this head is
+# as bright as the fire coming out of the other half, and a ramp that
+# can reach the fire will be used to reach it.
+RUNG = [0.02, 0.06, 0.11, 0.17, 0.23, 0.29, 0.35, 0.42, 0.50, 0.58]
+
+
+def ink(x0, y0, rows, width=None):
+    """Hand-written value rows ('0'-'9', '.' = leave alone) -> cells."""
+    out = []
+    for r, row in enumerate(rows):
+        assert width is None or len(row) == width, (y0 + r, len(row))
+        for c, d in enumerate(row):
+            if d != '.':
+                x, y = x0 + c, y0 + r
+                out.append((x, y, *spell(RUNG[int(d)], x, y)))
+    return out
+
+
+# THE FRONT (session 3). One column per row where intact skin stops.
+#
+# Session 2's note said the dissolve was a gradient of striation because
+# the gap pattern was a function of x: more zeros the further right, in
+# every row, monotonically. Density that tracks x is a rule. Density that
+# tracks distance from a stated edge is structure. This is the stated
+# edge, and everything on the burning side is measured from it now.
+#
+# It leans out and down -- 43 at the crown, 46 at the jaw -- because the
+# burn started at the temple and is working down across the face. The
+# notch at rows 12-14 is the socket: the front broke inward there first,
+# which is why there is a hole in that place and not in any other.
+FRONT = {
+    3: 43, 4: 43, 5: 43, 6: 44, 7: 44, 8: 44, 9: 45, 10: 45, 11: 45,
+    12: 44, 13: 43, 14: 44, 15: 45, 16: 45, 17: 45, 18: 46, 19: 46,
+    20: 46, 21: 46, 22: 45, 23: 44, 24: 43,
+}
+
+
+def front(y):
+    return FRONT.get(y, 44)
+
+
+# The ramp written out in order, dark to light. Session 3 needs to step
+# a cell one rung up or down without knowing which rung it is on.
+RAMP_ORDER = '0mMN1234567' + '89AB' + 'CDEF'
+
+
 def levels(x0, y0, rows, width=None):
     """Value-ramp rows -> cells. '.' leaves a cell alone."""
     out = []

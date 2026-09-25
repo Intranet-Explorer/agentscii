@@ -13,7 +13,7 @@ if '--fresh' in sys.argv:
 # That is not hypothetical -- it happened live, and the cheek came back as
 # eighteen identical cells. A fresh deterministic rebuild is the fix.
 for name in ['duo3_blockin', 'duo3_left', 'duo3_nose', 'duo3_mouth',
-             'duo3_right', 'duo3_fore', 'duo3_bg',
-             'duo3_reencode', 'duo3_eye2', 'duo3_mouth2', 'duo3_planes']:
+             'duo3_fore', 'duo3_right', 'duo3_bg',
+             'duo3_reencode', 'duo3_model', 'duo3_eye2', 'duo3_mouth2', 'duo3_planes']:
     print(name, subprocess.run([sys.executable, str(HERE / (name + '.py'))],
                                capture_output=True, text=True).stdout.strip())
