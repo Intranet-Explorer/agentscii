@@ -1,0 +1,15 @@
+{
+  "sessions": [
+    {
+      "session": 1,
+      "cost_usd": 8.4854,
+      "blind_read": "A human face rendered in ASCII/pixel art",
+      "next_intent": "NEXT: Widen the intact half's ink range \u2014 half-block sub-cell boundaries where two values meet, sparser darks and solid lit planes \u2014 so the left side models in density as well as hue, then replace the raw block-in neck and shoulder.",
+      "metrics": "half_block 5.4% subject-only / 2.0% whole-canvas, shade-of-ink 64.1% subject-only / 24.3% whole-canvas, colors 8, disconnected masses 2, ink 37% of canvas",
+      "glyph_carried": 99.3
+    }
+  ],
+  "total_usd": 8.4854,
+  "pinned": null,
+  "pin_read": null
+}

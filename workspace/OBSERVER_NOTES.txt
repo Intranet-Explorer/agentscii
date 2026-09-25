@@ -159,6 +159,51 @@ work what it needs before designing the fix. Two of the three
 capabilities in the proposed experiment already existed.
 
 
+OBSERVER NOTE (2026-09-25) — session 1 of the multi-session run produced
+a combination that has never occurred in this project.
+
+  piece: duo3 "EMBER", a face mid-transformation, 80x28 (deliberately
+  small, ~2,240 cells, so it can be worked cell by cell throughout)
+
+  zero near-uniform rows, out of 28
+  37% ink coverage
+  99.3% glyph-carried
+  gate PASS
+  blind read: "A human face rendered in ASCII/pixel art"
+  cost $8.49
+
+Why each number matters. "Near-uniform row" is the defect named in
+almost every rejection this project has collected -- "seventeen
+identical rows", "row 14 near-uniform, row 15 near-uniform", "structure
+by row-fill, not by form". Every previous piece had them. This one has
+none.
+
+37% ink is the opposite of the filling reflex. Asked in an earlier run
+to leave regions flatter where nothing justified texture, the artist
+filled MORE (83% -> 92%). Here it left nearly two thirds of the canvas
+empty.
+
+99.3% glyph-carried is the same number a previous piece reached by
+making every cell busy -- uniform noise that scored well and read as
+static. This one reaches it with zero flat rows and a third of the ink,
+which is the technique the number was supposed to be a symptom of
+rather than the cheat that satisfies it.
+
+What changed, in order: the artist was asked what it needed and said
+region-rules were the defect's source; it was given a zoom at the scale
+craft lives at; it was given permission to not finish; and the canvas
+was made small enough that per-cell work is achievable rather than
+aspirational. This is the first evidence that the defect class was a
+TOOLING AND PROCESS artifact rather than a model limitation.
+
+Not yet a success. The colour-only self-check -- every glyph flattened
+to a solid block -- still reads as a face, which is the CONTACT
+rejection ("remove the colour and nothing survives") present at session
+1. The difference is that we know now, mid-build, instead of at review.
+That is what the mid-build check was built for and the first time it
+has caught this while it was still cheap to fix.
+
+
 gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
 claiming "two facing profile heads in complementary hue phases... brow...
 jaw... eye-line built from gradient shading over anatomical regions."
