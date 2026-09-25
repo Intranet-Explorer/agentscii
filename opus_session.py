@@ -23,8 +23,10 @@ versions and _lastlight went v3 -> v10 downhill:
 Usage: python3 opus_session.py <slug> ["optional extra direction"]
 """
 import json
+import os
 import shutil
 import sys
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -129,10 +131,37 @@ END OF SESSION, two things, both required:
 def main():
     slug = sys.argv[1]
     extra = " ".join(sys.argv[2:])
+    if not extra.strip():
+        print("REFUSING: empty brief. Pass the session brief as argv[2]."); return 2
     led = _led()
     if led["total_usd"] >= TOTAL_CAP:
         print(f"TOTAL CAP reached: ${led['total_usd']:.2f}"); return 2
 
+    # One artist per canvas. Killing this process does NOT kill the `claude`
+    # child it spawned -- the child reparents to init and keeps writing. A
+    # second run then races it on the same .ans file, which is how session 6
+    # got two artists and an uncounted bill. Lock covers the child's lifetime.
+    lock = WORKSPACE / "scratch" / f".{slug}.session.lock"
+    if lock.exists():
+        old = lock.read_text().strip()
+        pid = int(old.split()[0]) if old.split()[0].isdigit() else 0
+        alive = pid and (os.kill(pid, 0) is None or True)
+        try: os.kill(pid, 0)
+        except (ProcessLookupError, ValueError): alive = False
+        except PermissionError: alive = True
+        if alive:
+            print(f"REFUSING: session already running for {slug} ({old}). "
+                  f"Kill it and its `claude` child, or rm {lock}"); return 2
+        print(f"stale lock from dead pid {pid}, taking it")
+    lock.write_text(f"{os.getpid()} {datetime.now().isoformat(timespec='seconds')}\n")
+
+    try:
+        return _run(slug, extra, led)
+    finally:
+        lock.unlink(missing_ok=True)
+
+
+def _run(slug, extra, led):
     r = harness._run_claude_p(
         ["claude", "-p", brief(slug, led, extra), "--model", "claude-opus-5",
          "--allowedTools", "Bash,Read,Write", "--output-format", "json"],
