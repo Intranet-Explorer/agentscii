@@ -245,3 +245,18 @@ def test_house_tier_is_structured_field_not_keyword_scan():
     assert 'startswith("HOUSE:")' in src
     ship = inspect.getsource(h.curate_piece_opus_gated)
     assert "house_verdict" in ship and "GALLERY_UNPACKED" in ship
+
+
+def test_crop_and_selfcheck_exist_and_work():
+    """The two capabilities Opus named when asked what it needed: zoom
+    at the scale craft lives at, and the reviewer's own cheap tests
+    runnable mid-build."""
+    import canvas_tools as ct, harness
+    W = str(harness.WORKSPACE)
+    slugs = ct.list_canvases(W)
+    assert slugs, 'no canvas to test against'
+    s = 'duo2' if 'duo2' in slugs else slugs[0]
+    b64, dump = ct.crop(W, s, 20, 15, 10, 8)
+    assert b64 and 'glyph | fg,bg' in dump
+    g, c, rep = ct.self_check(W, s)
+    assert g and c and 'near-uniform' in rep
