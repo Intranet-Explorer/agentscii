@@ -336,6 +336,44 @@ they force the agent to look at what it actually did rather than what
 it intended.
 
 
+OBSERVER NOTE (2026-09-25) — first convergence between a metric and the
+calibrated judgment, and the reviewer supplied the condition under which
+they would diverge.
+
+duo3's dissolution produces detached fragments. `disconnected masses`
+went 2 -> 5. Every previous case in this project had the metric and the
+reviewer disagreeing -- glyph-carried moved 28.6% -> 98.2% with an
+identical verdict at both ends, twelve metrics could not separate a
+regressed piece from an accepted one, and every threshold shipped was
+satisfied by distortion. So the expectation was another divergence:
+detached embers are exactly what a dissolution SHOULD produce, and the
+metric counts them as a defect.
+
+The reviewer complained about them, independently, without seeing the
+metric:
+
+  "Isolated debris. Floats at cols 49-50 on rows 1-3, fully detached
+   from everything else, plus stray single cells at row 3 col 54 and row
+   6 col 63. Reads as noise, not embers -- nothing connects them to the
+   mass."
+
+The second half is the useful part, and it is a condition rather than a
+count: detachment reads as embers only when something connects them to
+the mass -- a trail, a size gradient, a shared trajectory, anything that
+makes the eye complete the path from the body to the fragment. A
+detached cell with nothing leading to it is noise no matter how
+intentional it was.
+
+That is a rule a metric could never state and the reason the metric
+happened to be right here: `disconnected masses` counts detachment, and
+in this piece detachment WAS unearned. It would have been wrong on a
+piece that earned it. The metric agreed with the judgment by coincidence
+of subject, not because it measures the thing that matters.
+
+Practical use: keep `disconnected masses` as a prompt to ask "is there a
+path from the mass to this fragment", not as a defect count.
+
+
 gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
 claiming "two facing profile heads in complementary hue phases... brow...
 jaw... eye-line built from gradient shading over anatomical regions."

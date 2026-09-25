@@ -212,7 +212,70 @@ def _run(slug, extra, led):
         print(f"!! session exceeded ${SESSION_CAP} cap")
     print(f"\nPIN: currently \"{led.get('pin_read')}\" -- "
           f"operator decides whether this session's read is better.")
+    _method_pass(slug, d.get("session_id"), n, led)
     return 0
+
+
+METHOD_Q = """You just finished a session on the AGENTSCII canvas '{slug}'.
+
+Before you stop: document HOW YOU WORK, for METHOD.md -- the house
+method, which will replace our region-pass build sequence in STYLE.md
+and then be handed to a weaker local model to follow.
+
+Not what you drew. How you decided. Answer from THIS session's actual
+work, citing real cells and regions you touched:
+
+1. Where do you start on a subject, and why there?
+2. Take ONE region you worked this session. How did you decide an
+   individual cell's glyph, its foreground and its background? What
+   makes a cell get a half-block instead of a shade char?
+3. What do you check before moving on from a region?
+4. How do you know a region is DONE rather than merely covered?
+5. When do you crop and zoom versus work at full canvas?
+6. What did you TRY THIS SESSION AND REJECT, and why? (An approach you
+   started and backed out of is the most useful thing here -- it is
+   the part a weaker model cannot infer from the finished canvas.)
+
+Write it as instructions someone else could follow, not as a report of
+what you did. Concrete beats general: "a half-block goes where two
+brightness bands meet inside one cell" beats "use half-blocks for
+detail". Markdown, no preamble, start with '## Session {n}'.
+"""
+
+
+def _method_pass(slug, sess_id, n, led):
+    """Append this session's method to METHOD.md.
+
+    Separate `claude -p` call, resumed in the session's own context so it
+    can cite the cells it just placed. Cost tracked as method_usd and NOT
+    added to the drawing budget -- documenting the work is not the work.
+    """
+    if not sess_id:
+        print("\n(no session_id returned; METHOD.md pass skipped)"); return
+    r = harness._run_claude_p(
+        ["claude", "-p", "--resume", sess_id, METHOD_Q.format(slug=slug, n=n),
+         "--model", "claude-opus-5", "--output-format", "json"],
+        timeout=900, retries=0, cwd=str(Path(__file__).parent))
+    if r is None or r.returncode != 0:
+        print("\n(METHOD.md pass failed:", (r.stderr[:200] if r else "no result"), ")"); return
+    d = json.loads(r.stdout)
+    body = (d.get("result") or "").strip()
+    if not body:
+        print("\n(METHOD.md pass returned nothing)"); return
+    mp = WORKSPACE / "METHOD.md"
+    if not mp.exists():
+        mp.write_text("# AGENTSCII house method\n\nWritten by the artist "
+                      "that produced the work, session by session, in its own\n"
+                      "words. Replaces the region-pass build sequence in "
+                      "STYLE.md.\n\n")
+    with mp.open("a") as f:
+        f.write("\n\n" + body + "\n")
+    c = d.get("total_cost_usd") or 0
+    led["method_usd"] = round(led.get("method_usd", 0) + c, 4)
+    _save(led)
+    print(f"\nMETHOD.md += {len(body)} chars | method ${c:.2f} "
+          f"(separate from the ${TOTAL_CAP} drawing budget; "
+          f"method total ${led['method_usd']:.2f})")
 
 
 if __name__ == "__main__":
