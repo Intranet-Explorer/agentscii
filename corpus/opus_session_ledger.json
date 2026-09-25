@@ -24,9 +24,18 @@
       "flat_rows": "0 of 28 rows are near-uniform.",
       "metrics": "half_block 6.2% subject-only / 2.2% whole-canvas, shade-of-ink 59.8% subject-only / 21.1% whole-canvas, colors 7, disconnected masses 3, ink 34% of canvas",
       "glyph_carried": 99.9
+    },
+    {
+      "session": 4,
+      "cost_usd": 10.2648,
+      "blind_read": "glitched pixel-art face or skull",
+      "next_intent": "NEXT: Give the head a width profile \u2014 it is exactly the same width from row 7 to row 15, a straight nine-row wall, and I deliberately did not paper over it with half-blocks because no amount of mid-cell landing fixes a contour that is in the wrong place; the skull has to widen at the temple and narrow to the jaw, with the cheekbone as the widest point of the face.",
+      "flat_rows": "0 of 28 rows are near-uniform.",
+      "metrics": "half_block 8.4% subject-only / 3.0% whole-canvas, shade-of-ink 53.0% subject-only / 19.1% whole-canvas, colors 7, disconnected masses 2, ink 35% of canvas",
+      "glyph_carried": 99.9
     }
   ],
-  "total_usd": 24.4598,
+  "total_usd": 34.7246,
   "pinned": null,
   "pin_read": null
 }

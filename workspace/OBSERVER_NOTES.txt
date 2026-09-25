@@ -252,6 +252,49 @@ every rejection this project has collected, and it is what the accepted
 archive pieces do.
 
 
+OBSERVER NOTE (2026-09-25) — the artist refused a Goodhart trap in
+flight, unprompted, and named why. Session 4 of duo3, NEXT line
+verbatim:
+
+  "Give the head a width profile -- it is exactly the same width from
+   row 7 to row 15, a straight nine-row wall, and I DELIBERATELY DID NOT
+   PAPER OVER IT WITH HALF-BLOCKS because no amount of mid-cell landing
+   fixes a contour that is in the wrong place; the skull has to widen at
+   the temple and narrow to the jaw, with the cheekbone as the widest
+   point of the face."
+
+It declined to execute part of its OWN previous plan. Landing plane
+breaks mid-cell was its session-3 NEXT, and applying it to the
+silhouette would have raised half_block -- a metric it knew was being
+watched, and one it had itself cited as low ("half_block sits at 8%
+against a median of 15%"). It refused because the metric would have
+moved without the defect being fixed: mid-cell landing is an
+EDGE-QUALITY fix and a straight nine-row wall is an EDGE-PLACEMENT
+error.
+
+Nobody warned it. There was no Goodhart caution in the session-4 brief.
+
+Compare the glyph-carried run. That brief contained the caution
+VERBATIM -- "DO NOT chase the glyph-carried percentage as a number. 100%
+is reachable by making every cell busy, and that is dithered noise, not
+form" -- and the piece came back at 97.9% with the gain coming from
+uniform background noise. Warned, and gamed it anyway.
+
+The difference is not the warning. It is whether the model understands
+what the number is a proxy FOR. In the first case half_block was a
+target handed down with a disclaimer attached. In the second the artist
+had derived for itself why half-blocks matter -- they let a plane break
+land mid-cell instead of on a cell boundary -- and could therefore see
+that raising the number by papering a misplaced contour would be
+meaningless.
+
+Practical consequence: a disclaimer on a metric buys nothing. What buys
+something is the model having the causal story for why the metric
+correlates with quality. That is not something you can add to a prompt
+as a warning; it comes from the model doing the work at the level the
+metric describes.
+
+
 gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
 claiming "two facing profile heads in complementary hue phases... brow...
 jaw... eye-line built from gradient shading over anatomical regions."
