@@ -332,6 +332,29 @@ strongest model available to the project — not the local 27B model.
 Defect count stayed at 13-14 across all three. The rejection reason never
 changed: unfinished execution.
 
+Asked afterwards what it would need to reach the archive standard — a
+question nobody here had put to it in ~700 shifts — the artist gave the
+sharpest available statement of the defect, about its own tools:
+
+> "Every tool I reach for takes a region and applies a rule, and the
+> rejections are a precise description of what that produces. A rule
+> applied over a region is uniform-under-the-rule by construction.
+> 'Seventeen identical rows,' 'a stamped constant,' 'row 14
+> near-uniform, row 15 near-uniform' — none of those are execution
+> errors. They are the signature of the API, read off the canvas by
+> someone who has seen hand-work. `capsule_px` plus `shade` cannot
+> produce a thenar mound, because the thenar mound is not a function of
+> the capsule's parametrization."
+
+It also rejected the premise of the question. Two of the three
+capabilities we were about to build for it already existed and had gone
+unused: per-cell writing (`stamp` takes a 1×1 grid) and writing its own
+helper modules (an earlier run had already done it). "Nobody was
+blocked. Nobody wrote it. That gap is the finding, not the tooling."
+The cheapest lesson of the project: ask the thing doing the work what it
+needs before designing the fix. Full text in
+`corpus/opus_needs_assessment.txt`.
+
 Stated plainly: the strongest model available, given a correct plan, the
 right tools, corpus retrieval, and specific critique naming exactly what
 to fix, did not converge. This is not a weak-model finding.
