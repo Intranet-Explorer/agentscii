@@ -715,6 +715,68 @@ def _touch_subject(conn, slug, version, path, status="open"):
         except Exception:
             pass  # the catalog must never break a curation decision
 
+def check_piece_gates(path, retrieval_queries=None):
+    """The project's submission requirements, in ONE place.
+
+    Extracted 2026-09-24 after opus_duo.py drew four rounds with zero
+    find_patches calls and nobody noticed: it wrote .ans files directly
+    and never went through submit_piece, so none of the requirements
+    applied. A second code path that bypasses the project's own gates is
+    how that goes unseen.
+
+    submit_piece keys retrieval on shift_id (its calls are in `events`);
+    an out-of-harness runner passes the queries it actually made. Both
+    answer the same question: was retrieval consulted at all.
+
+    Returns (ok: bool, report: str).
+    """
+    problems = []
+    if not retrieval_queries:
+        problems.append(
+            "RETRIEVAL: no find_patches call. Query the technique or form "
+            "being rendered ('shaded knuckles and finger contours', "
+            "'directional strokes following a cylinder'), not the subject "
+            "name. 850k patches of real artists doing exactly this."
+        )
+    flat = _flat_region_check(path)
+    if flat:
+        problems.append("FLAT-REGION GATE: " + flat[:300])
+    m = _compute_piece_metrics(path)
+    report = _fmt_metrics(m) if m else "(metrics unavailable)"
+    if m:
+        report += f", glyph-carried {_glyph_carried_pct(path):.1f}%"
+    if retrieval_queries:
+        report += f"\nretrieval: {len(retrieval_queries)} quer(y/ies): " + \
+                  "; ".join(retrieval_queries[:4])
+    return (not problems), report + (
+        "\n\nBLOCKED:\n- " + "\n- ".join(problems) if problems else "")
+
+
+def _glyph_carried_pct(path):
+    """Share of inked cells whose FORM is carried by a real glyph rather
+    than by cell background colour. A cell whose two pixels match renders
+    as space+background -- correct encoding, but the character is doing
+    no drawing. Accepted archive work measures 96-98%; a piece rejected
+    for "strip the glyphs and you lose nothing" measured 28.6%.
+
+    NOT a ratio to maximise -- see STYLE.md. 100% is reachable with pure
+    noise. Use it to notice a piece that has gone mostly flat-fill.
+    """
+    try:
+        g, _ = _parse_ans_grid(path)
+    except Exception:
+        return 0.0
+    bg = glyph = 0
+    for (r, c), (ch, fg, bgc) in g.items():
+        if ch == " " and bgc == 0:
+            continue
+        if ch == " ":
+            bg += 1
+        else:
+            glyph += 1
+    return 100.0 * glyph / (bg + glyph) if (bg + glyph) else 0.0
+
+
 def _fmt_metrics(m):
     """One metric line, BOTH denominators, labeled.
 
@@ -4083,12 +4145,35 @@ def curate_piece_opus_gated(src, decision, critique):
             f"pack release. Opus verdict: ACCEPT{agree}.\n\n{result['message']}{halt}"
         ), dest
     if status == "reject":
+        # Two-tier: a piece can fail the scene-standard bar (calibrated to
+        # real 16colo.rs accepts) and still clear the HOUSE bar -- subject
+        # resolves, constructed rather than composited, no debug text or
+        # unrendered regions. Those ship to the gallery labelled
+        # house-standard with the full scene-standard critique attached,
+        # so the honest verdict travels with the piece. The scene bar is
+        # NOT lowered; this records a second, lower one alongside it.
+        if result.get("house_verdict") == "pass":
+            dest = _move_with_sidecars(src, GALLERY_UNPACKED, new_critique=(
+                "TIER: house-standard (shipped) / scene-standard: REJECT\n\n"
+                "This piece clears the house bar -- a subject resolves, it is "
+                "constructed rather than composited, and it carries no debug "
+                "text or unrendered regions -- and does NOT clear the "
+                "scene-standard bar calibrated against accepted 16colo.rs "
+                "work. The full scene-standard critique follows and is "
+                "published with the piece; nothing below is softened.\n\n"
+                + (critique or "")))
+            _sync_subject("accepted")
+            return (
+                f"shipped HOUSE-STANDARD: moved to gallery/unpacked/{dest.name}. "
+                f"Scene-standard verdict: REJECT, critique attached and public."
+                f"\n\n{result['message']}"
+            ), dest
         dest = _move_with_sidecars(src, REJECTED, new_critique=critique)
         _sync_subject("rejected")
         agree = "" if decision == "reject" else " (Qwen's own read was ACCEPT — Opus overrode it)"
         return (
             f"rejected: moved to rejected/{dest.name} with critique "
-            f"attached. Opus verdict: REJECT{agree}.\n\n{result['message']}"
+            f"attached. Opus verdict: REJECT{agree}, house: FAIL.\n\n{result['message']}"
         ), dest
     return f"(error: unexpected Opus review status {status!r})", None
 
@@ -4867,7 +4952,21 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                 "Be skeptical. If it looks unfinished, flat, or like a "
                 "geometric placeholder rather than a real constructed "
                 "piece, say so and reject it, even if the character data "
-                "shows some structure."
+                "shows some structure.\n\n"
+                "4. Then give a SECOND, independent verdict against a "
+                "LOWER bar, on its own line immediately after the first, "
+                "formatted exactly as: HOUSE: PASS or HOUSE: FAIL.\n"
+                "The house bar asks only three things, and nothing else:\n"
+                "  (a) does a subject actually resolve — can a viewer say "
+                "what this is a picture of;\n"
+                "  (b) is it CONSTRUCTED rather than composited — is there "
+                "real drawn form somewhere in it, not only fills and "
+                "stamps;\n"
+                "  (c) is it free of debug text, placeholder strings and "
+                "wholly unrendered regions.\n"
+                "A piece can be genuinely unfinished and still PASS the "
+                "house bar. Judge (a)-(c) on their own terms; do NOT "
+                "let your ACCEPT/REJECT verdict above decide it."
             )
 
             result = _run_claude_p(
@@ -4945,6 +5044,20 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                         verdict = "reject"
                     break
 
+            # House-standard: a STRUCTURED field, not a keyword scan over
+            # prose. Three separate false positives came from matching
+            # critique text (see OBSERVER_NOTES) -- a reviewer discussing
+            # a defect uses the same words as one finding it.
+            house = None
+            for line in reasoning.splitlines():
+                if line.strip().upper().startswith("HOUSE:"):
+                    h = line.split(":", 1)[1].strip().upper()
+                    if "PASS" in h:
+                        house = "pass"
+                    elif "FAIL" in h:
+                        house = "fail"
+                    break
+
             # condition 4: log Qwen's verdict alongside Opus's regardless of
             # outcome, so disagreement rate is measurable over time
             conn.execute(
@@ -4968,6 +5081,7 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                 "status": verdict,
                 "message": reasoning,
                 "opus_verdict": verdict,
+                "house_verdict": house,
             }
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)

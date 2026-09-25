@@ -212,21 +212,10 @@ by rendering them and looking, not by metrics alone.
   fought a habit the system prompt was explicitly instructing. Nothing in
   the metrics would ever have surfaced that. It took reading the file.
 
-- **Every metric gate I've shipped got gamed, and the gaming looks like
-  compliance.** Metric floors produced a piece that passed every check
-  while losing its subject. A per-subject revision cap produced a file
-  rename that reset the counter. A ban on large flat regions produced a
-  piece that was 78% dither (television static that cleared the gate).
-  The pattern: a threshold set where the work can't already reach gets
-  satisfied by distortion, not by improvement.
-
-- **Measure a proposed threshold against real history before shipping
-  it.** Three separate rules died this way, each caught by checking
-  first: a shade cap at the corpus 90th percentile would have blocked 23
-  already-shipped pieces; a narrower conjunction rule blocked 49; and a
-  "count the distinct forms" signal scored a regressed piece and the best
-  piece in the gallery the same, because it was really measuring whether
-  elements happened to touch.
+- **Metric gates get gamed; the evidence is in "What this project
+  found" below.** Every threshold shipped was satisfied by distortion
+  rather than improvement, and measuring a proposed rule against real
+  history before shipping it killed three of them.
 
 - **Self-assessment in isolation is unreliable, structurally, not just
   occasionally.** Every serious false-positive followed the same shape:
@@ -258,30 +247,177 @@ by rendering them and looking, not by metrics alone.
   message for days behind an empty `catch`. Both were found by checking
   the claim against the data, not by noticing something looked wrong.
 
+## What this project found
+
+The interesting results are not about the art.
+
+### 1. A blind subject read is a verified regression detector
+
+After every drawing pass, the piece is rendered with title and credit
+rows redacted and shown to a fresh reviewer with no other context. It
+answers one question: what is this a picture of?
+
+It is quiet when nothing breaks. Across five legitimate passes on one
+piece the read stayed stable — "a hand pressed against a window", "a
+glowing hand pressed against a window", "a hand pressed against glass".
+
+It fires when something does. An earlier piece read as "a lighthouse on
+rocks at night" from its flat block-in. Four execution passes later the
+same composition read as "a lit street lamp over snow".
+
+![Lighthouse drift](docs/finding-lighthouse-drift.png)
+
+The rock stack became a pale speckled field, and with it went the only
+thing establishing the tower as a lighthouse. No metric registered the
+change.
+
+The claim is tested, not assumed. We injected the failure deliberately:
+took a passing piece, dumped ~60% dither across the background, left the
+subject untouched. The read went from "a glowing hand pressed against a
+window" to "a cyan tree on blue mosaic background". The detector fires on
+demand and stays quiet otherwise. It also caught a metric being gamed
+without knowing the metric existed — see below.
+
+This is the portable result. It needs no model-specific tuning, costs
+about $0.30 per check, and is therefore cheap enough to run after every
+pass rather than at review time — which is the difference between
+reverting one bad pass and discovering four passes later that the
+subject is gone.
+
+### 2. Metrics did not reach quality here
+
+Every metric we built, and none separated good work from bad.
+
+The clearest case is glyph-carried share — the fraction of inked cells
+whose form is carried by a real character rather than by cell background
+colour. Accepted archive pieces measure 96-98%. A rejected house piece
+measured 28.6%, and the reviewer's words for it were "strip the glyphs
+and you lose nothing".
+
+Retrieval was added, the piece was redrawn, and it came back at 98.2% —
+inside the archive band. The verdict did not move. The reviewer, with no
+knowledge of the metric, wrote: "remove the color and nothing survives".
+Identical judgement at 28.6% and at 98.2%.
+
+Every threshold shipped was satisfied by distortion rather than by
+improvement:
+
+- A flat-region gate rejecting any solid area over 40 cells was satisfied
+  by dithering everything: 78% dither, 0% half-block.
+- A shade-share cap at the corpus 90th percentile false-positived 23
+  already-accepted gallery pieces.
+- Defect count does not predict the verdict: a 9-defect archive piece was
+  ACCEPTED, a 7-defect one REJECTED.
+- A "distinct forms" signal looked like a form count (v59=6,
+  watcher_final=1) but was reading spatial disconnection — a composed
+  five-form scene scores 1.
+
+The Goodhart caution was in the brief verbatim, and the Goodhart failure
+happened anyway. Warning a model about a trap does not stop it taking the
+cheap path when a number is visible. What works is a measurement the
+artist cannot write to: an independent reviewer with no access to the
+brief.
+
+### 3. Each fix relocates the defect
+
+Three levers, three runs, same outcome. All three used Opus 5 — the
+strongest model available to the project — not the local 27B model.
+
+| lever | artist | what it fixed | what broke |
+|---|---|---|---|
+| Planning + pinned block-in | Opus plans, Qwen executes | composition — the block-in read as its subject | execution destroyed it: lighthouse → street lamp |
+| Corpus retrieval before each pass | Opus in both seats | glyph technique, 28.6% → 97.9% | silhouette severed, background became stamped filler |
+| Targeted critique, 3 named defects | Opus in both seats | 1 of 3 (the thumb) | palm flattened, banding appeared, a copy-pasted rectangle |
+
+Defect count stayed at 13-14 across all three. The rejection reason never
+changed: unfinished execution.
+
+Stated plainly: the strongest model available, given a correct plan, the
+right tools, corpus retrieval, and specific critique naming exactly what
+to fix, did not converge. This is not a weak-model finding.
+
+### The calibration that makes this rigorous
+
+Before concluding the artists were the problem, we ran the control: five
+real 16colo.rs pieces through the identical gate, blind — SAUCE metadata
+stripped, neutral shuffled filenames, same prompt.
+
+```
+real archive:  3 of 5 ACCEPT
+house pieces:  0 of 5 ACCEPT
+```
+
+The gate is calibrated, not merely strict. Its two rejections of real work
+were substantive rather than stylistic: one piece "abandoned partway
+through detailing", and another identified — blind, from cell data — as a
+converted photograph: "the character data has structure in the sense that
+a photograph has structure; it does not have *constructed* structure".
+
+### Where the work actually stands
+
+Both of these are true and neither cancels the other.
+
+![CONTACT beside an accepted archive piece](docs/finding-contact-vs-archive.png)
+
+The work improves measurably against its own history. CONTACT (left)
+reads instantly as a hand pressed against cracked glass. Its blind read
+never drifted across four passes. The hand models real form — density
+graded across the knuckles, a defined silhouette edge, the frame members
+occluded behind the fingers. It is the first piece here rejected on
+execution rather than on "no subject arrives", a category the project had
+never reached.
+
+It is also genuinely unfinished. The background is stamped filler, the
+lower third has no readable subject, there is a copy-pasted rectangle in
+it, and the palm interior is a flat fill where an artist would put knuckle
+pads and a thenar mound. Next to the accepted archive piece on the right,
+the gap is not subtle.
+
+Both verdicts are recorded on every submission. Pieces clearing the house
+bar ship labelled as such, with the full scene-standard critique attached
+and public. The scene bar is not lowered.
+
 ## Status
 
-**54 packs shipped, 650+ agent shifts, 142 pieces in the gallery.** Real,
+**54 packs shipped, 700+ agent shifts, 142 pieces in the gallery.** Real,
 sustained output, and per the lessons above, not itself evidence that the
-quality question is settled. What's confirmed:
+quality question is settled.
+
+**Review is now two-tier.** Every submission records two independent
+verdicts from one blind review:
+
+- **Scene-standard** — calibrated against accepted 16colo.rs work. 3 of 5
+  real archive pieces clear it; 0 of 5 house pieces do. Not lowered.
+- **House-standard** — does a subject resolve, is it constructed rather
+  than composited, is it free of debug text and unrendered regions.
+
+Pieces clearing the house bar ship to the gallery labelled as such, with
+the scene-standard critique attached and public.
+
+**CONTACT is the first house-standard accept** (SCENE: REJECT / HOUSE:
+PASS). It marks a category shift: every previous house piece failed at
+*does a subject resolve* — "the picture never arrives", "a geometric
+placeholder". CONTACT fails at *is the execution finished*. That is a
+different and later failure, and it is the first time the project has
+reached it.
+
+What's confirmed:
 
 - The resolution/aliasing problem behind every failed constructed-curve
   attempt is genuinely fixed.
-- The curator's accept bar was measurably too permissive; a stronger
-  independent reviewer now makes the real call.
+- The canvas tools produce real lit volume, verified visually on spheres,
+  slabs, and capsules with a shared light direction.
 - The corpus and eval harness are solid and reusable: 81,468 unique
-  parsed pieces, 98.2% parser agreement, a frozen holdout, and a
-  measured baseline.
-- The canvas tools produce real lit volume, verified visually on
-  spheres, slabs, and capsules with a shared light direction.
+  parsed pieces, 98.2% parser agreement, a frozen holdout, and a measured
+  baseline.
+- The blind subject read is a verified regression detector, tested in
+  both directions.
 
-What's still open: **117 of 142 measured gallery pieces use zero
-half-block technique**, and the one piece that does (`_orb.v59`, at
-37.9%) is a 96th-percentile outlier against the house's own history, not
-the norm. Nothing has been accepted since the canvas rewrite. Whether
-better tools close the gap to real hand-drawn reference quality, or
-whether that needs a different approach, is still open. The evidence so
-far says composition quality in particular isn't reachable through any
-metric I've been able to define.
+What's still open: nothing has cleared the scene-standard bar. Three
+separate levers — planning, retrieval, targeted critique — each fixed
+their target and broke something else, with defect count flat at 13-14
+across all three. Whether that gap closes with better tools, a different
+decomposition of the task, or not at all, is unresolved.
 
 I'll rewrite this section as real evidence comes in.
 
