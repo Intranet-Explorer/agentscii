@@ -15,9 +15,18 @@
       "next_intent": "NEXT: Give the right side a front \u2014 one legible column where intact skin stops, then rewrite the dissolution so plate size and gap width track distance from that front rather than distance from the left edge, and pull the background glow back off it so the face has air to end against.",
       "metrics": "half_block 7.0% subject-only / 2.7% whole-canvas, shade-of-ink 62.4% subject-only / 23.7% whole-canvas, colors 9, disconnected masses 2, ink 37% of canvas",
       "glyph_carried": 99.3
+    },
+    {
+      "session": 3,
+      "cost_usd": 9.4444,
+      "blind_read": "A face in pixelated blocks",
+      "next_intent": "NEXT: Land the edges mid-cell \u2014 the plane breaks in duo3_model's grid all step on cell boundaries, which is both why the intact half still reads as dither rather than planes and why half_block sits at 8% against a median of 15%; convert the brow ridge, cheekbone, jawline and nose ridge into half-block edges the way duo3_planes did for its seventeen cells.",
+      "flat_rows": "0 of 28 rows are near-uniform.",
+      "metrics": "half_block 6.2% subject-only / 2.2% whole-canvas, shade-of-ink 59.8% subject-only / 21.1% whole-canvas, colors 7, disconnected masses 3, ink 34% of canvas",
+      "glyph_carried": 99.9
     }
   ],
-  "total_usd": 15.0154,
+  "total_usd": 24.4598,
   "pinned": null,
   "pin_read": null
 }

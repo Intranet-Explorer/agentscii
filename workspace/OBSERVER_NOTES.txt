@@ -204,6 +204,54 @@ That is what the mid-build check was built for and the first time it
 has caught this while it was still cheap to fix.
 
 
+OBSERVER NOTE (2026-09-25) — the defect vocabulary changed. Same gate,
+same reviewer, same prompt. This is the clearest evidence that the
+tooling constraint was real and is now behind us.
+
+CONTACT (region tools, one-pass) — defects were ARTIFACTS OF THE API:
+  "a literally copy-pasted block rectangle"
+  "the border is a repeated stamp"
+  "seventeen identical rows"
+  "the background thirds are near-uniform noise regardless of what's on
+   screen"
+  "rows 32-50 have no readable subject at all"
+  "remove the colour and nothing survives"
+
+duo3 (cell-level, multi-session, 80x28) — defects are DRAWING PROBLEMS:
+  "No nose. Cols 37-45, rows 16-20 -- the exact center of the face -- is
+   undifferentiated mid-density fill. The feature that establishes a
+   head's volume is blank."
+  "One stamp does all three features. The left eye, the right eye, and
+   the mouth are the same construction... An eye and a mouth are
+   different objects and should not be built identically. This is a
+   motif placed three times, not three observed forms."
+  "A dissolve needs form to dissolve FROM, and this is a gradient
+   applied uniformly per row."
+  "Embers don't go purple."
+
+Both REJECT. But the first list describes what a region-rule API
+produces; the second is the note you would give a person who drew a
+face. "No nose" is not a tooling failure -- a nose is missing because
+nobody observed a nose, not because capsule_px could not express one.
+
+The verdict sentences track the same shift:
+  CONTACT: "composited rather than constructed"
+  duo3   : "a geometric assembly with a face's landmarks positioned
+            correctly on it, not a constructed head"
+
+The second is a harder problem and a better one to have. It is also the
+first mid-build defect review this project has run -- the list arrived
+with $95 of a $120 budget still unspent, which is the whole reason the
+mid-build checks exist.
+
+Supporting measurement, session 3: the colour-only self-check STOPPED
+reading as a face for the first time. Flatten every glyph to a solid
+block and the picture dies; strip all colour and brow, eye socket, nose
+line, mouth and jaw survive in density alone. That is the inverse of
+every rejection this project has collected, and it is what the accepted
+archive pieces do.
+
+
 gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
 claiming "two facing profile heads in complementary hue phases... brow...
 jaw... eye-line built from gradient shading over anatomical regions."
