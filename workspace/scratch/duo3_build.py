@@ -21,11 +21,18 @@ if '--fresh' in sys.argv:
 # to lay those down first. duo3_hue is last and is a no-op on a fresh
 # build -- BANDS and duo3_bg no longer make a magenta cell -- but its
 # assert is the guard that says so.
+# Session 5 appends two, and they go LAST among the drawing passes for
+# a reason: duo3_contour moves the head's left edge and erases what used
+# to be outside it, so anything that paints the intact half has to have
+# painted it already. It also fills the masseter only into cells that
+# are still empty, which is only well defined once everything else has
+# had its turn.
 for name in ['duo3_blockin', 'duo3_left', 'duo3_nose', 'duo3_mouth',
              'duo3_fore', 'duo3_right2', 'duo3_bg',
              'duo3_reencode', 'duo3_model', 'duo3_eye2', 'duo3_mouth2',
              'duo3_planes',
              'duo3_nose2', 'duo3_eye3', 'duo3_mouth3', 'duo3_planes2',
+             'duo3_contour', 'duo3_neck',
              'duo3_hue']:
     print(name, subprocess.run([sys.executable, str(HERE / (name + '.py'))],
                                capture_output=True, text=True).stdout.strip())

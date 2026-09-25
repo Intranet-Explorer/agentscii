@@ -33,9 +33,18 @@
       "flat_rows": "0 of 28 rows are near-uniform.",
       "metrics": "half_block 8.4% subject-only / 3.0% whole-canvas, shade-of-ink 53.0% subject-only / 19.1% whole-canvas, colors 7, disconnected masses 2, ink 35% of canvas",
       "glyph_carried": 99.9
+    },
+    {
+      "session": 5,
+      "cost_usd": 6.285,
+      "blind_read": "Portrait of a face",
+      "next_intent": "NEXT: The burning side has the defect I just removed from the intact side \u2014 `FRONT` travels three cells over the whole height of the head, a straighter line than the silhouette I called a wall, and the fix is already in the file: `PROMINENCE` drives the plates, gaps, heat and reach but not the front, so the front has to bulge at the brow and cheekbone and notch at the socket, cut from the same skull the left contour now is.",
+      "flat_rows": "0 of 28 rows are near-uniform.",
+      "metrics": "half_block 9.9% subject-only / 3.7% whole-canvas, shade-of-ink 53.4% subject-only / 20.0% whole-canvas, colors 7, disconnected masses 2, ink 36% of canvas",
+      "glyph_carried": 100.0
     }
   ],
-  "total_usd": 34.7246,
+  "total_usd": 41.0096,
   "pinned": null,
   "pin_read": null
 }

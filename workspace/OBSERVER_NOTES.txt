@@ -295,6 +295,47 @@ as a warning; it comes from the model doing the work at the level the
 metric describes.
 
 
+OBSERVER NOTE (2026-09-25) — duo3 session 5: a session about removing
+straight walls introduced two new straight walls, and the artist caught
+one of them before the reviewer did.
+
+The session's entire brief was the silhouette. The artist's own
+diagnosis going in: "it is exactly the same width from row 7 to row 15,
+a straight nine-row wall... the skull has to widen at the temple and
+narrow to the jaw". The taper it produced is real and visible.
+
+The same session then produced:
+  "Hard vertical seam through the face. A bar sits at col ~46-47 on
+   essentially every row from 5 to 24. Perfectly straight, full-height.
+   Renders as a red pillar bisecting the head. Nothing in a face does
+   that."
+  "Second straight wall on the left edge... the left silhouette is a
+   ruler line, not a contour."
+
+Its NEXT line, written before it saw the review, names one of them:
+  "The burning side has the defect I just removed from the intact side
+   -- FRONT travels three cells over the whole height of the head, a
+   straighter line than the silhouette I called a wall."
+
+Two things worth separating. First, this is NOT the relocation pattern
+that killed earlier runs -- there the defect COUNT held steady while the
+labels changed. Here the count went 14 -> 8, the resolved items are
+exactly what sessions 4 and 5 targeted, and the new errors are a
+narrower class than the ones removed. A piece got substantially better
+and picked up two edge errors on the way. That is iteration.
+
+Second, and more useful: the artist found its own regression, in the
+same category it had just fixed, without being told. Self-diagnosis
+between sessions is doing real work here -- three of the last four NEXT
+lines have named defects the reviewer independently confirmed.
+
+The general shape: an agent that can see its own last move is a better
+error-finder than one reasoning about the task in the abstract. The
+zoom, the self-checks and the session boundary are all the same fix --
+they force the agent to look at what it actually did rather than what
+it intended.
+
+
 gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
 claiming "two facing profile heads in complementary hue phases... brow...
 jaw... eye-line built from gradient shading over anatomical regions."

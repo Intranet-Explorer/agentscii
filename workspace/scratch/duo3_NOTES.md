@@ -431,3 +431,137 @@ cheekbone has to be the widest point of the face rather than the ninth
 identical row of a wall. That is the next pass and it is the same kind
 of thing the nose turned out to be -- a structure I have been asserting
 in comments and have not drawn.
+
+---
+
+# Session 5
+
+One thing was asked for, it was my own NEXT, and it turned out to be
+two things that look like one.
+
+## 1. The wall, and why it was there
+
+Rows 7 to 15 were all left=25. I had been calling it a contour error
+for a session and a half without saying where it came from, and the
+answer is in `duo3_blockin`: the head is a `sphere_px` of radius 14,
+and the flank of a circle is vertical to within half a cell over eight
+rows either side of its equator. The wall is the block-in showing
+through. It was always going to, because a skull is not a ball, and no
+amount of work on the surface was ever going to move it -- which is
+the thing I got right at the end of session 4 and want to keep: the
+reason not to paper it over with half blocks was not that half blocks
+are bad. It was that half blocks fix edge QUALITY and this was edge
+PLACEMENT, and the number they would have moved was being watched.
+
+`duo3_contour.PROFILE` is the placement: nineteen rows, half-cell
+resolution, authored as a skull rather than derived from anything.
+Crown narrow, widening through the forehead, the parietal at 24.5, the
+temporal fossa pinching back out to 25.5, the zygomatic arch coming
+forward to 22.5 -- the widest point of the whole head, wider than the
+cranium above it -- then falling away under the arch and running in to
+the angle of the jaw at x26.
+
+The temple pinch is one cell and it is the cell I would defend
+hardest. It is the only place on a head where the outline reverses
+direction on the way down, and without it the profile is an egg with
+a jaw stuck on.
+
+Then quality, second, in that order. Twenty-one of the twenty-five
+rows land their edge mid-cell: ▐ where the profile falls between two
+columns, ▒ where it falls on the boundary, both at value 0.16 so the
+contour does not change brightness as it slides across the grid. Under
+the jaw the edge is horizontal instead of vertical and gets ▀.
+
+Two rules broken on purpose, both stated where they happen. The rim is
+fg 1 the whole way down rather than taking its hue from heat(): the
+field is a distance in the picture plane, and by that measure the rim
+at the temple came out a band warmer than the rim at the cheekbone, so
+the contour changed hue halfway down and stopped being one line. The
+far side of a head cannot be hotter than its own cheek -- the head is
+in the way. And the rim is one step BRIGHTER than the cells just
+inside it, which puts a core shadow inboard of a lit edge; the whole
+right half of this picture is on fire, so a surface turned fully away
+still catches the field.
+
+## 2. Rung 1 is a trap and I had fallen in it for four sessions
+
+The old left edge was five cells of `·` at rung 0 -- two percent ink.
+I had been describing that as a fade. It is not a fade, it is an
+absence, and the mechanism that produced it is worth writing down
+because it is not a drawing mistake, it is a LADDER mistake:
+`RUNG[1]` is 0.06, and the nearest thing the dark band can spell is
+`·` at 0.019 rather than `░` at 0.12. So every time I wrote a 1 at the
+edge of the form, intending a dim cell, the ladder gave me nothing. The
+flank has a floor of rung 2 now and nothing below it is allowed.
+
+Worth keeping because the same thing will happen again in any band
+whose steps are coarse, and the symptom -- a form that has no last
+cell -- looks like a composition problem and is not one.
+
+## 3. The jaw terminates; the neck is a thing now
+
+"Rows 26-27 are eight and nine identical cells. The head doesn't
+terminate in a jaw; it fades into a uniform wash." Two faults, not
+one.
+
+The termination is `MANDIBLE`: the lower border authored per column at
+half-ROW resolution, from the angle of the jaw at 22.5 down and
+forward to the chin at 24.5, meeting planes2's right-hand run. Lit
+bone above, black below, nothing between them. Directly under the chin
+row 25 is simply empty, because a chin reads against a throat by there
+being NOTHING there.
+
+The wash was `░ 1,0` at every cell from x31 to x45 in three rows. Not a
+neck -- the region tool's leftover, which survived four sessions
+because I kept working on the face. `duo3_neck` is three facts and
+nothing else: the jaw casts a shadow down and LEFT (same light as the
+nose's cast shadow in session 4, because it is the same light), so the
+throat is black on the left and lit by x43; a neck is a cylinder and
+its brightest cell is x43 and not x45, because at x45 the surface has
+turned away; and a sternocleidomastoid runs from behind the ear to the
+sternal notch, crossing the cylinder diagonally, its near edge a
+groove that is exactly one cell of ▐ -- black left, lit right.
+
+All of it is in the cool band, fg 1 on black, because heat() says so
+at every cell. That leaves five levels. Being honest about how little
+light is down there beat reaching for a hue that would say the throat
+is on fire.
+
+## 4. A defect I introduced and caught in the same session
+
+The flank pass left the lower-left cheek as sixteen cells of identical
+`░ 1,0` -- the same fault as the neck, at a quarter the size, put there
+by me while taking it out of somewhere else. A hollow in deep shade IS
+flat, so dithering it would have been a lie. What it needed was the two
+forms it sits between: the zygomatic arch's underside above (a ▀ run,
+the darkest line on this half of the face, because it is what the
+cheekbone shades) and the masseter's upper edge below (a ▄ run coming
+the other way). Between them three rows of nothing, which is now a
+statement instead of a leftover.
+
+## 5. What held
+
+Colour-only still does not read as a face: a head-shaped mass in
+concentric heat bands, no eye, no nose, no mouth. The contour shows up
+in it, but a silhouette is shape and not colour, so that is the test
+working rather than failing. Glyph-only carries the whole model
+including the new jaw and neck. Zero near-uniform rows, 28 of 28, five
+sessions running. half_block 10.7% -> 12.2%; still under the corpus
+median of 15% and every one of those cells is a real edge.
+
+`duo3_build.py --fresh` reproduces the piece exactly, nineteen passes,
+verified this session cell for cell against the live canvas.
+
+## 6. Where it still falls short
+
+The burning side has the same defect I just spent a session removing
+from the intact side, and I did not see it until the left edge had a
+profile to compare against. `FRONT` -- the column where intact skin
+stops -- travels three cells over the entire height of the head, which
+is a straighter line than the silhouette I called a wall. And the fix
+is already sitting in the file: `PROMINENCE` says the brow ridge and
+the cheekbone stand 9 forward and the socket 2, and it drives the
+plates, the gaps, the heat and the reach. It does not drive the front.
+Fire eats a proud surface differently from a hollow one, so the front
+should bulge where the bone is and notch where the socket is, from the
+same skull the left contour is now cut from.
