@@ -49,7 +49,23 @@ differs renders 100% glyph-carried. The bg-carried share is just the
 share of the drawing made of internally-uniform cells, i.e. large flat
 fills. Break up the fills: strand_shade over a filled form lifts a
 sphere from 66% to 79% glyph-carried in one pass, and hand-placed
-density work goes further. Aim for 80%+; the archive sits above 95%.
+density work goes further.
+
+DO NOT TREAT THIS AS A RATIO TO MAXIMISE. 100% glyph-carried is
+trivially reachable by never letting a cell's two pixels match, and
+what that produces is dithered noise — every cell busy, nothing
+modelled. That would score perfectly and read as static, which is the
+same trap as the shade-share gate that pushed a piece to 78% dither
+and 0% half-block.
+
+The archive sits at 96-98% because its glyphs MODEL FORM: density
+graded across a curve so the surface turns, strokes following a
+contour so the edge reads as an edge, a ramp tightening where the
+light falls off. The number is a symptom of that technique, not a
+substitute for it. A piece at 60% glyph-carried whose glyphs follow
+the form beats a piece at 95% whose glyphs are uniform noise. Judge
+by looking; use the number only to notice when a piece has gone
+mostly flat-fill.
 
 
 ## The build sequence (block-in, then passes — not one generative shot)

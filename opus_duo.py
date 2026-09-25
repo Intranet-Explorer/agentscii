@@ -106,6 +106,14 @@ Render and LOOK at your work before you finish:
     return json.loads(r.stdout).get("total_cost_usd")
 
 
+def gates(path, queries):
+    """Run the SAME requirements submit_piece runs. opus_duo drew four
+    rounds with zero retrieval because it bypassed them entirely."""
+    ok, report = harness.check_piece_gates(path, retrieval_queries=queries)
+    print(("GATES PASS" if ok else "GATES BLOCKED") + "\n" + report)
+    return ok
+
+
 def judge(path, label):
     """Blind subject read + full defect review, both in fresh contexts
     with no access to the artist's side."""
@@ -118,6 +126,7 @@ def judge(path, label):
     placeholder = bool(PLACEHOLDER.search(text))
     m = harness._compute_piece_metrics(path)
     out = {
+        "glyph_carried_pct": round(harness._glyph_carried_pct(path), 1),
         "label": label, "path": str(path),
         "blind_subject": sub.get("blind_subject"),
         "verdict": verdict,
@@ -140,6 +149,8 @@ if __name__ == "__main__":
         c = artist(slug, task)
         print(f"plan cost ${c}  running total ${_spend(led, c):.2f}")
         _save(led)
+    elif cmd == "gates":
+        gates(sys.argv[3], sys.argv[4:])
     elif cmd == "judge":
         res = judge(sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else slug)
         led["rounds"].append(res)

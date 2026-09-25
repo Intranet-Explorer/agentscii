@@ -222,3 +222,26 @@ def test_autosave_groups_with_its_piece():
     src = inspect.getsource(h.run_shift)
     assert 'scratch/{_slug}.autosave.ans' in src, 'extra underscore is back'
     assert 'scratch/_{_slug}.autosave.ans' not in src
+
+
+def test_gates_shared_by_both_paths():
+    """opus_duo.py drew four rounds with zero find_patches calls because
+    it bypassed submit_piece entirely. One shared gate function now."""
+    import harness as h
+    ok, rep = h.check_piece_gates('workspace/scratch/duo1.ans', retrieval_queries=None)
+    assert not ok and 'RETRIEVAL' in rep
+    ok2, rep2 = h.check_piece_gates('workspace/scratch/duo1.ans',
+                                    retrieval_queries=['shaded knuckles'])
+    assert ok2 and 'glyph-carried' in rep2
+
+
+def test_house_tier_is_structured_field_not_keyword_scan():
+    """Two-tier gate. The house verdict must be parsed from a HOUSE:
+    line, never matched out of prose -- three false positives already
+    came from keyword scans over critique text."""
+    import inspect, harness as h
+    src = inspect.getsource(h.opus_curate_review)
+    assert 'HOUSE: PASS or HOUSE: FAIL' in src
+    assert 'startswith("HOUSE:")' in src
+    ship = inspect.getsource(h.curate_piece_opus_gated)
+    assert "house_verdict" in ship and "GALLERY_UNPACKED" in ship

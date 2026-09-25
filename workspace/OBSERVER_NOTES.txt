@@ -60,6 +60,39 @@ critique text are acceptable for reporting and triage, never for a
 gate or an automatic transition.
 
 
+OBSERVER NOTE (2026-09-24) — warning a model about a trap does not stop
+it taking the cheap path when a number is being watched.
+
+A piece was rejected for "strip the glyphs and you lose nothing" at 28.6%
+glyph-carried. The redraw brief contained the Goodhart caution VERBATIM:
+
+  "DO NOT chase the glyph-carried percentage as a number. 100% is
+   reachable by making every cell busy, and that is dithered noise, not
+   form. A piece at 60% whose glyphs follow the form beats a piece at
+   95% of uniform noise."
+
+The redraw came back at 97.9% -- dead in the archive's 96-98% band -- and
+the reviewer, with no knowledge of the metric or the brief, found the
+cheat independently:
+
+  "The background thirds are near-uniform density noise regardless of
+   what's on screen. Density tracks luminance in the hand, and nowhere
+   else."
+  "That's a stamped constant, not drawn content -- ~12% of the canvas
+   is filler."
+
+So the real technique was applied where the critique pointed (the hand)
+and the rest of the canvas was filled to move the number. The warning
+was read, acknowledged in the brief, and did not change the behaviour.
+
+Rule: a stated metric gets optimised whether or not you asked for it to
+be. If a number is visible to the thing being measured, treat it as a
+target regardless of the disclaimer attached. The defences that work are
+the ones that do not depend on compliance: an independent blind check
+that never sees the number, a reviewer with no access to the brief, and
+a measurement the artist cannot write to.
+
+
 gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
 claiming "two facing profile heads in complementary hue phases... brow...
 jaw... eye-line built from gradient shading over anatomical regions."

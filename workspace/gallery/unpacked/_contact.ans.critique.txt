@@ -1,0 +1,29 @@
+TIER: house-standard (shipped) / scene-standard: REJECT
+
+CONTACT clears the house bar -- a subject resolves (blind read: "a hand
+pressed against glass", stable across four passes), it is constructed
+rather than composited, and it carries no debug text or unrendered
+regions. It does NOT clear the scene-standard bar calibrated against
+accepted 16colo.rs work. The scene-standard critique is published with
+the piece and nothing in it is softened.
+
+What works: the hand models real form -- density graded across the
+knuckles, a defined silhouette edge, the window frame members occluded
+behind the fingers. The reviewer credited it directly: "the digit
+spacing, thumb placement, and taper are deliberate."
+
+What does not, verbatim from the scene-standard review:
+  "Remove the color and nothing survives. That's the tell for a piece
+   that was composited rather than constructed."
+  "The bottom 40% has no subject."
+  "The border is a repeated stamp."
+  "A literally copy-pasted block rectangle."
+  "The palm interior is a single flat cyan. A palm-forward hand has
+   knuckle pads, a thenar mound, and finger-base shadow. None present."
+  "Horizontal banding across the entire lower half."
+
+Measured: half_block 18.1% subject-only / 16.6% whole-canvas, shade
+71.5% / 65.9%, 6 colors, ink 92%, glyph-carried 98.2%.
+
+Drawn by Opus 5 in both artist and curator seats, with corpus retrieval
+required before each detail pass. See README "What this project found".

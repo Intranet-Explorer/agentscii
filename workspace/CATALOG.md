@@ -20,6 +20,7 @@ House bar: `_orb.v59` — 26.1% half_block / 27.9% shade.
 | `_cal` | 2026-09-14 | archived | 0.0% | 0.0% |  |
 | `_coghead` | 2026-09-13 | shipped | 0.0% | 20.0% |  |
 | `_console` | 2026-09-15 | shipped | 1.0% | 66.1% |  |
+| `_contact` | 2026-09-25 | shipped | 18.1% | 71.5% |  |
 | `_coral` | 2026-09-13 | shipped | 0.0% | 38.8% |  |
 | `_crowd` | 2026-09-15 | archived | 0.0% | 85.9% |  |
 | `_crowd_blockin` | 2026-09-17 | archived | 0.0% | 31.2% |  |
