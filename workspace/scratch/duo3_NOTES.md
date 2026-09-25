@@ -565,3 +565,169 @@ plates, the gaps, the heat and the reach. It does not drive the front.
 Fire eats a proud surface differently from a hollow one, so the front
 should bulge where the bone is and notch where the socket is, from the
 same skull the left contour is now cut from.
+
+---
+
+# Session 6
+
+My own NEXT was the front, and the front was the easy half.
+
+## 1. The front, which is what I came to do
+
+`FRONT_LEAN` travelled three cells over the whole height of the head.
+`PROMINENCE` already drove the plates, the gaps, the heat and the
+reach; it now drives the front too, and `front()` runs 41 to 49 instead
+of 43 to 46.
+
+Which WAY it drives it is the whole content of the fix, and it is not
+"the fire eats what is closest". Fire goes through what is THIN. The
+brow ridge and the zygomatic arch are the two buttresses of the facial
+skeleton -- the thickest bone in the face, which is exactly why they
+are what is left of a skull -- so intact surface survives further into
+the burn there and the front bulges out to meet it. The orbital plate
+behind the socket is a wafer and the temporal fossa is the thinnest
+bone on the skull, and the front notches back where they gave way. The
+socket being a hole is a story session 3 already told; this is the rest
+of the edge agreeing with it.
+
+Two things fell out. `PROMINENCE` rows 3-8 were 4,5,5,5,4,3 on the
+reasoning that a forehead is a smooth plane. It is -- and that was the
+wrong reading, because prominence is not smoothness, it is how far the
+flesh stood forward AT THE BURNING EDGE, and the burning edge runs up
+the SIDE of the forehead. Mirroring planes2's own frontal eminence
+about the centre line lands it at x43-45, which is where the front is.
+So the bump is on the seam and the front rides over it.
+
+And the bulges uncovered eight cells of face at x48-49 that had been
+inside the burn for five sessions and had never been drawn.
+duo3_model filled them from its grid and they came out as four and
+five identical cells -- the same flat-band defect planes2 was written
+to fix on the LEFT half of this same brow ridge, reappearing on the
+right the moment the fire let go of it. `duo3_buttress` is planes2's
+pass mirrored: an arch, both rows moving, the shelf's top plane clipped
+away by the fire so the rim reads as a flange of bone standing out of
+the burn.
+
+## 2. The thing I found when I zoomed in, which is the real session
+
+With the front moved I looked at the burning side at scale 14 and every
+mark out there was ONE CELL TALL.
+
+The loop was `for y: while x <= stop: place a run of cells in row y`,
+with an independent random stream per row. Nothing spanned a row
+boundary. No two rows were related to each other by anything at all.
+Zoomed in it is horizontal scan lines -- a raster of a field rather
+than a picture of anything -- and the two long rows at the brow and the
+cheekbone read as lines flung sideways out of the head, because
+`reach()` steps ELEVEN cells between row 10 and row 11 and there was
+nothing to carry that vertically.
+
+The review has rejected this side three times in three vocabularies:
+"a gradient applied uniformly per row", "a dissolve needs form to
+dissolve FROM", "a structureless wash". I answered all three with more
+variation ALONG the row. Three sessions of work on the values of marks
+whose GEOMETRY was the defect. That is the mistake worth keeping: I
+kept reading "no vertical variation" as "the rows are too similar" when
+it also meant "the marks have no vertical extent", and the second
+reading is the one a per-row loop can never satisfy no matter what you
+put in it.
+
+A chip off a skull has two dimensions. So a fragment is a quad now:
+
+  WIDTH as before.
+  HEIGHT from the same prominence -- the brow ridge that throws its
+    material furthest also comes off in the biggest pieces, and a
+    hollow sheds one-row flakes -- and shrinking with distance, because
+    what is furthest out has been in the fire longest.
+  RISE. What is still attached does not move. What came off goes UP,
+    because the only light in this picture is a fire and a fire takes
+    its material with it. About a row every three cells out. That is
+    what turns the outer boundary from a profile into a plume.
+
+Two things follow that a row-run could not do. A fragment straddling
+rows lands its top and bottom edges MID-CELL, so a chip in black air
+has a real boundary instead of a square cell corner -- available only
+where the body is dimmer than 0.44, which is half a cell of the
+brightest ink there is, and that is exactly the outer ember field and
+not the hot sheet at the seam. A sheet has no top edge anyway. And a
+fragment CLAIMS its footprint, so the row below does not regenerate
+through it; a big chip suppresses the wash underneath itself, which is
+what keeps it one object.
+
+## 3. A domino is worse than a dash
+
+First version of the above: `val()` is a function of the column only,
+so every row of a fragment got the same value and a three-row chip
+rendered as a solid rectangle of one colour. That is WORSE than the
+horizontal dash it replaced, because a dash does not claim to be a
+slab. A chip is a plate of bone at an angle and the ember is at row 13:
+the row of it nearest that row faces the fire most squarely and is
+brightest, each row further away drops a step. Same light as the nose's
+cast shadow, the throat, the contour. There is only one.
+
+Second version: at a distance falloff of 0.12 a brow chip was still
+three rows tall at the very end of its reach, so the biggest pieces in
+the picture were the ones that had travelled furthest, and two of them
+stood in open air at the outer edge reading as a pair of posts. Big
+near the bone, small far out. 0.25.
+
+## 4. The wash was never the dissolve
+
+`duo3_right2` stops at `reach(y)`, x47 to x60. Everything from there to
+x68 was `duo3_bg`: concentric rings of dark red around the ember. I
+spent three sessions answering "structureless wash" on the dissolve
+and the wash was the BACKGROUND. Rings are gone; what replaces them is
+a MARGIN that follows the plume's own outline a few cells deep and then
+black -- air with more burning material in it is brighter air.
+
+And it had the row disease too, twice. The margin was measured out from
+`t.reach(y)`, so the lit air inherited that eleven-cell step and the
+prominent rows became a pair of horizontal dashes with black above and
+below. Air does not have an eleven-cell step in it; glowing air is a
+continuous medium and takes the shape of the plume AS A WHOLE, so both
+the inner edge and the DEPTH now come off a cone over five rows.
+Smoothing only the inner edge, which is what I did first, left the
+outer one stepping six cells -- the same cliff moved four cells right
+and no less of a horizontal line for having been half fixed.
+
+The head now has a silhouette against negative space on its burning
+side for the first time in six sessions, and the hand-placed embers sit
+in black air instead of in a haze their own colour.
+
+## 5. Caught myself tuning to my own assert
+
+I wrote `assert tall >= 25` for the new fragments, got 2, and changed
+two parameters to chase it. Got 5. Changed another. Got 7, then 9,
+against an assert I had by then lowered to 10 -- and stopped, because
+that is precisely the failure I wrote down at the end of session 4:
+any metric I optimise will be satisfied by whatever rule maximises it.
+The assert is 5 now and the pass makes 8. It is deliberately far under,
+because its only job is to score 0 if a later edit flattens the field
+back to rows. A detector of absence, not a target. The two parameter
+changes I kept (the attached zone from 6 to 3, the gap growth from 0.45
+to 0.30) I kept because each is a statement I can defend without the
+number: the field is only ten to sixteen cells deep, so a sheet zone of
+six swallowed it whole, and a gap growing at 0.45 left room for two
+fragments a row, which is not a field.
+
+## 6. What held, and where it still falls short
+
+Zero near-uniform rows, 28 of 28, six sessions running. Glyph-only
+carries the whole head including the plume. Colour-only is still a
+head-shaped mass in heat bands with no eye, no nose and no mouth --
+the test working. half_block 12.2% -> 13.8%, still under the corpus
+median of 15% and every one of those cells is a real edge.
+`duo3_build.py --fresh` reproduces the piece exactly, twenty passes.
+
+Where it falls short: the INTACT half has the defect I just spent this
+session removing from the burning half, in its own dialect. duo3_model
+is twenty-four hand-written rows of digits and duo3_planes/planes2 sit
+on top of it, and both are authored ROW BY ROW -- so the left side of
+the face is built out of horizontal runs too. It survives because a
+face really is mostly horizontal features, and because the contour and
+the planes passes land enough mid-cell edges to break it. But the
+cheek, the forehead and the jaw are still bands, and the fix is the
+same shape as this session's: the marks there need vertical extent
+where the form is vertical. The temple, the side of the nose, the
+nasolabial fold and the front of the ear are all vertical structures
+currently spelled in horizontal pieces.

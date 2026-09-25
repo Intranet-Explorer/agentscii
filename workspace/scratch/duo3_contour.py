@@ -20,8 +20,11 @@ PLACEMENT. Where the edge IS, per row, to half a cell.
                  One cell, but it is the cell that says skull rather
                  than egg: the only place on a head where the outline
                  reverses direction on the way down.
-    ZYGOMATIC    22.5 at rows 16-17 -- the WIDEST POINT OF THE FACE,
-                 wider than the cranium above it.
+    ZYGOMATIC    the WIDEST POINT OF THE FACE at rows 16-17 -- but NOT
+                 of the head, which session 5 had backwards and session
+                 6 measured: a cranium is wider at the parietal than a
+                 face is at the cheekbones, which is why the profile
+                 reverses TWICE on the way down and not once.
     under it     falls away; the cheek hollow
     MANDIBLE     the angle of the jaw at x26, and from there the lower
                  border runs down and forward to the chin as a curve,
@@ -79,14 +82,16 @@ PROFILE = {
     # heights. A vertical rim cell on top of that puts full-height ink
     # beside a half-height dome, and the skull grows a corner.
     3: None,
-    4: 30.5, 5: 28.5, 6: 27.0, 7: 25.5, 8: 25.0,
-    9: 24.5, 10: 24.5,                 # parietal
-    11: 25.5, 12: 25.5,                # TEMPLE -- the pinch
-    13: 24.5, 14: 23.5, 15: 23.0,      # zygomatic arch coming forward
-    16: 22.5, 17: 22.5,                # CHEEKBONE -- widest point
-    18: 23.5, 19: 24.5,                # falling away under the arch
-    20: 25.0, 21: 25.5,                # the cheek hollow, then the masseter
+    4: 30.5, 5: 28.5, 6: 26.5, 7: 25.0, 8: 24.0,
+    9: 23.5, 10: 23.5,                 # PARIETAL -- widest point of the HEAD
+    11: 24.5,                          # the temporal crest; wall drops away
+    12: 25.5, 13: 25.5,                # TEMPORAL FOSSA -- the pinch
+    14: 24.5, 15: 24.0,                # zygomatic arch coming forward
+    16: 24.0, 17: 24.5,                # CHEEKBONE -- widest point of the FACE
+    18: 25.0, 19: 25.5,                # falling away under the arch
+    20: 26.0, 21: 26.0,                # the cheek hollow, then the masseter
 }
+
 
 # The mandible's lower border: edge ROW per column, half-row resolution.
 # x36-42 are planes2's and stay its business; this is the angle of the
@@ -180,7 +185,9 @@ if __name__ == '__main__':
     n, cells = apply()
     landed = sum(1 for _, _, g, _, _ in cells if g in '▀▄▌▐')
     widths = [v for v in PROFILE.values() if v is not None]
-    assert PROFILE[16] == min(widths), 'the cheekbone must be the widest point'
-    assert PROFILE[11] > PROFILE[9], 'the temple must pinch back in'
+    assert PROFILE[9] == min(widths), 'the parietal is the widest point of the head'
+    assert PROFILE[12] > PROFILE[9] + 1, 'the temporal fossa must pinch back in'
+    assert PROFILE[9] < PROFILE[16] < PROFILE[12], (
+        'the cheekbone comes back out, but not past the cranium')
     assert len(set(widths)) > 8, 'a profile with few distinct widths is a wall'
     print('cells', n, '/', landed, 'landed mid-cell; widest', min(widths))

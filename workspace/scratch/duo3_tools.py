@@ -202,19 +202,38 @@ def ink(x0, y0, rows, width=None):
     return out
 
 
-# THE FRONT (session 3). One column per row where intact skin stops.
+# THE FRONT. One column per row where intact skin stops.
 #
-# Session 2's note said the dissolve was a gradient of striation because
-# the gap pattern was a function of x: more zeros the further right, in
-# every row, monotonically. Density that tracks x is a rule. Density that
-# tracks distance from a stated edge is structure. This is the stated
-# edge, and everything on the burning side is measured from it now.
+# Session 3 made it a stated edge instead of a function of x, which is
+# the difference between a gradient and a structure. Session 4 said what
+# was still wrong with it and did not fix it: the LEAN alone travels
+# three cells over the whole height of the head, a straighter line than
+# the silhouette I spent session 5 calling a wall. And it is not an
+# abstract edge -- duo3_model draws a LIP at front(y) in every row, two
+# rungs above the surface behind it, so a front that does not move is a
+# bright vertical bar three cells wide down the middle of the face. That
+# bar is the first thing you see in the render. It was the ruler line.
 #
-# It leans out and down -- 43 at the crown, 46 at the jaw -- because the
-# burn started at the temple and is working down across the face. The
-# notch at rows 12-14 is the socket: the front broke inward there first,
-# which is why there is a hole in that place and not in any other.
-FRONT = {
+# Session 6: PROMINENCE drives it, the way it already drives the plates,
+# the gaps, the heat and the reach.
+#
+# Which way it drives it is the whole content of the fix, and the answer
+# is not "the fire eats what is closest to it". Fire goes through what is
+# THIN. The brow ridge and the zygomatic arch are the two buttresses of
+# the facial skeleton -- the thickest bone in the face, which is exactly
+# why they are what is left of a skull -- so intact surface SURVIVES
+# further into the burn there and the front bulges out to meet it. The
+# orbital plate behind the socket is a wafer and the temporal fossa is
+# the thinnest bone on the whole skull, and the front notches back where
+# they gave way. The socket is a hole in this picture for the same
+# reason, which is a story session 3 already told; this makes the rest of
+# the edge agree with it.
+#
+# So the brow ridge at row 10 stands at x49 with the socket at x42 three
+# rows under it, and the arch at rows 16-17 overhangs the burnt cheek
+# hollow the same way. Those two overhangs are the drawing: a face coming
+# apart along its own structure, instead of a region fading out.
+FRONT_LEAN = {
     3: 43, 4: 43, 5: 43, 6: 44, 7: 44, 8: 44, 9: 45, 10: 45, 11: 45,
     12: 44, 13: 43, 14: 44, 15: 45, 16: 45, 17: 45, 18: 46, 19: 46,
     20: 46, 21: 46, 22: 45, 23: 44, 24: 43,
@@ -222,7 +241,13 @@ FRONT = {
 
 
 def front(y):
-    return FRONT.get(y, 44)
+    # No gain below row 21. PROMINENCE there ("the JAW LINE and the
+    # chin's corner") is how far the mandible projects toward the VIEWER,
+    # and the front is a width: the head's own silhouette has already run
+    # in to the chin by row 22, so a bulge there would hang a lip and a
+    # seam in open air beside the jaw with black in between.
+    g = (prom(y) - 4.5) * 0.85 if y <= 21 else 0.0
+    return int(round(FRONT_LEAN.get(y, 44) + g))
 
 
 # The ramp written out in order, dark to light. Session 3 needs to step
@@ -262,8 +287,18 @@ def levels(x0, y0, rows, width=None):
 # statement about the head that duo3_model already draws on the intact
 # side, read across to the side that is coming apart.
 PROMINENCE = {
-    3: 4, 4: 5, 5: 5,          # crown, curving away over the top
-    6: 5, 7: 4, 8: 3,          # forehead falling into the TEMPLE HOLLOW
+    # Session 6. These six were 4,5,5,5,4,3 -- near-flat, on the
+    # reasoning that a forehead is a smooth plane. It is, and that was
+    # still the wrong reading, because PROMINENCE is not smoothness: it
+    # is how far the flesh stood forward AT THE BURNING EDGE, and the
+    # burning edge runs up the side of the forehead, not across its
+    # middle. Mirror planes2's own FRONTAL EMINENCE -- which it draws at
+    # x31-33, rows 5-7 -- about the centre line at x38 and it lands at
+    # x43-45, which is exactly where the front is. So the bump is ON the
+    # seam and the front has to ride over it.
+    3: 3, 4: 4,                # crown, curving away over the top
+    5: 6, 6: 7,                # the FRONTAL EMINENCE, square on the seam
+    7: 5, 8: 2,                # the forehead's lateral edge turning back
     9: 8, 10: 9,               # the BROW RIDGE: the most proud bone up here
     11: 3, 12: 2, 13: 2,       # the SOCKET -- a hole. The front notches
     14: 3, 15: 4,              # inward at 12-14 for the same reason.

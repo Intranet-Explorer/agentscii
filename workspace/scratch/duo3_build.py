@@ -31,7 +31,7 @@ for name in ['duo3_blockin', 'duo3_left', 'duo3_nose', 'duo3_mouth',
              'duo3_fore', 'duo3_right2', 'duo3_bg',
              'duo3_reencode', 'duo3_model', 'duo3_eye2', 'duo3_mouth2',
              'duo3_planes',
-             'duo3_nose2', 'duo3_eye3', 'duo3_mouth3', 'duo3_planes2',
+             'duo3_nose2', 'duo3_eye3', 'duo3_mouth3', 'duo3_planes2', 'duo3_buttress',
              'duo3_contour', 'duo3_neck',
              'duo3_hue']:
     print(name, subprocess.run([sys.executable, str(HERE / (name + '.py'))],
