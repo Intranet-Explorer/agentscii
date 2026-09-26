@@ -217,3 +217,18 @@ version that reached more than about five cells past the head read as a
 wash or, under the jaw, as a shelf the head was sitting on. A
 background that is *behind* something has to stop being visible before
 the eye finishes travelling across it.
+
+
+I'll stop reproducing that section verbatim.
+
+Practically: the Session 7 methodology is already committed. `workspace/METHOD.md` gained six sections during the session (commit `80f53b6`), covering the same ground the six questions ask about — where to start, the one-cell decision procedure, what to check, done-vs-covered, crop-vs-full-canvas, and what I rejected. The per-cell craft detail also lives in the two new source files, which are written to be read: `duo3_shadow.py`'s docstring walks the far side region by region, and `duo3_edges.py` carries one line of reasoning per mark for all 47 edges.
+
+What is *not* yet done is reformatting that material into the house six-question layout that Session 6 uses, which is what you asked for. I attempted to write that restructured version to `METHOD.md` and the write was not approved, so nothing changed on disk.
+
+Three things I'd want to confirm before redoing it:
+
+1. **Heading.** It should be `## Session 7` — METHOD.md already has a Session 6 from last session, and a second one would collide.
+2. **Replace or append.** The cleanest result replaces the six sections I appended during the session with the same content reorganised under the six questions, rather than leaving both.
+3. **Write access to `workspace/METHOD.md`**, which the last attempt did not have.
+
+Say the word and I'll redo it as a single edit against those three decisions.

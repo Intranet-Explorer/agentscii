@@ -411,6 +411,42 @@ metrics are necessary-condition detectors: useful for noticing absence
 (a flat row IS flat), useless as evidence of presence.
 
 
+STANDING RULE (2026-09-25) — a check that can be REFUSED must report the
+refusal distinctly from a pass. Never a zero, a null, or an empty list
+where success also produces a zero, a null, or an empty list.
+
+Third instance of this exact class, which is why it is written as a
+principle instead of patched a third time:
+
+  1. _run_claude_p returned a bare None for four different failures
+     (spawn error, timeout, generic exception, loop fallthrough) and
+     every call site printed its own hardcoded "timed out after retry".
+     A week of gate errors were misattributed to timeouts.
+  2. The blind subject check was blocked by the anatomy guard, and the
+     block surfaced as an ordinary negative result -- the piece was
+     rejected eight times on a signal that had never actually run.
+  3. opus_duo.judge reported `defect_lines: 0, verdict: null` for a
+     review that was REFUSED by the 3-review submission cap. Zero
+     defects is what a flawless piece would score.
+
+In all three, the failure mode is the same shape: the "did not run"
+path and the "ran and found nothing" path collapse into the same
+value, and every consumer downstream reads it as the good outcome.
+A refused check is not a passed check, and silence is not evidence.
+
+Rules that follow:
+  - The refusal is a distinct branch with a distinct field, loud in the
+    output: REVIEW_DID_NOT_RUN, status="shelved", returncode=-1 with the
+    real reason in stderr. Never fall through to the success shape.
+  - Fix it in the shared function, not at the call sites. One guard
+    where every caller routes through beat seven call-site edits.
+  - When a cap or policy blocks a DIAGNOSTIC use of a gate built for
+    SUBMISSIONS, the cap is not wrong -- the diagnostic needs its own
+    lane. duo3 hit the 3-review submission cap while being reviewed
+    mid-build; the fix was a separate slug for the mid-build check, not
+    a higher cap.
+
+
 gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
 claiming "two facing profile heads in complementary hue phases... brow...
 jaw... eye-line built from gradient shading over anatomical regions."

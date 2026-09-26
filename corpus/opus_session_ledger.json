@@ -42,9 +42,18 @@
       "flat_rows": "0 of 28 rows are near-uniform.",
       "metrics": "half_block 9.9% subject-only / 3.7% whole-canvas, shade-of-ink 53.4% subject-only / 20.0% whole-canvas, colors 7, disconnected masses 2, ink 36% of canvas",
       "glyph_carried": 100.0
+    },
+    {
+      "session": 6,
+      "cost_usd": 14.0893,
+      "blind_read": "Pixelated human face on black",
+      "next_intent": "NEXT: The shadow side's hue boundary is still nearly vertical because `sees()` is a function of distance past a nearly-vertical terminator, so the dark-to-cool transition reads as a faint band down the head at x46-50 \u2014 the fix is the one that worked on both contours, break it per cell against real structure (the temporal line, the arch's back edge, the ramus' posterior border) so the bounce falls off where bone actually turns rather than where a column counter says it should.",
+      "flat_rows": "0 of 28 rows are near-uniform.",
+      "metrics": "half_block 12.1% subject-only / 4.2% whole-canvas, shade-of-ink 51.5% subject-only / 17.7% whole-canvas, colors 7, disconnected masses 2, ink 33% of canvas",
+      "glyph_carried": 100.0
     }
   ],
-  "total_usd": 53.5749,
+  "total_usd": 67.6642,
   "pinned": null,
   "pin_read": "Portrait of a face",
   "total_usd_status": "EXCEEDS 42.29 BY AN UNKNOWN AMOUNT -- session 6 uncounted. Treat the $120 cap as spent-to-unknown.",
@@ -63,7 +72,7 @@
       "label": "s6-unbriefed (CONTROL, not a session)"
     }
   ],
-  "method_usd": 11.5233,
+  "method_usd": 28.131,
   "reverted": [
     {
       "session": 6,
