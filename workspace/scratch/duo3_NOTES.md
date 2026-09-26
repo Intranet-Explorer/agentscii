@@ -568,7 +568,15 @@ same skull the left contour is now cut from.
 
 ---
 
-# Session 6
+# Session 6 -- CONTROL, DISCARDED
+
+This pass ran WITHOUT the operator brief and was reviewed at 8 -> 10
+defects, the first in the project called a placeholder. Its canvas was
+discarded and the live canvas restored to session 5. Kept because the
+reasoning below about WHERE fire eats a skull is sound and was reused;
+what failed was the execution, which left the right side with no drawn
+contour at all and a stamp tiled across the region where one belonged.
+The real session 6 is further down.
 
 My own NEXT was the front, and the front was the easy half.
 
@@ -731,3 +739,187 @@ same shape as this session's: the marks there need vertical extent
 where the form is vertical. The temple, the side of the nose, the
 nasolabial fold and the front of the ear are all vertical structures
 currently spelled in horizontal pieces.
+
+
+---
+
+# Session 6
+
+Re-run with the operator brief, from the clean session-5 canvas. The
+first attempt at this session ran without the brief and is kept as
+duo3.s6-unbriefed -- 8 defects to 10, and the first "placeholder" verdict
+in the project. Its canvas was discarded; its one good idea is reused
+here and credited below.
+
+## 0. Getting back to session 5, which was not free
+
+The live canvas JSON is not in git and the discarded run had overwritten
+it. The per-session .ans snapshots are the only durable record, so
+duo3_restore.py parses one back into glyph_override -- lossless here
+because every subject cell in this piece is a hand-placed (ch, fg, bg).
+
+Two things learned doing it, both worth keeping:
+
+  harness._parse_ans_grid clamps at column 79 and then swallows the
+  newline after an exactly-80-column line, which shifts rows by a column.
+  Every row save_ans writes is exactly 80 columns. Own parser instead:
+  these files have no cursor addressing, so a straight walk is correct
+  AND shorter.
+
+  Verify a restore by round-tripping it, not by looking at it. The first
+  attempt was off by one column on every row and looked completely fine.
+  357 of the 769 cells still differ after the round trip and all 357 are
+  spaces on black with a different foreground index -- invisible, and the
+  only reason I know that is that I printed them instead of trusting the
+  count.
+
+## 1. The front, which was what I came to do
+
+FRONT travelled three cells over the whole height of the head. The
+reviewer: "a hard vertical seam through the face, perfectly straight,
+full-height -- renders as a red pillar bisecting the head. Nothing in a
+face does that." Same defect session 5 took out of the left silhouette,
+same cause: an edge written as a LEAN instead of cut from a skull.
+
+PROMINENCE drives it now, and the direction is the content, not the
+travel. It is the unbriefed run's one good idea and it is right: FIRE
+GOES THROUGH WHAT IS THIN. The brow ridge and the zygomatic arch are the
+heaviest bone in the face -- which is exactly why they are what is left
+of a burnt skull -- so intact surface survives FURTHEST FORWARD there,
+x49 and x50. The temple fossa and the orbit are a shell over air, so the
+burn is furthest back at them, x40 and x41. Ten cells of travel,
+correlation with prominence 0.91.
+
+## 2. Placement was the easy half. The seam was BRIGHT.
+
+This is the part I would have missed if I had only done my own NEXT, and
+it is what the unbriefed run did miss. Everything from x44 rightward sat
+pegged at the top two rungs in all twenty-two rows -- not one column, a
+six-column band of salmon and yellow running the full height. There was
+no value event at the front at all. Move a bright band onto a curve and
+you get a curved bright band.
+
+THE CHAR. What ends a burning surface is carbon. The last millimetre of
+skin before the fire is the DARKEST thing on the head, not the
+brightest, sitting between modelled flesh on one side and open flame on
+the other. The front is a dark red lip now -- fg 1, the darkest solid
+this palette has -- and the value across four cells goes 8, 9, char,
+black, fire. That is a drawn edge in the only sense that counts: someone
+tracing the boundary finds a mark there, instead of the place where one
+field stops and another starts.
+
+Char thickness is a statement about the bone under it. Two and three
+cells at the brow and the arch, where the fire stood longest against the
+thickest bone and it had the material to char rather than perforate. One
+scattered cell, or none at all, at the temple and the orbit, where it
+went straight through.
+
+## 3. What the front bought for free, and the decision I owed
+
+The brief set a hard constraint: if the front work did not make the right
+third read as a face dissolving rather than as a wash, the concept
+changes rather than gets tuned a fourth time -- shrink it to a margin, or
+resolve it into intact skull. Decide at the end, by looking.
+
+It did not need deciding. Cutting the front back to the skull pulled
+reach() in with it, because reach is measured from the front, and the
+dissolved band went from roughly 40% of the subject's bounding box to a
+margin of five to twelve cells hugging a contoured burning edge. The
+margin arrived as a consequence of drawing the form rather than as a
+decision about area, which is the only way I would have trusted it.
+
+What it exposed instead: the BACKGROUND had no opinion about where the
+head was. Every cell the dissolve gave up was claimed within one pass by
+duo3_bg's falloff rings, and the render came back with the same wash
+wearing a different hat. The glow is measured in MARGIN now -- how far
+past the burning edge of this row a cell sits, nine cells deep at most
+and then black.
+
+## 4. Two passes in a row that redrew a region without owning it
+
+Worth writing down because I did it twice in one session with two
+different files and neither errored.
+
+duo3_bg wrote only into cells that were already empty. Pulling the
+dissolve in left the old halo in place and put the new one on top.
+
+Then I fixed that with a clear step that used the same test as the write
+-- so when the write stopped covering rows 0-2 and 25-27, the clear
+stopped covering them too, and a stale block of glow at x52-55 above the
+crown survived two more renders while I looked straight at it.
+
+A pass that redraws a region has to own the REGION, stated once, cleared
+and redrawn -- not the marks it happens to make in it. _air() is that
+statement.
+
+The same ordering bug, in duo3_front: blanks appended after the cells
+took out the brow's first four cells of underside, silently, because
+paint() lets the last write win.
+
+## 5. The orbit, and then the eye
+
+Session 3 built the socket as a bright core on a hot ground -- white over
+yellow, the ember burning in the eye -- and it was the only white cell in
+the piece. "An isolated blowout with no falloff."
+
+A socket is a HOLE, the one part of a head that stays dark wherever the
+light is, because it is a cavity and its own rim shades it. What catches
+light is the bone around it, and with the front eaten back to x40 there
+is no skin left on those rows at all -- so what is drawn is the orbital
+rim, four walls, each taking its value from which way it faces the fire.
+The cavity is left black. Nothing is placed inside it.
+
+That made the intact half's failure louder instead of quieter: an
+unmistakable eye socket on one side and an area of modelled forehead on
+the other. A face reads from a PAIR. One socket is a wound; two things
+at the same height, one open and one closed, are a face looking at you.
+So the left eye is built on the orbit's own rows, as the three marks an
+eye is at this scale -- a lit brow whose crest descends outward through
+the cell, a lid that is drawn as absence rather than as a dark colour,
+and one bright cell where the fire is reflected off the wet of the eye.
+The catchlight is the whole mark. An eye without one reads as a hole,
+which is precisely what the other side of this head is, and the
+difference between the two is the picture.
+
+land() came out of this and belongs in the toolkit: the inverse of
+spell(). spell picks a glyph to hit a value and is no use once the glyph
+is already decided by where the edge falls; land takes the glyph as given
+and picks the colour pair, from the same heat band, that comes closest.
+Every half-block edge in duo3_eye goes through it.
+
+## 6. The left silhouette
+
+"A second straight wall on the left edge -- the left silhouette is a
+ruler line, not a contour." The placement is not what is wrong. Rows 9
+to 21 really do only travel four columns, and they should: the side of a
+cranium is close to vertical from the parietal down to the arch.
+
+What is wrong is that all nineteen rows of it were ONE GLYPH AT ONE
+VALUE. Session 5 chose constant weight deliberately -- "a contour that
+changes brightness stops being a contour" -- and that holds for
+BRIGHTNESS. It does not hold for THICKNESS. Prominence >= 8, the
+parietal and the zygomatic arch: heavy bone turning hard away, so the
+lit rim is a band two cells wide rather than a line. Prominence <= 3,
+the temple fossa and the hollow under the arch: turning so slowly there
+is barely a silhouette, so half the ink and the edge goes soft.
+
+The same table now drives both edges of the head, which is right -- a
+brow ridge and a cheekbone are the full width of a skull, not features
+of one side of it.
+
+## 7. Measured
+
+    half_block      9.9% -> 15.7% subject-only (corpus median 15%)
+    shade-of-ink   53.4% -> 65.6%
+    near-uniform rows        0 of 28, sixth session running
+    colour-only              still produces no face
+    white cells              1 -> 0
+    disconnected masses      2 -> 1
+    distinct colours in subject  7 -> 4
+
+That last one is the number I would defend rather than fix. One of the
+three lost was white, which was the blowout. The rest went with the
+shrinking field. 1, 3, 9, 11 is the fire ramp -- dark red, brown, bright
+red, bright yellow -- and adding a hue to move the count is the exact
+Goodhart move I wrote the warning about in session 2. It is worth
+watching and it is not worth painting.

@@ -80,72 +80,16 @@ def val(d, lead, p):
     return t.RAMP_ORDER[max(0, min(len(t.RAMP_ORDER) - 1, i))]
 
 
-# THE FRAGMENT (session 6). The defect that survived three rewrites of
-# this pass, because all three were rewrites of its VALUES.
-#
-# The loop was `for y: while x <= stop: place a run of `plate` cells in
-# row y`, with an independent random stream per row. So every mark on
-# the burning side was ONE CELL TALL, and no two rows were related to
-# each other by anything at all. Zoomed in, the whole side reads as
-# horizontal scan lines -- a raster of a field rather than a picture of
-# anything -- and the two long rows at the brow and the cheekbone read
-# as lines shooting sideways out of the head, because reach() steps
-# eleven cells between row 10 and row 11 and there was nothing to carry
-# that vertically. I had been answering "no vertical variation" with
-# more variation ALONG the row for three sessions.
-#
-# A chip off a skull has two dimensions. So a fragment is a small quad
-# now: a width as before; a HEIGHT from the same prominence, because the
-# brow ridge that throws its material furthest also comes off in the
-# biggest pieces, and the socket sheds one-row flakes; and a RISE. What
-# is still attached does not move. What came off goes UP, because the
-# only light in this picture is a fire and a fire takes its material
-# with it -- about a row for every three cells out, past the point where
-# the surface stops being a sheet. That is what turns the outer boundary
-# from a profile into a plume.
-#
-# Two things follow that a row-run could not do.
-#
-# A fragment that straddles rows can land its top and bottom edges
-# MID-CELL: ▄ under the top, ▀ over the bottom, ink over black, so a
-# chip in black air has a real boundary instead of a square cell corner.
-# That spelling costs value -- half a cell of the brightest ink there is
-# comes to 0.44 -- so it is only available where the body is dimmer than
-# that, which is exactly the outer ember field and not the hot sheet at
-# the seam. A sheet has no top edge anyway.
-#
-# And a fragment CLAIMS its footprint, so the row below does not
-# regenerate through it. A big chip suppresses the wash underneath
-# itself, which is the whole reason it stays one object instead of
-# dissolving back into rows.
-# Three, not six. The dissolve is only ten to sixteen cells deep at its
-# widest, so a sheet zone of six swallowed nearly all of it and the
-# quads came out h=1 anyway -- the old pass, reproduced exactly, by a
-# constant. The seam's continuous skin is the first few cells and no
-# more; the assert below is what caught it.
-ATTACHED = 3
-
-
-def _spell(v, h, j):
-    """A fragment cell: ramp char, the fragment's height, its row in it."""
-    g, fg, bg = t.RAMP[v]
-    if h == 1 or 0 < j < h - 1:
-        return g, fg, bg
-    lvl = t.value(g, fg, bg)
-    if lvl > 0.50:
-        return g, fg, bg              # too hot to spell in half a cell
-    ink = min((1, 3, 9, 11), key=lambda c: abs(0.5 * t.LUM[c] - lvl))
-    return ('▄' if j == 0 else '▀'), ink, 0
-
-
 cells = []
 for y in range(Y0, Y1 + 1):
-    # Clear every row's whole territory first, before any fragment is
-    # placed. Without this a row whose reach has pulled IN leaves last
-    # version's plates stranded past the new boundary, which is the
-    # worst of both fields -- and it has to happen for ALL rows up front
-    # now, because a fragment rises into rows above its own.
-    for x in range(t.front(y) + 1, XMAX + 1):
+    f, p = t.front(y), t.prom(y)
+    rnd = random.Random(977 + y)
+    edge, stop = silhouette(y), reach(y)
+
+    # Clear this row's whole territory first. Without this a row whose
+    # reach has pulled IN leaves last version's plates stranded past the
+    # new boundary, which is the worst of both fields.
+    for x in range(f + 1, XMAX + 1):
         cells.append((x, y, ' ', 0, 0))
 
     # THE CRACK. Half a cell of black with the first plate's lit edge
@@ -153,82 +97,27 @@ for y in range(Y0, Y1 + 1):
     # border, half a cell reads as a parting. Where the socket has
     # opened it the seam is simply gone.
     if 12 <= y <= 14:
-        cells.append((t.front(y) + 1, y, ' ', 0, 0))
+        cells.append((f + 1, y, ' ', 0, 0))
     else:
-        cells.append((t.front(y) + 1, y, '▐', 11 if 8 <= y <= 18 else 9, 0))
-
-taken = set()
-frags = []
-for y in range(Y0, Y1 + 1):
-    f, p = t.front(y), t.prom(y)
-    rnd = random.Random(977 + y)
-    edge, stop = silhouette(y), reach(y)
+        cells.append((f + 1, y, '▐', 11 if 8 <= y <= 18 else 9, 0))
 
     x = f + 2
     while x <= stop:
         d = x - f
-        # The gap used to grow at 0.45 a cell and the field is only ten
-        # to sixteen cells deep, so the walk ran out of room after two
-        # steps and every row was one wide plate at the seam and one
-        # chip far out. Slower gap growth is not a density knob -- it is
-        # what gives the outer field enough fragments to BE a field.
-        w = round((4.2 - 0.40 * d) * (0.55 + p / 12.0)) + rnd.choice([-1, 0, 0, 1])
-        gap = round((0.6 + 0.30 * d) * (1.4 - p / 10.0)) + rnd.choice([0, 0, 1])
-        w, gap = max(1, min(5, w)), max(1, min(6, gap))
-        if d <= ATTACHED:
-            h, rise = 1, 0
-        else:
-            # Prominence sets how big a piece came off; distance breaks
-            # it up again, because what is furthest out has been in the
-            # fire longest. A hollow sheds one-row flakes at any range.
-            # 0.25 and not 0.12. At 0.12 a brow-ridge chip was still
-            # three rows tall at the very end of its reach, so the
-            # biggest pieces in the picture were the ones that had
-            # travelled furthest and been in the fire longest -- two
-            # of them ended up standing in open air at the outer edge
-            # reading as a pair of posts. Big near the bone, small far
-            # out; that ordering is the whole claim.
-            h = max(1, min(3, round(p / 2.5 - (d - ATTACHED) * 0.25)))
-            rise = round((d - ATTACHED) * 0.3)
-        # Past the head's own silhouette most of what came off is
-        # already gone. That thinning used to drop random cells INSIDE a
-        # plate, which is a hole in a chip; it drops whole fragments now,
-        # because what is out there is fewer pieces, not holey ones --
-        # and at the old 0.45 that took out half the outer field, which
-        # is the only place in this pass where a chip is a separate
-        # object at all. Thinning cells and thinning objects are not the
-        # same rate.
-        if x > edge + 1 and rnd.random() < 0.28:
-            x += w + gap
-            continue
-        top = max(Y0, y - rise)
-        foot = [(x + i, top + j) for i in range(w) for j in range(h)
-                if x + i <= stop and top + j <= Y1
-                and x + i > t.front(top + j) + 1]
-        if not foot or 2 * sum(c in taken for c in foot) > len(foot):
-            x += w + gap
-            continue
-        frags.append((x, top, w, h))
-        # THE CHIP TURNS. val() is a function of the column only, so the
-        # first version of this gave every row of a fragment the same
-        # value and a three-row chip rendered as a solid domino -- a
-        # worse mark than the dash it replaced, because a dash at least
-        # did not claim to be a slab. A chip is a plate of bone at an
-        # angle and the ember is at row 13: the row of it nearest that
-        # row faces the fire most squarely and is the brightest, and
-        # each row further away drops a step. Same light as the nose's
-        # cast shadow, the throat and the contour -- there is only one.
-        tilt = {j: -k for k, j in
-                enumerate(sorted(range(h), key=lambda j: abs(top + j - 13)))}
-        for cx, cy in foot:
-            taken.add((cx, cy))
-            v = val(cx - f, cx == x, p)
-            i = t.RAMP_ORDER.index(v) + tilt[cy - top]
-            if cx > edge + 1:
-                i -= 3
-            v = t.RAMP_ORDER[max(0, i)]
-            cells.append((cx, cy, *_spell(v, h, cy - top)))
-        x += w + gap
+        plate = round((4.5 - 0.5 * d) * (0.55 + p / 12.0)) + rnd.choice([-1, 0, 0, 1])
+        gap = round((0.6 + 0.45 * d) * (1.6 - p / 9.0)) + rnd.choice([0, 0, 1])
+        plate, gap = max(1, min(5, plate)), max(1, min(6, gap))
+        for i in range(plate):
+            if x + i > stop:
+                break
+            dd = x + i - f
+            v = val(dd, i == 0, p)
+            if x + i > edge + 1:      # past the head: embers, not skin
+                if rnd.random() < 0.45:
+                    continue          # most of what came off is already out
+                v = t.RAMP_ORDER[max(0, t.RAMP_ORDER.index(v) - 3)]
+            cells.append((x + i, y, *t.RAMP[v]))
+        x += plate + gap
 
 # --- the socket: the hole the front opened first ----------------------
 # Unchanged. Dark rim carried on both half-rows above and below, so the
@@ -253,37 +142,16 @@ t.paint(cells)
 
 
 def _check():
-    """Two defects, as numbers.
-
-    The outer boundary was the block-in circle in every row before
-    session 4; if reach() stops tracking the head's form it goes back to
-    being one.
-
-    And every mark was one cell tall before session 6. A field of
-    fragments that all come out h=1 is that pass again wearing this
-    pass's code, and it would not look different from the outside until
-    somebody zoomed in -- which is how it lasted three sessions. So:
-    real quads, and real mid-cell edges to go with them.
-    """
+    """The defect, as a number. Before this pass the field's outer
+    boundary was the block-in circle in every row; if reach() ever
+    stops tracking the head's form it goes back to being one."""
     r = [reach(y) for y in range(Y0, Y1 + 1)]
     circle = [int(max(silhouette(y), t.front(y) + 4)) for y in range(Y0, Y1 + 1)]
     spread = max(a - b for a, b in zip(r, circle)) - min(a - b for a, b in zip(r, circle))
     assert spread >= 10, spread
     assert reach(10) > reach(13) + 6, (reach(10), reach(13))   # brow vs socket
-    # Five, and it is deliberately far under what the pass actually
-    # makes. I tuned two parameters toward this number when it was set
-    # at 25 and again at 10 before noticing what I was doing: an assert
-    # I adjust the drawing to satisfy is a target, and I wrote down last
-    # session that every one of these is only good as a detector of
-    # ABSENCE. All-flat scores 0. That is the whole job of this line.
-    tall = sum(1 for _, _, _, h in frags if h > 1)
-    assert tall >= 5, tall
-    landed = sum(1 for _, _, g, _, _ in cells if g in '▀▄')
-    assert landed >= 10, landed
-    return spread, tall, landed
+    return spread
 
 
 if __name__ == '__main__':
-    sp, tall, landed = _check()
-    print('cells %d  undulation %d  fragments %d (%d span rows)  %d mid-cell edges'
-          % (len(cells), sp, len(frags), tall, landed))
+    print('cells', len(cells), 'boundary undulation %d cells' % _check())

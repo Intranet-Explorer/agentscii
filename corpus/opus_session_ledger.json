@@ -1,66 +1,76 @@
 {
-  "sessions": [
-    {
-      "session": 1,
-      "cost_usd": 8.4854,
-      "blind_read": "A human face rendered in ASCII/pixel art",
-      "next_intent": "NEXT: Widen the intact half's ink range \u2014 half-block sub-cell boundaries where two values meet, sparser darks and solid lit planes \u2014 so the left side models in density as well as hue, then replace the raw block-in neck and shoulder.",
-      "metrics": "half_block 5.4% subject-only / 2.0% whole-canvas, shade-of-ink 64.1% subject-only / 24.3% whole-canvas, colors 8, disconnected masses 2, ink 37% of canvas",
-      "glyph_carried": 99.3
-    },
-    {
-      "session": 2,
-      "cost_usd": 6.53,
-      "blind_read": "A human face rendered in ASCII/pixel art",
-      "next_intent": "NEXT: Give the right side a front \u2014 one legible column where intact skin stops, then rewrite the dissolution so plate size and gap width track distance from that front rather than distance from the left edge, and pull the background glow back off it so the face has air to end against.",
-      "metrics": "half_block 7.0% subject-only / 2.7% whole-canvas, shade-of-ink 62.4% subject-only / 23.7% whole-canvas, colors 9, disconnected masses 2, ink 37% of canvas",
-      "glyph_carried": 99.3
-    },
-    {
-      "session": 3,
-      "cost_usd": 9.4444,
-      "blind_read": "A face in pixelated blocks",
-      "next_intent": "NEXT: Land the edges mid-cell \u2014 the plane breaks in duo3_model's grid all step on cell boundaries, which is both why the intact half still reads as dither rather than planes and why half_block sits at 8% against a median of 15%; convert the brow ridge, cheekbone, jawline and nose ridge into half-block edges the way duo3_planes did for its seventeen cells.",
-      "flat_rows": "0 of 28 rows are near-uniform.",
-      "metrics": "half_block 6.2% subject-only / 2.2% whole-canvas, shade-of-ink 59.8% subject-only / 21.1% whole-canvas, colors 7, disconnected masses 3, ink 34% of canvas",
-      "glyph_carried": 99.9
-    },
-    {
-      "session": 4,
-      "cost_usd": 10.2648,
-      "blind_read": "glitched pixel-art face or skull",
-      "next_intent": "NEXT: Give the head a width profile \u2014 it is exactly the same width from row 7 to row 15, a straight nine-row wall, and I deliberately did not paper over it with half-blocks because no amount of mid-cell landing fixes a contour that is in the wrong place; the skull has to widen at the temple and narrow to the jaw, with the cheekbone as the widest point of the face.",
-      "flat_rows": "0 of 28 rows are near-uniform.",
-      "metrics": "half_block 8.4% subject-only / 3.0% whole-canvas, shade-of-ink 53.0% subject-only / 19.1% whole-canvas, colors 7, disconnected masses 2, ink 35% of canvas",
-      "glyph_carried": 99.9
-    },
-    {
-      "session": 5,
-      "cost_usd": 6.285,
-      "blind_read": "Portrait of a face",
-      "next_intent": "NEXT: The burning side has the defect I just removed from the intact side \u2014 `FRONT` travels three cells over the whole height of the head, a straighter line than the silhouette I called a wall, and the fix is already in the file: `PROMINENCE` drives the plates, gaps, heat and reach but not the front, so the front has to bulge at the brow and cheekbone and notch at the socket, cut from the same skull the left contour now is.",
-      "flat_rows": "0 of 28 rows are near-uniform.",
-      "metrics": "half_block 9.9% subject-only / 3.7% whole-canvas, shade-of-ink 53.4% subject-only / 20.0% whole-canvas, colors 7, disconnected masses 2, ink 36% of canvas",
-      "glyph_carried": 100.0
-    }
-  ],
-  "total_usd": 42.2876,
-  "pinned": null,
-  "pin_read": null,
-  "total_usd_status": "EXCEEDS 42.29 BY AN UNKNOWN AMOUNT -- session 6 uncounted. Treat the $120 cap as spent-to-unknown.",
-  "controls": [
-    {
-      "session": 6,
-      "cost_usd": null,
-      "blind_read": "Pixelated human head and shoulders",
-      "next_intent": "(none stated)",
-      "flat_rows": "0 of 28 rows are near-uniform.",
-      "metrics": "half_block 9.9% subject-only / 3.7% whole-canvas, shade-of-ink 53.4% subject-only / 20.0% whole-canvas, colors 7, disconnected masses 2, ink 36% of canvas",
-      "glyph_carried": 100.0,
-      "cost_usd_reported": 1.278,
-      "cost_status": "UNMEASURED",
-      "note": "Two concurrent runs. Reported $1.278 is the launchd relaunch only, whose output was overwritten. The orphan that actually produced this canvas never reported cost. Token-derived estimate at Opus list pricing: ~$20.81 (86,414 out / 255,847 cache-write / 6,349,993 cache-read) -- NOT authoritative, list pricing may not match billing.",
-      "label": "s6-unbriefed (CONTROL, not a session)"
-    }
-  ]
+ "sessions": [
+  {
+   "session": 1,
+   "cost_usd": 8.4854,
+   "blind_read": "A human face rendered in ASCII/pixel art",
+   "next_intent": "NEXT: Widen the intact half's ink range \u2014 half-block sub-cell boundaries where two values meet, sparser darks and solid lit planes \u2014 so the left side models in density as well as hue, then replace the raw block-in neck and shoulder.",
+   "metrics": "half_block 5.4% subject-only / 2.0% whole-canvas, shade-of-ink 64.1% subject-only / 24.3% whole-canvas, colors 8, disconnected masses 2, ink 37% of canvas",
+   "glyph_carried": 99.3
+  },
+  {
+   "session": 2,
+   "cost_usd": 6.53,
+   "blind_read": "A human face rendered in ASCII/pixel art",
+   "next_intent": "NEXT: Give the right side a front \u2014 one legible column where intact skin stops, then rewrite the dissolution so plate size and gap width track distance from that front rather than distance from the left edge, and pull the background glow back off it so the face has air to end against.",
+   "metrics": "half_block 7.0% subject-only / 2.7% whole-canvas, shade-of-ink 62.4% subject-only / 23.7% whole-canvas, colors 9, disconnected masses 2, ink 37% of canvas",
+   "glyph_carried": 99.3
+  },
+  {
+   "session": 3,
+   "cost_usd": 9.4444,
+   "blind_read": "A face in pixelated blocks",
+   "next_intent": "NEXT: Land the edges mid-cell \u2014 the plane breaks in duo3_model's grid all step on cell boundaries, which is both why the intact half still reads as dither rather than planes and why half_block sits at 8% against a median of 15%; convert the brow ridge, cheekbone, jawline and nose ridge into half-block edges the way duo3_planes did for its seventeen cells.",
+   "flat_rows": "0 of 28 rows are near-uniform.",
+   "metrics": "half_block 6.2% subject-only / 2.2% whole-canvas, shade-of-ink 59.8% subject-only / 21.1% whole-canvas, colors 7, disconnected masses 3, ink 34% of canvas",
+   "glyph_carried": 99.9
+  },
+  {
+   "session": 4,
+   "cost_usd": 10.2648,
+   "blind_read": "glitched pixel-art face or skull",
+   "next_intent": "NEXT: Give the head a width profile \u2014 it is exactly the same width from row 7 to row 15, a straight nine-row wall, and I deliberately did not paper over it with half-blocks because no amount of mid-cell landing fixes a contour that is in the wrong place; the skull has to widen at the temple and narrow to the jaw, with the cheekbone as the widest point of the face.",
+   "flat_rows": "0 of 28 rows are near-uniform.",
+   "metrics": "half_block 8.4% subject-only / 3.0% whole-canvas, shade-of-ink 53.0% subject-only / 19.1% whole-canvas, colors 7, disconnected masses 2, ink 35% of canvas",
+   "glyph_carried": 99.9
+  },
+  {
+   "session": 5,
+   "cost_usd": 6.285,
+   "blind_read": "Portrait of a face",
+   "next_intent": "NEXT: The burning side has the defect I just removed from the intact side \u2014 `FRONT` travels three cells over the whole height of the head, a straighter line than the silhouette I called a wall, and the fix is already in the file: `PROMINENCE` drives the plates, gaps, heat and reach but not the front, so the front has to bulge at the brow and cheekbone and notch at the socket, cut from the same skull the left contour now is.",
+   "flat_rows": "0 of 28 rows are near-uniform.",
+   "metrics": "half_block 9.9% subject-only / 3.7% whole-canvas, shade-of-ink 53.4% subject-only / 20.0% whole-canvas, colors 7, disconnected masses 2, ink 36% of canvas",
+   "glyph_carried": 100.0
+  },
+  {
+   "session": 6,
+   "cost_usd": null,
+   "blind_read": null,
+   "next_intent": "NEXT: The horizontal banding is the last of the four defects that were named as straight lines -- long single-glyph runs across the face at rows 9-10, 16-18 and 21-24 -- and it has the same cause the two vertical walls had, a mark repeated along a direction the form is not doing anything in; the fix is the one that worked on both edges, which is to make the run's GLYPH carry where the surface crosses the cell boundary while its value stays put, so the brow, the arch and the jaw read as ridges seen edge-on rather than as bars.",
+   "flat_rows": "0 of 28 rows are near-uniform.",
+   "metrics": "half_block 15.7% subject-only / 4.2% whole-canvas, shade-of-ink 65.6% subject-only / 17.6% whole-canvas, colors 4, disconnected masses 1, ink 26.7% of canvas",
+   "glyph_carried": null,
+   "note": "Briefed re-run from the clean session-5 canvas; the unbriefed attempt is kept as a control at workspace/scratch/duo3_sessions/duo3.s6-unbriefed.*. Front cut from the skull (travel 3 -> 10 cells, corr 0.91 with PROMINENCE) and given a dark charred lip; orbit rebuilt as a hole with a bone rim, which removed the piece's only white cell; intact eye built to pair with it; left rim varied by thickness. THE DISSOLUTION DECISION the brief asked for: it became a MARGIN, not by choosing an area but because reach() is measured from the front and came in with it -- 40% of the bounding box down to a 5-12 cell band. The wash that remained was duo3_bg's, not the dissolve's, and that pass now measures margin from the burning edge."
+  }
+ ],
+ "total_usd": 42.2876,
+ "pinned": null,
+ "pin_read": null,
+ "total_usd_status": "session 6 (briefed) uncounted; sessions 1-5 total $42.29 including the discarded unbriefed pass. Treat the $120 cap as spent-to-unknown.",
+ "controls": [
+  {
+   "session": 6,
+   "cost_usd": null,
+   "blind_read": "Pixelated human head and shoulders",
+   "next_intent": "(none stated)",
+   "flat_rows": "0 of 28 rows are near-uniform.",
+   "metrics": "half_block 9.9% subject-only / 3.7% whole-canvas, shade-of-ink 53.4% subject-only / 20.0% whole-canvas, colors 7, disconnected masses 2, ink 36% of canvas",
+   "glyph_carried": 100.0,
+   "cost_usd_reported": 1.278,
+   "cost_status": "UNMEASURED",
+   "note": "Two concurrent runs. Reported $1.278 is the launchd relaunch only, whose output was overwritten. The orphan that actually produced this canvas never reported cost. Token-derived estimate at Opus list pricing: ~$20.81 (86,414 out / 255,847 cache-write / 6,349,993 cache-read) -- NOT authoritative, list pricing may not match billing.",
+   "label": "s6-unbriefed (CONTROL, not a session)"
+  }
+ ]
 }

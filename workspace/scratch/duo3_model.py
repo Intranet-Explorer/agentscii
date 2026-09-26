@@ -41,36 +41,36 @@ sys.path.insert(0, '/Users/octo/agentscii/workspace/scratch')
 import duo3_tools as t
 
 X0, Y0 = 24, 3
-#      x24                 x46  x49
-#      |                     |    |
+#      x24                 x46
+#      |                     |
 G = [
-    '.........23334445556......',   #  3 crown, tipped away
-    '......12223334445556......',   #  4
-    '....11223334445556667.....',   #  5
-    '..112233344455566677766...',   #  6
-    '.11223334445556667777.....',   #  7
-    '.11122344555666777788.....',   #  8 brow starting to shelf
-    '.112345566666667778888798.',   #  9 BROW RIDGE
-    '.1124566777766677788888798',   # 10 brow ridge, most prominent
-    '.112.........457877888....',   # 11 eyebrow (eye pass) | nose ridge x40
-    '.11.........445787788.....',   # 12 eye  | nose: dark side, lit ridge
-    '.111........44578788......',   # 13 eye
-    '.112.......4445787788.....',   # 14 eye
-    '.123......544578778888....',   # 15 eye socket floor | cheekbone begins
-    '..24566666654578887899768.',   # 16 CHEEKBONE, and the ball of the nose
-    '..134555544457877779986478',   # 17 nose's cast shadow falls left
-    '...12333443345566787898...',   # 18 THE HOLLOW under the cheekbone
-    '....1233444455556678788...',   # 19 jaw line, upper lip
-    '....12334...........787...',   # 20 mouth pass owns x33-x43
-    '....12234...........8788..',   # 21
-    '........344.......7788....',   # 22
-    '.........34555666777......',   # 23 chin, lit front plane
-    '..........234445556.......',   # 24
-    '...........1112222333.....',   # 25 neck, with the jaw's shadow on it
-    '...........1111222233.....',   # 26
+    '.........23334445556...',   #  3 crown, tipped away
+    '......12223334445556...',   #  4
+    '....1122333444555666...',   #  5
+    '..1122333444555666777..',   #  6
+    '.11223334445556667777..',   #  7
+    '.11122344555666777788..',   #  8 brow starting to shelf
+    '.112345566666667778888.',   #  9 BROW RIDGE
+    '.112456677776667778888.',   # 10 brow ridge, most prominent
+    '.112.........457877888.',   # 11 eyebrow (eye pass) | nose ridge x40
+    '.11.........445787788..',   # 12 eye  | nose: dark side, lit ridge
+    '.111........44578788...',   # 13 eye
+    '.112.......4445787788..',   # 14 eye
+    '.123......544578778888.',   # 15 eye socket floor | cheekbone begins
+    '..24566666654578887888.',   # 16 CHEEKBONE, and the ball of the nose
+    '..13455554445787778888.',   # 17 nose's cast shadow falls left
+    '...12333443345566788878',   # 18 THE HOLLOW under the cheekbone
+    '....1233444455556678788',   # 19 jaw line, upper lip
+    '....12334...........787',   # 20 mouth pass owns x33-x43
+    '....12234...........878',   # 21
+    '........344.......7788.',   # 22
+    '.........34555666777...',   # 23 chin, lit front plane
+    '..........234445556....',   # 24
+    '...........1112222333..',   # 25 neck, with the jaw's shadow on it
+    '...........1111222233..',   # 26
 ]
 
-cells = [c for c in t.ink(X0, Y0, G, width=26) if c[0] <= t.front(c[1])]
+cells = [c for c in t.ink(X0, Y0, G, width=23) if c[0] <= t.front(c[1])]
 
 # THE LIP, one cell wide, with a groove behind it. The last intact cell
 # in every row goes two rungs above the grid and the cell BEHIND it one

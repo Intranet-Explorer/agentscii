@@ -20,11 +20,8 @@ PLACEMENT. Where the edge IS, per row, to half a cell.
                  One cell, but it is the cell that says skull rather
                  than egg: the only place on a head where the outline
                  reverses direction on the way down.
-    ZYGOMATIC    the WIDEST POINT OF THE FACE at rows 16-17 -- but NOT
-                 of the head, which session 5 had backwards and session
-                 6 measured: a cranium is wider at the parietal than a
-                 face is at the cheekbones, which is why the profile
-                 reverses TWICE on the way down and not once.
+    ZYGOMATIC    22.5 at rows 16-17 -- the WIDEST POINT OF THE FACE,
+                 wider than the cranium above it.
     under it     falls away; the cheek hollow
     MANDIBLE     the angle of the jaw at x26, and from there the lower
                  border runs down and forward to the chin as a curve,
@@ -82,16 +79,14 @@ PROFILE = {
     # heights. A vertical rim cell on top of that puts full-height ink
     # beside a half-height dome, and the skull grows a corner.
     3: None,
-    4: 30.5, 5: 28.5, 6: 26.5, 7: 25.0, 8: 24.0,
-    9: 23.5, 10: 23.5,                 # PARIETAL -- widest point of the HEAD
-    11: 24.5,                          # the temporal crest; wall drops away
-    12: 25.5, 13: 25.5,                # TEMPORAL FOSSA -- the pinch
-    14: 24.5, 15: 24.0,                # zygomatic arch coming forward
-    16: 24.0, 17: 24.5,                # CHEEKBONE -- widest point of the FACE
-    18: 25.0, 19: 25.5,                # falling away under the arch
-    20: 26.0, 21: 26.0,                # the cheek hollow, then the masseter
+    4: 30.5, 5: 28.5, 6: 27.0, 7: 25.5, 8: 25.0,
+    9: 24.5, 10: 24.5,                 # parietal
+    11: 25.5, 12: 25.5,                # TEMPLE -- the pinch
+    13: 24.5, 14: 23.5, 15: 23.0,      # zygomatic arch coming forward
+    16: 22.5, 17: 22.5,                # CHEEKBONE -- widest point
+    18: 23.5, 19: 24.5,                # falling away under the arch
+    20: 25.0, 21: 25.5,                # the cheek hollow, then the masseter
 }
-
 
 # The mandible's lower border: edge ROW per column, half-row resolution.
 # x36-42 are planes2's and stay its business; this is the angle of the
@@ -145,6 +140,42 @@ BOUNDS = [(24, 18, '▀', 1), (25, 18, '▀', 1),
           (28, 19, '░', 3)]
 
 
+# SESSION 6. The review, on the edge this file exists to draw: "a second
+# straight wall on the left edge -- ▐ repeats at col 24-25 on rows 5, 6,
+# 8, 10, 11, 12, 14, 17, 18, 19, 22; the left silhouette is a ruler line,
+# not a contour." The placement above is not what is wrong. Rows 9 to 21
+# genuinely only travel four columns, and they should: the side of a
+# cranium really is close to vertical from the parietal down to the arch,
+# and session 5's taper above and below that is visible and correct.
+#
+# What is wrong is that all nineteen rows of it are ONE GLYPH AT ONE
+# VALUE. A silhouette drawn at constant weight down its whole length is a
+# ruler line whatever column it sits in, and constant weight was a
+# deliberate choice here -- "a contour that changes brightness stops
+# being a contour". That holds for BRIGHTNESS. It does not hold for
+# THICKNESS, which is the thing an edge is actually allowed to vary, and
+# varying it says something brightness cannot:
+#
+#   prominence >= 8   rows 9-10 and 16-17, the parietal and the zygomatic
+#                     arch. Heavy bone close under thin skin, turning
+#                     hard away from the viewer, so the lit rim is a BAND
+#                     two cells wide rather than a line. These are the
+#                     same rows the front bulges out at on the other side
+#                     of the head -- one table, two edges, because a brow
+#                     ridge and a cheekbone are the full width of a skull
+#                     and not features of one side of it.
+#   prominence <= 3   rows 8, 11-13 and 19: the temple fossa and the
+#                     hollow under the arch. Flat, recessed, turning so
+#                     slowly that there is barely a silhouette to catch
+#                     anything -- half the ink, and the edge goes soft.
+#
+# The rim's HUE and its position encoding are untouched: fg 1 the whole
+# way down per session 3's exemption, ▐ where the edge lands mid-cell
+# and ▒ where it lands on the boundary between two columns.
+THICK = {y for y in range(4, 22) if t.prom(y) >= 8}
+SOFT = {y for y in range(4, 22) if t.prom(y) <= 3}
+
+
 def build():
     cells, blank = [], []
     for y in range(3, 22):
@@ -152,11 +183,19 @@ def build():
         x0 = 33 if e is None else int(e)
         blank += [(x, y) for x in range(20, x0)]
         if e is not None:
-            cells.append((x0, y, '▐' if e % 1 else '▒', RIM_FG, 0))
+            # A soft rim carries no sub-cell position because there is
+            # no crisp edge there to place: half the ink, both ways.
+            rim = '░' if y in SOFT else ('▐' if e % 1 else '▒')
+            cells.append((x0, y, rim, RIM_FG, 0))
         for i, d in enumerate(FLANK[y]):
             if d != '.':
                 x = x0 + 1 + i
-                cells.append((x, y, *t.spell(t.RUNG[int(d)], x, y)))
+                if i == 0 and y in THICK:
+                    # the second cell of the band, not the first cell of
+                    # the flank: full ink, so the rim reads as width
+                    cells.append((x, y, '█', RIM_FG, 0))
+                else:
+                    cells.append((x, y, *t.spell(t.RUNG[int(d)], x, y)))
     cells += [(x, y, g, fg, 0) for x, y, g, fg in BOUNDS]
 
     for x, e in MANDIBLE.items():
@@ -185,9 +224,12 @@ if __name__ == '__main__':
     n, cells = apply()
     landed = sum(1 for _, _, g, _, _ in cells if g in '▀▄▌▐')
     widths = [v for v in PROFILE.values() if v is not None]
-    assert PROFILE[9] == min(widths), 'the parietal is the widest point of the head'
-    assert PROFILE[12] > PROFILE[9] + 1, 'the temporal fossa must pinch back in'
-    assert PROFILE[9] < PROFILE[16] < PROFILE[12], (
-        'the cheekbone comes back out, but not past the cranium')
+    assert PROFILE[16] == min(widths), 'the cheekbone must be the widest point'
+    assert PROFILE[11] > PROFILE[9], 'the temple must pinch back in'
     assert len(set(widths)) > 8, 'a profile with few distinct widths is a wall'
-    print('cells', n, '/', landed, 'landed mid-cell; widest', min(widths))
+    rim = [g for x, y, g, fg, _ in cells if fg == RIM_FG and (x, y) in
+           {(int(PROFILE[r]), r) for r in PROFILE if PROFILE[r]}]
+    assert len(set(rim)) >= 3, 'one glyph down the whole edge is a ruler'
+    print('cells', n, '/', landed, 'landed mid-cell; widest', min(widths),
+          '; rim glyphs', ''.join(sorted(set(rim))), '; band rows',
+          sorted(THICK), '; soft rows', sorted(SOFT))

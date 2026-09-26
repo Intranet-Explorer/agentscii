@@ -12,28 +12,6 @@ that competed with the face -- a computed field is the right tool only
 while it stays a base TONE, and that one had become a second subject.
 It is much tighter now, and it does not exist at all on the dark side.
 
-SESSION 6, and this is the pass that was wrong the whole time. The
-review has rejected the right third three times in three vocabularies:
-"a gradient applied uniformly per row", "a dissolve needs form to
-dissolve FROM", "a structureless wash, roughly 40% of the subject's
-bounding box doing no drawing work". I spent sessions 3, 4 and 5
-answering all three on duo3_right2, the dissolve -- and duo3_right2
-stops at reach(y), x47 to x60. Everything from there out to x68 was
-THIS pass: concentric rings of dark red around the ember, thirteen
-columns wide, on an eighty-column canvas. The structureless wash was
-never the dissolve. It was the background, and I had been tuning the
-wrong thing since session 3.
-
-So the rings are gone and what replaces them is a MARGIN: a band that
-follows the dissolve's own outer boundary, a few cells deep, and then
-black. It is deeper at the brow and the cheekbone and shallow at the
-socket, from the same PROMINENCE as everything else on this side --
-air that has more burning material in it is brighter air. Two things
-fall out of that which the rings could never do: the head gets a
-SILHOUETTE against negative space on its burning side for the first
-time in six sessions, and the hand-placed embers now sit in black air
-instead of in a haze the same colour as themselves.
-
 Two things keep it from being a clean set of rings:
   - the head OCCLUDES it. Cells to the left of the face get knocked
     down a band, because the head is between them and the only light
@@ -45,6 +23,7 @@ Two things keep it from being a clean set of rings:
 Only cells that are still empty black get written, so nothing here can
 touch the face.
 """
+import math
 import sys
 sys.path.insert(0, '/Users/octo/agentscii/workspace/scratch')
 import duo3_tools as t
@@ -52,89 +31,98 @@ import duo3_tools as t
 EMBER_X, EMBER_Y = 47.0, 13.0      # the socket -- the piece's only light
 HEAD_L, HEAD_R = 24, 52
 
-def env(y):
-    """The plume's outline, not one row's. Session 6.
+def _air(x, y):
+    """The cells this pass owns: the open air off the burning side.
 
-    The margin was measured out from t.reach(y), which is what each row
-    of material does on its own -- and reach() steps ELEVEN cells
-    between row 10 and row 11, brow ridge to eye socket. So the lit air
-    jumped eleven cells too, and the two prominent rows read as a pair
-    of horizontal dashes flung out sideways with black above and below
-    them. Air does not have an eleven-cell step in it. Glowing air is a
-    continuous medium and it takes the shape of the plume AS A WHOLE, so
-    this is a cone: the furthest any row within two rows of here throws
-    its material, less two cells for every row of separation. The brow
-    and the cheekbone still bulge -- they are still doing the driving --
-    but the bulge now has a shoulder instead of a cliff.
+    Stated once and used for BOTH the clear and the write, which is the
+    whole point. Session 6 got this wrong twice in a row in the same way.
+    First the guards sat inside a write-only-into-empty-cells loop, so
+    pulling the dissolve in left the old halo underneath the new one.
+    Then the clear used the same test as the write, so when the write
+    stopped covering rows 0-2 and 25-27 the clear stopped covering them
+    too, and the stale block of glow up at x52-55 above the crown simply
+    stayed on the canvas through two more renders. A pass that redraws a
+    region has to own the region, not the marks it happens to make in it.
     """
-    return max(t.reach(min(24, max(3, y + dy))) - 2 * abs(dy)
-               for dy in (-2, -1, 0, 1, 2))
-
-
-grid = t.grid(0, 0, 80, 28)
-cells = []
-for y, row in enumerate(grid):
-    for x, (ch, fg, bg) in enumerate(row):
-        if not (ch == ' ' and bg == 0):
-            continue                         # occupied -- leave it alone
-        # The head is between this light and everything on its far
-        # side, so there is no glow over there at all -- the intact
-        # half keeps the dark it was modelled against.
-        if x < HEAD_L + 16 and 1 <= y <= 26:
-            continue
-        # AND no glow anywhere inside the dissolve. The field has to
+    if 3 <= y <= 24:
+        # Nothing left of the burning edge of this row. The field has to
         # end against black or its gaps are not gaps -- they are a
-        # slightly darker lavender, and the face simply fades into the
-        # air it is supposed to be leaving. Session 4: this was a flat
-        # front+11 and the dissolve now reaches past that at the brow
-        # and the cheekbone, so it asks reach() where the row ends.
-        if 3 <= y <= 24 and x <= env(y) + 2:
+        # slightly darker ground, and the face fades into the air it is
+        # supposed to be leaving, which is what session 2's version did.
+        # Nor anything on the far side of the head: it is between this
+        # light and everything over there, so the intact half keeps the
+        # dark it was modelled against.
+        return x >= HEAD_L + 16 and x > t.reach(y) + 2
+    # Above the crown and below the jaw there is no burning edge to glow
+    # against, so this pass owns those rows only to keep them clear.
+    return x >= 50
+
+
+# SESSION 6, the falloff itself. This was three rings measured from the
+# ember, out to d<22, and the reviewer has now called the right third "a
+# structureless wash" three times in three sessions. The rings were not
+# the whole of what that meant, but they were the part that GREW: when
+# this session cut the front back to the skull, reach() came in with it,
+# and every cell the dissolve gave up was claimed by a field that had no
+# opinion about where the head was. A background that expands to fill
+# whatever the drawing vacates is not a background. It is the absence of
+# one, wearing a gradient.
+#
+# The distance that decides a cell is MARGIN now -- how far past the
+# burning edge OF THIS ROW it sits -- and the glow is nine cells of that
+# at its deepest and then black. Air lit by a fire is brightest against
+# the thing that is burning; it does not go on being lit twenty cells
+# away. Ember distance stays in as the second term, so the halo is deep
+# beside the orbit and thins to nothing at the crown and the jaw.
+cells = [(x, y, ' ', 0, 0) for y in range(28) for x in range(80)
+         if _air(x, y)]
+for y, row in enumerate(t.grid(0, 0, 80, 28)):
+    for x, (ch, fg, bg) in enumerate(row):
+        if not (_air(x, y) and 3 <= y <= 24):
             continue
-        # THE MARGIN. Depth measured out from where this row's shed
-        # material actually stops -- not a radius from the ember, which
-        # is what made it a set of rings. The brow ridge and the
-        # zygomatic arch throw the most material clear, so the air
-        # outside them is the brightest and the band is deepest there;
-        # the socket sheds almost nothing and its margin is two cells.
-        # Depth off the same cone, not off this row's prominence alone.
-        # Smoothing only the margin's INNER edge left the outer one
-        # stepping six cells between the brow and the socket -- the same
-        # cliff, moved four cells right and no less of a horizontal line
-        # for having been half fixed.
-        yy = min(24, max(3, y))
-        deep = max(t.prom(min(24, max(3, yy + dy))) - abs(dy)
-                   for dy in (-2, -1, 0, 1, 2))
-        depth = 5 + round(deep - 4.5)
-        if not 3 <= y <= 24:
-            depth = depth // 2            # off the top and bottom of the head
-        d = x - (env(yy) + 3)
-        if not 0 <= d < depth:
+        m = x - t.reach(y)
+        if m < 0:
             continue
-        if d < depth * 0.35:
+        # cells are about twice as tall as wide, so vertical distance
+        # counts double or the falloff comes out as an ellipse
+        d = math.hypot(x - EMBER_X, 2 * (y - EMBER_Y))
+        depth = 9 - int(d / 4)
+        if m > depth:
+            continue
+        if m <= depth / 3:
             cells.append((x, y, '\u2592', 1, 0))
-        elif d < depth * 0.7:
+        elif m <= 2 * depth / 3:
             cells.append((x, y, '\u2591', 1, 0))
         elif (x + y) % 2 == 0:
             # The outermost band is thinned on a checker AND spelled in
-            # the dimmest glyph there is: \u00b7 over black is four percent
-            # ink, a sixth of \u2591, so it is a real step further out
-            # without being a step into another hue. It was \u2591 in
-            # magenta, which is the violet the review caught -- I had
-            # reached for a colour to say 'less light' when less ink
-            # says it in the palette the fire is already in.
+            # the dimmest glyph there is: a middot over black is four
+            # percent ink, a sixth of the light shade, so it is a real
+            # step further out without being a step into another hue.
             cells.append((x, y, '\u00b7', 1, 0))
+
 
 # Embers off the temple: a plume, not a scatter. Bright and dense where
 # they leave the face, cooling and thinning as they rise.
+# Session 6: pulled in from x64 to x59 and clustered. Spread over
+# twenty-four columns these were single cells with four columns of black
+# between them, and the control run's review named the result exactly:
+# "isolated debris, reads as noise, not embers -- nothing connects them
+# to the mass." An ember is only an ember if you can see where it came
+# from, so the plume starts ON the burning edge at the orbit and at the
+# temple, the two places actually shedding, and every cell in it has a
+# neighbour.
 EMBERS = [
-    (54, 6, '▒', 9), (56, 5, '░', 9), (55, 8, '▓', 11),
-    (58, 4, '░', 1), (57, 7, '▒', 9), (59, 6, '░', 9),
-    (53, 3, '░', 9), (55, 2, '░', 1), (60, 3, '░', 1),
-    (58, 10, '▒', 9), (61, 8, '░', 9), (60, 11, '░', 1),
-    (56, 12, '▓', 11), (59, 14, '▒', 9), (62, 12, '░', 9),
-    (57, 16, '▒', 9), (61, 17, '░', 1), (55, 19, '░', 9),
-    (58, 20, '░', 1), (54, 22, '░', 1), (63, 5, '░', 1),
-    (64, 10, '░', 1), (62, 20, '░', 1), (52, 25, '░', 1),
+    (51, 10, '▒', 11), (52, 9, '░', 9), (53, 8, '▒', 9),
+    (52, 7, '░', 9), (54, 7, '░', 9), (53, 6, '▒', 9),
+    (55, 6, '░', 1), (54, 5, '░', 9), (56, 5, '░', 1),
+    (55, 4, '░', 1), (57, 4, '\u00b7', 9), (56, 3, '░', 1),
+    (58, 3, '\u00b7', 1), (57, 2, '\u00b7', 1),
+    (51, 13, '▓', 11), (52, 12, '▒', 11), (53, 12, '░', 9),
+    (53, 11, '▒', 9), (54, 10, '░', 9), (55, 9, '░', 1),
+    (54, 14, '░', 9), (55, 13, '▒', 9), (56, 12, '░', 1),
+    (57, 11, '░', 1), (58, 10, '\u00b7', 1), (59, 9, '\u00b7', 1),
+    (52, 17, '▒', 9), (53, 16, '░', 9), (54, 16, '░', 1),
+    (54, 18, '░', 1), (55, 17, '\u00b7', 1),
 ]
 cells += [(x, y, ch, fg, 0) for x, y, ch, fg in EMBERS]
 
