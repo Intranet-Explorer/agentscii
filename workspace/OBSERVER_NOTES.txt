@@ -374,6 +374,43 @@ Practical use: keep `disconnected masses` as a prompt to ask "is there a
 path from the mass to this fragment", not as a defect count.
 
 
+OBSERVER NOTE (2026-09-25) — the blind read fired correctly as a
+tripwire while EVERY metric improved. Third confirmation that metrics do
+not track quality here, and the first one caught live instead of after
+the fact.
+
+duo3 session 6 (briefed), measured against session 5:
+
+    half_block          9.9%  -> 12.0%   better
+    disconnected masses    5  ->     2   better
+    ink share            36%  ->    30%   better (less filler)
+    glyph_carried      99.9%  -> 100.0%  better
+    flat rows           0/28  ->  0/28   held
+    gate                PASS  ->  PASS   held
+    blind read    "Portrait of a face" -> "abstract/no clear subject"
+
+Every number moved the right way. The subject was gone. Direct look
+confirmed it: a mottled field of yellow and red with no eye, no nose, no
+mouth, where the previous version reads as a face at a glance. Reverted
+to the s5 pin.
+
+The two earlier confirmations were both retrospective -- glyph-carried
+moved 28.6% -> 98.2% with an identical verdict at both ends, and twelve
+metrics could not separate a regressed piece from an accepted one. This
+one was caught DURING the run, by the cheap check, before any budget
+went into building on top of a destroyed subject. That is the entire
+case for the blind read surviving its demotion from progress signal to
+tripwire.
+
+Note the mechanism, because it is not "the metrics were wrong". Each
+number measured exactly what it claims. Half-blocks did increase.
+Detached fragments did decrease. What none of them measure is whether
+the marks still describe a face -- and a set of local improvements can
+each be real while the thing they compose stops being legible. The
+metrics are necessary-condition detectors: useful for noticing absence
+(a flat row IS flat), useless as evidence of presence.
+
+
 gallery/pack36/_dialogue.ans ("TWO VOICES v1.1") shipped with a critique
 claiming "two facing profile heads in complementary hue phases... brow...
 jaw... eye-line built from gradient shading over anatomical regions."
