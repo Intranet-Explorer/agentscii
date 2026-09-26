@@ -122,6 +122,14 @@ def judge(path, label):
                                      "Submitted for review. Assess on its own merits.")
     text = rev.get("opus_reasoning") or rev.get("message") or ""
     verdict = rev.get("opus_verdict")
+    # A shelved/blocked review returns no verdict. Say so loudly instead of
+    # reporting defect_lines 0, which reads as a clean sheet.
+    if verdict is None:
+        print(json.dumps({"label": label, "path": str(path),
+                          "REVIEW_DID_NOT_RUN": rev.get("status") or "no verdict",
+                          "message": text.strip()}, indent=2))
+        return {"label": label, "path": str(path), "verdict": None,
+                "blocked": rev.get("status") or "no verdict", "reasoning": text}
     constructed = bool(CONSTRUCTED.search(text))
     placeholder = bool(PLACEHOLDER.search(text))
     m = harness._compute_piece_metrics(path)

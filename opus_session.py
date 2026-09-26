@@ -222,24 +222,24 @@ Before you stop: document HOW YOU WORK, for METHOD.md -- the house
 method, which will replace our region-pass build sequence in STYLE.md
 and then be handed to a weaker local model to follow.
 
-Not what you drew. How you decided. Answer from THIS session's actual
-work, citing real cells and regions you touched:
+400 WORDS MAXIMUM. Hard cap. Spend them on the two things a weaker
+model cannot infer from the finished canvas:
 
-1. Where do you start on a subject, and why there?
-2. Take ONE region you worked this session. How did you decide an
-   individual cell's glyph, its foreground and its background? What
-   makes a cell get a half-block instead of a shade char?
-3. What do you check before moving on from a region?
-4. How do you know a region is DONE rather than merely covered?
-5. When do you crop and zoom versus work at full canvas?
-6. What did you TRY THIS SESSION AND REJECT, and why? (An approach you
-   started and backed out of is the most useful thing here -- it is
-   the part a weaker model cannot infer from the finished canvas.)
+  1. WHAT YOU TRIED AND REJECTED this session, and why you backed out.
+  2. CELL-LEVEL DECISIONS: for one region you worked, how you chose an
+     individual cell's glyph, fg and bg. What makes a cell get a
+     half-block rather than a shade char.
 
-Write it as instructions someone else could follow, not as a report of
-what you did. Concrete beats general: "a half-block goes where two
-brightness bands meet inside one cell" beats "use half-blocks for
-detail". Markdown, no preamble, start with '## Session {n}'.
+Then, only if words remain: where you start on a subject and why there;
+what tells you a region is DONE rather than merely covered; when you
+crop and zoom versus work at full canvas.
+
+DO NOT summarise what you did this session. The canvas and the defect
+review already record that, and narration is what eats the budget.
+Instructions someone else could follow, not a report. Concrete beats
+general: "a half-block goes where two brightness bands meet inside one
+cell" beats "use half-blocks for detail". Markdown, no preamble, start
+with '## Session {n}'.
 """
 
 
