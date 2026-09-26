@@ -1,0 +1,40 @@
+SESSION 7. The dissolution is dropped. The right side becomes the shadowed half of the same skull.
+
+WHY, because the reason is in your own METHOD.md write-up and it is the correct diagnosis:
+
+  "I tried to fix the front by moving the boundary column per row and shading across it. That is the same rule-over-a-region move in a smaller window... The edge has to be a sequence of decisions about what is behind it, not a function evaluated per row."
+
+A dissolve is defined by what ISN'T there. There is nothing behind the edge to decide about, so every attempt collapses back into a function evaluated over a region - the exact defect class this entire run exists to escape. Four attempts across three different prompts have now failed on that region, including one where every metric improved and the face stopped reading at all.
+
+A SHADOWED SKULL HAS SOMETHING BEHIND IT. Every cell on the dark side is a question with a real answer: what part of the head is this, which way does it face, how much light reaches it, what is behind it. That is the difference, and it is why this should work where the dissolve could not.
+
+THE TASK. Starting from the current canvas, which is the session-5 pin:
+
+The head is one skull, lit from the left. The left side is already strong - do not touch what works. The right side is the SAME head continuing into shadow. Not empty, not coming apart, not fading into the background. Solid bone and flesh that happens to be turned away from the light.
+
+  - The cheekbone on the shadow side catches a RIM of light where the
+    zygomatic arch turns back toward the source. That rim is the single
+    most important mark in this session: it is what proves the head has
+    a far side rather than stopping at the light boundary.
+  - The temple falls into the deepest dark of the piece.
+  - The jaw on the shadow side reads as an EDGE against the background -
+    a silhouette you can find with your eye, defined by contrast, not by
+    a contour line drawn around it.
+  - The eye socket on the shadow side is present as structure even if
+    almost no detail resolves in it. A socket in shadow is still a
+    socket.
+  - Shadow is not black. Reflected light, bounce off whatever is behind,
+    the dim red of the fire itself - the dark side should have its own
+    quiet range. Dark with structure, not dark as absence.
+
+THE TITLE AND PALETTE STAY. Fire can remain in the palette and in the name without the head coming apart. The light source can be firelight; that is what makes the lit half warm. "What the Fire Left" still works for a head half in shadow.
+
+WHAT TO PROTECT. The piece currently reads as a face at a glance - that is the whole asset. A pass that improves any measurement and costs the face is a failed pass and gets reverted. The blind read caught exactly that last session while half_block, disconnected masses, ink share and glyph-carried ALL improved. Do not trust a number over a look.
+
+Also hold: zero near-uniform rows (28 of 28), and the colour-only self-check must keep failing to produce a face.
+
+Your own NEXT, still live and compatible, fold it in where it touches the shadow side: the horizontal banding at rows 9-10, 16-18 and 21-24, fixed the way you fixed both vertical walls - make the run's glyph carry where the surface crosses the cell boundary while its value stays put, so brow, arch and jaw read as ridges seen edge-on rather than as bars.
+
+Blind read and full defect review after this session. The count to beat is 8. If it drops and the subject holds, the piece is close to done.
+
+$53.57 of $120 drawing budget. METHOD.md is costed separately - keep writing it.

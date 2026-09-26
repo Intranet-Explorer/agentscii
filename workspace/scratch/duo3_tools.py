@@ -326,3 +326,139 @@ def reach(y):
     thing that made session 2's version have no readable edge.
     """
     return int(max(_silhouette(y), front(y) + 4) + round((prom(y) - 4.5) * 1.6))
+
+
+# =====================================================================
+# SESSION 7. THE FAR SIDE.
+#
+# FRONT, PROMINENCE and reach() above describe a head being eaten by
+# fire, and four attempts across three sessions failed to make that edge
+# read. The diagnosis, written in METHOD.md and correct: a dissolve is
+# defined by what ISN'T there, so there is nothing behind the edge to
+# decide about, and every attempt collapsed into a function evaluated
+# over a region. They are kept because the LEFT half of the head is
+# still measured from them, and because reach() is how the old
+# background knew where not to glow.
+#
+# The fire is now a LIGHT and not a consumer. It sits in front of the
+# head, low and to the right, close enough that its falloff is steep.
+# The right of the picture is the same skull turned away from it.
+#
+#   FAR   the far silhouette, per row. Cut from a skull: the parietal
+#         eminence bulges at 9-10, the temporal fossa PINCHES the
+#         cranium in at 11-13, the zygomatic arch is the widest point of
+#         the whole head at 16-17, and the jaw runs back to its angle at
+#         22 before sweeping forward to the chin. The left contour
+#         travels eleven columns; this one travels eight, because the
+#         head is turned a few degrees away and the far side is
+#         foreshortened.
+#
+#   TERM  the terminator: the last column the fire reaches directly.
+#         Not a lean and not a gradient -- the brow ridge and the
+#         zygomatic arch carry light FURTHEST out because they stand
+#         proudest, and the socket and the hollow under the arch are in
+#         the shadow their own rims cast, which is why TERM notches in
+#         at 11-14 and 18-21 and bulges at 9-10 and 15-17. Same two
+#         buttresses PROMINENCE names; the light agrees with the bone.
+#
+#   RIM   the four cells where the zygomatic arch's crest has turned far
+#         enough back that it sees the fire AGAIN. This is the only
+#         place on the dark side that does. It is the mark that proves
+#         the head has a far side rather than stopping at the light.
+FAR = {
+    3: 45, 4: 47, 5: 48, 6: 49,        # the crown going over and back
+    7: 50, 8: 50,
+    9: 51, 10: 51,                     # PARIETAL EMINENCE, widest cranium
+    11: 50, 12: 50, 13: 50,            # the temporal fossa pinches in
+    14: 51, 15: 52,
+    16: 53, 17: 53,                    # ZYGOMATIC ARCH, widest of the head
+    18: 51, 19: 51,                    # the hollow under it
+    20: 50, 21: 50,
+    22: 49,                            # the ANGLE OF THE JAW
+    23: 47, 24: 45,                    # the jaw sweeping to the chin
+    25: 47, 26: 47,                    # the neck
+}
+TERM = {
+    3: 43, 4: 44, 5: 45, 6: 45,        # the forehead's last lit column
+    7: 44, 8: 44,
+    9: 45, 10: 44,                     # the BROW RIDGE carries it furthest
+    11: 43, 12: 41, 13: 41,            # into the shadow the brow casts
+    14: 42, 15: 43, 16: 43, 17: 43,    # the cheek; the arch is RIM, below
+    18: 43, 19: 43, 20: 42, 21: 43,
+    22: 43, 23: 43, 24: 42,
+    25: 40, 26: 40,                    # the neck is wholly under the jaw
+}
+RIM = {(50, 16), (51, 16), (50, 17), (51, 17)}
+
+
+def far(y):
+    return FAR.get(y, -1)
+
+
+# What reaches the dark side is BOUNCE off the lit half of the same
+# head, which is a few cells away, so it falls with distance from the
+# terminator. One rung per cell past it. The three things this ladder
+# has to be true of, all asserted in duo3_shadow._check():
+#
+#   d = 1  must NOT land in 'mid'. A hot band one cell wide running the
+#          height of the head is a bright contour line drawn along the
+#          terminator, which is the defect, not the fix.
+#   d<= 3  must stay in 'dark'. This is the quiet range the shadow is
+#          made of -- brown over black, warm because the only light in
+#          the picture is warm.
+#   d>= 4  must fall to 'cool'. The temple and the deep socket are the
+#          furthest any surface here gets from lit bone, and they are
+#          the only places that run out of bounce.
+BOUNCE = [1.0, 0.74, 0.60, 0.46, 0.32, 0.25]
+# Behind the head is not empty air, it is SMOKE off the same fire, and
+# smoke is a medium dense enough to return real light -- which is why
+# it can be the ground the jaw is read against. The first version of
+# this pass treated it as thin air at 0.45, and the whole lower right
+# came back as one flat field of dark-red dither with the jaw somewhere
+# inside it and no findable edge anywhere.
+SMOKE = 0.8
+# Air is a MEDIUM, not a surface. It is thin, so it sends back a
+# fraction of what a surface in the same place would -- which is why
+# the first version of this pass came back with bright red bars of
+# empty space lying across the dark side of the head: sees() was
+# handing open air the same view of the fire a cheekbone gets.
+
+
+def sees(x, y):
+    """How much of the fire this cell sends back.
+
+    heat() is distance falloff and nothing else, which is only the whole
+    story where nothing is in the way. On the far side of a head the
+    head itself is in the way, so heat there is genuinely low despite
+    the short distance -- this is the missing term, not a second value
+    channel. Hue still comes from heat alone; heat is now correct.
+    """
+    if x > far(y):
+        return SMOKE
+    if (x, y) in RIM:
+        return 1.0                      # the crest, turned back into it
+    d = x - TERM.get(y, 44)
+    return BOUNCE[min(d, len(BOUNCE) - 1)] if d > 0 else 1.0
+
+
+def lit_heat(x, y):
+    return heat(x, y) * sees(x, y)
+
+
+def spell_lit(v, x, y):
+    """spell() with the occlusion term. Value -> ink, heat -> hue."""
+    band = next(n for thr, n in BANDS_BY_HEAT if lit_heat(x, y) >= thr)
+    glyph, bg, _ = min(STEPS[band], key=lambda s: abs(s[2] - v))
+    return glyph, BANDS[band][0], bg
+
+
+def land_lit(v, x, y, glyph):
+    """spell_lit() inverted: the glyph is already decided by where the
+    edge falls, so pick the colour pair in that cell's band closest to
+    the value. Every half-block on the far side goes through this.
+    """
+    band = next(n for thr, n in BANDS_BY_HEAT if lit_heat(x, y) >= thr)
+    fg, bgs = BANDS[band]
+    bg = min((b for b in bgs if _allowed(glyph, b)),
+             key=lambda b: abs(value(glyph, fg, b) - v))
+    return glyph, fg, bg

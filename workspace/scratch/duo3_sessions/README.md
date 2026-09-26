@@ -32,3 +32,12 @@ result, with the provenance recorded rather than smoothed over.
 Guard added after this: opus_session.py takes a per-slug lockfile and
 refuses to start while another session holds the canvas, and refuses an
 empty brief outright.
+
+## duo3.s7.ans
+
+Session 7, briefed: the dissolution dropped, the right side rebuilt as
+the shadowed half of the same skull. `duo3_shadow.py` (the value
+picture and the smoke) then `duo3_edges.py` (47 landed half-block
+edges). `.reviewer-render.png` is the .ans through harness's renderer
+rather than the crop tool -- they have different palettes and a colour
+judgement across the two is worthless.

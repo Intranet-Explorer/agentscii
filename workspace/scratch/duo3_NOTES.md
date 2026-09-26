@@ -923,3 +923,94 @@ shrinking field. 1, 3, 9, 11 is the fire ramp -- dark red, brown, bright
 red, bright yellow -- and adding a hue to move the count is the exact
 Goodhart move I wrote the warning about in session 2. It is worth
 watching and it is not worth painting.
+
+# duo3 — session 7
+
+## 0. What this session replaced
+
+The dissolution is dropped. `FRONT`, `PROMINENCE` and `reach()` stay in
+`duo3_tools` because the left half is still measured from them and
+because they are the record of four attempts, but nothing on the right
+of the canvas is drawn from them any more. The fire is a LIGHT now, not
+a consumer: it sits in front of the head, low and to the right, and the
+right of the picture is the same skull turned away from it.
+
+Region owned this pass: **x >= 41, every row**, stated once in
+`duo3_shadow.REGION_X` and used for both the clear and the write. x41
+and not x44, because the bright band the reviewer called a pillar
+starts there — `duo3_model`'s grid is pegged at rungs 7-8 for its last
+six columns in nearly every row and the char lip sat on top of that.
+
+## 1. The three tables
+
+`FAR` the far silhouette, `TERM` the terminator, `RIM` the four cells of
+the zygomatic crest that see the fire again. `FAR` travels eight columns
+(45 → 53 → 45) with a parietal bulge at 9-10, a temporal pinch at 11-13
+and the arch as the widest point of the whole head at 16-17. The left
+contour travels eleven; this one travels eight because the head is
+turned a few degrees away and the far side is foreshortened.
+
+`TERM` is the one that caused trouble. See METHOD.md §2 — it is derived
+from the value picture by `_check()` now, not maintained beside it.
+
+## 2. sees(), and why hue stayed honest
+
+`heat()` was distance from the ember and nothing else, which is only the
+whole story where nothing is in the way. On the far side of a head the
+head is in the way. `sees()` is that missing term — bounce off the lit
+half, one rung per cell past the terminator, floored where the temple
+and the deep socket run out of it. Hue still comes from heat alone; heat
+is simply correct now, and the colour-only check still produces no face.
+
+The `BOUNCE` ladder has three statements asserted on the actual cells
+rather than on the curve: d=1 must not land in a hot band (a hot band
+one cell wide down the height of the head is a bright contour line drawn
+along the terminator); d<=3 stays in the quiet brown range; d>=4 falls
+to dark red, which is what makes the temple the deepest dark in the
+piece and the only thing down there.
+
+## 3. The rim
+
+Four cells, x50-51 over rows 16-17, and it is drawn as a ridge crossing
+the row boundary: `▀` rising into row 16 at x49, `▓` at x50 where the
+arch fills the cell, `▄` at x51 where it has already dropped, and `▀`
+under both of those in row 17. Two half-blocks meeting across the
+boundary are one bar of bone; two shade runs at the same value are two
+bars, which is the banding defect verbatim.
+
+`_check` holds it to being a JUMP and not the top of a ramp — three
+rungs clear of the cell inboard and the cell outboard — and to being
+dimmer than the lit front of the same face, because a rim that outshines
+the light side is a second light source.
+
+## 4. What I got wrong, in order
+
+1. Air treated as a lit surface → bright red bars of empty space across
+   the dark side. (METHOD §6)
+2. Shadow at rungs 1-3 → indistinguishable from the background.
+3. Shadow at rungs 5-6 → a saturated red slab down the right, the same
+   pillar defect in a new hue. (METHOD §4)
+4. The far silhouette written as `▌` on 19 of 24 rows while the comment
+   above it described varying by prominence. (METHOD §5)
+5. Three half-block marks placed on cells too dark to express them.
+   (METHOD §3)
+6. Smoke sized three times; every version past ~5 cells read as a wash,
+   and under the jaw as a shelf.
+
+## 5. Measured
+
+    half_block      15.7% -> 15.4% subject-only (corpus median 15%)
+    shade-of-ink    65.6% -> 65.6%
+    near-uniform rows        0 of 28, seventh session running
+    colour-only              still produces no face
+    glyph-only               still reads as a face
+    disconnected masses      1 (smoke touches the contour at every row)
+    distinct colours in subject  4
+    subject bbox             24 x 37 cells (was 24 x 37)
+
+half_block is flat, and that is the number I would defend rather than
+push. The session-5 figure came largely from the char lip, which was a
+long run of `▐`/`▌` down a single edge — the ruler line this session
+took out. Replacing it with 47 individually placed edges and landing in
+the same place means the technique moved and the measurement did not,
+which is what the measurement is for.

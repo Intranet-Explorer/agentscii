@@ -87,3 +87,133 @@ The same ordering bug in `duo3_front`: blanks appended after cells took out the 
 **Rejected: widening the palette.** Distinct colours in the subject went 7 → 4. One of the three lost was the white blowout; the rest went with the shrinking field. 1, 3, 9, 11 *is* the fire ramp. Adding a hue to move that count is the Goodhart move — any metric you optimise will be satisfied by uniformly applying whatever rule maximises it, which is the identical failure wearing a better score. **The measurements are detectors of absence, not targets.** Worth watching; not worth painting.
 
 **Rejected: trusting a restore because it looked right.** The first canvas restore was off by one column on every row and rendered completely convincingly. Round-trip and diff, always — and print the differences rather than counting them, because 357 of mine turned out to be invisible spaces-on-black and I would have chased them otherwise.
+
+
+## Session 7
+
+### 1. What a shadow has that a dissolve does not
+
+Four attempts across three sessions failed on the right third of this
+piece, including one where every measurement improved and the face
+stopped reading. The brief for this session replaced the dissolving
+half with a shadowed half, and the reason it worked is worth stating
+generally:
+
+**A region you can only describe by what ISN'T there cannot be drawn
+per cell, because there is no per-cell question to answer.** "How far
+has this bit come apart" has the same answer everywhere on a line of
+constant distance from the edge, so every honest attempt to author it
+collapses into a function evaluated over the region — which is the
+defect. "What part of the head is this, which way does it face, how
+much light reaches it" has a different answer in every cell, and it has
+that answer *before* you decide how to draw it.
+
+The practical test, before you start a region: **can you name three
+adjacent cells in it that want different marks for reasons that have
+nothing to do with each other?** On the dark side: one is the temporal
+fossa, one is the lateral orbital rim, one is the crest of the arch.
+On the dissolve: one is 40% gone, one is 45% gone, one is 50% gone.
+
+### 2. Two tables for one boundary is one table too many
+
+`TERM` — the last column the fire reaches in each row — started as an
+authored table beside the value picture, the way `FRONT` and
+`PROMINENCE` are. It drifted from the picture within one pass: the
+table said the light stopped at x47 on the cheek row while the picture
+had already dropped that row to a shadow value three cells earlier. The
+render came back with single bright dots scattered over dark cells,
+because the band said *lit* and the value said *dark*, which produces a
+sparse hot glyph — a spark, not a surface.
+
+The fix is not to keep them in sync by hand. **The terminator is not an
+independent fact; it is where the value picture stops being lit.** So
+the table stays (the light model needs it before the picture loads) and
+`_check()` recomputes it from the picture and asserts they agree. Rule:
+*if two artifacts describe the same boundary, one of them is derived,
+and the check is what says which.*
+
+### 3. The floor of the medium: what a half-block cannot say
+
+A half-block is half a cell of ink, so the darkest value it can express
+is half its foreground's — 0.16 in the dark-red band here. The eye
+socket sits at 0.11 and the temple at 0.06.
+
+> **The darkest cells in a piece cannot carry a landed edge.** Their
+> edge has to be drawn on the lit cell beside them.
+
+This is not a limitation to work around, it is the reason a hole in
+shadow reads as a hole: you draw the *rim*, and the dark is whatever
+the rim encloses. I lost three marks to this before recognising it, and
+the socket is better for having none inside it.
+
+There is a matching ceiling. `█` is the full foreground luminance and
+nothing else, so a cell whose target value is between the half-block's
+`(fg+bg)/2` and the block's `fg` cannot be landed either. Check that a
+glyph can express the value you want *before* deciding the glyph carries
+the edge — I wrote that check after four failures in a row and should
+have written it first.
+
+### 4. Where the structure has to live when the value has nowhere to go
+
+This session's real cost was four full rewrites of the same value
+picture, oscillating between two failures:
+
+- **rungs 1-3 across the dark side** — reads as absence. A field of
+  `░` at 8% ink is not "dark with structure", it is a region that ran
+  out of attention, and it looked identical to the smoke behind it.
+- **rungs 5-6 across the dark side** — reads as a slab. In the dark-red
+  band `█` renders as a solid red block, so the "shadow" came back as a
+  saturated red pillar down the right of the head: the exact defect the
+  session before removed, in a different hue.
+
+The thing I was slow to see: **in the darkest band there are only three
+usable steps before a cell stops being dark at all** (`·`, `░`, `▒`).
+That is the whole vocabulary. So the shadow side cannot be modelled the
+way the lit side is, by spending rungs — it has to be modelled by
+*where the ink sits in the cell*, at a value that barely moves.
+
+Which is the same sentence as last session's NEXT line, arrived at from
+the other direction: make the glyph carry where the surface crosses the
+cell while its value stays put. On the lit half that fixes banding. On
+the dark half it is the only modelling available.
+
+### 5. A rule in a comment is not a rule in the code
+
+The far silhouette's comment said its weight came from `PROMINENCE`,
+exactly as the left contour's does: heavy bone turning hard gets a
+wider edge, thin bone gets none. The code put `▌` on nineteen of
+twenty-four rows. It rendered as a dashed vertical line down the right
+of the head — a ruler line, which is the defect session 5 removed from
+the left contour, reintroduced by me while describing the fix for it in
+the comment directly above.
+
+The assertion that should have caught it (`len(set(edge)) >= 3`) passed,
+because three *other* rows used `▀`/`▄`. **An assertion on variety is
+satisfied by a little variety.** The honest version counts the mode:
+one glyph on 19 of 24 rows is a ruler whatever the other five do.
+
+What actually fixed it was giving `prom <= 3` **no mark at all**. Six
+rows of nothing between the hard ones is what makes the hard ones read.
+The absence is the drawing.
+
+### 6. Air is not a surface
+
+`sees()` — the occlusion term that makes the far side dark — returned
+1.0 for open background, on the grounds that nothing was blocking the
+fire from it. The render came back with bright red horizontal bars of
+*empty space* lying across the dark side of the head, because the
+background near the ember was being handed the same view of the fire a
+cheekbone gets.
+
+A medium returns a fraction of what a surface does, and which fraction
+decides what the background *is*. At 0.45 it was thin air and the jaw
+had no ground to be read against; at 0.8 it is smoke off the same fire
+and the jaw is a solid edge against it. That is a real decision about
+the picture, not a constant — **"how much light does the background
+send back" and "what is the background made of" are the same question.**
+
+The size of it was wrong three times before the shape was. Every
+version that reached more than about five cells past the head read as a
+wash or, under the jaw, as a shelf the head was sitting on. A
+background that is *behind* something has to stop being visible before
+the eye finishes travelling across it.
