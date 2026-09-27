@@ -141,6 +141,19 @@ def _check_color(color):
     return color
 
 
+def _drop_overrides(data, cells):
+    """Remove glyph overrides on cells a pixel write just painted.
+
+    Overrides (from shade/stamp/text) render in place of a cell's pixels,
+    so without this a later fill_px/circle_px/slab_px/capsule_px/sphere_px
+    over a shaded area changed nothing visible: the earlier shading always
+    won (108 of 108 cells in the 2026-09-26 audit). Later paint now wins.
+    """
+    go = data["glyph_override"]
+    for (r, c) in cells:
+        go.pop(f"{r},{c}", None)
+
+
 def fill_px(workspace, slug, x, y, w, h, color):
     """Fill a rectangle in PIXEL space (x: 0..width-1, y: 0..height*2-1)."""
     data = load_canvas(workspace, slug)
@@ -151,13 +164,16 @@ def fill_px(workspace, slug, x, y, w, h, color):
     x0c, x1c = max(0, min(x0, x1)), min(W, max(x0, x1))
     y0c, y1c = max(0, min(y0, y1)), min(PH, max(y0, y1))
     pixels = data["pixels"]
+    _hit = set()
     for py in range(y0c, y1c):
         row = pixels[py]
         for px in range(x0c, x1c):
             row[px] = color
+            _hit.add((py >> 1, px))
     # Tracked so canvas_shade can default to "shade what I just drew"
     # without the caller having to restate the shape -- see shade()'s
     # docstring for why this replaced rectangle-region shading.
+    _drop_overrides(data, _hit)
     data["last_shape"] = {"type": "rect", "x0": x0c, "y0": y0c, "x1": x1c, "y1": y1c}
     save_canvas(workspace, slug, data)
     return data
@@ -177,11 +193,14 @@ def circle_px(workspace, slug, cx, cy, r, color):
     r0, r1 = int(cx - r) - 1, int(cx + r) + 1
     c0, c1 = int(cy - r) - 1, int(cy + r) + 1
     pixels = data["pixels"]
+    _hit = set()
     for py in range(max(0, c0), min(PH, c1 + 1)):
         row = pixels[py]
         for px in range(max(0, r0), min(W, r1 + 1)):
             if math.hypot(px - cx, py - cy) <= r:
                 row[px] = color
+                _hit.add((py >> 1, px))
+    _drop_overrides(data, _hit)
     data["last_shape"] = {"type": "circle", "cx": cx, "cy": cy, "r": r}
     save_canvas(workspace, slug, data)
     return data
@@ -549,12 +568,15 @@ def sphere_px(workspace, slug, cx, cy, r, color, light_x, light_y, shadow_color=
     r0, r1 = int(cx - r) - 1, int(cx + r) + 1
     c0, c1 = int(cy - r) - 1, int(cy + r) + 1
     pixels = data["pixels"]
+    _hit = set()
     for py in range(max(0, c0), min(PH, c1 + 1)):
         row = pixels[py]
         for px in range(max(0, r0), min(W, r1 + 1)):
             if math.hypot(px - cx, py - cy) <= r:
                 row[px] = color
+                _hit.add((py >> 1, px))
     mask = {"type": "circle", "cx": cx, "cy": cy, "r": r}
+    _drop_overrides(data, _hit)
     data["last_shape"] = mask
     # Two-band shading. One band (bright -> dark) can only ramp from a
     # SOLID █ at the lit end, so the highlight renders as a flat cap no
@@ -948,12 +970,15 @@ def slab_px(workspace, slug, x, y, w, h, color, light_direction="top-left",
 
     W, PH = data["w"], data["ph"]
     pixels = data["pixels"]
+    _hit = set()
     for _face, fx, fw in faces:
         for py in range(max(0, y), min(PH, y + h)):
             row = pixels[py]
             for px in range(max(0, fx), min(W, fx + fw)):
                 row[px] = color
+                _hit.add((py >> 1, px))
 
+    _drop_overrides(data, _hit)
     for face, fx, fw in faces:
         mask = {"type": "rect", "x0": fx, "y0": y, "x1": fx + fw, "y1": y + h}
         t_lo, t_hi = _face_band(face, light_direction)
@@ -984,10 +1009,12 @@ def capsule_px(workspace, slug, ax, ay, bx, by, r, color,
 
     W, PH = data["w"], data["ph"]
     pixels = data["pixels"]
+    _hit = set()
     for py in range(PH):
         for px in range(W):
             if _pixel_mask_at(data, px, py, mask):
                 pixels[py][px] = color
+                _hit.add((py >> 1, px))
 
     cyl = dict(mask)
     # two bands, same reason as sphere_px: a single band ramps from a
@@ -996,6 +1023,7 @@ def capsule_px(workspace, slug, ax, ay, bx, by, r, color,
     # thinner than a cell and Bayer scatters it (seen live -- the first
     # capsule render was white dots, not a band). 0.30 keeps the bright
     # band wide enough to read as a continuous stripe down the length.
+    _drop_overrides(data, _hit)
     _shade_masked(data, mask, hi, color, light_direction, light_x=ax, light_y=ay,
                   cyl=cyl, t_lo=0.0, t_hi=0.30)
     _shade_masked(data, mask, color, dark, light_direction, light_x=ax, light_y=ay,
