@@ -4575,6 +4575,52 @@ def live_claude_tags():
     return tags
 
 
+# --- Sandbox for Opus sessions that get a shell (fix, 2026-09-26) ---------
+# Opus artist sessions run `claude -p --allowedTools Bash,Read,Write` in the
+# repo, i.e. a pre-approved shell with the operator's full privileges. Those
+# runs now go through sandbox-exec too: writes limited to workspace/, the
+# repo's .claude/ dir, Claude's own state dirs, temp and caches; SSH keys,
+# Hermes config, gh/aws/docker credentials unreadable. The keychain stays
+# reachable because the CLI's own login lives there. Judge calls (Read only)
+# are not wrapped. Opt out with AGENTSCII_OPUS_SANDBOX=0 if a CLI update
+# needs a path this profile does not allow; the error will say which.
+def _opus_sandbox_profile():
+    h = str(HOME.resolve())
+
+    def q(x):
+        return '"' + x.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+    writable = [str(WORKSPACE.resolve()), str((PROJECT_DIR / ".claude").resolve()),
+                h + "/.claude", h + "/.local/share/claude", h + "/.local/state/claude",
+                h + "/.cache", h + "/Library/Caches", h + "/Library/Logs",
+                "/private/tmp", "/private/var/folders"]
+    secrets = [".ssh", ".hermes", ".config/gh", ".aws", ".gnupg", ".docker", ".kube"]
+    secret_files = [".netrc", ".git-credentials", ".npmrc", ".pypirc"]
+    return "\n".join([
+        "(version 1)",
+        "(allow default)",
+        "(deny file-write*)",
+        "(allow file-write* " + " ".join(f"(subpath {q(w)})" for w in writable)
+        + f' (regex #"^{h}/\\.claude\\.json") (regex #"^/dev/"))',
+        "(deny file-read* file-write* "
+        + " ".join(f"(subpath {q(h + '/' + d)})" for d in secrets)
+        + " " + " ".join(f"(literal {q(h + '/' + f)})" for f in secret_files) + ")",
+    ])
+
+
+def _maybe_sandbox_claude(args_list):
+    if os.environ.get("AGENTSCII_OPUS_SANDBOX") == "0":
+        return args_list
+    try:
+        i = args_list.index("--allowedTools")
+        tools = args_list[i + 1]
+    except (ValueError, IndexError):
+        return args_list
+    if not re.search(r"\b(Bash|Write|Edit)\b", tools):
+        return args_list
+    return ["/usr/bin/sandbox-exec", "-p", _opus_sandbox_profile()] + list(args_list)
+
+
 def _run_claude_p(args_list, timeout=120, retries=1, tag="claude", **run_kwargs):
     # NOTE (2026-09-23): 120s is fine for short calls but NOT for the
     # defect review, which writes a 14-item table with cell coordinates
@@ -4637,7 +4683,7 @@ def _run_claude_p(args_list, timeout=120, retries=1, tag="claude", **run_kwargs)
     for attempt in range(retries + 1):
         try:
             proc = _sp.Popen(
-                args_list, stdout=_sp.PIPE, stderr=_sp.PIPE, text=True,
+                _maybe_sandbox_claude(args_list), stdout=_sp.PIPE, stderr=_sp.PIPE, text=True,
                 start_new_session=True, **run_kwargs,
             )
         except Exception as e:
