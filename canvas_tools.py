@@ -822,7 +822,10 @@ def _sgr(fg, bg=0):
     bright = fg > 7
     f = 30 + (fg & 7)
     b = (100 + (bg & 7)) if bg > 7 else (40 + bg)
-    return ("\x1b[1;%d;%dm" % (f, b)) if bright else ("\x1b[%d;%dm" % (f, b))
+    # Every code starts with 0 (reset). Without it, bold set by a bright
+    # colour stayed on, and every later dim colour rendered bright in
+    # every real viewer (brown showed as yellow). Fixed 2026-09-26.
+    return ("\x1b[0;1;%d;%dm" % (f, b)) if bright else ("\x1b[0;%d;%dm" % (f, b))
 
 
 def render_canvas(data):

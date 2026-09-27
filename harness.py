@@ -2340,37 +2340,15 @@ def render_canvas_to_png_b64(workspace, slug, offset=0, max_rows=200):
         data = canvas_tools.load_canvas(workspace, slug)
     except canvas_tools.CanvasError as e:
         return None, f"(error: {e})"
-    out_lines = canvas_tools.render_canvas(data)  # list of SGR-coded strings
-    total_lines = len(out_lines)
+    # Cells straight from the canvas, no SGR round trip. The old inline
+    # parser ignored SGR 1, so this view showed every bright colour dim
+    # while the saved file showed dim colours bright (fixed 2026-09-26).
+    all_rows = canvas_tools.render_canvas_cells(data)
+    total_lines = len(all_rows)
     offset = max(0, min(offset, total_lines))
     end_row = min(total_lines, offset + max_rows)
     truncated = end_row < total_lines
-
-    rows = []
-    for line in out_lines[offset:end_row]:
-        cells = []
-        fg, bg = 7, 0
-        i = 0
-        while i < len(line):
-            m = _CSI_RE.match(line, i)
-            if m:
-                params = [int(c) for c in m.group(1).split(";") if c != ""]
-                for p in (params or [0]):
-                    if p == 0:
-                        fg, bg = 7, 0
-                    elif 30 <= p <= 37:
-                        fg = p - 30
-                    elif 90 <= p <= 97:
-                        fg = p - 90 + 8
-                    elif 40 <= p <= 47:
-                        bg = p - 40
-                    elif 100 <= p <= 107:
-                        bg = p - 100 + 8
-                i = m.end()
-                continue
-            cells.append((line[i], fg % 16, bg % 16))
-            i += 1
-        rows.append(cells)
+    rows = [[(ch, fg % 16, bg % 16) for (ch, fg, bg) in r] for r in all_rows[offset:end_row]]
 
     note = f" (truncated to first {max_rows} rows of {total_lines}+)" if truncated else ""
     return _rasterize_rows_to_png_b64(rows, note)
