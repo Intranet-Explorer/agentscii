@@ -63,3 +63,15 @@ workspace/canvases/
 corpus/mem_log.jsonl
 corpus/mem_watchdog_kill_report.json
 corpus/clip_index_highcraft/
+
+# Other artists' work, found tracked and published despite the rule above
+# (fixed 2026-09-26). Kept on disk for study and evals, never pushed.
+workspace/references/neon-scene/
+workspace/references/neon_study/
+workspace/scratch/ref/
+workspace/scratch/refs/
+workspace/scratch/_ref_*/
+corpus/archive_run1_nan_corrupted/
+corpus/checkpoint_evals/
+corpus/flat_shaded_examples*/
+corpus/region_gen/
