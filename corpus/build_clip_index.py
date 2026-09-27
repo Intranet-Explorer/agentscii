@@ -1,31 +1,17 @@
 #!/usr/bin/env python3
-"""corpus/build_clip_index.py -- CLIP visual embedding index over the
-train-split patch corpus, replacing find_patches()'s title-keyword
-matching (user direction, 2026-09-20: keyword matching only works when
-a real content-bearing SAUCE title happens to exist -- most don't.
-"Replace title matching with visual embeddings. Render each patch to
-PNG, embed with CLIP (open_clip, a ViT-B/32 or similar, MPS on this
-machine), store in a vector index. Query = CLIP text embedding ->
-nearest patches. Title keywords become an optional filter, not the
-primary match.").
+"""Build a CLIP image-embedding index over the train-split patch corpus.
 
-Pipeline: for each candidate window in corpus/patch_index.db, skip
-windows that are mostly blank (subject_frac < 0.1, same convention as
-technique_index.py's subject_cells) or mostly ASCII text
-(alnum_frac > 0.3 -- logos/wordmarks aren't what a shading-technique
-query is after), render to PNG (harness's own rasterizer via
-eval_harness.render_grid_to_png, same renderer used everywhere else in
-this pipeline), embed batches with open_clip ViT-B/32 (openai
-weights), store as a single float32 .npy matrix + a parallel
-sqlite table mapping row index -> (parent_path, row_offset, col_offset).
+Lets find_patches match on what a patch looks like rather than on SAUCE
+titles, which most pieces lack.
 
-Runs single-process for rendering (multiprocessing via Pool hits a
-macOS spawn/heredoc incompatibility when driven from -c; a real
-Pool-based render step is a possible future speedup but out of scope
-here) with the CLIP forward pass batched on MPS. Caps total windows
-processed via --limit so the full pass stays inside the user's ~4hr
-budget on this machine -- reports the real measured render+embed rate
-and extrapolates, rather than assuming.
+For each window in corpus/patch_index.db: skip mostly blank
+(subject_frac < 0.1) or mostly text (alnum_frac > 0.3), render with
+eval_harness.render_grid_to_png, embed with open_clip ViT-B-32 (openai).
+Output: embeddings.npy (float32) plus meta.db mapping row index to
+(parent_path, row_offset, col_offset, ...).
+
+Rendering is single-process; multiprocessing.Pool breaks under macOS spawn
+when run from -c. --limit and --time-budget-hours cap the run.
 
 Usage:
     python3 corpus/build_clip_index.py --limit 60000 --out corpus/clip_index
@@ -85,8 +71,7 @@ def main():
     total_available = conn.execute("SELECT COUNT(*) FROM patches").fetchone()[0]
     print(f"{total_available} candidate windows in {args.db}")
 
-    # pull a randomized candidate pool larger than --limit since some
-    # fraction gets filtered (blank/alnum) -- oversample 2x, trim after
+    # Oversample 2x; some candidates get filtered as blank or text.
     pull_n = min(total_available, args.limit * 2)
     rows = conn.execute(
         f"SELECT id, parent_path, row_offset, col_offset, window_rows, window_cols, "
@@ -185,7 +170,7 @@ def main():
             "window_cols": row["window_cols"], "half_block_pct": row["half_block_pct"],
             "shade_pct": row["shade_pct"],
         })
-        png_path.unlink()  # embedded, don't need the file anymore
+        png_path.unlink()
 
         if len(imgs_batch) >= args.batch_size:
             flush_batch()
@@ -196,15 +181,8 @@ def main():
                   f"{n_skipped_blank_alnum} skipped blank/alnum, {n_render_fail} render fail) "
                   f"{rate:.1f}/s, {elapsed/60:.1f} min elapsed")
 
-        # Checkpoint every 50k kept patches (found live, 2026-09-21: a
-        # concurrent training run's memory watchdog killed this process
-        # mid-run via SIGKILL -- this script only wrote embeddings.npy/
-        # meta.db at the very end, so a kill at minute 107 lost 380k
-        # patches of real compute with nothing recoverable. Writing
-        # periodic checkpoints means a future interruption loses at
-        # most one checkpoint interval's worth of work, and a resumed
-        # run can pick up from the last checkpoint instead of
-        # restarting from zero.)
+        # Checkpoint every 50k kept patches so a kill loses at most one
+        # interval of work.
         if len(kept_meta) % 50000 == 0 and len(kept_meta) > 0 and len(kept_meta) != _last_checkpoint[0]:
             flush_batch()
             _write_checkpoint(out_dir, embeddings, kept_meta)
@@ -218,14 +196,8 @@ def main():
         print("No embeddings produced -- aborting.")
         sys.exit(1)
 
-    # Final write reuses _write_checkpoint (which unlinks meta.db before
-    # recreating the table) instead of duplicating the CREATE TABLE logic --
-    # the duplicated version here used to crash with "table meta already
-    # exists" whenever a mid-run checkpoint had already created it (every
-    # run over 50k patches), landing embeddings.npy but never meta.db's
-    # final flush. Found live 2026-09-21: an 871,882-patch run hit exactly
-    # this, stuck at the 850k checkpoint's meta.db with a fully up-to-date
-    # embeddings.npy -- 21,882 embeddings with no queryable metadata.
+    # _write_checkpoint unlinks meta.db first, so it is safe after a
+    # mid-run checkpoint already created the table.
     _write_checkpoint(out_dir, embeddings, kept_meta)
     emb_matrix = np.concatenate(embeddings, axis=0)
 

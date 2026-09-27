@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
-"""corpus/patch_index.py -- build a fast queryable SQLite index over
-corpus/windows.jsonl (1.26M windows) for find_patches() retrieval.
+"""Build a SQLite index over corpus/windows.jsonl for find_patches().
 
-windows.jsonl already carries per-window technique metrics computed
-during the FIM windowing pass (half_block_pct, shade_pct, shade_bucket)
-plus the parent piece's location -- exactly what a technique-based
-retrieval query needs. This step strips out the heavy "context"/
-"target" text fields (RLE-ish prompt data, not needed for retrieval)
-and loads only the compact numeric/metadata columns into SQLite with
-indexes on the fields a query filters by, so find_patches() never has
-to hold 1.26M dicts in memory or re-parse the full jsonl per call.
+Keeps location and technique metrics per window, drops the context and
+target text, and indexes the columns queries filter on.
 
 Usage:
     python3 corpus/patch_index.py [--windows corpus/windows.jsonl] [--db corpus/patch_index.db]

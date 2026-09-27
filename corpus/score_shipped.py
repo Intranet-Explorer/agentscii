@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
-"""corpus/score_shipped.py -- score every shipped AGENTSCII piece
-against the corpus technique_manifest.jsonl percentile distribution,
-using the SAME subject-only metric definitions as technique_index.py
-(half_block_pct, shade_pct over non-true-background subject cells).
+"""Rank shipped gallery pieces against the corpus technique distribution.
 
-Shipped pieces are agent-authored UTF-8 (not CP437 like the real
-archive), so they're parsed via harness.py's own _parse_ans_grid
-(correct UTF-8 decode) rather than corpus/parse.py (built for CP437
-archive files) -- but the METRIC FORMULAS applied afterward are
-identical to technique_index.py's, cell for cell, so the numbers are
-directly comparable.
+Metrics are subject-only half_block_pct and shade_pct, defined as in
+technique_index.py. Shipped pieces are UTF-8, so they go through
+harness.py rather than the CP437 corpus parser.
 
 Usage:
     python3 corpus/score_shipped.py
@@ -24,16 +18,15 @@ import harness
 
 CORPUS_DIR = Path(__file__).resolve().parent
 
-HALF_BLOCK_CHARS = set("\u2580\u2584")  # ▀ ▄  (matches technique_index.py, NOT harness's own _HALF_BLOCK_CHARS which lumps in █)
+HALF_BLOCK_CHARS = set("\u2580\u2584")  # ▀ ▄ only, as in technique_index.py (no █)
 SHADE_CHARS = set("\u2591\u2592\u2593")  # ░ ▒ ▓
 
 
 def score_piece(path):
-    """Subject-only half_block_pct/shade_pct. Delegates directly to
-    harness._compute_piece_metrics (which was fixed 2026-09-19 to use
-    this exact glyph set/denominator) rather than reimplementing the
-    same logic a second time -- two independent implementations of
-    "the same definition" are how they silently drift apart again."""
+    """Subject-only half_block_pct and shade_pct via harness._compute_piece_metrics.
+
+    Delegates rather than reimplementing, so the definitions can't drift.
+    """
     m = harness._compute_piece_metrics(path)
     if m is None or m["subject_cell_count"] == 0:
         return None
@@ -45,8 +38,7 @@ def score_piece(path):
 
 
 def percentile_of(value, sorted_dist):
-    """What fraction of sorted_dist is <= value -- i.e. this piece's
-    percentile RANK within the corpus distribution."""
+    """Percentile rank of value: percent of sorted_dist <= value."""
     if not sorted_dist:
         return None
     import bisect
@@ -55,13 +47,13 @@ def percentile_of(value, sorted_dist):
 
 
 def main():
-    # Load the corpus distribution (subject-only, same definition)
+    # Corpus distribution, same subject-only definition.
     half_dist = []
     shade_dist = []
     with open(CORPUS_DIR / "technique_manifest.jsonl") as f:
         for line in f:
             row = json.loads(line)
-            if row["subject_cells"] < 50:  # skip near-empty pieces, unstable %
+            if row["subject_cells"] < 50:  # percentages unstable on near-empty pieces
                 continue
             half_dist.append(row["half_block_pct"])
             shade_dist.append(row["shade_pct"])

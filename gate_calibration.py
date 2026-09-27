@@ -1,23 +1,14 @@
 #!/usr/bin/env python3
-"""Gate calibration: does the defect reviewer accept REAL 16colo.rs art?
+"""Gate calibration: run known-good archive art through the defect reviewer.
 
-The control that was never run. Five house pieces have now been
-rejected in a row; before concluding the artists are the problem, put
-known-good archive work through the identical review and see whether it
-draws the same defect vocabulary.
+Checks whether the reviewer rejects real 16colo.rs work with the same
+vocabulary it uses on house pieces. House pieces are mixed into the batch.
 
 Blinding:
-  * SAUCE records and trailing metadata stripped (they name the group,
-    artist and year outright)
-  * any in-file credit/handle rows redacted from the RENDER via the
-    existing redact_title_rows path
-  * neutral slugs (piece_a .. piece_g), shuffled, so filename order
-    carries no signal
-  * the reviewer gets the same prompt the live gate uses -- no hint
-    that this is archive work or a calibration run
-
-Mixed in: AQUEDUCT and _keeper.v7, so house and archive pieces are
-judged under identical conditions in one batch.
+  * SAUCE records and trailing metadata stripped (they name group, artist, year)
+  * in-file credit rows redacted from the render (redact_title_rows)
+  * neutral shuffled slugs (piece_a, piece_b, ...)
+  * same prompt as the live gate, no hint this is a calibration run
 """
 import json
 import random
@@ -37,9 +28,8 @@ HOUSE = [
     ("workspace/rejected/_keeper.v7.ans", "house/qwen _keeper.v7"),
 ]
 
-# SAUCE: 128-byte record at EOF starting "SAUCE", optionally preceded by
-# a COMNT block. Carries title, author and group in plain text -- the
-# single biggest tell that a file came from the archive.
+# SAUCE: 128-byte record at EOF, optionally preceded by a COMNT block.
+# Holds title, author and group in plain text.
 SAUCE = b"SAUCE"
 
 

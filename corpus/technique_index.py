@@ -1,42 +1,15 @@
 #!/usr/bin/env python3
-"""corpus/technique_index.py -- per-piece technique metrics for the
-whole parsed corpus, to select a shading-heavy training subset.
+"""Per-piece technique metrics over the parsed corpus, for selecting shading-heavy pieces.
 
-For every parsed .npz, computes (over non-space, non-true-background
-cells -- the "subject" convention already used in harness.py's
-_compute_piece_metrics, applied here across the WHOLE canvas since
-these files have no drawn "subject" boundary the way an in-progress
-agent piece does):
-
-  half_block_pct   -- % of subject cells that are UPPER/LOWER half
-                       block (U+2580 UPPER, U+2584 LOWER) -- the
-                       two-color-per-cell subpixel technique, NOT
-                       counting the plain full block (kept separate,
-                       per explicit instruction: "half-block %, shade
-                       %, and full-block % are three metrics, not one
-                       bucket" -- harness.py's own _HALF_BLOCK_CHARS
-                       lumps upper/lower/full together for a DIFFERENT
-                       purpose [gating an agent's in-progress piece]
-                       and is deliberately NOT reused here).
-  shade_pct        -- % of subject cells that are a RAMP density glyph
-                       (U+2591 LIGHT, U+2592 MEDIUM, U+2593 DARK shade).
-  full_block_pct   -- % of subject cells that are the plain full block
-                       (U+2588), tracked separately since a flat-fill
-                       piece can be nearly all full-block with zero
-                       real half-block/shade technique.
-  distinct_colors  -- number of distinct visible colors across all
-                       subject cells (fg for non-space cells, bg for
-                       space-with-nonzero-bg cells -- same "visible
-                       color" convention as harness.py to avoid the
-                       fg-vs-bg confusion bug documented there).
-  alnum_pct        -- % of subject cells whose glyph is an ASCII
-                       letter or digit (this is the "logos and text
-                       layouts" signal the user wants to filter OUT of
-                       the shading-heavy training subset: pieces that
-                       are mostly rendered text/wordmarks rather than
-                       shaded illustration).
-  subject_cells    -- raw count (percentages are meaningless on a
-                       near-empty file without this for context).
+Subject cells are all cells except true background (space on bg 0).
+Metrics, as a share of subject cells:
+  half_block_pct  -- ▀ ▄ only. Full block is counted separately, unlike
+                     harness.py's _HALF_BLOCK_CHARS.
+  shade_pct       -- ░ ▒ ▓
+  full_block_pct  -- █; flat fills can be all full block with no technique.
+  distinct_colors -- distinct visible colours (fg, or bg for a coloured space)
+  alnum_pct       -- ASCII letters and digits; flags text and logo pieces.
+  subject_cells   -- raw count, for judging the percentages.
 
 Usage:
     python3 corpus/technique_index.py [--parsed-dir corpus/parsed] [--manifest corpus/technique_manifest.jsonl]
@@ -50,12 +23,11 @@ import numpy as np
 
 CORPUS_DIR = Path(__file__).resolve().parent
 
-HALF_BLOCK_CP = {0x2580, 0x2584}          # ▀ ▄  (NOT full block, see docstring)
+HALF_BLOCK_CP = {0x2580, 0x2584}          # ▀ ▄  (not full block)
 SHADE_CP = {0x2591, 0x2592, 0x2593}       # ░ ▒ ▓
 FULL_BLOCK_CP = {0x2588}                  # █
 
-# ASCII letters + digits only (0-9, A-Z, a-z) -- codepoint ranges, cheap
-# to check without building a huge set.
+# ASCII 0-9, A-Z, a-z.
 def _is_alnum_cp(cp):
     return (0x30 <= cp <= 0x39) or (0x41 <= cp <= 0x5A) or (0x61 <= cp <= 0x7A)
 
@@ -86,9 +58,7 @@ def compute_technique_metrics(npz_path):
     shade_ct = np.isin(subj_chars, list(SHADE_CP)).sum()
     full_ct = np.isin(subj_chars, list(FULL_BLOCK_CP)).sum()
 
-    # visible color = bg when the cell is a colored space, else fg --
-    # same convention as harness.py's visible_idx, to avoid the
-    # documented SGR-vs-palette-index confusion class.
+    # Visible colour: bg for a coloured space, else fg (as harness.py).
     visible = np.where(subj_is_space, subj_bg, subj_fg)
     distinct_colors = int(np.unique(visible).size)
 

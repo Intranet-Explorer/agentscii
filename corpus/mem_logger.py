@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-"""corpus/mem_logger.py -- log pid RSS + system free + swap used every
-60s to a file (user direction, 2026-09-19: "so a hang leaves
-evidence"). Runs independently of mem_watchdog.py (which acts on
-thresholds and exits after a kill or when the pid dies) -- this one
-just records, indefinitely, until the watched pid exits.
+"""Log a process's RSS, available memory and swap every 60s until it exits.
+
+Leaves a record if a run hangs. Only records; mem_watchdog.py does the killing.
 
 Usage:
     python3 corpus/mem_logger.py --pid 17159 --out corpus/mem_log.jsonl

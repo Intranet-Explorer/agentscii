@@ -1,25 +1,15 @@
 #!/usr/bin/env python3
 """
 AGENTSCII harness.
-Two local LLM agents, one shared workspace, one explicit purpose: produce
-real ANSI textmode art (the 90s BBS artscene aesthetic) worth
-keeping — as a collaborative body of work, not two agents working in
-parallel past each other.
 
-Forked from ~/antfarm2-standalone/harness.py (shift loop, loop-guard,
-cross-shift memory, tool-calling dispatch, SQLite event log reused
-near-verbatim — solid substrate, unrelated to that project's philosophy).
+Two local LLM agents share one workspace and make ANSI textmode art in the
+90s BBS scene tradition, as one collaborative body of work.
 
-Two fixed seats gate the pipeline (artist submits, curator decides), but
-that's the only hard boundary. Everything upstream of it is shared: both
-agents work in scratch/ freely, can extend or remix a piece the other
-started, and real joint pieces (multiple contributors, credited together —
-the actual dominant tradition in real ANSI packs) are the encouraged norm,
-not an edge case. A self-chosen handle gives each agent an identity beyond
-its functional seat. A house style doc (workspace/STYLE.md) gives the
-curator real criteria instead of taste alone. Accepted pieces land in
-gallery/unpacked/ until the curator ships a numbered pack release with a
-real FILE_ID.DIZ — the actual unit of "we made this," not a flat accept bin.
+Forked from antfarm2's harness (shift loop, loop guard, cross-shift memory,
+tool dispatch, SQLite event log). The artist submits and the curator
+decides; everything upstream is shared, and joint pieces are the norm.
+workspace/STYLE.md is the house style. Accepted pieces sit in
+gallery/unpacked/ until the curator ships a numbered pack with a FILE_ID.DIZ.
 """
 import base64
 import io
@@ -65,36 +55,21 @@ def stop_requested():
     return _stop_requested or STOP_FLAG.exists()
 
 
-# One place for the Opus model id (was hardcoded at 14 call sites).
-# claude-opus-5-5 needs Claude Code >= v2.1.280 (`claude update`).
-# Override with AGENTSCII_OPUS_MODEL to pin something else.
+# claude-opus-5-5 needs Claude Code >= v2.1.280.
+# Override with AGENTSCII_OPUS_MODEL.
 OPUS_MODEL = os.environ.get("AGENTSCII_OPUS_MODEL", "claude-opus-5-5")
 
-MODEL = "qwen3.8:27b-mlx"  # stock (non-obliterated) Qwen3.8-27B, MLX-quantized build.
-# We don't need uncensored output for ANSI art, and the obliterated variant's own
-# model card documents temperature=0 (greedy) + no system prompt as the settings
-# that keep its abliteration from getting reintroduced — both conflict with this
-# harness's design (a real system prompt defining role/tools, sampled output
-# across many shifts rather than one-shot greedy). Stock qwen3.8:27b-mlx has no
-# such constraint; using its own documented non-thinking/instruct-mode sampling
-# settings below instead: temperature=0.7, top_p=0.80, presence_penalty=1.5 to
-# suppress repetition. top_k=20, repeat_penalty=1.0, min_p=0.0 are left as the
-# model's own Modelfile defaults (verified via `ollama show --modelfile`) since
-# they already match the documented instruct-mode values and Ollama's OpenAI-
-# compatible endpoint doesn't accept top_k/repeat_penalty/min_p as request
-# fields — any unset field falls through to the Modelfile's PARAMETER value.
+MODEL = "qwen3.8:27b-mlx"  # stock Qwen3.8-27B, MLX build
+# Not the abliterated variant, which expects temperature=0 and no system
+# prompt. top_k/repeat_penalty/min_p aren't accepted by
+# Ollama's OpenAI endpoint and fall through to the Modelfile defaults.
 SAMPLING = {"temperature": 0.7, "top_p": 0.80, "presence_penalty": 1.5}
-# 2026-09-26: the loop reads msg.reasoning, so thinking is ON, and the
-# values above are Qwen's non-thinking ones. presence_penalty 1.5 also
-# penalises the repeated keys, slugs and coordinates that tool-call JSON
-# is made of. Qwen's thinking-mode guidance: temp 0.6, top_p 0.95, no
-# presence penalty. max_tokens caps a runaway thinking turn, which was
-# bounded only by the 900 s HTTP timeout.
+# Thinking is on (the loop reads msg.reasoning), so use Qwen's
+# thinking-mode settings. presence_penalty would penalise the repeated keys
+# in tool-call JSON. max_tokens caps a runaway thinking turn.
 SAMPLING = {"temperature": 0.6, "top_p": 0.95, "presence_penalty": 0.0, "max_tokens": 16384}
-# Only the newest KEEP_IMAGES images stay in the request; older ones are
-# replaced by a one-line stub. Every preview/crop/patch image used to stay
-# in context for the whole shift (up to 100 calls), which can overflow the
-# model's context, and Ollama truncates silently from the front.
+# Only the newest KEEP_IMAGES images stay in the request; older ones become
+# a stub. Ollama truncates overflowing context silently from the front.
 KEEP_IMAGES = 2
 
 REFERENCE_NOTE = (
@@ -258,43 +233,18 @@ AGENTS = {
 }
 
 MAX_TOOL_CALLS_PER_SHIFT = 40
-# Creation genuinely needs more headroom than review: of the shifts that hit
-# the cap, 7/10 were the artist seat vs 3/10 curator (checked against real
-# shift data, not a guess). Give the artist real extra room rather than
-# raising the cap uniformly and diluting the loop-guard's effectiveness for
-# the curator, whose job is comparatively bounded (read, judge, decide).
-# Artist raised 60 -> 100 on 2026-09-23: 20 of 41 shifts were ending in
-# a forced cap handoff, which fragments a piece across shifts and leaves
-# the debris Opus flagged in _keeper.v7 (duplicated caption blocks,
-# orphan fragments, trailing junk -- all interrupted-work artifacts).
+# Creation needs more room than review. A shift that hits the cap
+# fragments a piece and leaves interrupted-work debris.
 MAX_TOOL_CALLS_BY_ROLE = {"artist": 100, "curator": 40}
 BASH_TIMEOUT = 60
 
-MAX_REVISIONS_PER_SUBJECT = 8  # user direction, 2026-09-19: "Cap revisions
-# at 8 per subject. After that it ships, gets shelved, or reverts to the
-# best-scoring earlier version. 59 versions is not iteration, it's
-# thrashing." -- _orb reached v59 before shipping (v53-v59 alone were the
-# post-fix revision round covered by the flat-region/half-block gates),
-# a real, measured case of a piece grinding through dozens of versions
-# instead of converging. This is a hard, separate cap from
-# OPUS_MAX_REVIEWS_PER_PIECE (which counts REVIEWS, not submitted
-# VERSIONS -- a piece can rack up many mechanically-gate-blocked
-# submissions, each consuming zero Opus reviews, and still never hit
-# the review cap while still thrashing on raw version count). Enforced
-# in submit_piece, same place as the other house-direction gates.
+MAX_REVISIONS_PER_SUBJECT = 8  # then ship, shelve, or revert to the best version
+# Counts submitted versions, not Opus reviews, so gate-blocked submissions
+# still count. Enforced in submit_piece.
 
-SHIFT_WALL_CLOCK_CAP_S = 90 * 60  # 90 minutes (user direction, 2026-09-17):
-# the loop guard fingerprints identical call+result pairs, so it can't see
-# a shift that keeps making genuinely DIFFERENT tool calls while never
-# converging -- found live: an artist shift spent 4+ hours iterating on one
-# foreground (_dusk_yard), every edit a real, different diff, never once
-# tripping the stall detector, because nothing about it was actually a
-# repeat. Wall-clock is a separate, cruder backstop for exactly that case:
-# it doesn't care whether the calls are novel, only how long the shift has
-# run. Checked once per tool-call loop iteration, same place the stall
-# detector and per-role cap are checked, so it's covered even for the
-# artist's 60-call/shift budget which the curator's 40 would exhaust
-# time-wise anyway.
+SHIFT_WALL_CLOCK_CAP_S = 90 * 60  # 90 minutes
+# The stall detector only catches identical call+result pairs. This
+# catches a shift making novel calls that never converge.
 
 _VERSION_RE = re.compile(r"(?:\.[vV]|-v|_v)(\d+)$")
 
@@ -304,64 +254,20 @@ FIGURATIVE_WORDS = ("face", "eye", "watch", "sentinel", "cyborg", "scan",
                      "cyclops", "totem", "mantis", "lantern", "oracle",
                      "coghead", "gargoyle", "wraith", "golem", "knight",
                      "colossus", "sphinx", "phantom", "silhouette")
-# Found live, 2026-09-19: this list is a leaky approximation by
-# construction and WILL keep missing real figurative subjects as new
-# ones get invented -- confirmed directly: "_guardian" reached
-# submissions with 0.0% shade chars, 0% full blocks, all flat fills
-# (exactly the defect class _flat_region_check/_figurative_precheck
-# exist to catch) because "guardian" matched no word here, so BOTH
-# gates silently treated it as non-figurative and never ran at all.
-# This is the same bug class as the "_orb"/"THE WATCHER" gap found
-# 2026-09-18, now confirmed a second time on a different word -- adding
-# words as they're found (this commit added guardian/demon/cyclops/
-# totem/mantis/lantern/oracle/coghead/gargoyle/wraith/golem/knight/
-# colossus/sphinx/phantom/silhouette, the real gaps audited against
-# every slug ever shipped in workspace/gallery/) is a real fix but NOT
-# a durable one -- the blind Opus subject-recognition check (see
-# opus_subject_check()) is the actual structural backstop, since it
-# asks "what is this an image of?" directly rather than guessing from
-# a filename, and will catch a mis-scoped flat piece even when this
-# list misses the word. Keep expanding this list when a gap is found
-# (it's free, runs before any Opus call), but don't treat it as
-# complete.
+# Approximate by design; new subjects will slip through. Add words as gaps
+# turn up. opus_subject_check() is the real backstop.
 
 _FIGURATIVE_WORDS_RE = re.compile(
     r"(?<![a-zA-Z])(?:" + "|".join(re.escape(w) for w in FIGURATIVE_WORDS) + r")"
 )
-# Negative lookbehind for a LETTER specifically, not \b -- found live,
-# testing this exact fix: \b treats underscore as a word character, so
-# it never fires between '_' and a letter -- meaning \b failed to match
-# ANY of this project's own filenames at all (e.g. "_watcher", "_face",
-# "_eyeball" all start with an underscore immediately before the word,
-# so a plain \b left-boundary regex silently never matched a single
-# real project file by name, only ever via the in-file-title fallback).
-# A negative lookbehind for a letter (not \w) correctly allows '_',
-# digits, and start-of-string as valid left edges while still rejecting
-# "ember" inside "member"/"remember"/"december" (all preceded by a
-# LETTER immediately before "ember"), and still matches "watcher",
-# "figures", "wardens" as word stems (see below for why stems, not
-# whole-word-only, are wanted here).
+# Lookbehind for a letter, not \b: \b treats '_' as a word char and never
+# matches "_watcher". Still rejects "ember" in "remember" and allows stems
+# like "watchers".
 
 
 def _reads_figurative(path):
-    """Whether a piece counts as 'figurative' for the half-block/shading
-    gates: filename match (the original signal) OR any FIGURATIVE_WORD
-    appearing in the piece's own rendered/visible text (title cards,
-    sig blocks) -- checked against the SGR-stripped visible content, not
-    the raw source (so a word inside an escape sequence's parameters
-    can't accidentally match).
-
-    Extended 2026-09-18 after finding a real, concrete gap: _orb.v7.ans
-    is a literal eye piece titled \"THE WATCHER // IT SEES IN THE DARK\"
-    inside the file, but the bare filename '_orb' doesn't match any
-    FIGURATIVE_WORD, so BOTH _figurative_precheck and the new
-    _flat_region_check silently didn't apply to the exact piece these
-    gates exist for -- found by testing this function against real data
-    before trusting it, not assumed. Filename-only matching was always
-    an incomplete proxy for 'what is this piece actually of'; the
-    in-piece title is a much more direct signal and costs one extra
-    regex pass, already-computed-ready SGR-strip logic reused from
-    elsewhere in this file."""
+    """True if the filename or the piece's visible text (title card, sig
+    block) contains a FIGURATIVE_WORD. Matched on SGR-stripped text."""
     name_lower = Path(path).stem.lower()
     if _FIGURATIVE_WORDS_RE.search(name_lower):
         return True
@@ -378,19 +284,8 @@ def _reads_figurative(path):
 
 
 def _subject_fingerprint(path):
-    """Content-based subject identity: a coarse 8x8 occupancy+hue hash of
-    the rendered grid. Renaming a file cannot change it.
-
-    User direction, 2026-09-22: "track subject identity by content
-    similarity or an explicit subject field, not the filename slug, so
-    renaming can't reset the revision count." Found live: _watcher.v7
-    hit the revision cap, was re-slugged _watcher_final, and sailed
-    through as a fresh subject with zero content change.
-
-    ponytail: 8x8 coarse grid, not a perceptual hash -- it only has to
-    catch "same piece, new name", and a real pHash would need the
-    rendered image, not the cell grid.
-    """
+    """Content-based subject identity: a coarse 8x8 occupancy+hue hash of the
+    rendered grid, so renaming a file can't reset its revision count."""
     try:
         grid, _ = _parse_ans_grid(path)
     except Exception:
@@ -419,11 +314,7 @@ def _subject_fingerprint(path):
     return hashlib.sha1(bits.encode()).hexdigest()[:16]
 
 
-# Subjects retired by the human -- a new piece on any of these is
-# blocked outright. User direction, 2026-09-22: "no eye, orb, or sphere
-# subject until three different subjects have been accepted." 60+
-# versions since Sep 18 across _orb/_watcher/_watcher_final, the last
-# of which was a re-slug that dodged the revision cap.
+# Retired subjects: a new piece on any of these is blocked outright.
 RETIRED_SUBJECT_WORDS = ("eye", "orb", "sphere", "watcher", "iris", "pupil")
 RETIRED_UNTIL_ACCEPTS = 3
 
@@ -450,14 +341,7 @@ def _retired_subject_block(conn, slug, title=""):
 
 
 def core_slug(name_noext):
-    """Strip a trailing version suffix (.v3, -v4, _v12) to find the
-    underlying piece identity, e.g. '_orb.v5' and '_orb' are the same
-    core piece at different revisions. Shared by the shipped-catalog dedup
-    index, the revision-over-novelty gate, and the open-subject cap so all
-    three agree on what counts as \"the same piece\" -- extracted to module
-    scope 2026-09-17 (was previously a closure inside
-    _shipped_catalog_index() only, duplicated ad hoc anywhere else that
-    needed the same logic)."""
+    """Strip a trailing version suffix (.v3, -v4, _v12): '_orb.v5' -> '_orb'."""
     s = name_noext
     while True:
         m = _VERSION_RE.search(s)
@@ -488,9 +372,7 @@ def _get_subject(conn, slug):
 
 
 def _open_subjects(conn):
-    # 'rejected' counts as still-open for cap purposes: rejection isn't a
-    # close-out, it's a mandate to revise (revision-over-novelty). Only
-    # accepted/abandoned/shelved actually free up a slot.
+    # 'rejected' still counts as open: rejection means revise, not close.
     rows = conn.execute(
         "SELECT slug, last_version, opened_at FROM subjects "
         "WHERE status IN ('open','rejected') ORDER BY opened_at"
@@ -499,48 +381,19 @@ def _open_subjects(conn):
 
 
 def _compute_piece_metrics(path):
-    """Real, measured per-version quality metrics for the pinned-best
-    regression gate (user direction, 2026-09-18). The exact metrics the
-    user specified: half-block %, shade-char %, distinct colors in the
-    subject mask, subject bounding box, plus subject cell count (needed
-    to make the bbox/pct numbers comparable across versions that might
-    resize the canvas).
+    """Per-version quality metrics for the pinned-best regression gate.
 
-    half_block_pct/shade_char_pct are SUBJECT-ONLY (denominator =
-    non-true-background cells), matching corpus/technique_index.py's
-    definition exactly -- user direction, 2026-09-19: "use subject-only
-    for both the harness gate and the corpus technique index -- same
-    definition on both sides, so raze's output can be scored against
-    the corpus distribution. My earlier whole-canvas numbers were
-    expedient, not correct." This REVERSES the 2026-09-19 whole-canvas
-    change (which matched the user's own quick diagnostic numbers at
-    the time but was explicitly an expedient read, not the definition
-    to standardize on) -- confirmed subject-only is what
-    corpus/technique_index.py has used unchanged this whole time, so
-    reverting here is what actually makes the two sides comparable.
-    half_block_pct_whole_canvas/shade_char_pct_whole_canvas are logged
-    alongside as secondary diagnostic fields (not used by any gate),
-    since the whole-canvas number is still occasionally useful for a
-    quick eyeball and was already the basis of several past diagnostic
-    reports -- kept, not discarded, just demoted to non-authoritative.
-
-    Returns a dict, or None if the file can't be parsed (caller should
-    treat that as 'no metrics available', not block on it)."""
+    half_block_pct/shade_char_pct are subject-only (non-background cells),
+    matching corpus/technique_index.py. The *_whole_canvas fields are
+    diagnostic only. Returns a dict, or None if the file can't be parsed.
+    """
     try:
         grid, total_lines = _parse_ans_grid(path)
     except Exception:
         return None
 
-    # ▀▄ ONLY, matching corpus/technique_index.py's HALF_BLOCK_CP exactly
-    # -- deliberately NOT harness.py's own _HALF_BLOCK_CHARS (which also
-    # includes █ full-block, for a different purpose: _figurative_precheck's
-    # "is there enough non-flat cell geometry at all" question, where
-    # lumping full-block in makes sense). User direction, 2026-09-19:
-    # "same definition on both sides, so raze's output can be scored
-    # against the corpus distribution" -- this metric exists specifically
-    # to be comparable against corpus/technique_manifest.jsonl, so it
-    # must use the corpus's own glyph set, not this file's other,
-    # differently-scoped gate's set.
+    # ▀▄ only, matching corpus/technique_index.py's HALF_BLOCK_CP so scores
+    # compare to the corpus. Not _HALF_BLOCK_CHARS, which includes █.
     half_block_chars = set("\u2580\u2584")  # ▀▄
     shade_chars = set("\u2593\u2592\u2591")  # ▓▒░
 
@@ -582,19 +435,9 @@ def _compute_piece_metrics(path):
             "disconnected_masses": 0, "ink_canvas_share": 0.0,
         }
 
-    # Compositional soft signals (user direction, 2026-09-22). NOTE the
-    # honest name: this counts SPATIALLY DISCONNECTED masses, not forms.
-    # Measured -- v59=6, _watcher_final=1 looked like a form count, but a
-    # 5-form composite where everything touches the ground scores 1, and
-    # hue-segmenting to fix that gives v59 and _watcher_final nearly
-    # identical profiles (1199/308/120/114/109/60 vs
-    # 1199->1114/316/159/89/79/40), so it cannot separate the one pair it
-    # existed to separate. Kept as a soft signal because scattered-vs-
-    # single-mass is real information; deliberately NOT in the
-    # regression tripwire, and not worth image segmentation to improve:
-    # composition quality is Opus's and hollis's judgment, not a metric.
-    # ponytail: 4-connected flood fill over the subject mask, O(cells);
-    # swap for a real labeler only if pieces get big enough to matter.
+    # Counts spatially disconnected masses, not forms: a composite where
+    # everything touches the ground scores 1. Soft signal only, not in the
+    # regression tripwire. 4-connected flood fill, O(cells).
     _MIN_REGION = 12  # smaller blobs are detail/noise, not separate forms
     subject_set = set(subject_coords)
     seen = set()
@@ -618,11 +461,8 @@ def _compute_piece_metrics(path):
     canvas_rows = max(r for r, c in grid) + 1
     canvas_cols = max(c for r, c in grid) + 1
     canvas_cells = canvas_rows * canvas_cols
-    # Ink density, not bbox: every framed piece spans the full canvas,
-    # so a bbox-share number reads 100% for all of them and says
-    # nothing (measured 2026-09-22 -- v59, _beast.v7 and
-    # _watcher_final all reported 100%). Share of canvas actually
-    # INKED does separate a sparse scroll from a dense composition.
+    # Ink density, not bbox: every framed piece spans the full canvas, so a
+    # bbox share reads 100% for all of them.
     ink_share = 100.0 * subject_ct / canvas_cells if canvas_cells else 0.0
 
     return {
@@ -640,10 +480,7 @@ def _compute_piece_metrics(path):
 
 
 def _record_piece_metrics(conn, slug, version, path):
-    """Compute and store metrics for one version -- called from
-    submit_piece on every real submission (not just accepted ones), so
-    the full version history is measurable, not just whichever versions
-    happened to get accepted."""
+    """Compute and store metrics for one version. Called on every submission."""
     metrics = _compute_piece_metrics(path)
     if metrics is None:
         return None
@@ -664,17 +501,8 @@ def _record_piece_metrics(conn, slug, version, path):
 
 
 def _get_best_metrics(conn, slug):
-    """The pinned-best metrics for a slug: whichever version is marked
-    pinned_version on the subjects row, or (if nothing pinned yet) the
-    single best-so-far by a simple composite (half_block_pct +
-    shade_char_pct + distinct_colors_in_subject) -- used both to decide
-    what counts as 'best' the first time a subject accrues metrics, and
-    to compare a new submission against. Includes 'path' (the stored
-    .ans path for that version at submission time -- may no longer
-    exist on disk if the file has since moved/been cleaned up; callers
-    needing the real render should verify with Path.exists() first) for
-    opus_pairwise_regression_check, which needs the actual rendered
-    file, not just its numbers."""
+    """Pinned-best metrics for a slug, or the best so far by composite score
+    if nothing is pinned. The stored 'path' may no longer exist on disk."""
     subj = _get_subject(conn, slug)
     if subj and subj.get("pinned_version") is not None:
         row = conn.execute(
@@ -704,9 +532,7 @@ def _get_best_metrics(conn, slug):
 
 
 def _touch_subject(conn, slug, version, path, status="open"):
-    """Create or update a subject row. Called from submit_piece (new
-    submission -> ensure the subject exists / bump last_version) and
-    curate_piece (accept/reject -> update status)."""
+    """Create or update a subject row."""
     existing = _get_subject(conn, slug)
     now = time.time()
     fp = _subject_fingerprint(path) if path else None
@@ -724,8 +550,8 @@ def _touch_subject(conn, slug, version, path, status="open"):
             (status, new_version, str(path), now, fp, slug),
         )
     conn.commit()
-    # Scratch hygiene + catalog, at the single point every close routes
-    # through.
+    # Every subject close routes through here: archive scratch, rebuild the
+    # catalog.
     if status in ("accepted", "abandoned", "shelved", "rejected"):
         if status != "rejected":
             _archive_subject_scratch(slug)
@@ -735,19 +561,11 @@ def _touch_subject(conn, slug, version, path, status="open"):
             pass  # the catalog must never break a curation decision
 
 def check_piece_gates(path, retrieval_queries=None):
-    """The project's submission requirements, in ONE place.
+    """The project's submission requirements, in one place.
 
-    Extracted 2026-09-24 after opus_duo.py drew four rounds with zero
-    find_patches calls and nobody noticed: it wrote .ans files directly
-    and never went through submit_piece, so none of the requirements
-    applied. A second code path that bypasses the project's own gates is
-    how that goes unseen.
-
-    submit_piece keys retrieval on shift_id (its calls are in `events`);
-    an out-of-harness runner passes the queries it actually made. Both
-    answer the same question: was retrieval consulted at all.
-
-    Returns (ok: bool, report: str).
+    Anything that writes pieces must go through this or the gates don't
+    apply. submit_piece checks retrieval by shift_id; an out-of-harness
+    runner passes the queries it made. Returns (ok, report).
     """
     problems = []
     if not retrieval_queries:
@@ -772,15 +590,9 @@ def check_piece_gates(path, retrieval_queries=None):
 
 
 def _glyph_carried_pct(path):
-    """Share of inked cells whose FORM is carried by a real glyph rather
-    than by cell background colour. A cell whose two pixels match renders
-    as space+background -- correct encoding, but the character is doing
-    no drawing. Accepted archive work measures 96-98%; a piece rejected
-    for "strip the glyphs and you lose nothing" measured 28.6%.
-
-    NOT a ratio to maximise -- see STYLE.md. 100% is reachable with pure
-    noise. Use it to notice a piece that has gone mostly flat-fill.
-    """
+    """Share of inked cells whose form is carried by a glyph rather than by
+    background colour. Not a ratio to maximise (see STYLE.md): pure noise
+    scores 100%. Use it to spot a piece gone mostly flat-fill."""
     try:
         g, _ = _parse_ans_grid(path)
     except Exception:
@@ -797,14 +609,8 @@ def _glyph_carried_pct(path):
 
 
 def _fmt_metrics(m):
-    """One metric line, BOTH denominators, labeled.
-
-    User direction, 2026-09-23: "my measurements are whole-canvas,
-    yours are subject-only -- print both, labeled, everywhere metrics
-    appear." The gap is not small: _wasteland.v1 is 26.1% subject-only
-    and 5.2% whole-canvas, and a report that prints one number without
-    saying which reads as a contradiction of the other.
-    """
+    """One metric line with both denominators (subject-only and whole-canvas),
+    labeled."""
     return (
         f"half_block {m['half_block_pct']:.1f}% subject-only / "
         f"{m['half_block_pct_whole_canvas']:.1f}% whole-canvas, "
@@ -819,14 +625,8 @@ def _fmt_metrics(m):
 def _rebuild_catalog():
     """Regenerate workspace/CATALOG.md: every subject ever attempted.
 
-    User direction, 2026-09-23: the agents need one place to check
-    before starting a new subject, so a past subject is only repeated
-    as a deliberate revisit. Sourced from the real directories plus the
-    subjects table -- never hand-maintained, since a hand-maintained
-    catalog drifts and then gets ignored.
-
-    ponytail: full rewrite on every subject close; the catalog is ~100
-    lines and this runs a handful of times a day.
+    Built from the directories and the subjects table, never by hand. Full
+    rewrite on every subject close.
     """
     import collections
     areas = [
@@ -859,11 +659,8 @@ def _rebuild_catalog():
     try:
         for slug, st in db.execute("SELECT slug, status FROM subjects"):
             if slug in seen:
-                # Location wins over DB status for anything that actually
-                # shipped or was accepted: _beast is in gallery/ but its
-                # subject row still reads 'rejected' from an earlier
-                # version, and the catalog should report where the work
-                # IS, not the last transition it recorded.
+                # Location wins over DB status: a piece can be in gallery/ while its
+                # subject row still reads 'rejected' from an earlier version.
                 if (seen[slug]["status"] not in ("shipped", "accepted-unpacked")
                         and st in ("abandoned", "shelved", "rejected")):
                     seen[slug]["status"] = st
@@ -907,14 +704,8 @@ def _rebuild_catalog():
 def _archive_subject_scratch(slug):
     """Move a closed subject's scratch files to workspace/archive/.
 
-    User direction, 2026-09-22: "when a subject is accepted, rejected
-    past the revision cap, or abandoned, its scratch files move to
-    workspace/archive/ automatically. Scratch holds current work only."
-
-    Stale scratch is not inert: shifts 634-636 and 640 all went into
-    _departure purely because it was sitting there. Moves, never
-    deletes. Shared helper modules stay put -- they are read-reference
-    per STYLE.md, not per-piece work.
+    Scratch holds current work only. Moves, never deletes. Shared helper
+    modules stay put.
     """
     keep = {"canvas.py", "figure_common.py", "halfblock.py", "curve_common.py"}
     dest = WORKSPACE / "archive" / "scratch-2026-09"
@@ -937,18 +728,12 @@ def _archive_subject_scratch(slug):
 
 
 def _check_regression_tripwire(conn, n_back=3):
-    """After each accept: score the new piece against the last three
-    accepted on half_block, shade-of-ink and distinct colors. Two
-    consecutive accepts below the reference bar halts submissions and
-    reports instead of continuing.
+    """After each accept, score it against the last three accepts on
+    half_block, shade-of-ink and distinct colors. Two consecutive accepts
+    below the reference bar halt submissions.
 
-    User direction, 2026-09-22. Deliberately only these three metrics:
-    they behave consistently across all 142 shipped pieces.
-    disconnected_masses is excluded on purpose -- it reads spatial
-    disconnection, not form count, so a composed scene scores 1 and a
-    tripwire on it would punish exactly the work we want.
-
-    Returns None when fine, else the halt message.
+    disconnected_masses is excluded: a composed scene scores 1. Returns None
+    when fine, else the halt message.
     """
     rows = conn.execute(
         "SELECT slug, version, half_block_pct, shade_char_pct, "
@@ -994,10 +779,8 @@ def _check_regression_tripwire(conn, n_back=3):
 def _tripwire_halted(conn):
     """True when an uncleared two-strike halt is in force.
 
-    2026-09-26: off unless AGENTSCII_METRIC_HALT=1. The tripwire compares
-    half_block/shade to recent accepts, and those metrics were shown not to
-    track quality; halting the artist on them is a metric gate. Strikes are
-    still recorded and printed to the harness log for the operator."""
+    Off unless AGENTSCII_METRIC_HALT=1, since these metrics don't track
+    quality. Strikes are still recorded and logged."""
     if os.environ.get("AGENTSCII_METRIC_HALT") != "1":
         return False
     try:
@@ -1825,13 +1608,8 @@ def init_db():
         had_pending_peer_message INTEGER,
         replied_to_peer INTEGER
     )""")
-    # Migration, 2026-09-16: carry the agent's last real reasoning block into
-    # the next shift on ANY forced end (stop request, empty-turns give-up,
-    # max-tool-calls cap), per user direction -- an in-progress diagnosis
-    # (e.g. "I found the color bug, the fix is X") shouldn't be lost just
-    # because the shift ended before the agent could act on it. ALTER TABLE
-    # guarded because CREATE TABLE IF NOT EXISTS above is a no-op on an
-    # existing state.db from before this column existed.
+    # last_reasoning carries an in-progress diagnosis into the next shift on a
+    # forced end. Guarded for state.db files that predate the column.
     try:
         conn.execute("ALTER TABLE shifts ADD COLUMN last_reasoning TEXT")
     except sqlite3.OperationalError:
@@ -1860,13 +1638,8 @@ def init_db():
         note TEXT,
         timestamp REAL NOT NULL
     )""")
-    # User direction, 2026-09-22 project review, task 5: "Log tool usage per
-    # shift: counts for each tool, and how many .py files raze wrote." The
-    # raw counts are already derivable from `events` (every tool call is
-    # logged there with tool_name+tool_args -- see log_event's call site in
-    # the dispatch loop), but a per-shift summary row means a query doesn't
-    # have to re-aggregate the full events table every time, and survives
-    # even if `events` ever gets pruned/archived. One row per (shift,tool).
+    # Per-shift tool counts, one row per (shift, tool). Derivable from events,
+    # but this avoids re-aggregating and survives pruning.
     conn.execute("""CREATE TABLE IF NOT EXISTS shift_tool_summary (
         shift_id INTEGER NOT NULL,
         tool_name TEXT NOT NULL,
@@ -1878,20 +1651,9 @@ def init_db():
         handle TEXT NOT NULL,
         timestamp REAL NOT NULL
     )""")
-    # subjects: tracks each distinct piece IDENTITY (by core_slug, i.e. the
-    # filename with any trailing .vN/-vN/_vN stripped) through its
-    # accept/reject lifecycle. Added 2026-09-17 (user direction) to enforce
-    # two real rules that were previously unenforceable from the filesystem
-    # alone: (1) revision-over-novelty -- a rejected piece must come back
-    # as the SAME slug at a higher version, not reappear as a fresh slug
-    # to dodge review history (observed live: _exchange rejected, came
-    # back rebuilt as _voices; _crowd_joint rejected, came back as
-    # _crowd_wave -- same underlying subject, new name each time, no
-    # continuity an outside observer -- or this gate -- could trace); (2) a
-    # hard cap of 2 open (not yet accepted/abandoned) subjects at once, so
-    # a stalled piece can't just be abandoned silently in favor of endless
-    # new starts -- it must be explicitly abandoned with a written reason,
-    # which is preserved for the record.
+    # subjects: one row per piece identity (core_slug) through accept/reject.
+    # Enforces revision-over-novelty (a rejected piece returns as the same slug
+    # at a higher version) and the cap on open subjects.
     conn.execute("""CREATE TABLE IF NOT EXISTS subjects (
         slug TEXT PRIMARY KEY,
         status TEXT NOT NULL DEFAULT 'open',
@@ -1910,16 +1672,13 @@ def init_db():
     except sqlite3.OperationalError:
         pass
     try:
-        # Content identity, so a rename can't reset a subject's revision
-        # count (see _subject_fingerprint).
+        # Content identity, so a rename can't reset the revision count.
         conn.execute("ALTER TABLE subjects ADD COLUMN fingerprint TEXT")
     except sqlite3.OperationalError:
         pass
     try:
-        # Artist of record. The seat that SUBMITS is not always the seat
-        # that DREW: raze submitted CROSSING, which Opus drew during the
-        # Opus-as-artist experiment (2026-09-23). Credits files carry
-        # this too, but a file is easy to overwrite and a column is not.
+        # Artist of record. The seat that submits is not always the seat that
+        # drew the piece.
         conn.execute("ALTER TABLE subjects ADD COLUMN contributor TEXT")
     except sqlite3.OperationalError:
         pass
@@ -1932,19 +1691,8 @@ def init_db():
         slug TEXT, version INTEGER, detail TEXT,
         ts REAL, cleared INTEGER DEFAULT 0
     )""")
-    # piece_metrics: per-VERSION quality metrics, tracked at every
-    # submit_piece call (not just accepted ones) so a revision's real
-    # progress -- or regression -- is measurable, not just "Opus said
-    # reject again." Added 2026-09-18, user direction, directly in
-    # response to the measured finding behind this whole session's
-    # fixes: half-block % DECLINED v5->v8 (13.3% -> 9.4% -> 10.8% ->
-    # 7.9%) across four straight revisions that were each supposed to be
-    # improvements -- nothing before this table would have caught that
-    # a "fix" was quietly making a different real metric worse. Pinning
-    # (subjects.pinned_script_path/pinned_version) then lets
-    # submit_piece hard-block any revision whose OWN metrics regress
-    # versus the pinned best, even if the specific defect the agent
-    # thought they were fixing is in fact fixed.
+    # piece_metrics: per-version metrics recorded on every submit, so a
+    # revision that regresses against the pinned best can be blocked.
     conn.execute("""CREATE TABLE IF NOT EXISTS piece_metrics (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         slug TEXT NOT NULL,
@@ -1966,10 +1714,7 @@ def init_db():
         conn.execute("ALTER TABLE piece_metrics ADD COLUMN shade_char_pct_whole_canvas REAL")
     except sqlite3.OperationalError:
         pass
-    # Safety net: opus_reviews was originally created ad hoc, never via
-    # init_db, so a genuinely fresh DB would be missing it entirely.
-    # IF NOT EXISTS makes this a no-op against the live DB's existing
-    # table/data.
+    # opus_reviews was first created ad hoc; this makes a fresh DB complete.
     conn.execute("""CREATE TABLE IF NOT EXISTS opus_reviews (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         piece_slug TEXT NOT NULL,
@@ -1995,18 +1740,11 @@ def log_event(conn, agent, shift_id, role, content=None, reasoning=None, tool_na
 
 
 def _record_shift_tool_summary(conn, shift_id):
-    """Aggregate this shift's tool calls (from `events`, already logged at
-    every dispatch -- see log_event's call site) into shift_tool_summary:
-    one row per tool with its call count, plus a synthetic 'write_file:.py'
-    row counting write_file calls whose path argument ends in .py, AND a
-    synthetic 'bash:.py_write' row for bash calls that look like they wrote
-    a .py file (heredoc into a .py path, or a python open(...,'w')/
-    write_text call targeting .py) -- checked directly against real
-    history: .py files got written via bash heredocs as often as via
-    write_file (see e.g. `cat > scratch/foo.py <<'EOF'` and
-    `python3 - <<'PY' ... open('scratch/foo.py','w').write(...)`), so
-    counting write_file alone would badly undercount "how many .py files
-    did raze write" (the user's task 5 ask). Called once at shift end."""
+    """Aggregate this shift's tool calls from `events` into shift_tool_summary.
+
+    Adds synthetic rows 'write_file:.py' and 'bash:.py_write' (heredoc or
+    open(..., 'w') into a .py path), since agents write .py files both ways.
+    Called once at shift end."""
     rows = conn.execute(
         "SELECT tool_name, tool_args FROM events WHERE shift_id=? AND role='assistant' AND tool_name IS NOT NULL",
         (shift_id,),
@@ -2080,9 +1818,8 @@ def call_ollama(model, messages, tools):
     )
     with urllib.request.urlopen(req, timeout=900) as resp:
         out = json.loads(resp.read())
-    # Log context use so overflow is measured, not guessed. If prompt_tokens
-    # sits at a flat ceiling across calls, Ollama is truncating: raise the
-    # server's context (OLLAMA_CONTEXT_LENGTH or the app's context setting).
+    # Log context use. prompt_tokens stuck at a flat ceiling means Ollama is
+    # truncating: raise OLLAMA_CONTEXT_LENGTH.
     u = out.get("usage") or {}
     if u:
         print(f"[ollama] prompt_tokens={u.get('prompt_tokens')} "
@@ -2103,11 +1840,8 @@ def unload_model(model):
 
 
 # ---- ANSI -> PNG rendering ----------------------------------------------
-# Lets both agents actually SEE their own work through the model's real
-# vision capability (qwen3.8:27b-mlx supports vision), instead of only
-# inferring color/composition by reading raw SGR escape codes as text.
-# Same 16-color BBS palette and SGR parsing logic as agentscii-dashboard's
-# renderer, but rasterized to a real image instead of HTML.
+# Lets the agents see their work through the model's vision input. Same
+# 16-color palette and SGR parsing as agentscii-dashboard's renderer.
 
 _ANSI_PALETTE = [
     "#000000", "#aa0000", "#00aa00", "#aa5500",
@@ -2120,8 +1854,7 @@ _CSI_RE = re.compile(r"\x1b\[([0-9;]*)([A-Za-z])")
 _FONT_PATH = "/System/Library/Fonts/Menlo.ttc"
 _CELL_W, _CELL_H = 9, 18  # pixel size per character cell at the render font size
 _FONT_SIZE = 16
-_TERMINAL_WIDTH = 80  # standard classic-scene ANSI canvas width; long logical
-                      # lines auto-wrap here just like a real terminal/BBS client
+_TERMINAL_WIDTH = 80  # classic-scene canvas width; long lines wrap
 
 
 def _decode_ans_bytes(raw):
@@ -2132,25 +1865,11 @@ def _decode_ans_bytes(raw):
 
 
 def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False):
-    """Render an .ans/.asc file to a PNG, base64-encoded, for vision input.
-    offset/max_rows let a long/scrolling piece be paged through panel by
-    panel instead of only ever seeing the top — full content is always
-    readable via read_file regardless.
+    """Render an .ans/.asc file to a base64 PNG for vision input.
 
-    redact_title_rows=True blanks out (fills with true background) any
-    row that reads as mostly-letters -- the house title-card/credit-line
-    convention (row 1 = title, second-to-last content row = credit line,
-    both ASCII letter text at high density) -- before rasterizing.
-    Built for opus_subject_check() (user direction, 2026-09-19): the
-    EXISTING opus_curate_review render already claimed to Opus "you have
-    NO other context — no title" while literally baking the house's own
-    title-card text into the rendered pixels (confirmed live: THE
-    WATCHER's title row and credit line, containing the words "WATCHER"
-    and "GUARDIAN" etc, render as plain readable text in row 0/1 and the
-    second-to-last row of every real piece). A subject-recognition check
-    is meaningless if the answer is printed directly on the image being
-    judged -- this flag exists to make the blindness real, not just
-    claimed in the prompt text."""
+    offset/max_rows page through a long piece. redact_title_rows blanks rows
+    that read as title/credit text, so a blind check can't read the answer
+    off the image."""
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError:
@@ -2163,32 +1882,19 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False)
 
     text = _decode_ans_bytes(raw).replace("\r\n", "\n").replace("\r", "\n")
 
-    # Real cursor-addressable grid, not a flat per-line cell list. Classic
-    # scene .ANS files routinely draw a base layer left to
-    # right, then jump the cursor BACK UP with ESC[A to lay highlights/
-    # shadows/detail onto rows already drawn (real artists worked this way
-    # in TheDraw) — a flat "each source line is independent" model
-    # (the old approach here) silently corrupts any piece using this, since
-    # a cursor-up followed by new characters looks like a brand new row
-    # instead of an edit to an existing one. Grid model: a dict of
-    # (row, col) -> (char, fg_idx, bg_idx), with a real (row, col) cursor
-    # that ESC[A/B/C/D/H/f all move, and later writes at the same cell
-    # simply overwrite earlier ones — exactly what a real terminal does.
+    # Cursor-addressable grid: scene .ANS files often draw a base layer, then
+    # move the cursor back up (ESC[A) to add detail. Later writes to a cell
+    # overwrite earlier ones, as in a real terminal.
     grid = {}
     row, col = 0, 0
     max_row_seen = 0
     base_fg, bright_fg, base_bg = 7, False, 0
     pos = 0
     n = len(text)
-    pending_wrap = False  # deferred-wrap flag, like a real terminal: filling
-                          # the last column doesn't advance the row until
-                          # the NEXT character actually needs to be drawn.
-                          # Without this, a line that's exactly 80 chars
-                          # wide (very common — full-width house rows) gets
-                          # double-advanced: once by the internal wrap in
-                          # put(), again by the explicit \n that follows —
-                          # producing a spurious blank row after every
-                          # full-width line and roughly doubling row count.
+    pending_wrap = False  # deferred wrap, like a real terminal:
+                          # filling the last column doesn't advance the row until the
+                          # next char. Otherwise an 80-char line followed by \n gets a
+                          # spurious blank row.
 
     def put(ch):
         nonlocal col, row, max_row_seen, pending_wrap
@@ -2202,7 +1908,7 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False)
         grid[(row, col)] = (ch, fg_idx % 16, base_bg % 16)
         col += 1
         if col >= _TERMINAL_WIDTH:
-            # at the last column — defer the actual wrap (see above)
+            # last column: defer the wrap
             col = _TERMINAL_WIDTH - 1
             pending_wrap = True
 
@@ -2210,10 +1916,8 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False)
         ch = text[pos]
         if ch == "\n":
             if pending_wrap:
-                # a line that filled exactly to the last column, then
-                # ended: this newline IS that line's own terminator, not
-                # an extra one — consume the pending wrap without a second
-                # row advance.
+                # The line filled the last column; this newline is its terminator,
+                # so consume the pending wrap instead of advancing twice.
                 pending_wrap = False
             else:
                 row += 1
@@ -2285,31 +1989,21 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False)
         for c in range(_TERMINAL_WIDTH):
             cell = grid.get((r, c))
             line_cells.append(cell if cell is not None else (" ", 7, 0))
-        # trim fully-blank trailing columns (default fg/bg, space char) so a
-        # mostly-empty row doesn't force every row to full width
+        # trim blank trailing cells so a mostly-empty row isn't full width
         while line_cells and line_cells[-1] == (" ", 7, 0):
             line_cells.pop()
         rows.append(line_cells)
 
     if redact_title_rows:
-        # A row is title/credit text if its non-space glyphs are mostly
-        # ASCII letters at high density -- verified against 3 real house
-        # pieces before trusting this threshold: title/credit rows measure
-        # 0.56-0.92 letter-fraction, real drawn-art rows (half-block
-        # glyphs, dither, box-drawing) measure far lower since almost none
-        # of their characters are ASCII letters at all.
+        # A row is title/credit text if its glyphs are mostly ASCII letters.
+        # Title rows measure 0.56-0.92 letter fraction; drawn art is far lower.
         for line_cells in rows:
             visible_chars = [ch for ch, fg, bg in line_cells if ch != " "]
             if len(visible_chars) < 8:
                 continue
             letters = sum(1 for ch in visible_chars if ch.isascii() and ch.isalpha())
-            # Density alone is NOT enough: a title card drawn OVER a
-            # dither field measures only 0.31 letter-fraction and slipped
-            # through unredacted -- found live 2026-09-23, Opus's first
-            # blind subject read came back quoting "THE KEEPER //
-            # AGENTSCII" straight off the canvas, so the check had never
-            # actually been blind. Also look for a RUN of letters, which
-            # is what a word is regardless of what it sits on.
+            # Density alone misses a title drawn over a dither field (~0.31),
+            # so also look for a run of letters.
             run = best = 0
             for ch, fg, bg in line_cells:
                 if ch.isascii() and (ch.isalpha() or ch in "/-.,!'"):
@@ -2326,15 +2020,8 @@ def render_ans_to_png_b64(path, offset=0, max_rows=120, redact_title_rows=False)
 
 
 def _rasterize_rows_to_png_b64(rows, note=""):
-    """Shared rasterizer: a list of cell-rows (each a list of (char,
-    fg_idx, bg_idx) tuples) -> PNG b64. Split out of
-    render_ans_to_png_b64 (2026-09-22) so a second caller can rasterize
-    rows that never came from an .ans file's cursor-addressed text --
-    specifically canvas_tools.py's persistent canvases (canvas_preview),
-    which already produce a clean cell grid with no ESC[A/B/C/D/H
-    cursor parsing needed. Both callers get the exact same pixel output
-    for the exact same cell data -- one rasterizer, not two copies that
-    could drift."""
+    """Rasterize cell rows (lists of (char, fg_idx, bg_idx)) to a base64 PNG.
+    Shared by the .ans and canvas renderers so both produce identical pixels."""
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError:
@@ -2343,19 +2030,8 @@ def _rasterize_rows_to_png_b64(rows, note=""):
     max_width = max((len(r) for r in rows), default=1)
 
     if not rows or max_width == 0:
-        # Found live, 2026-09-19: `if not rows` alone doesn't catch a
-        # real, valid case -- every ROW existing but every one of them
-        # being fully blank (all cells trimmed to an empty list by the
-        # trailing-blank-column trim above). max_width then computes
-        # as 0 (max of a bunch of zero-length lists), producing a
-        # ZERO-WIDTH image that crashes PIL's PNG encoder with
-        # "SystemError: tile cannot extend outside image" -- confirmed
-        # directly against a real fully-blank RLE fragment (a model's
-        # degenerate FIM output during LoRA checkpoint eval). This is
-        # the SHARED production renderer, so a real archive piece or
-        # agent output that happens to be entirely blank in its
-        # rendered window hits the exact same crash -- not just an
-        # eval-script edge case.
+        # Rows can exist yet all be blank after trimming; max_width would be 0
+        # and PIL fails on a zero-width image.
         return None, "(error: no visible content to render — fully blank)"
 
     img_w = max_width * _CELL_W
@@ -2375,20 +2051,9 @@ def _rasterize_rows_to_png_b64(rows, note=""):
             if bg_idx != 0:
                 draw.rectangle([x, y, x + _CELL_W, y + _CELL_H], fill=bg)
             if ch == "\u2588":
-                # FULL BLOCK drawn as a solid filled rectangle, not a font
-                # glyph. Found directly 2026-09-16 building a real piece:
-                # Menlo's '█' glyph at this font size is only 16px tall but
-                # cells are drawn 18px apart, leaving a real 2px black gap
-                # between every pair of vertically-adjacent full-block rows
-                # — anything relying on stacked █ cells to read as one solid
-                # shape (a large eye(), a filled silhouette, anything using
-                # the brightest step of RAMP) rendered with visible
-                # horizontal banding that was never actually in the data —
-                # confirmed by inspecting the underlying character grid,
-                # which was a correctly round, solid disc; only the PNG
-                # preview had the gap. Other RAMP chars (▓▒░) keep font
-                # rendering since their partial-fill dot patterns are the
-                # actual content, not a bug to route around.
+                # Full block drawn as a filled rectangle, not a glyph: Menlo's █ is
+                # 16px tall in an 18px cell, leaving gaps between stacked rows. ▓▒░
+                # stay glyphs since their dot pattern is the content.
                 fg = _ANSI_PALETTE[fg_idx]
                 draw.rectangle([x, y, x + _CELL_W, y + _CELL_H], fill=fg)
             elif ch not in (" ", ""):
@@ -2402,21 +2067,14 @@ def _rasterize_rows_to_png_b64(rows, note=""):
 
 
 def render_canvas_to_png_b64(workspace, slug, offset=0, max_rows=200):
-    """Preview a persistent canvas (canvas_tools.py) the same way
-    preview_piece previews a saved .ans file. Canvas rows are already a
-    clean grid (canvas_tools never emits cursor-addressing escapes), so
-    this builds (char, fg_idx, bg_idx) rows directly and hands them to
-    the SAME _rasterize_rows_to_png_b64 rasterizer render_ans_to_png_b64
-    uses -- what an agent sees in canvas_preview is pixel-identical to
-    what canvas_save + preview_piece would show afterward."""
+    """Preview a persistent canvas (canvas_tools.py) as a base64 PNG.
+    Pixel-identical to canvas_save followed by preview_piece."""
     import canvas_tools
     try:
         data = canvas_tools.load_canvas(workspace, slug)
     except canvas_tools.CanvasError as e:
         return None, f"(error: {e})"
-    # Cells straight from the canvas, no SGR round trip. The old inline
-    # parser ignored SGR 1, so this view showed every bright colour dim
-    # while the saved file showed dim colours bright (fixed 2026-09-26).
+    # Cells straight from the canvas, no SGR round trip.
     all_rows = canvas_tools.render_canvas_cells(data)
     total_lines = len(all_rows)
     offset = max(0, min(offset, total_lines))
@@ -2429,22 +2087,8 @@ def render_canvas_to_png_b64(workspace, slug, offset=0, max_rows=200):
 
 
 def render_comparison_b64(piece_path, reference_path, offset=0, max_rows=60):
-    """Render a piece and a real reference side by side as ONE composite
-    image, with labels, so an agent judging its own work sees the actual
-    pixel gap instead of reasoning from memory of what it intended to build.
-
-    Built 2026-09-16 in direct response to a caught real failure: an artist
-    shift submitted a piece whose note claimed a shared primitive
-    (capsule()/joint_dot()) that the code never called, and separately
-    judged its own flat-banded render "genuinely good" after previewing it
-    ALONE — nothing in that judgment was ever anchored to what real
-    reference-quality work actually looks like next to it. A vision model
-    reliably sees defects (dithering, banding, flat shading) when directly
-    asked to compare two images — the earlier failures weren't a vision
-    capability gap, they were a "never actually looked at a real reference
-    right next to the work" gap. This tool forces that comparison to exist
-    as a single image an agent can't reason around.
-    """
+    """Render a piece and a reference side by side as one labeled image, so
+    the agent judges its work against real reference quality, not memory."""
     from PIL import Image, ImageDraw, ImageFont
 
     piece_b64, piece_note = render_ans_to_png_b64(piece_path, offset=offset, max_rows=max_rows)
@@ -2484,20 +2128,12 @@ def render_comparison_b64(piece_path, reference_path, offset=0, max_rows=60):
 
 
 def render_patches_grid_b64(patches):
-    """Render N retrieved corpus patches (real (chars, fg, bg) numpy
-    grids, e.g. from corpus/find_patches_clip.py) side by side as ONE
-    composite image, each labeled with its source piece and technique
-    metrics -- same "one image, not N separate tool results" pattern
-    as render_comparison_b64, built for the find_patches tool (user
-    direction, 2026-09-21: "wire find_patches into raze as a tool").
+    """Render retrieved corpus patches side by side as one labeled image.
 
-    Writes each patch's grid to a temp .ans file (same SGR-encoding
-    convention corpus/eval_harness.py's render_grid_to_png uses
-    internally) and reuses render_ans_to_png_b64 rather than
-    reimplementing cell rasterization a third time. patches: list of
-    dicts with chars/fg/bg numpy arrays plus parent_path/
-    half_block_pct/shade_pct (the shape find_patches_clip.find_patches_clip
-    and find_patches.find_patches_by_technique both return)."""
+    patches: dicts with chars/fg/bg numpy arrays plus parent_path,
+    half_block_pct and shade_pct, as returned by find_patches_clip and
+    find_patches_by_technique. Each patch is written to a temp .ans and
+    rendered with render_ans_to_png_b64."""
     from PIL import Image, ImageDraw, ImageFont
     import tempfile
 
@@ -2559,16 +2195,10 @@ def render_patches_grid_b64(patches):
 
 
 def _parse_ans_grid(path):
-    """Parse an .ans/.asc file into a cursor-addressable grid: dict of
-    (row, col) -> (char, fg_idx 0-15, bg_idx 0-15), plus total_lines.
-    Shared by render_ans_to_png_b64 (visual rendering) and
-    _figurative_precheck (the hard pre-submission gate, 2026-09-17) so
-    both work from the exact same real cell data instead of the gate
-    re-deriving its own approximate parse. Handles cursor-addressing
-    (ESC[A/B/C/D/H/f) the way a real terminal does, not a flat
-    one-line-in-source-equals-one-row model -- classic scene
-    .ANS files routinely draw a base layer then jump the cursor back up to
-    add highlight detail on rows already drawn."""
+    """Parse an .ans/.asc file into a cursor-addressable grid.
+
+    Returns ({(row, col): (char, fg_idx, bg_idx)}, total_lines). Handles
+    ESC[A/B/C/D/H/f cursor movement the way a terminal does."""
     raw = Path(path).read_bytes()
     text = _decode_ans_bytes(raw).replace("\r\n", "\n").replace("\r", "\n")
 
@@ -2661,34 +2291,17 @@ def _parse_ans_grid(path):
 
 
 _HALF_BLOCK_CHARS = set("\u2580\u2584\u2588")  # ▀ upper, ▄ lower, █ full
-# (full block counts as half-block usage too -- HalfBlockCanvas.render()
-# emits a plain space with bg=color, or a full block, whenever both pixels
-# in a cell match, which is a normal and correct half-block-canvas output,
-# not colored-ASCII avoidance).
+# Full block counts: HalfBlockCanvas emits it (or space+bg) when both
+# pixels in a cell match.
 
 
 def _figurative_precheck(path):
-    """Hard pre-submission gate (user direction, 2026-09-17): a figurative
-    piece (filename matches FIGURATIVE_WORDS) with under 10% half-block
-    cells, OR fewer than 3 distinct brightness steps inside its subject
-    mask, cannot be submitted. Runs BEFORE curate_piece / the Opus gate --
-    hollis never sees a piece that fails this, and no Opus call is spent
-    reviewing it. This is mechanical, not a judgment call: it exists
-    specifically because figurative pieces built from flat whole-cell
-    shapes (not half-block resolution, not real shading) have repeatedly
-    reached the curator and burned real review cycles before being
-    rejected for exactly this -- pushing the check earlier is strictly
-    cheaper and catches the same defect class deterministically.
+    """Pre-submission gate for figurative pieces: fewer than 3 distinct
+    brightness steps in the subject blocks submission. Runs before curation
+    and any Opus call.
 
-    Returns None if the piece passes (not figurative, or passes both
-    checks), else a string explaining the specific failure.
-
-    'Subject mask' is approximated as all non-background cells (any cell
-    that isn't a true empty space with black bg) -- an exact silhouette
-    isn't derivable without vision, but brightness-step counting across
-    ALL non-space drawn cells is a reasonable proxy: a genuinely
-    flat/unshaded figurative subject won't clear 3 steps even counted
-    this generously."""
+    The subject mask is approximated as all non-background cells. Returns
+    None on pass (or not figurative), else the failure reason."""
     if not _reads_figurative(path):
         return None  # gate only applies to figurative work
 
@@ -2700,10 +2313,7 @@ def _figurative_precheck(path):
     total_cells = 0
     half_block_cells = 0
     brightness_values = set()
-    # Perceived brightness per 0-15 ANSI index, coarse but consistent
-    # ordering (dim -> bright within each color, dark grays below colors
-    # below bright colors below white) -- enough to count real STEPS, not
-    # exact luminance.
+    # Coarse perceived brightness per ANSI index 0-15. Enough to count steps.
     _BRIGHTNESS = [0, 2, 2, 2, 2, 2, 2, 3, 1, 4, 4, 4, 4, 4, 4, 5]
 
     for (r, c), (ch, fg_idx, bg_idx) in grid.items():
@@ -2724,9 +2334,8 @@ def _figurative_precheck(path):
     n_brightness_steps = len(brightness_values)
 
     failures = []
-    # 2026-09-26: the 10% half-block floor is gone. It was a metric the
-    # artist could satisfy by distortion, against the stated "never
-    # enforced" policy; half_block_frac is still computed for the log.
+    # No half-block floor: it could be met by distortion. half_block_frac is
+    # still computed for the log.
     if n_brightness_steps < 3:
         failures.append(
             f"only {n_brightness_steps} distinct brightness step(s) found "
@@ -2746,81 +2355,27 @@ def _figurative_precheck(path):
 
 
 _BRIGHTNESS_STEPS = [0, 2, 2, 2, 2, 2, 2, 3, 1, 4, 4, 4, 4, 4, 4, 5]
-# same coarse brightness-ordering table as _figurative_precheck -- shared
-# here rather than duplicated so both checks agree on what "a brightness
-# step" means.
+# Same table as _figurative_precheck, so both checks agree on a step.
 
 FLAT_REGION_CELL_THRESHOLD = 40
-# House bar (_orb.v59) and corpus medians, reported as SOFT signals on
-# every submission -- never enforced as a threshold. User direction,
-# 2026-09-22: "any floor set where the house can't already reach gets
-# gamed rather than met."
-# House bar replaced 2026-09-23 after the Opus-as-artist experiment. The
-# three Opus pieces won 5 of 6 blind pairwise comparisons against the
-# best Qwen work while scoring LOWER on half_block -- CROSSING is 12.7%
-# whole-canvas against _keeper's 16.4% and still reads as a real scene.
-# The numbers here are therefore reference points, NOT targets: the bar
-# is what the reference pieces LOOK like, which is why
-# compare_to_reference against them is the mechanism and no threshold is.
+# Reference numbers reported as soft signals on every submission, never
+# enforced. The bar is what the reference pieces look like;
+# compare_to_reference is the mechanism, not a threshold.
 HOUSE_BAR = {"name": "_opus_CROSSING", "half_block": 26.1, "shade": 27.9,
              "colors": 12, "regions": 6, "ink_share": 48}
 CORPUS_MEDIAN = {"half_block": 15.0, "shade": 9.4}
-# User direction, 2026-09-18, load-bearing measurement behind this whole
-# check: every version of _orb (v5-v8) and _phosphor.v3 measured at 0.0%
-# RAMP (░▒▓) density characters -- literally zero dithering anywhere.
-# That's not a style choice, it's the absence of a shading mechanism, and
-# it's the exact, repeated reason the Opus gate kept rejecting them (flat
-# unshaded region, hard seam, no gradient). A checker alone can't fix the
-# underlying capability gap (see shade_ramp() in canvas.py, built the same
-# day for that reason) -- but it SHOULD catch the defect class before an
-# Opus call is spent reviewing it, which this does.
 
 
 def _flat_region_check(path):
-    """Hard pre-submission gate companion to _figurative_precheck (user
-    direction, 2026-09-18): any contiguous same-(char-class,fg,bg) region
-    larger than FLAT_REGION_CELL_THRESHOLD cells, INSIDE the subject (not
-    the background), is a defect -- and within any hue family, the set
-    of large flat regions must span at least 3 distinct brightness
-    steps, not just a hot fill and a cold fill with nothing graduated
-    between them. Runs BEFORE curate_piece / the Opus gate, same as
-    _figurative_precheck -- no review cycle spent on a piece this
-    catches.
+    """Flat-region gate for figurative pieces, run before curation.
 
-    SCOPED TO FIGURATIVE PIECES ONLY, same gate as _figurative_precheck
-    (filename matches FIGURATIVE_WORDS) -- found live, before shipping,
-    that applying this unscoped produces real false positives: a real
-    reference wordmark/logo piece (a reference piece) has a genuine
-    45-cell solid-fill letter stroke, which is completely normal for
-    wordmark/logo work (a bold stroke has no reason to internally shade)
-    but would read as a defect under "a lit surface must shade across
-    itself" logic. That logic only actually applies to a lit FORM (an
-    eye, a face, a rounded body) -- exactly the same subject class
-    _figurative_precheck already targets. Also found and fixed before
-    shipping: a large-area DITHERED texture fill (a real reference
-    piece's 2262-cell scattered ▒ field, a genuine and deliberate scene
-    background-texture technique) triggered a false positive on an
-    earlier version of this check that grouped purely by visible color
-    regardless of glyph -- fixed by only flood-filling SOLID-ink glyphs
-    (space-with-bg, or a full block) into regions; a RAMP/dither glyph
-    (▒▓░) breaks region continuity by design, since density variation
-    within an area is itself evidence of real shading work, not a
-    defect.
-
-    'Subject' cells = anything not true background (not a plain space
-    with bg=0) -- same approximation used elsewhere in this file, since
-    an exact subject silhouette isn't derivable without vision. A large
-    flat region OUTSIDE the subject (e.g. a deliberately flat black
-    void, or a deliberately solid-color title-card band) is legitimate
-    and not flagged -- texture_fill()/negative-space conventions are a
-    separate, already-existing check (LOW BACKGROUND TEXTURE in this
-    same function). This check is specifically about flatness WITHIN
-    drawn content, which is the actual defect class Opus kept catching.
-
-    Returns None if the piece passes (including: not a figurative
-    piece, so the check doesn't apply), else a string describing the
-    specific violation(s) found (region size + location, or a
-    transition with too few brightness steps)."""
+    A same-glyph, same-color region inside the subject larger than
+    FLAT_REGION_CELL_THRESHOLD fails unless a dithered ░▒▓ bridge connects it
+    to another brightness step; so does an undithered seam between flat
+    brightness levels in one hue. Figurative only, since wordmarks have
+    legitimately solid strokes. Frame rows, box-drawing and dither glyphs
+    are not subject cells. Returns None on pass, else the violations found.
+    """
     if not _reads_figurative(path):
         return None  # scoped to figurative work, see docstring
 
@@ -2829,22 +2384,9 @@ def _flat_region_check(path):
     except Exception:
         return None  # don't hard-block on a parse error; let normal review catch it
 
-    # Exclude border/title-rule rows before building the subject set: a
-    # horizontal rule (a long run of one box-drawing/rule glyph spanning
-    # most of the row) is a deliberate house convention (STYLE.md /
-    # Methodology Pass 6, "real packs are framed more often than not"),
-    # not part of the shaded subject -- found live on a real test: the
-    # top/bottom double-line border rows (79 cells of solid '═' each) on
-    # _orb.v7 were flagged as "flat regions" before this exclusion, which
-    # would have blocked every single framed piece in the house style,
-    # not just genuinely flat subject fills. Same box_chars set already
-    # used by inspect_piece's separate frame-detection check, reused
-    # here rather than redefined.
-    # Full U+2500 box-drawing block, not a hand-typed subset: the old
-    # literal set was missing 18 real CP437 glyphs (╡╞╟╢╤╧╥╨╪╫╕╖╘╙╛╜╒╓),
-    # which is why a 72-cell '╡' title rule on _cyclops read as a flat
-    # SUBJECT region -- found live 2026-09-22 while checking the gate
-    # against the shipped gallery.
+    # Exclude border/title-rule rows: a frame is house convention, not a flat
+    # subject region. Full U+2500 box-drawing block, so CP437 mixed-line
+    # glyphs (╡╞╟ etc.) are included.
     _box_chars = {chr(cp) for cp in range(0x2500, 0x2580)}
     rows_seen = {}
     for (r, c), (ch, fg, bg) in grid.items():
@@ -2859,18 +2401,8 @@ def _flat_region_check(path):
         if box_frac > 0.7:
             border_rows.add(r)
 
-    # Build a subject-cell coordinate set keyed by VISIBLE color, not raw
-    # (char, fg, bg). For a half-block "space with bg" cell (the common
-    # case from HalfBlockCanvas -- confirmed live on a real _orb render:
-    # the dominant cell shapes were exactly this, (' ', fg=15, bg=<real
-    # color>), where fg=15 is leftover SGR state from an earlier bold
-    # code and carries no visible meaning since a space glyph has no ink)
-    # the color that's actually ON SCREEN is bg, not fg. An earlier
-    # version of this function grouped by raw fg unconditionally and
-    # would have silently failed to detect real large flat regions in
-    # exactly this common cell shape -- caught before shipping by
-    # checking real _orb.v7 cell data first. Same visible-color logic as
-    # _figurative_precheck, kept consistent rather than reinvented.
+    # Key subject cells by visible color. For a space-with-bg cell (the usual
+    # HalfBlockCanvas output) the visible color is bg; fg is leftover state.
     subject_cells = {}
     dither_cells = set()
     for (r, c), (ch, fg, bg) in grid.items():
@@ -2879,33 +2411,16 @@ def _flat_region_check(path):
         if r in border_rows:
             continue
         if ch in _box_chars:
-            # Box-drawing glyphs are FRAME, never shaded subject surface
-            # -- found live 2026-09-22: 12 shipped gallery pieces
-            # (raze-traveler-v1, hollis-portrait, the agent-sci banners
-            # ...) were blocked by a 72-cell run of '╡' on a title rule.
-            # The border_rows filter above only catches rows that are
-            # >70% box chars, so a rule sharing its row with title text
-            # slipped through and got flood-filled as a "flat region."
+            # Box-drawing glyphs are frame, never subject. The border_rows filter
+            # above misses a rule that shares its row with title text.
             continue
         if ch in "\u2593\u2592\u2591":  # ▓▒░ -- partial-density dither
-            # glyphs are themselves evidence of real shading (that's
-            # literally what they exist to fake on a 16-color palette,
-            # see canvas.shade_ramp()) -- never flood-fill them into a
-            # "flat region," and don't let them BREAK an otherwise-flat
-            # run either (a dither glyph adjacent to a solid run is a
-            # real transition edge, not noise to route around). Recorded
-            # separately in dither_cells so the hue-step check below can
-            # credit a region for bordering a real dithered transition
-            # -- see that check's own comment for why this matters.
+            # Dither is evidence of shading, never part of a flat region. Kept
+            # in dither_cells so the seam check can credit a dithered bridge.
             dither_cells.add((r, c))
             continue
         visible_idx = bg if (ch == " " and bg != 0) else fg
-        # region identity: (glyph-class, visible color) -- glyph-class
-        # collapses ' ' and any RAMP/half-block char that would render
-        # with equal apparent density into one bucket only when they're
-        # genuinely the same visible fill; kept simple and exact (raw
-        # char) rather than fuzzy, since over-merging would UNDER-count
-        # real flat regions, the opposite of this check's purpose.
+        # Region key: (raw char, visible color), exact rather than fuzzy.
         subject_cells[(r, c)] = (ch, visible_idx)
 
     if len(subject_cells) < FLAT_REGION_CELL_THRESHOLD:
@@ -2941,14 +2456,9 @@ def _flat_region_check(path):
                 "cells": region,
             })
 
-    # Connected components of dither cells (4-connected), computed once
-    # and shared by BOTH checks below -- a "bridge" is one dither
-    # component that physically connects two different brightness
-    # levels. This is what makes a large solid region legitimate: a
-    # flat fill that ramps into another brightness through a dithered
-    # transition IS a gradient (flat-dim -> dithered-mid -> flat-bright
-    # = 3 apparent brightness steps, which is achievable on a 16-color
-    # palette, unlike 3 distinct FLAT steps within one hue family).
+    # Dither components (4-connected), shared by both checks below. A bridge is
+    # one component touching two brightness levels: flat-dim -> dither ->
+    # flat-bright is a gradient on a 16-color palette.
     dither_components = []
     dither_visited = set()
     for start in dither_cells:
@@ -2991,11 +2501,8 @@ def _flat_region_check(path):
         comp_steps.append(steps_touched)
 
     def _in_gradient(reg):
-        """True when this region ramps into a DIFFERENT brightness level
-        through a dithered bridge. Large solid regions are fine when
-        part of a gradient (user direction, 2026-09-22) -- the old gate
-        failed every region over 40 cells unconditionally, which is what
-        drove pieces toward wall-to-wall ░▒▓ static."""
+        """True when this region ramps into a different brightness level
+        through a dithered bridge; large solid regions are fine in a gradient."""
         own = _BRIGHTNESS_STEPS[reg["visible_idx"] % 16]
         for comp, steps in zip(dither_components, comp_steps):
             if steps - {own} and _touches(reg["cells"], comp):
@@ -3024,55 +2531,24 @@ def _flat_region_check(path):
             f"to a different brightness step.)"
         )
 
-    # NOTE (2026-09-22): a standalone shade-share hard block was tried and
-    # REMOVED. Measured against the 142 shipped gallery pieces: shade p50
-    # = 54.5%, p90 = 83.0%, and 117/142 ship at 0.0% half_block. Every
-    # threshold tested false-positived accepted work -- corpus p90 (38%)
-    # blocked 23 pieces, p99 (65%) blocked 23, and the narrower
-    # conjunction (hb<5 AND shade>65) blocked 49, including raze-oracle,
-    # hollis-warden and raze-aperture. _watcher_final (hb 0.0 / shade
-    # 78.2) is metrically IDENTICAL to the accepted hollis-raze-boot
-    # (hb 0.0 / shade 78.2); no cell-level metric separates them.
-    # Reported as soft signals in submit_piece instead -- a floor the
-    # house cannot already reach gets gamed rather than met, which is
-    # what produced the re-slugging and the static in the first place.
+    # No standalone shade-share block: every threshold tested against the
+    # shipped gallery blocked accepted work. Shade is a soft signal in
+    # submit_piece instead.
 
-    # Lit-to-shadow transition check: with a real 16-color ANSI palette,
-    # each hue family (fg & 7) has only 2 real members (e.g. dim vs
-    # bright amber) -- there is NO third flat color level to reach for
-    # a genuine gradient. Real shading on this palette is ALWAYS done by
-    # DITHERING between the two flat levels (canvas.shade_ramp()), never
-    # by a third solid fill. An earlier version of this check demanded
-    # ">=3 distinct flat brightness steps," which is a mathematically
-    # impossible bar on a real 16-color palette -- found live: raze
-    # built an independent local replica of this exact gate while
-    # debugging a rejection, and it proved the ACCEPTED v7 benchmark
-    # piece also fails the old "3 flat steps" rule, since no 16-color
-    # hue family can ever have 3 members. The check now asks the right
-    # question instead: when a hue family has large flat regions at
-    # more than one brightness level, is there a real DITHERED bridge
-    # (a connected run of ░▒▓ cells) physically between them? That's
-    # exactly what shade_ramp() produces and exactly what a hard flat-
-    # to-flat seam lacks -- this is checkable, unlike counting
-    # non-existent third flat levels.
+    # Lit-to-shadow check. A hue family (fg & 7) has only two levels, so real
+    # shading is dithering between them: large flat regions at different
+    # brightness in one hue need a connected ░▒▓ bridge between them.
     if len(large_regions) >= 2:
-        # group large regions by hue family (fg & 7); a genuine
-        # lit-to-shadow transition happens WITHIN one hue family across
-        # brightness, not across unrelated hues
+        # Group large regions by hue family (fg & 7); a seam is within one hue.
         by_hue = {}
         for reg in large_regions:
             hue_key = reg["visible_idx"] & 7
             by_hue.setdefault(hue_key, []).append(reg)
 
-        # dither_components / _touches are computed once above and
-        # shared with the flat-region check -- not recomputed here.
         for hue_key, regs in by_hue.items():
             if len(regs) < 2:
                 continue
-            # dedupe by brightness step: two regions at the SAME
-            # brightness aren't a "seam" to bridge (they're just the
-            # same flat fill in two places), only a step DIFFERENCE
-            # needs a dither bridge between it.
+            # Dedupe by brightness: two regions at the same level aren't a seam.
             by_step = {}
             for reg in regs:
                 step = _BRIGHTNESS_STEPS[reg["visible_idx"] % 16]
@@ -3129,19 +2605,12 @@ def _inside(p, root):
         return False
 
 
-# --- Agent shell sandbox (security fix, 2026-09-26) -----------------------
-# The agents' bash tool used to run with the operator's full privileges,
-# so any prompt injection that reached an agent -- e.g. a forged message
-# through the dashboard inbox -- became arbitrary code as the user. Every
-# agent bash command now runs under macOS sandbox-exec:
-#   * writes confined to workspace/, temp dirs and caches
-#   * credential stores unreadable (~/.ssh, ~/.claude, ~/.hermes, gh, aws,
-#     keychain files) and the keychain service unreachable
-#   * the claude CLI cannot be executed (replaces the bypassable regex)
-#   * secrets stripped from the environment
-# Network stays open: the prompts tell agents to curl 16colo.rs.
-# FAILS CLOSED: if the sandbox cannot be verified at first use, the bash
-# tool is refused for the life of the process instead of running bare.
+# --- Agent shell sandbox --------------------------------------------------
+# Agent bash runs under macOS sandbox-exec: writes confined to workspace/,
+# temp and caches; credential stores and the keychain unreachable; the
+# claude CLI blocked; secrets stripped from the env. Network stays open
+# (agents curl 16colo.rs). Fails closed: if the sandbox can't be verified
+# on first use, the bash tool is refused.
 _SANDBOX_EXEC = "/usr/bin/sandbox-exec"
 _SECRET_ENV = re.compile(r"KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|COOKIE|SESSION", re.I)
 _SANDBOX_STATE = {"ok": None, "why": ""}
@@ -3271,11 +2740,8 @@ def run_tool(name, args, agent, shift_id=None):
             db5.close()
 
     if name == "random_direction":
-        # Weighted toward the tradition the catalog is thinnest in (figurative/
-        # character/scene work — 2 of 41 pieces at last count) so the randomness
-        # actively counters the gravity toward whatever's cheapest to produce,
-        # rather than just reinforcing it. Still genuinely random, still fully
-        # optional to act on.
+        # Weighted toward figurative/character/scene work, which the catalog is
+        # thinnest in. Still random, still optional.
         subjects = (
             ["a masked figure or guardian bust", "a creature/demon face", "a robot or cyborg head",
              "two figures in conversation or confrontation", "a crowd or group scene",
@@ -3360,12 +2826,8 @@ def run_tool(name, args, agent, shift_id=None):
                     continue
                 if len(visible.strip()) < 8:
                     sparse_rows.append(i)
-                # internal gap: a long run of space characters bordered by real
-                # content on both sides, anywhere in the row (not just the right
-                # margin) — the exact signature of a wordmark/panel-fill loop
-                # that silently stopped painting partway across, leaving a black
-                # hole in the middle of an otherwise-painted row. Plain trailing-
-                # whitespace checks miss this because the gap isn't at the end.
+                # Internal gap: a long run of spaces with content on both sides, the
+                # signature of a fill loop that stopped partway across the row.
                 stripped = visible.rstrip()
                 trailing_gap = len(visible) - len(stripped)
                 if len(stripped) >= 6 and trailing_gap >= 15:
@@ -3441,17 +2903,8 @@ def run_tool(name, args, agent, shift_id=None):
                 )
 
             # --- background density check -------------------------------------
-            # Methodology Pass 5 (see workspace/METHODOLOGY.md) requires real
-            # texture in whatever ISN'T the subject -- the single most common
-            # gap between house figurative work and the real references
-            # (compare STRIDE/MANTIS's flat black to a reference piece
-            # shade.ANS's dense stippled field). Approximate "background" as
-            # any row-run of default/near-black bg (SGR bg 0/40 or unset) with
-            # low visible-glyph density -- can't know the TRUE subject
-            # silhouette without vision, but a piece that never varies its bg
-            # color/density across long stretches is a real, checkable signal
-            # of an un-textured negative space, regardless of what the actual
-            # subject shape is.
+            # Methodology Pass 5: negative space needs texture. Without vision, flag
+            # long runs of near-black bg with low glyph density.
             bg_re = re.compile(r"\x1b\[[0-9;]*m")
             near_black_bg_rows = 0
             textured_bg_rows = 0
@@ -3486,13 +2939,8 @@ def run_tool(name, args, agent, shift_id=None):
                     out.append(f"background texture: {near_black_bg_rows}/{content_rows} rows read flat ({flat_frac*100:.0f}%) -- reasonable")
 
             # --- border/frame presence check ------------------------------------
-            # Methodology Pass 6 -- real scene packs are framed far more often
-            # than not (box-drawing border, repeated block motif, or a title
-            # card top/bottom). Cheap, approximate check: does the FIRST or
-            # LAST non-blank content row look like a deliberate horizontal
-            # rule/border (long run of a single repeated glyph, box-drawing
-            # chars, or a title-card pattern), or is the piece just... over,
-            # with no frame treatment at all.
+            # Methodology Pass 6: scene packs are usually framed. Check whether the
+            # first or last content row looks like a rule or border.
             box_chars = set("═║╔╗╚╝╠╣╦╩╬─│┌┐└┘├┤┬┴┼█▓▒░")
             def looks_framed(line):
                 visible = bg_re.sub("", line).strip()
@@ -3523,17 +2971,9 @@ def run_tool(name, args, agent, shift_id=None):
             elif has_top_frame or has_bottom_frame:
                 out.append(f"frame/border: detected ({'top' if has_top_frame else ''}{' + ' if has_top_frame and has_bottom_frame else ''}{'bottom' if has_bottom_frame else ''})")
             # --- scope-family relabeling check ---------------------------------
-            # curve_common.py's phosphor_render() uses one specific 8-hue wheel
-            # (95,91,93,92,96,94,107,103) plus white-hot (97) and nothing else —
-            # a very distinctive SGR fingerprint. Real figurative/anatomical
-            # pieces (figure_common.py, canvas.py) use a much broader/different
-            # palette because they build shaded regions, not a hue-cycled trace.
-            # If a piece's SGR params are ENTIRELY inside that fingerprint set
-            # AND its filename reads as figurative (face/eye/watcher/sentinel/
-            # cyborg/scan/mind/portrait/figure), flag it for a by-eye check —
-            # this catches the "scopes-family math relabeled as a character
-            # piece" pattern mechanically instead of relying on the curator's
-            # judgment alone every time.
+            # curve_common.phosphor_render() uses a distinctive 8-hue SGR set. A piece
+            # using only that set under a figurative filename is likely scope math
+            # relabeled as a character piece; flag it for a by-eye check.
             scope_fingerprint = {95, 91, 93, 92, 96, 94, 107, 103, 97, 0, 40, 104, 105}
             name_lower = p.stem.lower()
             reads_figurative = bool(_FIGURATIVE_WORDS_RE.search(name_lower))
@@ -3549,12 +2989,7 @@ def run_tool(name, args, agent, shift_id=None):
                 )
 
             # --- placeholder/debug text check ------------------------------------
-            # Found directly 2026-09-14: ECLIPSE v3 shipped to a released pack with
-            # a literal debug tagline baked into the rendered image -- the author
-            # comment even names it as a working label ("PROVENANCE... 'object +
-            # object'") that was never replaced with real content before submit.
-            # Cheap, reliable, zero-false-positive-risk check: scan visible text
-            # for common placeholder/debug tokens.
+            # Scan visible text for placeholder and debug tokens.
             disp_all = bg_re.sub("", "\n".join(lines))
             placeholder_re = re.compile(
                 r"\b(?:TODO|FIXME|PLACEHOLDER|XXX|TBD|object \+ object|"
@@ -3576,15 +3011,9 @@ def run_tool(name, args, agent, shift_id=None):
     if name == "bash":
         try:
             cmd = args["command"]
-            # Block direct invocation of the `claude` CLI from agent shell
-            # commands (user direction, 2026-09-16): Opus 5 review is
-            # billed against the human's own subscription via
-            # opus_curate_review(), reserved for the harness's curate_piece
-            # path only. An agent shelling out to `claude` directly would
-            # spend that same budget outside the cap/logging/shelve
-            # machinery entirely -- word-boundary match so this catches
-            # `claude -p ...` but not an unrelated word containing
-            # "claude" as a substring.
+            # Agents may not call the `claude` CLI: Opus review is metered and only
+            # runs through curate_piece's capped, logged path. Matches `claude` as a
+            # command word only.
             if re.search(r"(?:^|[;&|\s])claude(?:\s|$)", cmd):
                 return (
                     "(error: direct `claude` CLI invocation is blocked in "
@@ -3626,13 +3055,8 @@ def run_tool(name, args, agent, shift_id=None):
             p = _resolve_workspace_path(args["path"])
             if not _inside(p, WORKSPACE):
                 return "(error: write_file is limited to workspace/)"
-            # figure_common.py freeze (user direction, 2026-09-17): "Raze
-            # draws with half-block primitives for the next few pieces,
-            # even if the output is simpler. Simple and shaded beats
-            # complex and flat." The file is also chmod 444 on disk as the
-            # real enforcement (blocks bash redirects/sed -i/etc, not just
-            # this one code path) -- this check exists purely to give a
-            # clear, on-topic error instead of a bare permission-denied.
+            # figure_common.py is frozen. chmod 444 on disk is the real enforcement;
+            # this just gives a clear error.
             if p.name == "figure_common.py":
                 return (
                     "(error: figure_common.py is frozen. Draw on a canvas "
@@ -3661,36 +3085,22 @@ def run_tool(name, args, agent, shift_id=None):
             if not src.exists():
                 return f"(error: {src} does not exist)"
 
-            # --- figurative hard pre-submission gate ------------------------
-            # User direction, 2026-09-17: runs FIRST, before any other gate,
-            # before curate_piece, before any Opus call is spent. Mechanical,
-            # not a judgment call -- see _figurative_precheck's docstring.
+            # --- figurative pre-submission gate -------------------------------
+            # Runs first, before any other gate or Opus call.
             precheck_fail = _figurative_precheck(src)
             if precheck_fail:
                 return f"(error: {precheck_fail})"
 
-            # --- flat-region hard pre-submission gate ------------------------
-            # User direction, 2026-09-18, built after measuring the real
-            # root cause of repeated _orb/_phosphor Opus rejections (0.0%
-            # RAMP density chars across every version) -- see
-            # _flat_region_check's docstring for the full finding and the
-            # false-positive fixes made before shipping this.
+            # --- flat-region pre-submission gate ------------------------------
             flat_fail = _flat_region_check(src)
             if flat_fail:
                 return f"(error: {flat_fail})"
 
-            # --- soft technique signals (NEVER a block) ---------------------
-            # User direction, 2026-09-22: report half_block and shade-of-ink
-            # on every submission next to the house bar and the corpus
-            # medians, so the curator and Opus can judge -- enforcing them
-            # as a threshold is what produced the re-slugging and the
-            # static. Appended to the submit result, not returned as error.
+            # --- soft technique signals (never a block) ---------------------
             soft_signal = ""
             _sm = _compute_piece_metrics(src)
             if _sm is not None:
-                # Operator log only (2026-09-26): shown to the artist, these
-                # numbers and "match or beat" were a target, and every metric
-                # target in this project has been met by distortion.
+                # Log only: shown to the artist, a number becomes a target.
                 print(f"[metrics] {src.name}: {_fmt_metrics(_sm)}", flush=True)
                 _operator_only = (
                     f"\n\ntechnique (SOFT SIGNAL — not a gate, nothing is "
@@ -3707,14 +3117,9 @@ def run_tool(name, args, agent, shift_id=None):
                     f"recent work looked like."
                 )
 
-            # --- required v59 comparison before submit ----------------------
-            # User direction, 2026-09-22: the house bar is raised through
-            # REFERENCE, not through a metric threshold. A figurative piece
-            # must be looked at side by side with one of the Opus reference
-            # pieces before it can be
-            # submitted. Checked against this shift's own logged
-            # compare_to_reference calls (events already records tool_name +
-            # tool_args at the single dispatch site) rather than new state.
+            # --- required reference comparison before submit -------------------
+            # A figurative piece must be compared side by side with a reference piece
+            # first. Checked against this shift's logged compare_to_reference calls.
             db_cmp = sqlite3.connect(DB_PATH)
             try:
                 seen_ref = db_cmp.execute(
@@ -3749,15 +3154,8 @@ def run_tool(name, args, agent, shift_id=None):
                 _db_h.close()
 
             # --- required find_patches before submit -----------------------
-            # User direction, 2026-09-23: retrieval is the lever most
-            # likely to fix arrangement, and it was running 3 calls
-            # across 8 shifts against 101 drawing calls. Required on
-            # EVERY piece, not just figurative ones: _reads_figurative is
-            # a fixed 30-word list that matches neither _keeper nor
-            # _wasteland (both checked, both False) and would miss every
-            # scene/creature/logo subject going forward, so gating on it
-            # would never fire. Arrangement is the open problem on all
-            # work. Checked against this shift's own logged calls.
+            # Required on every piece, not just figurative ones: _reads_figurative's
+            # word list misses most scene/creature/logo subjects.
             db_fp = sqlite3.connect(DB_PATH)
             try:
                 seen_fp = db_fp.execute(
@@ -3780,9 +3178,8 @@ def run_tool(name, args, agent, shift_id=None):
                 )
 
             # --- retired subject + re-slug identity ------------------------
-            # Both are one question: what subject IS this? Filename slug
-            # was the only answer before, which is exactly what the
-            # _watcher.v7 -> _watcher_final rename exploited.
+            # Both ask what subject this is. The filename slug alone can be dodged by
+            # renaming.
             db_sub = sqlite3.connect(DB_PATH)
             try:
                 _title = ""
@@ -3812,31 +3209,15 @@ def run_tool(name, args, agent, shift_id=None):
                 db_sub.close()
 
             # --- revision-over-novelty + open-subject cap gate ---------------
-            # User direction, 2026-09-17: a rejected piece must come back as
-            # the SAME file at v+1, not reappear under a fresh slug to dodge
-            # review history -- observed live: _exchange (rejected) came back
-            # rebuilt as _voices; _crowd_joint (rejected) came back as
-            # _crowd_wave. Also caps open (not accepted/abandoned) subjects
-            # at 2: starting a third is blocked until one is accepted or
-            # explicitly abandoned via abandon_subject with a written reason.
+            # A rejected piece must come back as the same slug at v+1, not a fresh
+            # slug. At most 2 open subjects; a third needs one accepted or abandoned.
             slug = core_slug(src.stem)
             version = _extract_version(src.stem)
             db2 = sqlite3.connect(DB_PATH)
             try:
                 # --- hard revision cap ---------------------------------------
-                # User direction, 2026-09-19: "Cap revisions at 8 per subject.
-                # After that it ships, gets shelved, or reverts to the best-
-                # scoring earlier version. 59 versions is not iteration, it's
-                # thrashing." Counted from piece_metrics (one row per real
-                # submit_piece call that reached this point, regardless of
-                # accept/reject outcome -- the true revision count, not just
-                # the reviewed count) rather than the bare version NUMBER in
-                # the filename, since a version number can skip ahead (a
-                # subject could reach ".v20" after only 8 actual submissions
-                # if earlier attempts were blocked before reaching this gate,
-                # or could have gaps from abandoned parallel attempts) --
-                # what must be capped is real submitted revisions, not the
-                # numeric suffix an agent chose.
+                # Counted from piece_metrics rows (real submissions), not the filename's
+                # version number, which can skip or have gaps.
                 revision_count = db2.execute(
                     "SELECT COUNT(*) FROM piece_metrics WHERE slug=?", (slug,)
                 ).fetchone()[0]
@@ -3890,15 +3271,8 @@ def run_tool(name, args, agent, shift_id=None):
                         )
 
                 # --- per-version metrics, pinned-best regression gate --------
-                # User direction, 2026-09-18: block any revision whose OWN
-                # measured metrics (half-block %, shade-char %, distinct
-                # subject colors) drop versus the pinned best, even if the
-                # specific defect the agent thought they were fixing is
-                # genuinely fixed. Built after measuring the real case this
-                # exists to prevent: _orb's half-block % declined on every
-                # single revision (v5->v8: 13.3%->9.4%->10.8%->7.9%) while
-                # each version was submitted believing it was an
-                # improvement -- nothing caught the regression until now.
+                # Block a revision whose own metrics drop against the pinned best, even
+                # if the targeted defect is fixed.
                 new_metrics = _compute_piece_metrics(src)
                 best = _get_best_metrics(db2, slug)
                 if new_metrics is not None and best is not None:
@@ -3909,8 +3283,7 @@ def run_tool(name, args, agent, shift_id=None):
                         ("distinct_colors_in_subject", "distinct subject colors"),
                     ):
                         old_v, new_v = best[key], new_metrics[key]
-                        # small floating-point slack (0.5) so a rounding
-                        # difference doesn't block an otherwise-flat metric
+                        # 0.5 slack so rounding doesn't block an unchanged metric
                         if new_v < old_v - 0.5:
                             regressions.append(
                                 f"{label}: {old_v:.1f} (v{best['version']}) -> "
@@ -3932,18 +3305,8 @@ def run_tool(name, args, agent, shift_id=None):
                 db2.close()
 
             # --- reference-comparison gate ---------------------------------
-            # Added 2026-09-16 directly in response to: an artist judged its
-            # own flat-banded THE DUEL render "genuinely good and submission-
-            # ready" after previewing it ALONE (see the capsule() gate right
-            # below for the other half of that same incident). Self-
-            # assessment in isolation is unreliable; a real side-by-side
-            # against actual reference-quality work is not (confirmed: the
-            # vision model correctly spotted banding/confetti/etc. in ad hoc
-            # tests every time it was shown a direct comparison). Hard
-            # requirement, not a suggestion: submit_piece is blocked unless
-            # compare_to_reference was called on this exact filename at some
-            # point in the last 40 tool events by this agent. Cheap to
-            # satisfy (one real tool call), impossible to fake with a note.
+            # Self-assessment in isolation is unreliable. Blocked unless
+            # compare_to_reference ran on this file in this agent's last 40 events.
             db = sqlite3.connect(DB_PATH)
             recent = db.execute(
                 "SELECT tool_args FROM events WHERE agent=? AND tool_name='compare_to_reference' "
@@ -3965,21 +3328,8 @@ def run_tool(name, args, agent, shift_id=None):
                 )
 
             # --- capsule()/joint_dot() claim-vs-reality gate --------------
-            # Found directly 2026-09-15: _duel.py's own header comment
-            # claimed "built on hollis's capsule()/joint_dot() lit-tube
-            # primitives as its CORE" while the actual code never called
-            # either -- it reimplemented its own local cap()/joint() that
-            # threw away shade()'s density-varying glyph and hardcoded a
-            # solid block, guaranteeing the exact flat-color-banded look
-            # STYLE.md's "REQUIRED for any body-shaped subject" rule exists
-            # to prevent. Three separate pixel-statistics heuristics were
-            # tried and failed to discriminate this reliably (see git log)
-            # -- the only reliable signal is checking the SOURCE CODE
-            # actually does what its own note claims, at the one point
-            # (submission) where the .py source is still guaranteed to sit
-            # alongside the .ans in scratch/. This is a hard block, not a
-            # warning: figurative/body-shaped work claiming the shared
-            # primitive must actually call it.
+            # If the note claims the shared primitive, the source must call it.
+            # Checked at submit, while the .py still sits next to the .ans.
             note_text = args.get("note", "")
             body_words = ("figure", "figurative", "body", "torso", "limb",
                           "capsule", "joint_dot", "anatomy", "anatomical")
@@ -3988,11 +3338,7 @@ def run_tool(name, args, agent, shift_id=None):
                 py_candidate = src.with_suffix(".py")
                 if py_candidate.exists():
                     py_text = py_candidate.read_text(errors="replace")
-                    # Strip comments before checking for REAL calls -- a
-                    # comment mentioning "capsule()" (like _duel.py's own
-                    # header claiming to use it) must not count as an
-                    # actual call, or this gate has the exact same
-                    # claim-vs-reality blind spot it exists to catch.
+                    # Strip comments first: a comment mentioning capsule() is not a call.
                     code_only = "\n".join(
                         line.split("#", 1)[0] for line in py_text.split("\n")
                     )
@@ -4002,11 +3348,7 @@ def run_tool(name, args, agent, shift_id=None):
                     calls_joint_dot = bool(re.search(
                         r"\b(?:fc\.|figure_common\.)?joint_dot\s*\(", code_only
                     ))
-                    # Negation-aware, same fix as the earlier blind-check
-                    # gate bug: "NOT the shared capsule()" or "my own
-                    # shading, not capsule()" is an honest disclosure, not
-                    # a false claim -- only block when the note asserts
-                    # USING it without a negator governing that mention.
+                    # Negation-aware: "not capsule()" is a disclosure, not a claim.
                     _NEGATORS = (
                         r"\b(?:no|not|n't|without|instead of|rather than|"
                         r"my own|hand-?rolled|custom)\b"
@@ -4043,27 +3385,16 @@ def run_tool(name, args, agent, shift_id=None):
             db3 = sqlite3.connect(DB_PATH)
             try:
                 _touch_subject(db3, slug, version, dest, status="open")
-                # Record real metrics for this version, and if this is the
-                # first version ever seen for this slug, pin it as the
-                # initial "best" so version 2 has something real to be
-                # compared against -- see _get_best_metrics's fallback
-                # logic for what happens before any pin is explicit.
+                # Record this version's metrics; pin the first version seen as the
+                # initial best so v2 has a baseline.
                 recorded = _record_piece_metrics(db3, slug, version, dest)
                 if recorded is not None:
                     existing_pin = db3.execute(
                         "SELECT pinned_version FROM subjects WHERE slug=?", (slug,)
                     ).fetchone()
                     if existing_pin and existing_pin[0] is None:
-                        # The real generator-script convention (confirmed
-                        # against actual scratch/ files, not assumed): the
-                        # base script is UNVERSIONED, e.g. scratch/_orb.py,
-                        # edited in place across every revision (real
-                        # evidence: _orb.v8.bak.py / _orb.v9.bak.py sit
-                        # next to it as pre-edit backups of that same
-                        # file). An earlier version of this derived the
-                        # pinned path from the SUBMITTED .ans filename
-                        # (e.g. "_orb.v6.py"), which doesn't correspond to
-                        # any real file on disk -- fixed before shipping.
+                        # The generator script is unversioned (scratch/_orb.py, edited in
+                        # place across revisions), not named after the submitted .ans.
                         pinned_script = SCRATCH / f"{slug}.py"
                         db3.execute(
                             "UPDATE subjects SET pinned_script_path=?, "
@@ -4090,34 +3421,12 @@ def run_tool(name, args, agent, shift_id=None):
             decision = args.get("decision")
             critique = args.get("critique", "")
             if decision == "accept":
-                # Adversarial verification: if the critique makes a checkable
-                # visual-feature claim (face/eye/brow/jaw/anatomy/figure/
-                # portrait/silhouette), get a BLIND second opinion from the
-                # same model with zero access to this critique's text, and
-                # hard-block the accept if it flatly contradicts the claim.
-                # This exists because a real accepted piece ("TWO VOICES
-                # v1.1") shipped with a critique describing "two facing
-                # profile heads... brow... jaw... eye-line" when the actual
-                # render is three flat solid-color triangular blocks with no
-                # facial structure at all -- inspect_piece's structural
-                # checks cannot catch this, it's a perception failure, not a
-                # hygiene one. This is a real check, not a rubber stamp: the
-                # curator can still accept after re-examining, revising the
-                # critique to match reality, or overriding with an explicit
-                # note explaining the disagreement — it isn't a silent veto.
+                # If the critique makes a checkable visual claim (face, eye, figure...),
+                # get a blind description from the same model and block the accept on a
+                # flat contradiction. The curator can revise or override with a note.
                 critique_lower = critique.lower()
-                # Negation-aware: only count a visual-claim word as an actual
-                # POSITIVE claim (curator asserting the feature is present),
-                # not when the curator is denying/negating it themselves
-                # ("NOT anatomy", "no face", "isn't a figure", "without eyes").
-                # Bug found 2026-09-14: the naive version triggered on ANY
-                # occurrence of the word, so a curator correctly writing "this
-                # is abstract, no anatomy, no face" got hard-blocked by this
-                # gate even when the blind check agreed with them — 4 straight
-                # curator shifts (397/399/401/403) loop-guard-killed on this
-                # exact false positive, stuck re-wording an already-correct
-                # critique because the gate couldn't tell affirmation from
-                # denial.
+                # Negation-aware: only count a claim word the curator asserts, not
+                # "no face", "isn't a figure", "without eyes".
                 _NEGATORS = (
                     r"\b(?:no|not|n't|without|zero|none of|isn'?t|aren'?t|lacks?|"
                     r"absence of|disclaims?|rather than|pretending (?:to be|at)|"
@@ -4125,11 +3434,7 @@ def run_tool(name, args, agent, shift_id=None):
                 )
                 claimed_words = []
                 for w in _VISUAL_CLAIM_WORDS:
-                    # word-boundary match only (substring "eye" inside "eyed"
-                    # or, critically, the idiom "verified by eye" is not a
-                    # claim that a real eye is present — that idiom is used
-                    # constantly in real critiques and was itself producing
-                    # false triggers before this fix)
+                    # Word-boundary match so "eyed" doesn't count; "by eye" is skipped below.
                     for m in re.finditer(r"\b" + re.escape(w) + r"\b", critique_lower):
                         post = critique_lower[m.end():m.end() + 8]
                         if w == "eye" and post.startswith(" against"):
@@ -4137,12 +3442,8 @@ def run_tool(name, args, agent, shift_id=None):
                         pre_tail = critique_lower[max(0, m.start() - 8):m.start()]
                         if w == "eye" and pre_tail.rstrip().endswith("by"):
                             continue  # "by eye" == verified visually, not a claim
-                        # Negation can govern a whole comma-separated list
-                        # ("no anatomy, face, eye, brow, jaw") — so look back
-                        # to the start of the CLAUSE (last sentence-ending
-                        # punctuation), not just a fixed few words, and check
-                        # the negator appears anywhere in that clause with no
-                        # intervening clause break ("but"/"however"/";").
+                        # Negation can govern a list ("no anatomy, face, eye"), so look back to
+                        # the start of the clause, stopping at a break (but/however/;).
                         clause_start = max(
                             critique_lower.rfind(".", 0, m.start()),
                             critique_lower.rfind("!", 0, m.start()),
@@ -4161,12 +3462,8 @@ def run_tool(name, args, agent, shift_id=None):
                 if claimed_words:
                     blind = _blind_visual_check(src)
                     blind_lower = blind.lower()
-                    # Robust-ish, not brittle keyword matching: look for a clear
-                    # denial signal ANYWHERE in the first ~200 chars (covers
-                    # "No.", "No genuinely...", "not built from...", etc — real
-                    # model phrasing varies) AND at least one concrete grounding
-                    # phrase describing flat/geometric shapes rather than
-                    # constructed anatomy, anywhere in the full response.
+                    # A denial signal in the first ~200 chars plus a phrase describing
+                    # flat or geometric shapes anywhere in the response.
                     denial_signal = bool(re.search(
                         r"\bno\b[^.]{0,80}\b(constructed|discernible|clearly)\b"
                         r"|\bnot\b[^.]{0,40}\bconstructed\b"
@@ -4179,18 +3476,8 @@ def run_tool(name, args, agent, shift_id=None):
                         r"|no face|no eye|no brow",
                         blind_lower,
                     ))
-                    # The guard exists to catch a critique claiming ANATOMY
-                    # the render does not contain. It must not fire when the
-                    # only "figurative" word is a landscape term.
-                    # Found live 2026-09-23: CROSSING (a cable-car-over-gorge
-                    # scene) was blocked 8 times because its accept critique
-                    # said "three black mountain SILHOUETTES". The blind check
-                    # correctly described a scene -- "flat dithered geometric
-                    # shapes, no constructed subject" -- and that correct
-                    # AGREEMENT tripped both signals, because a landscape
-                    # genuinely has no anatomy. The curator diagnosed this
-                    # itself and held the piece rather than reject on a false
-                    # positive.
+                    # The guard catches claimed anatomy that isn't there. Landscape terms
+                    # ("mountain silhouettes") aren't anatomy, and a scene has none.
                     _LANDSCAPE_OK = {"silhouette", "totem", "lantern", "ember"}
                     anatomy_claimed = [w for w in claimed_words
                                        if w not in _LANDSCAPE_OK]
@@ -4214,12 +3501,8 @@ def run_tool(name, args, agent, shift_id=None):
                             "blind check is right, this should be a reject, "
                             "not an accept.)"
                         ), None
-                # Opus 5 is now the sole accept/reject authority (user
-                # direction, 2026-09-16) -- Qwen's own decision/critique are
-                # passed through for logging/disagreement-rate comparison,
-                # not used to decide where the file goes. This replaces the
-                # direct _move_with_sidecars(...) calls that used to run
-                # here for both branches.
+                # Opus is the sole accept/reject authority; Qwen's verdict is passed
+                # through for logging only.
                 return curate_piece_opus_gated(src, decision, critique)
             elif decision == "reject":
                 return curate_piece_opus_gated(src, decision, critique)
@@ -4238,30 +3521,15 @@ def run_tool(name, args, agent, shift_id=None):
 
 
 def curate_piece_opus_gated(src, decision, critique):
-    """Real replacement for the tail of curate_piece's accept/reject move,
-    per the user's explicit 2026-09-16 direction: Opus 5 is the ONLY
-    authority on accept/reject; Qwen's decision/critique are logged for
-    the disagreement-rate comparison but do not decide where the file
-    goes. Called instead of the plain _move_with_sidecars(...)-then-return
-    pair inside curate_piece once the pre-existing checks (path validity,
-    blind claim-consistency gate) have already passed for whatever Qwen
-    itself asserted.
+    """Hand the accept/reject decision to Opus, the only authority. Qwen's
+    decision and critique are logged, not used.
 
-    Also keeps the `subjects` table (2026-09-17, revision-over-novelty +
-    open-subject-cap gate) in sync: accept/shelve close the subject out,
-    reject leaves it open but records the rejection so the next
-    submit_piece call for the same slug is forced to a higher version.
-
-    Returns (message, dest_path_or_None) matching curate_piece's existing
-    return shape so the dispatcher doesn't need to change."""
-    # --- blind subject-recognition gate (user direction, 2026-09-19) ----
-    # Runs FIRST, before the metric-based defect review: measures
-    # technique, this asks whether the piece even reads as its intended
-    # subject at all. A piece can pass every mechanical gate (half-block
-    # %, shade %, flat-region check) while the actual composition has
-    # drifted into something that no longer reads as the intended
-    # subject -- exactly the failure mode this catches regardless of
-    # metrics being satisfied.
+    Keeps the subjects table in sync: accept/shelve close the subject;
+    reject leaves it open and forces a higher version next time. Returns
+    (message, dest_path_or_None), the same shape as curate_piece."""
+    # --- blind subject-recognition gate -------------------------------
+    # Runs first. A piece can pass every mechanical gate and still not read
+    # as its intended subject.
     subject_result = opus_subject_check(src)
     if subject_result["status"] == "mismatch":
         dest = _move_with_sidecars(src, REJECTED, new_critique=subject_result["message"])
@@ -4277,13 +3545,9 @@ def curate_piece_opus_gated(src, decision, critique):
             f"{subject_result['message']}"
         ), dest
 
-    # --- pairwise regression gate (user direction, 2026-09-19) -----------
-    # Runs SECOND, after subject recognition, before the defect review:
-    # built directly for the v55->v59 case, where both tracked %
-    # metrics improved while the piece genuinely read worse (shrunken
-    # sclera, noisy background) -- a regression no metric-floor check
-    # can see by construction. Blind side-by-side against the pinned
-    # best, randomized A/B, titles redacted.
+    # --- pairwise regression gate -------------------------------------
+    # Runs second. Catches a revision that improves the metrics but reads
+    # worse. Blind side by side against the pinned best, A/B randomized.
     slug_pw = core_slug(Path(src).stem)
     db_pw = sqlite3.connect(DB_PATH)
     try:
@@ -4293,10 +3557,8 @@ def curate_piece_opus_gated(src, decision, critique):
     pinned_render_path = None
     if best_pw and best_pw.get("path"):
         candidate_pinned_path = Path(best_pw["path"])
-        # only compare against a DIFFERENT version than the one being
-        # submitted right now, and only if that file still exists on
-        # disk (a pinned version's .ans can be cleaned up after ship,
-        # same gap documented for _orb v53 elsewhere in this file)
+        # Only compare against a different version, and only if its .ans
+        # still exists (it can be cleaned up after ship).
         if candidate_pinned_path.resolve() != Path(src).resolve() and candidate_pinned_path.exists():
             pinned_render_path = candidate_pinned_path
     intended_title_pw = _extract_intended_title(src)
@@ -4363,13 +3625,9 @@ def curate_piece_opus_gated(src, decision, critique):
             f"pack release. Opus verdict: ACCEPT{agree}.\n\n{result['message']}{halt}"
         ), dest
     if status == "reject":
-        # Two-tier: a piece can fail the scene-standard bar (calibrated to
-        # real 16colo.rs accepts) and still clear the HOUSE bar -- subject
-        # resolves, constructed rather than composited, no debug text or
-        # unrendered regions. Those ship to the gallery labelled
-        # house-standard with the full scene-standard critique attached,
-        # so the honest verdict travels with the piece. The scene bar is
-        # NOT lowered; this records a second, lower one alongside it.
+        # Two tiers: a piece can miss the scene bar and still clear the house
+        # bar. Those ship labelled house-standard with the scene critique
+        # attached. The scene bar is not lowered.
         if result.get("house_verdict") == "pass":
             dest = _move_with_sidecars(src, GALLERY_UNPACKED, new_critique=(
                 "TIER: house-standard (shipped) / scene-standard: REJECT\n\n"
@@ -4397,11 +3655,8 @@ def curate_piece_opus_gated(src, decision, critique):
 
 
 def _shipped_catalog_index():
-    """MD5 + core-slug index of every piece already shipped in gallery/packNN/,
-    excluding quarantine dirs (_held-*). Used to hard-block a real duplicate
-    from re-shipping at release time instead of relying on agents remembering
-    to run a separate dedup script (the pack17 nebula-dup incident happened
-    exactly because that step was optional and got skipped)."""
+    """MD5 + core-slug index of every piece shipped in gallery/packNN/,
+    excluding quarantine dirs (_held-*). Used to block duplicates at release."""
     import hashlib
 
     by_md5, by_slug = {}, {}
@@ -4420,12 +3675,9 @@ def _shipped_catalog_index():
 
 
 def _opus_daily_cost_and_count(conn):
-    """Today's Opus review count/cost (UTC calendar day) -- used for the
-    daily cap. Condition 2 (user, 2026-09-16): when the cap is hit,
-    submissions QUEUE for review, they never silently fall back to Qwen
-    for the accept/reject decision -- so this must be checked BEFORE
-    calling Opus, not after, and the caller must hard-stop on cap-hit
-    rather than degrade to a different judge."""
+    """Today's Opus review count and cost (UTC day), for the daily cap.
+    Check before calling Opus; on cap hit the caller queues, never falls
+    back to Qwen."""
     import datetime
     day_start = datetime.datetime.utcnow().replace(
         hour=0, minute=0, second=0, microsecond=0
@@ -4438,25 +3690,17 @@ def _opus_daily_cost_and_count(conn):
     return row[0], row[1]
 
 
-OPUS_DAILY_CALL_CAP = 40  # ~$0.20-0.28/call observed -> ~$8-11/day ceiling.
-# Deliberately a call-count cap, not a dollar cap: a dollar cap that fires
-# mid-review would need the same queue-not-fallback handling anyway, and a
-# call count is simpler to reason about and log.
+OPUS_DAILY_CALL_CAP = 40  # per UTC day
+# A call-count cap, not a dollar cap: simpler to reason about and log.
 
-OPUS_MAX_REVIEWS_PER_PIECE = 3  # condition 3 (user): one re-review per
-# revision, shelved (not resubmitted indefinitely) after 3 total.
+OPUS_MAX_REVIEWS_PER_PIECE = 3  # reviews per piece before it is shelved
 
 
-# --- claude child-process bookkeeping (fix, 2026-09-26) -------------------
-# `claude` runs in its own process group so a timeout can kill the whole
-# tree. The cost: when the PYTHON parent dies (SIGTERM from a supervising
-# agent, SIGKILL, a crash), the child keeps running -- that is how duo3
-# session 6 got two artists on one canvas and an uncounted bill. Now:
-#   * every live group is recorded in .claude_children/<our pid>,
-#   * atexit and (where no handler exists) SIGTERM/SIGHUP kill our groups,
-#   * a KeyboardInterrupt or any other BaseException mid-call kills it,
-#   * sweep_orphaned_claude() kills groups whose recording process is dead
-#     (the SIGKILL case, which nothing can intercept).
+# --- claude child-process bookkeeping -------------------------------
+# `claude` runs in its own process group so a timeout can kill the tree,
+# which means it outlives a dead parent. Live groups are recorded in
+# .claude_children/<pid>; atexit, SIGTERM/SIGHUP and any BaseException
+# mid-call kill them. sweep_orphaned_claude() covers SIGKILL.
 _CLAUDE_REG_DIR = PROJECT_DIR / ".claude_children"
 _ACTIVE_CLAUDE = {}
 _CLAUDE_CLEANUP_INSTALLED = False
@@ -4575,15 +3819,12 @@ def live_claude_tags():
     return tags
 
 
-# --- Sandbox for Opus sessions that get a shell (fix, 2026-09-26) ---------
-# Opus artist sessions run `claude -p --allowedTools Bash,Read,Write` in the
-# repo, i.e. a pre-approved shell with the operator's full privileges. Those
-# runs now go through sandbox-exec too: writes limited to workspace/, the
-# repo's .claude/ dir, Claude's own state dirs, temp and caches; SSH keys,
-# Hermes config, gh/aws/docker credentials unreadable. The keychain stays
-# reachable because the CLI's own login lives there. Judge calls (Read only)
-# are not wrapped. Opt out with AGENTSCII_OPUS_SANDBOX=0 if a CLI update
-# needs a path this profile does not allow; the error will say which.
+# --- Sandbox for Opus sessions that get a shell ---------------------
+# Opus artist runs get a pre-approved shell, so they go through
+# sandbox-exec: writes limited to workspace/, .claude/, Claude state, temp
+# and caches; SSH keys, Hermes config and gh/aws/docker credentials
+# unreadable. The keychain stays reachable for the CLI login. Read-only
+# judge calls aren't wrapped. AGENTSCII_OPUS_SANDBOX=0 opts out.
 def _opus_sandbox_profile():
     h = str(HOME.resolve())
 
@@ -4622,62 +3863,22 @@ def _maybe_sandbox_claude(args_list):
 
 
 def _run_claude_p(args_list, timeout=120, retries=1, tag="claude", **run_kwargs):
-    # NOTE (2026-09-23): 120s is fine for short calls but NOT for the
-    # defect review, which writes a 14-item table with cell coordinates
-    # and routinely needs 3-7 minutes. Measured: the CLI itself answers
-    # a trivial prompt in 3.7s, so these were real generation time, not
-    # a hang -- five "timeouts" in a row were the budget, not a fault.
-    # That call site passes timeout=420 explicitly.
-    """Hard-timeout wrapper for every `claude -p` subprocess call (user
-    direction, 2026-09-20: 'wrap every claude -p call in a hard timeout
-    (120s, retry once, then record as unjudged) -- a hung gate call
-    would stall a shift the same way').
+    # The defect review needs several minutes; that call site passes
+    # timeout=420.
+    """Run `claude -p` with a hard timeout that actually kills it.
 
-    Found live: the existing per-call-site `subprocess.run(...,
-    timeout=90)` pattern does NOT actually guarantee the process dies
-    on timeout. A real checkpoint_eval.py pairwise call sat alive for
-    56 minutes at ~0% CPU (1 minute of real CPU time total) instead of
-    hitting its stated 90s timeout -- confirmed directly via `ps`: one
-    live `claude` child process, no error, no exit. subprocess.run's
-    timeout kills the DIRECT child on TimeoutExpired, but if that
-    child's own stdout/stderr-reading `communicate()` is blocked on a
-    grandchild (claude's own internal tool-execution subprocess, a
-    sandboxed read, etc.) that inherited the pipe file descriptors and
-    doesn't exit, the parent's read() never returns and TimeoutExpired
-    never fires reliably either -- a known sharp edge of
-    subprocess.run(timeout=...) with pipe-inheriting descendants,
-    confirmed as the actual failure mode here by watching the hung
-    process's real state (S, sleeping, not R) and near-zero CPU time
-    for the entire 56-minute span, not just assumed from the docs.
-
-    Fixed with a real process-group kill: launches in its own process
-    group (start_new_session=True, POSIX-only, acceptable since this
-    codebase already assumes macOS via other darwin-specific tool
-    calls elsewhere), waits with an explicit timeout via
-    communicate(timeout=...), and on TimeoutExpired sends SIGKILL to
-    the WHOLE PROCESS GROUP (os.killpg, negative pid) -- not just the
-    direct child -- so an unresponsive grandchild holding the pipe
-    open gets killed too, not just orphaned.
-
-    Retries once on timeout (a real, transient CLI hang is plausible;
-    two independent hangs on the same call is not worth blocking a
-    whole shift over). Returns a subprocess.CompletedProcess-like
-    object on success, or None if both attempts timed out or every
-    other subprocess error occurred -- callers must check for None and
-    treat it as an unjudged/error result, never crash on it.
+    subprocess.run(timeout=...) can hang when a grandchild inherits the
+    pipes, so this starts a new session (start_new_session=True) and on
+    timeout SIGKILLs the whole process group. Retries once. Always returns a
+    CompletedProcess; failures have returncode -1 and the reason in stderr.
     """
     import subprocess as _sp
     import os as _os
     import signal as _signal
 
     def _fail(reason):
-        # Never return a bare None: callers used to report every failure
-        # as "timed out after retry", which was actively misleading --
-        # found live 2026-09-22, three _watcher.v7 reviews logged as
-        # "timed out after retry (120s x2)" only 32s apart, which is
-        # arithmetically impossible. Carry the REAL reason in stderr on
-        # a returncode=-1 result so each call site's existing
-        # `returncode != 0` branch logs the truth for free.
+        # Never return bare None: carry the real reason in stderr with
+        # returncode -1, so callers' `returncode != 0` branch logs it.
         return _sp.CompletedProcess(args_list, -1, "", reason)
 
     for attempt in range(retries + 1):
@@ -4714,8 +3915,8 @@ def _run_claude_p(args_list, timeout=120, retries=1, tag="claude", **run_kwargs)
                 "(process group killed)"
             )
         except BaseException as e:
-            # BaseException, not Exception: a KeyboardInterrupt here used to
-            # leave the child running after the parent exited.
+            # BaseException, so a KeyboardInterrupt doesn't leave the child
+            # running.
             try:
                 _os.killpg(_os.getpgid(proc.pid), _signal.SIGKILL)
             except Exception:
@@ -4731,24 +3932,17 @@ def _run_claude_p(args_list, timeout=120, retries=1, tag="claude", **run_kwargs)
 
 
 def _kill_stale_claude_login(max_age_s=300):
-    """Find and kill any `claude login` process older than max_age_s.
+    """Kill any `claude login` process older than max_age_s.
 
-    A hung `claude login` holds ~/.claude/.credentials.lock and makes
-    every `claude -p` call in opus_curate_review fail instantly with
-    exit 1 and empty stderr -- found live 2026-09-17 (a `claude login`
-    process had been running 16+ hours, blocking every Opus review that
-    shift). Only kills processes older than max_age_s so a login the
-    user is actively completing right now is never touched.
-
-    Returns True if a stale process was found and killed, else False.
+    A hung login holds ~/.claude/.credentials.lock and makes every
+    `claude -p` fail with exit 1 and empty stderr. Younger processes are
+    left alone in case a login is in progress. Returns True if one was
+    killed.
     """
     import subprocess as _sp
 
     def _etime_to_seconds(s):
-        # macOS/BSD `ps -eo etime` format: [[dd-]hh:]mm:ss (no raw-seconds
-        # `etimes` field on macOS, unlike Linux -- confirmed live, the
-        # first version of this function used `etimes` and silently
-        # produced zero matches on this machine).
+        # macOS `ps -eo etime` format: [[dd-]hh:]mm:ss. macOS has no `etimes`.
         days = 0
         if "-" in s:
             d, s = s.split("-", 1)
@@ -4790,27 +3984,19 @@ def _kill_stale_claude_login(max_age_s=300):
 
 
 def _extract_intended_title(path, title=None):
-    """The piece's declared title, for logging next to what Opus blindly
-    saw. Never fed to the blind check itself.
+    """The piece's declared title, for logging next to what Opus saw blind.
+    Never fed to the blind check.
 
-    Order: explicit argument, then the .note.txt sidecar, then the
-    subjects table, then the in-file title card. Found live
-    2026-09-23: CROSSING returned None because its title sits in a
-    framed row rather than the first three lines, so the check could
-    only DESCRIBE the piece and had nothing to verify intent against --
-    which is half the point of it. The file is the LAST resort now, not
-    the only source.
+    Order: explicit argument, .note.txt sidecar, subjects table, then the
+    in-file title card.
     """
     if title:
         return title.strip()
 
     slug = core_slug(Path(path).stem)
 
-    # The piece's own sig-block title row is the most reliable source:
-    # it is what the artist actually wrote on the canvas. Scan ALL rows,
-    # not just the first three (CROSSING's sits in a framed row near the
-    # bottom, which is why this returned None). Redaction does not
-    # affect this -- it reads the raw file, not the render.
+    # The sig-block title row is what the artist actually wrote. Scan all
+    # rows; the title can sit in a framed row near the bottom.
     try:
         text = _decode_ans_bytes(Path(path).read_bytes())
         lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
@@ -4845,55 +4031,28 @@ def _extract_intended_title(path, title=None):
 
 
 def opus_subject_check(path, title=None):
-    """Blind subject-recognition gate (user direction, 2026-09-19):
-    'Send Opus the render with no title, note, or subject name, and
-    ask: What is this an image of? If its answer doesn't match the
-    intended subject, reject regardless of metrics.'
+    """Blind subject check: show Opus the render with title rows redacted,
+    ask what it depicts, then whether that matches the intended title.
 
-    Built after confirming a real, separate bug: the EXISTING
-    opus_curate_review render already claimed 'you have NO other
-    context -- no title' to Opus while literally baking the house
-    title-card and credit-line text into the rendered PNG pixels
-    (confirmed directly: _orb.v59's title row 'THE WATCHER // IT SEES
-    IN THE DARK' and credit row both render as plain legible text in
-    the image Opus was shown). A subject-recognition check is
-    meaningless if the answer is printed on the image -- this uses
-    render_ans_to_png_b64(..., redact_title_rows=True) so the
-    blindness is real, not just asserted in the prompt.
-
-    This is a SEPARATE call from opus_curate_review's existing defect
-    review, by design: mixing 'what is this' with 'what's wrong with
-    it' lets a model that's already read the title-adjacent defect
-    list rationalize a subject match it wouldn't have made cold. Two
-    separate temp dirs, two separate isolated `claude -p` calls.
-
-    Returns a dict: {"status": "ok"|"mismatch"|"error", "message": str,
-    "blind_subject": str|None, "intended_title": str|None}. "ok" also
-    covers "couldn't determine intent" (no title text found) -- this
-    check can only REJECT on a confirmed mismatch, never block on its
-    own inability to find a title to compare against.
+    Separate from the defect review so the answer isn't primed by it.
+    Returns {"status": "ok"|"mismatch"|"error", "message", "blind_subject",
+    "intended_title"}. No title to compare against counts as "ok"; only a
+    confirmed mismatch rejects.
     """
     import subprocess, json, tempfile, shutil, base64
 
     intended_title = _extract_intended_title(path, title)
 
-    # Check the SAME daily Opus cost/count cap opus_curate_review uses --
-    # this check makes up to 2 additional real Opus calls per submission,
-    # which must count against the same $/day ceiling, not run for free
-    # outside it (found live while wiring this in: opus_reviews'
-    # daily-cap query only ever counted opus_curate_review's own writes,
-    # so this new gate's cost was completely invisible to the cap unless
-    # explicitly logged into the same table).
+    # This gate makes up to 2 Opus calls, so it counts against the same
+    # daily cap as opus_curate_review.
     conn_cap = sqlite3.connect(DB_PATH)
     try:
         count_today, cost_today = _opus_daily_cost_and_count(conn_cap)
         if count_today >= OPUS_DAILY_CALL_CAP:
             return {
                 "status": "ok",  # don't hard-block submission on this gate
-                # specifically when the cap is hit -- opus_curate_review's
-                # OWN cap check (called right after this, same submission)
-                # is the one authorized to queue the piece; this gate just
-                # skips its check rather than double-blocking.
+                # Cap hit: skip this check. opus_curate_review's own cap check
+                # queues the piece.
                 "message": f"(subject check skipped: Opus daily cap "
                             f"reached, {count_today}/{OPUS_DAILY_CALL_CAP})",
                 "blind_subject": None, "intended_title": intended_title,
@@ -4952,10 +4111,8 @@ def opus_subject_check(path, title=None):
         reasoning = data.get("result", "")
         cost1 = data.get("total_cost_usd")
 
-        # Log this call's cost into opus_reviews immediately, same table
-        # opus_curate_review uses, so the daily cap sees it -- marked
-        # with qwen_decision='subject_check' to distinguish from a real
-        # defect review when reading the table back.
+        # Log cost to opus_reviews so the daily cap sees it; qwen_decision
+        # 'subject_check' marks it as not a defect review.
         conn_log = sqlite3.connect(DB_PATH)
         try:
             conn_log.execute(
@@ -4981,20 +4138,15 @@ def opus_subject_check(path, title=None):
                     "blind_subject": None, "intended_title": intended_title}
 
         if intended_title is None:
-            # No title text found to compare against -- can't judge a
-            # mismatch, so this check has nothing to say. Not a defect
-            # in the piece, just nothing for THIS gate to check.
+            # No title found: nothing to compare against.
             return {"status": "ok",
                     "message": f"(blind read: \"{blind_subject}\" -- no in-file "
                                 "title found to compare against, so this check "
                                 "has nothing to judge a mismatch against)",
                     "blind_subject": blind_subject, "intended_title": None}
 
-        # Second, separate call: does the blind subject match the
-        # intended title? Asked as its own question rather than
-        # keyword-matched in Python, since "a lit ring in a dark void"
-        # vs "THE WATCHER" needs judgment (an eye IS a watcher; a ring
-        # with no eye-like features is NOT), not string overlap.
+        # Separate call: does the blind subject match the title? Needs
+        # judgment (an eye is a watcher; a plain ring isn't), not string overlap.
         match_prompt = (
             f"An artist intended to draw: \"{intended_title}\"\n"
             f"An independent blind viewer, shown ONLY the rendered image "
@@ -5071,17 +4223,8 @@ def opus_subject_check(path, title=None):
 
 
 def render_blind_pairwise_b64(path_a, path_b, offset=0, max_rows=140):
-    """Render two pieces side by side, BOTH with title/credit rows
-    redacted and labeled only 'A'/'B' (never 'pinned'/'candidate' or a
-    filename) -- built for opus_pairwise_regression_check (user
-    direction, 2026-09-19): 'send Opus the pinned best and the
-    candidate side by side, titles redacted, and ask which reads better
-    as the stated subject, with reasons.' Neutral A/B labels
-    specifically to avoid anchoring bias -- a model told upfront which
-    side is the 'existing accepted best' vs. the 'new attempt' has an
-    obvious reason to defer to the established one regardless of what
-    it actually sees, exactly the kind of bias a blind check exists to
-    remove."""
+    """Render two pieces side by side, titles redacted, labeled only A and B
+    so the model can't defer to the established version."""
     from PIL import Image, ImageDraw, ImageFont
 
     a_b64, a_note = render_ans_to_png_b64(path_a, offset=offset, max_rows=max_rows, redact_title_rows=True)
@@ -5121,24 +4264,12 @@ def render_blind_pairwise_b64(path_a, path_b, offset=0, max_rows=140):
 
 
 def opus_pairwise_regression_check(pinned_path, candidate_path, intended_title):
-    """Pairwise regression gate (user direction, 2026-09-19): 'On any
-    revision, send Opus the pinned best and the candidate side by side,
-    titles redacted, and ask which reads better as the stated subject,
-    with reasons. Reject a candidate that loses to the pinned best even
-    when metrics improve.' Built directly for the v55->v59 case: v59
-    improved on both tracked % metrics (measured against v55) while
-    genuinely reading worse (shrunken sclera, noisy background reading
-    as texture-free static) -- a regression the metric-floor gate
-    cannot see by construction, since it only ever checks 'did the
-    number go up,' never 'does it still look as good.'
+    """Blind pairwise gate: does the candidate read better or worse than the
+    pinned best as the stated subject? Rejects a loss even when metrics
+    improved. A/B sides are randomized.
 
-    A/B sides are randomized per call (not always pinned=A) so a
-    position bias in the model can't systematically favor either side.
-
-    Returns a dict: {"status": "ok"|"regression"|"error", "message": str}.
-    "ok" also covers "no pinned version to compare against yet" (a
-    brand-new subject) -- this check can only ever REJECT on a
-    confirmed pairwise loss, never block for lack of a baseline."""
+    Returns {"status": "ok"|"regression"|"error", "message"}. No pinned
+    baseline counts as "ok"."""
     import subprocess, json, tempfile, shutil, base64, random
 
     if pinned_path is None:
@@ -5284,24 +4415,15 @@ def _looks_like_title_line(line):
 
 
 def opus_curate_review(path, qwen_decision, qwen_critique):
-    """The real accept/reject authority for curate_piece, per the user's
-    explicit 2026-09-16 direction: 'Only curate_piece. Opus gets render +
-    crops + cell dump, never the note, script, or title. Add a daily Opus
-    call cap; when exhausted, queue submissions, never fall back to Qwen
-    for accept/reject. One Opus re-review per revision, shelve after
-    three rejections. Keep Qwen's verdict logged alongside Opus's.'
+    """Opus accept/reject review for curate_piece.
 
-    Validated against a real blind set before being wired in here (2026-
-    09-16): a genuine scene reference correctly ACCEPTed with coordinate-
-    grounded reasoning; 3 real rejected-catalog pieces correctly REJECTed;
-    3 pieces Qwen had previously ACCEPTed and shipped all got REJECTed by
-    Opus with specific, concrete defects -- user reviewed the actual
-    renders and confirmed: 'Yes this is what I've been telling you this
-    whole time. They're extremely weak.' Confirms Qwen's accept bar has
-    been too permissive, not that this gate is miscalibrated.
+    Opus gets render, crops and cell dump, never the note, script or title.
+    When the daily call cap is exhausted, submissions queue; there is no
+    fallback to Qwen. One re-review per revision, shelved after three
+    rejections. Qwen's verdict is logged alongside.
 
-    Returns a dict: {"status": "accept"|"reject"|"queued"|"shelved"|"error",
-                      "message": str, "opus_verdict": str|None}
+    Returns {"status": "accept"|"reject"|"queued"|"shelved"|"error",
+    "message": str, "opus_verdict": str|None}.
     """
     import subprocess, json, tempfile, shutil, base64, datetime
 
@@ -5341,14 +4463,9 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                 "opus_verdict": None,
             }
 
-        # --- condition 1: Opus sees ONLY the render + cell dump, nothing
-        # else -- no note, no generator script, no title, no path. Fresh
-        # isolated temp dir with generic filenames.
-        # Fixed 2026-09-26: this render was NOT redacted and cells.txt
-        # carried the title plate, so the reviewer read the piece's title
-        # while the prompt told it there was none. Both now drop title/credit
-        # rows with the same test the blind subject check uses. Debug text
-        # is still caught before this point by inspect_piece's gate.
+        # Opus sees only the render and cell dump: no note, script, title or
+        # path. Title/credit rows are dropped from both, same test as the blind
+        # subject check.
         b64, note = render_ans_to_png_b64(path, offset=0, max_rows=140, redact_title_rows=True)
         if b64 is None:
             return {"status": "error", "message": f"(render failed: {note})", "opus_verdict": None}
@@ -5362,8 +4479,8 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
             cells_text = "\n".join(("" if _looks_like_title_line(l2) else l2)
                                    for l2 in (_SGR_RE.sub("", l) for l in text.split("\n")[:140]))
             (Path(tmpdir) / "cells.txt").write_text(cells_text)
-            # The reviewer tried to crop and zoom and was blocked (it has
-            # only Read). Give it the four quarters at 2x instead.
+            # The reviewer has only Read and can't crop; give it the four
+            # quarters at 2x.
             try:
                 from PIL import Image
                 im = Image.open(render_path)
@@ -5419,15 +4536,8 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                 cwd=tmpdir, timeout=420,
             )
             if result is not None and result.returncode != 0:
-                # A stuck/orphaned `claude login` process holds
-                # ~/.claude/.credentials.lock and makes every `claude -p`
-                # call fail instantly with exit 1 and NO stderr -- which
-                # reads to the agent narrating it as "logged out" when the
-                # login itself never actually dropped (found live,
-                # 2026-09-17: a `claude login` process had been hung for
-                # 16+ hours). Detect that specific signature and self-heal
-                # with one retry instead of surfacing a misleading error
-                # and burning the shift on repeated identical retries.
+                # A stuck `claude login` holds ~/.claude/.credentials.lock and
+                # makes `claude -p` exit 1 with empty stderr. Kill it, retry once.
                 if result.returncode == 1 and not result.stderr.strip():
                     stale_login_killed = _kill_stale_claude_login(
                         max_age_s=300
@@ -5439,11 +4549,8 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                             cwd=tmpdir, timeout=420,
                         )
             if result is None:
-                # _run_claude_p already retried once internally (120s x2)
-                # before giving up -- record as unjudged/error, never
-                # block the shift waiting on a third attempt (user
-                # direction, 2026-09-20: "a hung gate call would stall a
-                # shift the same way" -- this IS that gate).
+                # _run_claude_p already retried once. Record as unjudged rather
+                # than block the shift on a third attempt.
                 err = "claude -p timed out after retry (120s x2, process group killed)"
                 conn.execute(
                     "INSERT INTO opus_reviews (piece_slug, path, qwen_decision, "
@@ -5488,10 +4595,8 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                         verdict = "reject"
                     break
 
-            # House-standard: a STRUCTURED field, not a keyword scan over
-            # prose. Three separate false positives came from matching
-            # critique text (see OBSERVER_NOTES) -- a reviewer discussing
-            # a defect uses the same words as one finding it.
+            # House verdict comes from a structured field, not a keyword scan: a
+            # reviewer discussing a defect uses the same words as one finding it.
             house = None
             for line in reasoning.splitlines():
                 if line.strip().upper().startswith("HOUSE:"):
@@ -5502,8 +4607,8 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                         house = "fail"
                     break
 
-            # condition 4: log Qwen's verdict alongside Opus's regardless of
-            # outcome, so disagreement rate is measurable over time
+            # Log Qwen's verdict next to Opus's so the disagreement rate is
+            # measurable.
             conn.execute(
                 "INSERT INTO opus_reviews (piece_slug, path, qwen_decision, "
                 "qwen_critique, opus_verdict, opus_reasoning, opus_cost_usd, "
@@ -5534,19 +4639,10 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
 
 
 def _blind_visual_check(path):
-    """Adversarial verification: render the piece and ask the SAME model to
-    describe it with ZERO access to any curator/artist claim about what it
-    is supposed to show. This exists because the curator's own preview-based
-    critiques have been caught fabricating detail that isn't actually in the
-    render (e.g. "TWO VOICES v1.1" was accepted with a critique describing
-    "two facing profile heads... brow... jaw... eye-line" when the actual
-    piece is three flat solid-color triangular blocks with no facial
-    structure at all — confirmed by rendering and looking at it directly).
-    inspect_piece's structural checks can't catch this class of error because
-    it's a visual-perception failure, not a hygiene one. Returns the blind
-    model's plain-text description, or an error string if rendering/the
-    model call failed — callers should treat a failure as "couldn't verify"
-    and say so, not as silent success.
+    """Describe the rendered piece with no access to any curator or artist
+    claim about it, to catch critiques that describe detail the render
+    doesn't have. Returns the description, or an error string; treat an
+    error as "couldn't verify", not success.
     """
     b64, note = render_ans_to_png_b64(path, offset=0, max_rows=140)
     if b64 is None:
@@ -5579,10 +4675,8 @@ def _blind_visual_check(path):
         return f"(blind check model call failed: {e})"
 
 
-# Keywords that make a critique's claim CHECKABLE by the blind visual pass —
-# only fires the extra model call when the curator actually asserted a
-# visual-feature claim worth adversarially verifying, not on every accept
-# (most accepts are abstract/procedural work with no such claim to check).
+# Words that make a critique's claim checkable by the blind visual pass.
+# The extra model call only fires when one appears.
 _VISUAL_CLAIM_WORDS = (
     "face", "eye", "brow", "jaw", "profile", "anatomy", "anatomical",
     "figure", "figurative", "portrait", "silhouette", "expression",
@@ -5590,14 +4684,11 @@ _VISUAL_CLAIM_WORDS = (
 
 
 def do_release_pack(pack_note):
-    """Bundle everything in gallery/unpacked/ into the next gallery/packNN/,
-    with a generated FILE_ID.DIZ crediting every contributor. Returns
-    (result_str, pack_dir_or_None).
+    """Bundle gallery/unpacked/ into the next gallery/packNN/ with a
+    FILE_ID.DIZ crediting every contributor. Returns (result, pack_dir|None).
 
-    HARD dedup gate runs first: any piece byte-identical to something already
-    shipped blocks the WHOLE release (not just that piece) so the problem
-    gets surfaced and fixed deliberately, not silently skipped. This replaces
-    relying on agents remembering to run pre_release_dedup_guard.py by hand."""
+    Any piece byte-identical to something already shipped blocks the whole
+    release."""
     GALLERY_UNPACKED.mkdir(parents=True, exist_ok=True)
     pieces = [
         f for f in sorted(GALLERY_UNPACKED.iterdir())
@@ -5782,14 +4873,8 @@ def run_shift(conn, agent):
             note = "(stopped by harness shutdown request, mid-shift)"
             print(f"[{agent}] stop requested mid-shift, wrapping up now")
             break
-        # Wall-clock cap (user direction, 2026-09-17): the stall detector
-        # fingerprints identical call+result pairs, so it's structurally
-        # blind to a shift that keeps making genuinely DIFFERENT tool
-        # calls while never converging -- found live: an artist shift
-        # spent 4+ hours iterating on one foreground (_dusk_yard), every
-        # edit a real diff, never once tripping stall detection. This is a
-        # separate, cruder check: total elapsed time, independent of
-        # whether the calls look novel or repeated.
+        # Wall-clock cap: the stall detector can't see a shift making novel
+        # calls that never converge.
         if time.time() - started_at > SHIFT_WALL_CLOCK_CAP_S:
             note = (
                 f"(wall-clock cap hit: shift ran over "
@@ -5803,8 +4888,8 @@ def run_shift(conn, agent):
             except Exception as e:
                 print(f"[error] ollama call failed: {e}")
                 log_event(conn, agent, shift_id, "error", str(e))
-                # Was a silent clean end (note=""), which made the next shift
-                # skip this one and resume from an older note.
+                # Record the failure so the next shift doesn't resume from an
+                # older note.
                 note = f"(shift cut short: model call failed: {str(e)[:200]})"
                 break
 
@@ -6172,15 +5257,9 @@ def run_shift(conn, agent):
                             if b64 is None:
                                 result = note_or_err
                             else:
-                                # Per-hit cell data alongside the image (user
-                                # direction, 2026-09-22): "find_patches returns
-                                # cell data (compact RLE text plus a patch_id)
-                                # alongside the image, so raze can study or
-                                # stamp it" -- without this a patch was only
-                                # ever a picture, so using one meant re-typing
-                                # what it looked like in code from memory.
-                                # canvas_stamp(patch_id, x, y) places the exact
-                                # real cells directly, no re-derivation.
+                                # Return cell data (RLE + patch_id) with each hit so the
+                                # artist can study it or place it with
+                                # canvas_stamp(patch_id, x, y).
                                 detail_lines = []
                                 for h in hits:
                                     detail_lines.append(
@@ -6278,25 +5357,10 @@ def run_shift(conn, agent):
             log_event(conn, agent, shift_id, "tool", result, tool_name=name, tool_call_id=tc.get("id"))
             messages.append({"role": "tool", "tool_call_id": tc.get("id"), "content": result})
 
-            # --- stall detection, rewritten 2026-09-16 -----------------------
-            # Old rule (truncate args to 120 chars, replace all digits with '#')
-            # was auditable and wrong: a blind audit of all 115 real loop-kills
-            # in project history found 113 (98%) were genuine iteration wrongly
-            # killed -- write_file/curate_piece calls with different full content
-            # (different file, different critique, different fix) collapsed to
-            # the same 120-char-truncated, digit-blind signature. Real example
-            # that motivated this: an artist writing _eye_v3.py then _eye_v4.py
-            # with different code got killed mid-fix because both filenames
-            # normalize to the same string once digits are stripped.
-            #
-            # New rule: fingerprint = (tool name, sha256 of the FULL raw
-            # arguments JSON, no truncation, no digit normalization). A stall
-            # is only counted when BOTH the call fingerprint AND the result
-            # fingerprint match an earlier entry THIS SHIFT -- same action,
-            # same outcome, not just a similar-looking call. Different file
-            # contents, different critiques, or a different result (even from
-            # an identical command, e.g. a flaky network call) are never
-            # treated as the same event.
+            # --- stall detection ---------------------------------------------
+            # Fingerprint = (tool name, sha256 of the full raw args). A stall counts
+            # only when both the call and its result match an earlier entry this
+            # shift. Truncated or digit-normalized args would collapse distinct work.
             call_fp = hashlib.sha256(
                 (name + "\x00" + json.dumps(fargs, sort_keys=True, default=str)).encode("utf-8", "replace")
             ).hexdigest()
@@ -6324,36 +5388,26 @@ def run_shift(conn, agent):
                     "tool-call caps remain the real backstop; this is not ending the shift.]",
                     tool_name=name,
                 )
-                # NOTE: per user direction 2026-09-16, do not set ended=True here
-                # until the audit above has been reviewed. The per-role
-                # MAX_TOOL_CALLS_BY_ROLE cap is the real backstop for now.
+                # Log-only; MAX_TOOL_CALLS_BY_ROLE is the backstop.
 
         if ended:
             break
     else:
         note = "(hit max tool calls for this shift, forced handoff)"
-        # Force-save every open canvas before handing off, so a
-        # cap-interrupted shift leaves a coherent .ans rather than
-        # half-written debris.
+        # Save open canvases before handoff so an interrupted shift leaves a
+        # coherent .ans.
         try:
             import canvas_tools as _ct
-            # Only canvases changed during THIS shift (tool calls or the
-            # agent's own scripts). Saving every canvas ever made revived
-            # closed subjects into scratch/ as fresh-looking autosaves.
+            # Only canvases touched this shift; saving all of them revives
+            # closed subjects as fresh-looking autosaves.
             _touched = [
                 s_ for s_ in _ct.list_canvases(str(WORKSPACE))
                 if _ct._canvas_path(str(WORKSPACE), s_).stat().st_mtime >= started_at
             ]
             for _slug in _touched:
                 try:
-                    # NO extra underscore: the canvas slug already
-                    # carries the house prefix when there is one, and
-                    # prepending another made "_pipe1.autosave.ans" for
-                    # canvas "pipe1" -- a filename that groups as its own
-                    # phantom piece in the dashboard instead of under the
-                    # real one (found live 2026-09-23: the operator and I
-                    # were looking at two different files for the same
-                    # piece).
+                    # No extra underscore: the slug already carries the house
+                    # prefix, and a second one groups as a separate piece.
                     _ct.save_ans(str(WORKSPACE), _slug,
                                  f"scratch/{_slug}.autosave.ans",
                                  title=None, add_sig=False)
@@ -6364,12 +5418,8 @@ def run_shift(conn, agent):
             pass
 
     ended_at = time.time()
-    # Save last_reasoning on any FORCED end (note is non-empty: stop request,
-    # empty-turns give-up, max-tool-calls cap) -- per user direction 2026-
-    # 09-16, so an in-progress diagnosis carries into the agent's next shift
-    # via get_last_own_shift_note's sibling lookup, instead of being lost.
-    # A clean end_shift() call leaves note=="" and doesn't need this -- the
-    # agent already said what it wanted to say via end_shift's own note arg.
+    # Save last_reasoning on a forced end (non-empty note) so an in-progress
+    # diagnosis carries into the next shift. A clean end_shift has its own note.
     conn.execute(
         "UPDATE shifts SET ended_at=?, note=?, had_pending_peer_message=?, "
         "replied_to_peer=?, last_reasoning=? WHERE id=?",
@@ -6432,15 +5482,8 @@ def main():
         print("[harness] Shutting down: unloading model and closing DB...")
         unload_model(MODEL)
         conn.close()
-        # Deliberately NOT unlinking STOP_FLAG here: the watchdog's own poll
-        # loop checks STOP_FLAG on its own schedule (up to CHECK_INTERVAL
-        # seconds after this exits) specifically to take its "exit without
-        # restart" path instead of "not running, restart". If harness.py
-        # deletes the flag first, that race can make the watchdog see an
-        # absent flag + a dead harness and restart it right after a
-        # deliberate stop. Whoever created the flag (dashboard/user) is the
-        # one who should clear it — control_start()/control_restart() in the
-        # dashboard already do this correctly before bringing things back up.
+        # Don't unlink STOP_FLAG: the watchdog reads it to exit instead of
+        # restarting. Whoever set the flag (the dashboard) clears it.
         print("[harness] Stopped cleanly.")
 
 

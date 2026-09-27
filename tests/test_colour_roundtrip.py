@@ -1,7 +1,7 @@
 """Canvas -> .ans -> harness parser must give back exactly the canvas cells.
 
-Guards the 2026-09-26 bug: bold was never reset, so dim colours written
-after bright ones came back bright. Run: python3 tests/test_colour_roundtrip.py
+Catches bold leaking from a bright colour into a later dim one.
+Run: python3 tests/test_colour_roundtrip.py
 """
 import sys, tempfile, random
 from pathlib import Path

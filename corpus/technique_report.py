@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""corpus/technique_report.py -- distribution report over
-technique_manifest.jsonl, to pick thresholds for a shading-heavy
-training subset (gradients/form/lighting -- NOT logos/text layouts).
+"""Distribution report over technique_manifest.jsonl, for choosing shading-heavy thresholds.
 
 Usage:
     python3 corpus/technique_report.py [--manifest corpus/technique_manifest.jsonl]
@@ -58,13 +56,9 @@ def main():
         print(f"{m:<20} {mean:>8.2f} {p50:>8.2f} {p90:>8.2f} {p95:>8.2f} {p99:>8.2f} {mx:>8.2f}")
 
     print()
-    # Report candidate-subset size across a RANGE of thresholds rather
-    # than picking one -- "above the corpus median" would keep half the
-    # corpus, which isn't a meaningful "shading-heavy" filter. Also
-    # requires distinct_colors >= 4 as a floor: a piece can have high
-    # half_block_pct or shade_pct while being nearly monochrome (e.g. a
-    # 2-color halftone effect), which is a real but different technique
-    # from the graduated lit-to-shadow color transitions the user means.
+    # Show subset size across several thresholds. distinct_colors >= 4
+    # excludes near-monochrome halftones, a different technique from
+    # graduated shading.
     print("Candidate shading-heavy subset size at various thresholds")
     print("(half_block_pct > H OR shade_pct > S, AND alnum_pct < 15, AND distinct_colors >= 4):\n")
     print(f"{'H (half-block%)':>16} {'S (shade%)':>12} {'alnum<15':>10} {'colors>=4':>10} {'n':>8} {'pct':>7}")

@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
-"""Build a high-craft-filtered CLIP index from the full one.
+"""Build a high-craft subset of the CLIP index.
 
-The full index covers all 37 years of 16colo.rs, so find_patches
-returns early-90s BBS ads and NFO headers as readily as illustration
-work -- 30.9% of the 850k patches are 1990-1995 (measured
-2026-09-23), and raze studies whatever comes back during live shifts.
+The full index is dominated by early-90s BBS ads and NFO headers. A patch
+is kept if any one of these holds:
+  * shade or half_block at or above the index p90
+  * year >= 2005
+  * group matches HIGH_CRAFT
 
-Selection (union, not intersection -- any one qualifies):
-  * technique tier: shade or half_block at/above the index p90
-  * year >= 2005 (the modern illustration era)
-  * known illustration groups: scene, scene, iCE, Fuel,
-    Mistigris, Impure, ansi_love
-
-Writes a sibling index that find_patches_clip can load by path. Shares
-the parent index's embeddings by row index -- no re-embedding, which
-is what makes this cheap (the original pass was 4 GPU-hours).
+Writes a sibling index find_patches_clip can load by path. Embeddings are
+copied by row index, not recomputed.
 """
 import sqlite3
 import sys
@@ -24,8 +18,7 @@ import numpy as np
 
 SRC = Path("corpus/clip_index")
 DST = Path("corpus/clip_index_highcraft")
-HIGH_CRAFT = ("scene", "mistigris", "mist", "fuel", "neon", "ice",
-              "ansi_love", "impure")
+HIGH_CRAFT = ("mistigris", "mist", "fuel", "ice", "ansi_love", "impure")
 
 
 def _year(p):
@@ -65,7 +58,7 @@ def main():
     np.save(DST / "embeddings.npy", np.ascontiguousarray(emb[idx]))
 
     dst_path = DST / "meta.db"
-    dst_path.unlink(missing_ok=True)  # unlink-first, or CREATE TABLE throws
+    dst_path.unlink(missing_ok=True)  # or CREATE TABLE fails on rerun
     dst_db = sqlite3.connect(dst_path)
     dst_db.execute("""CREATE TABLE meta (
         row_idx INTEGER PRIMARY KEY,

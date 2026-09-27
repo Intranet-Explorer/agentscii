@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-"""corpus/caption.py -- step 2 captioning: for each window's PARENT
-piece, generate a content caption from an ansilove render using the
-local VLM (qwen3.8:27b-mlx via Ollama), prepend SAUCE year/group.
-Captions are cached per parent piece (one real VLM call per unique
-piece, not per window -- many windows share a parent) since "caption
-quality only needs to be roughly right" per instruction, not a
-per-window luxury re-render.
+"""Caption each window's parent piece with the local VLM via Ollama.
+
+Renders with ansilove, asks the VLM for a short content description, and
+prefixes SAUCE year/group. One caption per parent piece, not per window.
 
 Usage:
     python3 corpus/caption.py [--windows corpus/windows.jsonl]
@@ -27,9 +24,7 @@ CAPTION_MODEL = "qwen3.8:27b-mlx"
 
 
 def render_to_png(ans_path, out_png):
-    """ansilove render -- real archive files are CP437, this is the
-    correct renderer for them (unlike harness.py's own renderer, which
-    is built for UTF-8 agent-authored files)."""
+    """Render with ansilove. Archive files are CP437; harness.py's renderer expects UTF-8."""
     result = subprocess.run(
         ["ansilove", "-c", "80", "-o", str(out_png), str(ans_path)],
         capture_output=True, text=True, timeout=30,
@@ -69,7 +64,7 @@ def get_sauce_meta(npz_path):
     date = d["sauce_date"].item().decode("utf-8", "replace").strip() if d["sauce_date"].size else ""
     year = date[:4] if len(date) >= 4 and date[:4].isdigit() else None
     if not year:
-        # fall back to the year directory in the parsed path (corpus/parsed/<year>/<pack>/<file>)
+        # Fall back to the year directory: parsed/<year>/<pack>/<file>.
         rel = str(npz_path)
         for part in Path(rel).parts:
             if part.isdigit() and len(part) == 4:
@@ -112,8 +107,7 @@ def main():
             if rel_npz in captions:
                 continue
             npz_path = parsed_dir / rel_npz
-            # the real source .ans/.asc lives under data_dir at the same
-            # relative path minus the .npz suffix
+            # Source file is under data_dir at the same path minus .npz.
             ans_rel = rel_npz[:-len(".npz")] if rel_npz.endswith(".npz") else rel_npz
             ans_path = data_dir / ans_rel
             if not ans_path.exists():

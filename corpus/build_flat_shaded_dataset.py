@@ -1,34 +1,14 @@
 #!/usr/bin/env python3
-"""corpus/build_flat_shaded_dataset.py -- build the mlx_lm training
-dataset for the flat->shaded task (user direction, 2026-09-20, the
-REFRAMED objective after the real-piece test showed FITM-without-
-conditioning only learns texture statistics: "build a 'flat -> shaded'
-pair generator... the model learns to take a simple block-in and turn
-it into detailed, shaded work -- which is precisely the skill raze
-lacks").
+"""Build the mlx_lm dataset for the flat -> shaded task.
 
-Task shape: input = a flattened window (flatten_piece_and_merge, full
-piece flattened+merged BEFORE windowing, per user direction -- window
-crops of the flattened piece, not per-window flattening), RLE-encoded
-the same way as the old FITM context. Target = the SAME window,
-un-flattened (the real original), RLE-encoded the same way as the old
-FITM target. No mask this time -- the whole window is visible in
-flattened form; the task is "add the shading technique", not "guess
-hidden content".
+Input: a window cut from the flattened piece (the whole piece is flattened
+and merged before windowing), RLE-encoded. Target: the same window from
+the original. The model learns to add shading to a block-in.
 
-Only windows with real half_block_pct/shade_pct are used (a window
-with 0% of either technique flattens to a no-op -- zero training
-signal, same reasoning as flat_shaded_pairs.py's pick_example_windows
-threshold).
-
-Per-PIECE flatten+merge is cached (flatten once per parent piece, slice
-many windows out of it) -- flattening 1.16k pieces to build ~30k
-windows would otherwise re-flatten the same piece dozens of times.
-
-Split at parent-piece level (same zero-leak logic as
-prepare_training_data.py) directly into train.jsonl/valid.jsonl/
-test.jsonl in mlx_lm's "messages" chat format, ready for
-train_launch.py.
+Only windows above the half-block and shade thresholds are kept; windows
+without either technique flatten to a no-op. Flattening is cached per piece.
+Split is by parent piece (no leakage) into train/valid/test.jsonl in
+mlx_lm "messages" format.
 
 Usage:
     python3 corpus/build_flat_shaded_dataset.py --n-windows 6000 --out-dir corpus/mlx_train_data_flatshaded
@@ -53,12 +33,7 @@ import flat_shaded_pairs as fsp
 
 
 def build_prompt(row):
-    """Same tagged-header convention as prepare_training_data.py's
-    build_prompt, minus the MASK fields (there's no mask in this task)
-    and with an explicit FLAT->SHADE instruction tag so the model can
-    tell this task apart from the old FIM task if both ever coexist in
-    context (they won't in this dataset, but the tag costs ~6 tokens
-    and removes any ambiguity for free)."""
+    """Tagged prompt like prepare_training_data.build_prompt, with TASK=SHADE and no mask fields."""
     group = row.get("sauce_group") or "unknown"
     year = row.get("sauce_year") or "unknown"
     half = row.get("orig_half_block_pct", 0.0)
@@ -107,8 +82,7 @@ def main():
         sauce_date = d["sauce_date"].item().decode("utf-8", "replace") if d["sauce_date"].size else ""
         year = sauce_date[:4] if len(sauce_date) >= 4 and sauce_date[:4].isdigit() else rel.split("/")[0]
 
-        # up to 2 windows per piece (real diversity of position without
-        # spending the whole flatten cost on a single sample per piece)
+        # Up to 2 windows per piece to spread the flatten cost.
         n_rows, n_cols = chars_full.shape
         max_row0 = n_rows - w.WINDOW_ROWS
         max_col0 = n_cols - w.WINDOW_COLS
@@ -146,7 +120,7 @@ def main():
             flat_text = w.encode_window(flat_c, flat_f, flat_b)
             target_text = w.encode_window(c_win, f_win, b_win)
             if not flat_text or not target_text:
-                continue  # degenerate (fully blank after windowing) -- skip
+                continue  # fully blank window
 
             windows.append({
                 "parent_path": rel, "row0": row0, "col0": col0,
@@ -164,7 +138,7 @@ def main():
     elapsed = time.time() - t0
     print(f"\n{len(windows)} windows collected from {n_pieces_flattened} flattened pieces in {elapsed:.0f}s")
 
-    # split at parent-piece level, same zero-leak logic as prepare_training_data.py
+    # Split by parent piece so no piece spans two splits.
     from collections import defaultdict
     by_parent = defaultdict(list)
     for row in windows:

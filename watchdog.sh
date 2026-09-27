@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # AGENTSCII watchdog: keeps harness.py running, restarting it if it dies.
-# Ported from antfarm2-standalone/watchdog.sh — same self-healing behavior,
-# same STOP-flag contract.
 #
 # Usage: nohup bash watchdog.sh > watchdog.log 2>&1 &
 # Stop:  touch STOP
@@ -10,8 +8,7 @@ set -u
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
 
-# launchd runs this with a minimal PATH (no Homebrew) - export a real one so
-# harness.py's bash tool calls can actually find things like chafa/jp2a.
+# launchd's PATH has no Homebrew; the harness's bash tool needs chafa/jp2a.
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$PATH"
 
 STOP_FLAG="$DIR/STOP"
@@ -31,16 +28,11 @@ harness_pid_count() {
     pgrep -f "$DIR/harness\.py" | wc -l | tr -d ' '
 }
 
-# Backstop for the harness-side self-heal in opus_curate_review(): a stuck
-# `claude login` process holds ~/.claude/.credentials.lock and makes every
-# `claude -p` call (the Opus curator gate) fail instantly with exit 1 and
-# no stderr. Found live 2026-09-17 (a `claude login` had been hung 16+
-# hours, silently blocking every curate_piece review that whole shift).
-# Only kill ones older than 5 minutes so a login the user is actively
-# completing right now is never touched.
+# A hung `claude login` holds ~/.claude/.credentials.lock and makes every
+# `claude -p` call exit 1 with no stderr. Kill ones older than 5 minutes
+# so an active login is left alone.
 #
-# macOS `ps` has no `etimes` (raw-seconds) field, only `etime`, formatted
-# as [[dd-]hh:]mm:ss -- awk below converts that to seconds inline.
+# macOS ps has no etimes; awk converts etime ([[dd-]hh:]mm:ss) to seconds.
 kill_stale_claude_login() {
     local candidates
     candidates=$(ps -eo pid,etime,command | awk '

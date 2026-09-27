@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
-"""corpus/holdout.py -- deterministic train/holdout split, computed
-ONCE and frozen to disk before any training happens.
+"""Deterministic train/holdout split, computed once and frozen before training.
 
 Usage:
     python3 corpus/holdout.py [--manifest corpus/technique_manifest.jsonl]
                                [--fraction 0.05] [--seed 0]
                                [--out corpus/holdout_split.json]
 
-Splits by CONTENT HASH (via corpus/dedupe.py's canonical-path list, if a
-dedupe report is present), not by raw file count, so a piece that
-appears in 3 packs doesn't leak across train/holdout by having 2 of its
-3 copies on one side and 1 on the other -- the split must be at the
-level of *distinct pieces*, or a shading-heavy piece the model was
-"held out" from could still have been trained on via a duplicate under
-a different pack name.
+Splits by distinct piece (dedupe.py's canonical paths, if the report
+exists), and keeps every duplicate on the same side as its canonical, so
+a held-out piece can't leak into training via a copy in another pack.
 """
 import argparse
 import json
@@ -38,9 +33,7 @@ def main():
             all_paths.append(json.loads(line)["path"])
     all_paths_set = set(all_paths)
 
-    # Prefer splitting on canonical (deduped) pieces if a dedupe report
-    # exists -- fall back to raw paths otherwise (still deterministic,
-    # just without the duplicate-leak protection).
+    # Without a dedupe report, split raw paths (no duplicate-leak protection).
     dedupe_path = Path(args.dedupe_report)
     if dedupe_path.exists():
         dd = json.loads(dedupe_path.read_text())
@@ -53,16 +46,13 @@ def main():
         split_unit = "raw_path (no dedupe report found)"
 
     rng = random.Random(args.seed)
-    shuffled = sorted(canonical)  # sort first for determinism regardless of manifest write order
+    shuffled = sorted(canonical)  # independent of manifest order
     rng.shuffle(shuffled)
     n_holdout = max(1, round(len(shuffled) * args.fraction))
     holdout_canonical = set(shuffled[:n_holdout])
     train_canonical = set(shuffled[n_holdout:])
 
-    # Expand each canonical piece back out to every raw path that shares
-    # its content hash -- a duplicate of a held-out piece must ALSO be
-    # held out, or it leaks the exact same content into training under
-    # a different filename.
+    # Duplicates follow their canonical piece to the same side.
     holdout_paths = set()
     train_paths = set()
     for c in holdout_canonical:
@@ -72,9 +62,7 @@ def main():
         train_paths.add(c)
         train_paths.update(dup_map.get(c, []))
 
-    # Any raw path not covered by the dedupe report (shouldn't happen if
-    # the manifest and dedupe report were built from the same parsed
-    # dir, but don't silently drop files if they were) defaults to train.
+    # Paths missing from the dedupe report default to train.
     uncovered = all_paths_set - holdout_paths - train_paths
     train_paths.update(uncovered)
 

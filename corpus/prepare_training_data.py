@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
-"""corpus/prepare_training_data.py -- convert train_subsample.jsonl
-into mlx_lm.lora's expected {train,valid,test}.jsonl format, using the
-"messages" chat format (NOT "prompt"/"completion" -- see the real bug
-documented below) with --mask-prompt masking the prompt in the loss so
-only the completion/target contributes (user direction, 2026-09-19:
-"loss masked to the FITM target only (not the context)").
+"""Convert train_subsample.jsonl to mlx_lm.lora train/valid/test.jsonl.
 
-The prompt embeds SAUCE year/group + per-window technique metrics as
-conditioning (captions were dropped from v1, per prior direction).
+Uses the "messages" chat format; with --mask-prompt only the target counts
+toward the loss. The prompt carries SAUCE year/group and window technique
+metrics as conditioning.
 
-A small internal validation/test split is carved out of the 40k
-training subsample itself (NOT the frozen corpus holdout, which stays
-completely untouched for the real eval_harness.py baseline/scoring --
-this internal split is only for mlx_lm's own training-loss monitoring).
+valid/test here are carved from the training subsample for loss
+monitoring only. The frozen corpus holdout is separate and untouched.
 
 Usage:
     python3 corpus/prepare_training_data.py
@@ -32,19 +26,8 @@ def build_prompt(row):
     shade = row.get("shade_pct", 0.0)
     bucket = row.get("shade_bucket", "unknown")
     mask_h, mask_w = row["mask_box"][2], row["mask_box"][3]
-    # Minimal tagged wrapper (user direction, 2026-09-20): the original
-    # wrapper spent ~700 fixed chars of English prose re-explaining the
-    # RLE format and reply instructions on EVERY example -- FITM doesn't
-    # need that, the model only needs the conditioning tags and clear
-    # context/target delimiters. Measured real-tokenizer impact: full
-    # built prompt+target mean dropped from 2,105 to (re-measure and
-    # report after this change -- see corpus/token_stats_wrapped.py).
-    # Kept the SAME conditioning fields (year/group/shade_bucket/
-    # half_block_pct/shade_pct) and the SAME [MASK w=..] marker inside
-    # context (written by windowing.py, not this function) since the
-    # model needs to know the mask's shape to reconstruct it -- only
-    # the prose EXPLAINING the format was cut, not the information
-    # content mask_h/mask_w carry.
+    # Tags and delimiters only; prose explaining the format just costs
+    # tokens. The mask shape stays, since the model needs it.
     tag = (
         f"[Y={year} G={group} TIER={bucket} HALF={half:.1f} SHADE={shade:.1f} "
         f"MASKH={mask_h} MASKW={mask_w}]"
@@ -66,35 +49,8 @@ def main():
         for line in f:
             rows.append(json.loads(line))
 
-    # Split at the PARENT-PIECE level, not the window level (fix,
-    # 2026-09-20: found live via a real val-loss curve turning up
-    # while train loss kept falling at iteration 300-400 of a
-    # 500-iteration run, well under 2% of the data seen -- too early
-    # for genuine overfitting. Root-caused directly: windowing.py
-    # slides 40x16 windows with 50% overlap in BOTH dimensions, so one
-    # parent piece yields many highly-correlated, overlapping windows.
-    # The OLD code shuffled and split at the WINDOW level -- verified
-    # 75.7% of val-split parent pieces (661/873) also had windows in
-    # the train split, and 436 parent pieces overlapped train/test.
-    # Early in training, val "benefits" from leaked familiarity with
-    # near-duplicate windows of pieces the model is actively training
-    # on; as the model starts memorizing the SPECIFIC train windows
-    # (not just general technique), that leaked advantage reverses --
-    # exactly the turn-up-early signature observed. This split now
-    # groups all windows by parent_path FIRST, shuffles PIECES (not
-    # windows), and assigns each piece's ENTIRE window set to one
-    # split -- guarantees zero parent-piece overlap between
-    # train/valid/test, the same principle corpus/holdout.py already
-    # uses for the outer holdout split, applied here to this inner
-    # split too.
-    #
-    # NOTE: this is a different, additional split from
-    # holdout_split.json (the frozen, content-hash-level corpus
-    # holdout eval_harness.py/checkpoint_eval.py score against, never
-    # touched by windowing.py's selection at all) -- this fixes the
-    # SEPARATE, smaller train/valid/test split carved out of the 40k
-    # training subsample itself, used only for mlx_lm's own
-    # training-loss monitoring.
+    # Split by parent piece, not by window. Windows overlap 50%, so a
+    # window-level split leaks near-duplicates into valid/test.
     from collections import defaultdict
     by_parent = defaultdict(list)
     for row in rows:
@@ -124,10 +80,7 @@ def main():
     for p in parents[i:]:
         train_rows.extend(by_parent[p])
 
-    # shuffle each split's rows so mlx_lm's own iterate_batches (which
-    # sorts by length internally anyway, but takes the input list order
-    # as its starting point) doesn't see all of one piece's windows in
-    # a contiguous run
+    # Shuffle so one piece's windows aren't contiguous.
     rng.shuffle(train_rows)
     rng.shuffle(val_rows)
     rng.shuffle(test_rows)
@@ -153,16 +106,9 @@ def main():
             for row in split_rows:
                 prompt = build_prompt(row)
                 completion = row["target"]
-                # "messages" format (mlx_lm's ChatDataset), NOT
-                # "prompt"/"completion" (CompletionsDataset) -- found
-                # live: CompletionsDataset.process's own --mask-prompt
-                # path has a real bug in mlx_lm 0.29.1 (passes
-                # messages[0], a bare dict, to apply_chat_template,
-                # which requires a LIST of messages; crashes with
-                # "dict object has no element 0" on Mistral's chat
-                # template). ChatDataset.process uses messages[:-1] (a
-                # real list slice), which doesn't hit this bug --
-                # verified working end-to-end before committing to it.
+                # "messages", not prompt/completion: mlx_lm 0.29.1's
+                # CompletionsDataset crashes under --mask-prompt with
+                # Mistral's chat template. ChatDataset works.
                 f.write(json.dumps({"messages": [
                     {"role": "user", "content": prompt},
                     {"role": "assistant", "content": completion},

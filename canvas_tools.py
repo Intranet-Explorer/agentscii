@@ -1,42 +1,20 @@
 #!/usr/bin/env python3
-"""canvas_tools.py -- persistent half-block canvas primitives for the
-harness's canvas_* tools.
+"""Half-block canvas primitives behind the harness's canvas_* tools.
 
-Built 2026-09-22 per direct user finding: raze's soul prompt instructed
-"procedural generation you can then convert with chafa/jp2a" and to
-write a real .py file for anything nontrivial -- the ONLY reason every
-piece in scratch/ (427 files) is a generator script is that there was
-no other way to draw. HalfBlockCanvas (workspace/scratch/halfblock.py)
-was a module an agent had to import INSIDE a script; there was no tool
-that let the model draw directly. This module is the actual drawing
-surface behind the harness's canvas_new/canvas_fill_px/canvas_circle_px/
-canvas_shade/canvas_text/canvas_stamp/canvas_save tools -- real tool
-calls, no code required.
+Lets the agents draw with tool calls instead of writing generator scripts.
+Each canvas is one JSON file at workspace/canvases/<slug>.json, so state
+persists across calls and restarts. Data model matches
+workspace/scratch/halfblock.py's HalfBlockCanvas:
+  - "pixels": width x (height*2) grid of color indices 0-15 in PIXEL space.
+    Each cell is two pixels tall, so circles come out round with no aspect
+    correction.
+  - "glyph_override": sparse {"row,col": [char, fg, bg]} in CELL space.
+    Wins over the pixel pair for that cell. Used for dither glyphs, text
+    and stamped patch cells.
 
-One canvas = one on-disk JSON file under workspace/canvases/<slug>.json,
-so state persists across tool calls (and across shifts/restarts, same
-as scratch/ files always have). The data model mirrors
-workspace/scratch/halfblock.py's HalfBlockCanvas exactly on purpose:
-  - "pixels": a (width) x (height*2) grid of raw color indices (0-15),
-    addressed in PIXEL space -- each cell is 2 pixels tall (upper/lower
-    half-block), which is what makes circles/fills genuinely round with
-    zero aspect correction (see halfblock.py's docstring for why).
-  - "glyph_override": a sparse {"row,col": [char, fg, bg]} map in CELL
-    space, taking precedence over the packed pixel pair for that cell --
-    this is how a density-dither glyph, a text character, or a stamped
-    patch cell (all of which are one full real glyph, not a solid
-    half-block color pair) gets placed without disturbing the pixel
-    layer underneath.
-
-Deliberately NOT implemented by importing workspace/scratch/*.py at
-call time, even though canvas.py/halfblock.py already have equivalent
-logic (sgr(), shade_ramp(), HalfBlockCanvas.render()): those files are
-agent-writable (raze/hollis can write_file over them), and the
-harness's own tool dispatch must not depend on code the agents can
-edit or accidentally break. The small amount of duplicated logic here
-(sgr formatting, the shade_ramp algorithm, half-block packing) is kept
-byte-for-byte equivalent to its scratch/ counterpart -- see each
-function's docstring for which one it mirrors.
+Does not import workspace/scratch/*.py. Those files are agent-writable and
+tool dispatch must not depend on them. The duplicated logic (sgr, shade_ramp,
+half-block packing) is kept identical to its scratch/ counterpart.
 """
 import base64
 import json
@@ -144,10 +122,8 @@ def _check_color(color):
 def _drop_overrides(data, cells):
     """Remove glyph overrides on cells a pixel write just painted.
 
-    Overrides (from shade/stamp/text) render in place of a cell's pixels,
-    so without this a later fill_px/circle_px/slab_px/capsule_px/sphere_px
-    over a shaded area changed nothing visible: the earlier shading always
-    won (108 of 108 cells in the 2026-09-26 audit). Later paint now wins.
+    Overrides render in place of a cell's pixels, so without this a later
+    pixel fill over a shaded area would change nothing visible.
     """
     go = data["glyph_override"]
     for (r, c) in cells:
@@ -170,9 +146,7 @@ def fill_px(workspace, slug, x, y, w, h, color):
         for px in range(x0c, x1c):
             row[px] = color
             _hit.add((py >> 1, px))
-    # Tracked so canvas_shade can default to "shade what I just drew"
-    # without the caller having to restate the shape -- see shade()'s
-    # docstring for why this replaced rectangle-region shading.
+    # last_shape is the default target for canvas_shade.
     _drop_overrides(data, _hit)
     data["last_shape"] = {"type": "rect", "x0": x0c, "y0": y0c, "x1": x1c, "y1": y1c}
     save_canvas(workspace, slug, data)
@@ -180,10 +154,7 @@ def fill_px(workspace, slug, x, y, w, h, color):
 
 
 def circle_px(workspace, slug, cx, cy, r, color):
-    """Fill a circle in PIXEL space -- same fill_circle() math as
-    halfblock.py's HalfBlockCanvas: pixel space is ~square (W wide x
-    2*height_cells tall), so circles come out genuinely round with no
-    aspect correction at the call site."""
+    """Fill a circle in PIXEL space. Same math as HalfBlockCanvas.fill_circle()."""
     data = load_canvas(workspace, slug)
     color = _check_color(color)
     W, PH = data["w"], data["ph"]
@@ -217,10 +188,8 @@ _LIGHT_VECTORS = {
     "bottom-right": (0.6, 0.6, 0.53),
 }
 
-# Face normals in the same 2D screen convention: which way each side of
-# a slab points. A flat form has no curvature, so its brightness comes
-# from face orientation vs the light, not from a surface normal that
-# varies per pixel.
+# 2D screen-space normal for each side of a slab. Flat faces get their
+# brightness from orientation against the light, not a per-pixel normal.
 _FACE_NORMALS = {
     "top": (0.0, -1.0), "bottom": (0.0, 1.0),
     "left": (-1.0, 0.0), "right": (1.0, 0.0),
@@ -228,19 +197,17 @@ _FACE_NORMALS = {
 
 
 def _face_band(face, light_direction):
-    """(t_lo, t_hi) brightness band for one face of a flat form under a
-    given light. Lambert on the face normal sets the base brightness;
-    the band's WIDTH is what still lets the face carry a gradient across
-    itself (lit edge -> far edge) instead of being one flat tone."""
+    """(t_lo, t_hi) brightness band for one face of a flat form.
+
+    Lambert on the face normal sets the base; the band width gives the face
+    its own gradient from lit edge to far edge.
+    """
     lv = _LIGHT_VECTORS.get(light_direction, (-0.6, -0.6, 0.53))
     nx, ny = _FACE_NORMALS[face]
     lam = max(0.0, nx * lv[0] + ny * lv[1])       # 0 = edge-on/away
     base = 1.0 - (0.15 + 0.85 * lam)              # 0 = brightest
-    # Band width drives half-block packing: a vertical Bayer pair differs
-    # by ~0.75 step, so the two pixels of a cell only land on different
-    # ramp steps when the band spans enough steps for boundaries to fall
-    # inside the face. 0.22 gave 5.1% half_block (measured); 0.40 spans
-    # ~3 steps and packs real ▀ cells through the face.
+    # The band must span about 3 ramp steps so a cell's two pixels can land
+    # on different steps and pack as ▀. Narrower bands produce few half-blocks.
     half = 0.40
     return max(0.0, base - half), min(1.0, base + half)
 
@@ -259,11 +226,11 @@ def _bayer(px, py):
 
 
 def _shade_ramp(from_color, to_color, steps=5):
-    """Byte-for-byte the same algorithm as workspace/scratch/canvas.py's
-    shade_ramp(): fg is ALWAYS from_color, bg is ALWAYS to_color, and
-    only the GLYPH varies across steps (solid-full -> ▓ -> ▒ -> ░ ->
-    solid-space) -- that's the real scene dithering trick for faking
-    intermediate brightness a 16-color palette doesn't actually have."""
+    """Density-dither stops, identical to scratch/canvas.py's shade_ramp().
+
+    fg is always from_color and bg always to_color; only the glyph varies
+    (█ ▓ ▒ ░ space), faking tones the 16-color palette lacks.
+    """
     stops = []
     for i in range(steps):
         if i == 0:
@@ -278,12 +245,13 @@ def _shade_ramp(from_color, to_color, steps=5):
 
 
 def _pixel_mask_at(data, px, py, mask):
-    """True if pixel (px, py) is inside `mask`. mask is one of:
-    {"type": "rect", "x0","y0","x1","y1"} (PIXEL space),
-    {"type": "circle", "cx","cy","r"} (PIXEL space),
-    {"type": "color", "color"} (any pixel currently equal to this color --
-      shade the region of a given color, per user direction 2026-09-22),
-    or None (falls back to the canvas's last drawn shape)."""
+    """True if pixel (px, py) is inside `mask`.
+
+    mask: {"type": "rect", x0, y0, x1, y1}, {"type": "circle", cx, cy, r},
+    {"type": "capsule", ax, ay, bx, by, r} (all PIXEL space),
+    {"type": "color", color} (every pixel of that color), or None for the
+    canvas's last drawn shape.
+    """
     if mask is None:
         mask = data.get("last_shape")
         if mask is None:
@@ -310,32 +278,15 @@ def _pixel_mask_at(data, px, py, mask):
 
 
 def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=None, light_y=None, sphere=None, t_lo=0.0, t_hi=1.0, cull_band=True, cyl=None, rim=False, face_grad=False):
-    """Shared masked-shading core for shade() and sphere_px(). Shape-aware,
-    unlike the original rectangle-only shade() (real bug, found live
-    2026-09-22 on raze's first canvas piece, scratch/_eye_emblem.ans: a
-    circle shaded with the old rectangle shade() came back as a hard
-    rectangular grey/cyan band cutting across the round silhouette,
-    because shade() wrote glyph_override for every cell in its bounding
-    box regardless of what shape was actually there -- and because
-    glyph_override is a full-cell flat glyph, it also WIPED the circle's
-    real half-block edge pixels, which is why half_block_pct collapsed to
-    1.3% on that piece (measured: a circle alone scores ~8.5% half_block
-    in its bbox; the same circle after the old shade() scored 0.27%).
+    """Shade only the pixels inside `mask`. Shared by shade() and the lit shapes.
 
-    Fix, two parts:
-    1. Only cells where the mask actually covers get touched at all --
-       shading a circle no longer paints outside it.
-    2. EDGE cells (mask covers exactly one of the cell's two pixels, not
-       both) get a per-PIXEL color write instead of a glyph_override --
-       this preserves the real half-block ▀ boundary (one pixel shaded,
-       one pixel whatever was already there) instead of flattening the
-       whole cell to one glyph. Only fully-interior cells (both pixels
-       inside the mask) get the flat dither glyph, which is correct --
-       that's genuinely one solid surface at that point, not an edge.
+    Cells outside the mask are untouched. Edge cells (mask covers one of
+    the two pixels) get a per-pixel color write so the ▀ silhouette stays
+    intact; only fully covered cells can get a dither glyph.
 
-    light_x/light_y (pixel-space) override light_direction with a real
-    point light -- used by sphere_px for radial falloff from center
-    instead of a linear directional gradient."""
+    light_x/light_y (PIXEL space) replace light_direction with a point
+    light. sphere/cyl select curved-surface normals.
+    """
     W, PH = data["w"], data["ph"]
     pixels = data["pixels"]
     go = data["glyph_override"]
@@ -355,11 +306,8 @@ def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=Non
 
     if light_x is not None and light_y is not None:
         if sphere is not None:
-            # True Lambertian sphere shading: the gradient follows the
-            # SURFACE NORMAL, not 2D distance from a point. The old
-            # version used hypot(px-light_x, py-light_y)/max_d, which
-            # is a flat radial wash -- combined with a 5-step hard ramp
-            # it produced the straight diagonal bands the user flagged.
+            # Lambert on the sphere's surface normal. Plain 2D distance
+            # from the light gives a flat radial wash with visible bands.
             scx, scy, sr = sphere["cx"], sphere["cy"], max(1e-6, sphere["r"])
             lvx, lvy = light_x - scx, light_y - scy
             lvz = sr * 0.85  # light sits in front of the sphere
@@ -368,29 +316,22 @@ def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=Non
 
             def light_t(px, py):
                 nx, ny = (px - scx) / sr, (py - scy) / sr
-                # pixels are half as tall as wide -- normals must use
-                # the same aspect the renderer packs at, or the
-                # terminator reads as an ellipse on a round silhouette
+                # Normals must use the renderer's pixel aspect, or the
+                # terminator reads as an ellipse on a round silhouette.
                 d2 = nx * nx + ny * ny
                 nz = math.sqrt(max(0.0, 1.0 - d2))
                 lam = nx * lvx + ny * lvy + nz * lvz
                 lam = max(0.0, min(1.0, lam))
-                # Wrapped/soft lighting + ambient: pure Lambert drives
-                # most of the lit hemisphere to full brightness, which
-                # renders as one big FLAT highlight blob with all the
-                # gradient crammed into the terminator (seen live on
-                # the first test render). Remapping spreads the ramp
-                # across the whole visible surface, which is what a
-                # real scene sphere looks like -- and gives the gate a
-                # genuine gradient to find instead of a flat cap.
+                # Soft wrap plus ambient. Pure Lambert saturates most of the
+                # lit side into a flat highlight; this spreads the ramp
+                # across the whole visible surface.
                 lam = 0.12 + 0.88 * (0.5 + 0.5 * (2.0 * lam - 1.0) ** 0.6
                                      if lam >= 0.5 else
                                      0.5 - 0.5 * (1.0 - 2.0 * lam) ** 0.6)
                 return 1.0 - lam
         elif cyl is not None:
-            # Cylinder: the normal curves across the SHORT axis only and
-            # is constant along the length -- that's what makes a limb or
-            # a pipe read as round rather than as a flat bar.
+            # Cylinder: normal curves across the short axis only and is
+            # constant along the length.
             ax, ay, bx, by = cyl["ax"], cyl["ay"], cyl["bx"], cyl["by"]
             cr = max(1e-6, cyl["r"])
             vx, vy = bx - ax, by - ay
@@ -426,10 +367,8 @@ def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=Non
             fy = (py - y0) / h_span
             t = fn(fx, fy)
             if face_grad:
-                # Flat faces: add a mild distance falloff from the lit
-                # corner so the face varies along BOTH axes. Without it
-                # a tall face is uniform down its length and packs no
-                # half-blocks (measured: 5.2% on the first monolith).
+                # Add falloff from the lit corner so a flat face varies on
+                # both axes. Otherwise a tall face is uniform down its length.
                 t = 0.65 * t + 0.35 * min(1.0, math.hypot(fx - (0.0 if "left" in light_direction or light_direction in ("top","bottom") else 1.0), fy - (0.0 if "top" in light_direction else 1.0)) / 1.414)
             return t
 
@@ -437,20 +376,17 @@ def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=Non
     last = len(stops) - 1
 
     def step_at(px, py):
-        """Continuous ramp position + ordered (Bayer) dither, per PIXEL.
-        The old code quantised one t per CELL to 5 hard steps, so a
-        gradient became 5 visible bands and every interior cell was a
-        whole-cell glyph (half_block stuck near 0). Bayer breaks the
-        bands up, and resolving per pixel means the two pixels in a
-        cell can land on different steps -- which is exactly what
-        produces a real ▀ half-block interior."""
+        """Ramp step for one pixel, with Bayer dither.
+
+        Resolving per pixel lets a cell's two pixels land on different
+        steps, which is what produces ▀ interiors instead of hard bands.
+        """
         t = light_t(px, py)
         if cull_band:
             t = (t - t_lo) / max(1e-6, t_hi - t_lo)
         else:
-            # face mode: squeeze the whole face into its brightness band
-            # instead of culling -- a face lit edge-on must still show a
-            # gradient ACROSS itself, just a darker one.
+            # Face mode: compress the whole face into its band instead of
+            # culling, so an edge-on face still shows a (darker) gradient.
             t = t_lo + max(0.0, min(1.0, t)) * (t_hi - t_lo)
         s = max(0.0, min(1.0, t)) * last
         return max(0, min(last, int(math.floor(s + _bayer(px, py) + 0.5))))
@@ -462,9 +398,7 @@ def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=Non
         return t_lo <= t < t_hi or (t_hi >= 1.0 and t >= t_hi)
 
     def solid_of(step):
-        """The solid color a pixel at this step represents, for when the
-        two pixels of a cell disagree and we pack them as a half-block
-        instead of a dither glyph."""
+        """Solid color for a step, used when a cell packs as a half-block."""
         return from_color if step * 2 <= last else to_color
 
     for cell_row in range(data["h_cells"]):
@@ -483,31 +417,22 @@ def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=Non
                     ch, fg, bg = stops[st_t]
                     go[key] = [ch, fg, bg]
                 else:
-                    # Interior cell whose two pixels sit on different
-                    # ramp steps -> pack as a REAL half-block pair
-                    # instead of flattening to one glyph. This is where
-                    # half_block% actually comes from (_orb.v59, the
-                    # house bar, is 37.9% ▀ and 32.1% ░▒▓ -- both, not
-                    # one or the other).
+                    # Pixels on different steps: pack as a half-block pair
+                    # rather than flattening to one glyph.
                     if key in go:
                         del go[key]
                     pixels[py_top][col] = solid_of(st_t)
                     pixels[py_bot][col] = solid_of(st_b)
             else:
-                # Edge cell: recolor only the masked pixel, leave the
-                # other pixel and any existing glyph_override alone --
-                # this is what keeps the silhouette's round boundary
-                # genuinely round instead of getting square-stepped by
-                # a full-cell glyph at every edge.
+                # Edge cell: recolor only the masked pixel so the
+                # silhouette keeps its half-block boundary.
                 if key in go:
-                    del go[key]  # a stale flat glyph would hide the pixel split
+                    del go[key]  # an override would hide the pixel split
                 py_target = py_top if top_in else py_bot
                 pixels[py_target][col] = solid_of(step_at(col, py_target))
 
     if rim:
-        # Edges facing the light get a brighter rim -- without it a slab
-        # reads as a flat fill with noise, because nothing marks where
-        # one face stops and the next begins.
+        # Brighten light-facing edges so face boundaries read.
         lv = _LIGHT_VECTORS.get(light_direction, (-0.6, -0.6, 0.53))
         for py in range(PH):
             for px in range(W):
@@ -528,16 +453,11 @@ def _shade_masked(data, mask, from_color, to_color, light_direction, light_x=Non
 
 
 def shade(workspace, slug, from_color, to_color, light_direction, region=None):
-    """Apply real density-dither shading (shade_ramp) to a SHAPE, not a
-    rectangle -- region defaults to whatever canvas_fill_px/
-    canvas_circle_px drew last on this canvas, or pass {"type":"rect",...}/
-    {"type":"circle",...}/{"type":"color","color":N} explicitly ({"color":N}
-    shades every pixel currently that color, wherever it is -- the "shade
-    the region of a given color" option). Interior cells get a real
-    dither glyph; edge cells get a per-pixel recolor so the shape's
-    boundary (e.g. a circle's round edge) stays genuinely round instead
-    of being square-stepped by a full-cell glyph. See _shade_masked's
-    docstring for the bug this replaced."""
+    """Apply density-dither shading to a shape.
+
+    region defaults to the last shape drawn; see _pixel_mask_at for the
+    accepted forms.
+    """
     data = load_canvas(workspace, slug)
     from_color, to_color = _check_color(from_color), _check_color(to_color)
     _shade_masked(data, region, from_color, to_color, light_direction)
@@ -546,18 +466,10 @@ def shade(workspace, slug, from_color, to_color, light_direction, region=None):
 
 
 def sphere_px(workspace, slug, cx, cy, r, color, light_x, light_y, shadow_color=None, hi_color=None):
-    """One call: a lit sphere -- draws the circle AND shades it with a
-    real point-light falloff from (light_x, light_y), so the gradient
-    follows the sphere's actual curvature (radial from the light point)
-    instead of a linear directional wash, and the edge stays genuinely
-    round (see _shade_masked). Added 2026-09-22 per user direction:
-    "spheres, eyes, heads and orbs are most of what raze draws, and it
-    shouldn't have to compose one from a fill plus a shade" -- circle_px
-    + shade still work separately for anything that isn't simply "a lit
-    ball", but this is the one-call path for the common case.
-    shadow_color defaults to a darker step of the same hue family via
-    canvas.py's ramp() convention if not given explicitly -- callers
-    should generally just pass the dim end of ramp(hue_name) here."""
+    """Draw a circle and shade it as a sphere lit from (light_x, light_y).
+
+    shadow_color defaults to 0 (black), hi_color to 15 (bright white).
+    """
     data = load_canvas(workspace, slug)
     color = _check_color(color)
     dark = _check_color(shadow_color if shadow_color is not None else 0)
@@ -578,14 +490,8 @@ def sphere_px(workspace, slug, cx, cy, r, color, light_x, light_y, shadow_color=
     mask = {"type": "circle", "cx": cx, "cy": cy, "r": r}
     _drop_overrides(data, _hit)
     data["last_shape"] = mask
-    # Two-band shading. One band (bright -> dark) can only ramp from a
-    # SOLID █ at the lit end, so the highlight renders as a flat cap no
-    # matter how smooth the falloff is -- measured live on the first
-    # test render: a solid █ run straight across the highlight row.
-    # Shading the lit half from hi_color down to color, then the dark
-    # half from color down to shadow, gives the bright side a real
-    # dithered gradient too. hi_color defaults to 15 (bright white),
-    # the usual scene specular.
+    # Two bands: hi -> color, then color -> shadow. A single band starts
+    # from a solid █ at the lit end and renders the highlight as a flat cap.
     hi = _check_color(hi_color if hi_color is not None else 15)
     _shade_masked(data, mask, hi, color, "top-left",
                   light_x=float(light_x), light_y=float(light_y),
@@ -598,9 +504,7 @@ def sphere_px(workspace, slug, cx, cy, r, color, light_x, light_y, shadow_color=
 
 
 def text(workspace, slug, x, y, text_str, fg, bg):
-    """Place literal characters starting at cell (x, y), one per cell,
-    left to right -- for sig blocks, labels, title cards. (Not a
-    blocky wordmark font -- see canvas_wordmark for that.)"""
+    """Place literal characters from cell (x, y), one per cell. Use wordmark() for big letters."""
     data = load_canvas(workspace, slug)
     fg, bg = _check_color(fg), _check_color(bg)
     W, H = data["w"], data["h_cells"]
@@ -622,10 +526,7 @@ def text(workspace, slug, x, y, text_str, fg, bg):
     return data
 
 
-# Same 5x7 block-letter font as workspace/scratch/canvas.py's GLYPHS_5x7,
-# kept as a literal copy here (not imported) for the same reason stated
-# in this module's header docstring -- the harness's own tool dispatch
-# must not depend on agent-editable scratch/ files.
+# Copy of scratch/canvas.py's GLYPHS_5x7. Not imported; see module docstring.
 _GLYPHS_5x7 = {
 'A': [".#...",".###.","#...#","#####","#...#","#...#","#...#"],
 'B': ["####.","#...#","#...#","####.","#...#","#...#","####."],
@@ -675,13 +576,10 @@ _GLYPHS_5x7 = {
 
 
 def wordmark(workspace, slug, x, y, text_str, fg, scale=2, gap=1):
-    """Draw text as large 5x7 block letters -- the wordmark/title-card
-    primitive canvas_text can't do (canvas_text is one glyph per cell,
-    for sig blocks and labels; this is for a real logo/title). Same font
-    and scale-2-for-legibility convention as scratch/canvas.py's
-    block_letters() (kept as a literal copy, see the module docstring
-    for why this file doesn't import scratch/). Returns the total pixel
-    width used, so the caller can center a word before drawing."""
+    """Draw text as scaled 5x7 block letters in PIXEL space.
+
+    Returns (data, width_px) so the caller can center a word.
+    """
     data = load_canvas(workspace, slug)
     fg = _check_color(fg)
     W, PH = data["w"], data["ph"]
@@ -706,12 +604,10 @@ def wordmark(workspace, slug, x, y, text_str, fg, scale=2, gap=1):
 
 
 def mirror(workspace, slug, axis="v"):
-    """Mirror the canvas's authored half onto the other half -- axis='v'
-    (vertical split line, left half -> right, the common case for
-    symmetric creatures/faces/totems) or axis='h' (horizontal split,
-    top half -> bottom). Draw your content in the left/top half only,
-    then call this once. Same convention as scratch/canvas.py's
-    mirror()."""
+    """Mirror one half of the canvas onto the other.
+
+    axis='v' copies left to right; axis='h' copies top to bottom.
+    """
     data = load_canvas(workspace, slug)
     W, PH = data["w"], data["ph"]
     pixels = data["pixels"]
@@ -750,15 +646,11 @@ def mirror(workspace, slug, axis="v"):
 
 
 def strand_shade(workspace, slug, region, direction, fg_list, n_strands=40, length=6, seed=None):
-    """Directional stroke texture for fur/hair/grain -- many short strokes
-    following a consistent direction, cycling through fg_list so adjacent
-    strokes read as distinct marks instead of blurring into one mass.
-    Same technique as scratch/canvas.py's strand_shade() (see that
-    docstring for the real-reference studied), simplified to a fixed
-    direction + rectangular region instead of per-point callables (a
-    tool-call argument can't carry a Python function) -- pass region as
-    {"type":"rect","x0","y0","x1","y1"} in CELL space, direction as
-    [dx, dy] (e.g. [0,1] combed downward, [1,1] diagonal)."""
+    """Short directional strokes for fur, hair or grain.
+
+    region: {"type": "rect", x0, y0, x1, y1} in CELL space.
+    direction: [dx, dy], e.g. [0, 1] downward. Strokes cycle through fg_list.
+    """
     import random
     data = load_canvas(workspace, slug)
     if region.get("type") != "rect":
@@ -791,18 +683,14 @@ def strand_shade(workspace, slug, region, direction, fg_list, n_strands=40, leng
 
 
 def make_patch_id(parent_path, row_offset, col_offset, window_rows, window_cols):
-    """Deprecated alias -- the real implementation now lives in
-    corpus/find_patches.py (find_patches/find_patches_clip attach
-    patch_id to every hit directly, so this module never needs to
-    construct one itself). Kept only so any external caller that
-    imported it from here before the move doesn't break."""
+    """Deprecated. Lives in corpus/find_patches.py; kept for old importers."""
     payload = json.dumps([parent_path, int(row_offset), int(col_offset),
                            int(window_rows), int(window_cols)])
     return base64.urlsafe_b64encode(payload.encode()).decode().rstrip("=")
 
 
 def decode_patch_id(patch_id):
-    """Deprecated alias -- see make_patch_id's docstring."""
+    """Deprecated. See make_patch_id."""
     try:
         padded = patch_id + "=" * (-len(patch_id) % 4)
         payload = base64.urlsafe_b64decode(padded.encode()).decode()
@@ -823,12 +711,11 @@ MAX_CELLS_PER_CALL = 400
 
 
 def cells(workspace, slug, items):
-    """Write individual cells. items: [[x, y, ch, fg, bg], ...] in CELL
-    coordinates; ch is one CP437 character (or an int codepoint). Later
-    items win. Returns (placed, errors). Added 2026-09-26: the only
-    per-cell path before this was stamp(), which the canvas_stamp tool
-    only reaches through a find_patches patch_id, so the agents had no
-    way to place one chosen glyph in one chosen cell."""
+    """Write individual cells.
+
+    items: [[x, y, ch, fg, bg], ...] in CELL space; ch is one CP437 char or
+    an int codepoint. Later items win. Returns (placed, errors).
+    """
     data = load_canvas(workspace, slug)
     W, H = data["w"], data["h_cells"]
     go = data["glyph_override"]
@@ -856,12 +743,11 @@ def cells(workspace, slug, items):
 
 
 def stamp(workspace, slug, x, y, chars, fg, bg):
-    """Place a retrieved patch's real (chars, fg, bg) cell grids onto
-    the canvas with top-left corner at cell (x, y). Caller (the
-    canvas_stamp tool in harness.py) is responsible for decoding
-    patch_id -> grids via corpus/find_patches.py's _load_patch_grids;
-    this function just does the placement, so it stays testable
-    without a live corpus index."""
+    """Place (chars, fg, bg) cell grids with top-left at cell (x, y).
+
+    The caller decodes patch_id into grids, so this needs no corpus index.
+    Returns (data, placed).
+    """
     data = load_canvas(workspace, slug)
     W, H = data["w"], data["h_cells"]
     go = data["glyph_override"]
@@ -885,24 +771,17 @@ def stamp(workspace, slug, x, y, chars, fg, bg):
 
 
 def _sgr(fg, bg=0):
-    """Same bright-color convention as workspace/scratch/canvas.py's
-    sgr(): classic bold-prefix form (1;3X), not aixterm 90-97 -- see
-    that function's docstring for why (ansilove renders 90-97 as flat
-    black)."""
+    """SGR for a color pair. Bright fg uses bold (1;3X), not 90-97, which ansilove renders black."""
     bright = fg > 7
     f = 30 + (fg & 7)
     b = (100 + (bg & 7)) if bg > 7 else (40 + bg)
-    # Every code starts with 0 (reset). Without it, bold set by a bright
-    # colour stayed on, and every later dim colour rendered bright in
-    # every real viewer (brown showed as yellow). Fixed 2026-09-26.
+    # Lead with 0 (reset) so bold from a bright color doesn't leak into
+    # the next dim color.
     return ("\x1b[0;1;%d;%dm" % (f, b)) if bright else ("\x1b[0;%d;%dm" % (f, b))
 
 
 def render_canvas(data):
-    """Pack the canvas's pixel pairs + glyph_override into real ANSI
-    cell-row strings -- same logic as halfblock.py's
-    HalfBlockCanvas.render(), operating on the plain-dict form instead
-    of the class."""
+    """Render the canvas to one ANSI string per cell row. Mirrors HalfBlockCanvas.render()."""
     w, h_cells = data["w"], data["h_cells"]
     pixels, go = data["pixels"], data["glyph_override"]
     out = []
@@ -945,10 +824,10 @@ def _sig_block(out, title, handles, width=80):
 
 
 def save_ans(workspace, slug, out_path, title=None, handles="AGENTSCII", add_sig=True):
-    """Render the canvas and write it as a real, hygiene-normal .ans
-    file (cp437 on disk, standalone reset tail) at out_path (relative
-    to workspace). Does NOT delete the canvas JSON -- the canvas stays
-    editable/re-saveable after this call."""
+    """Write the canvas as a cp437 .ans at out_path (relative to workspace).
+
+    The canvas JSON is kept, so it stays editable.
+    """
     data = load_canvas(workspace, slug)
     out = render_canvas(data)
     if add_sig and title:
@@ -961,13 +840,11 @@ def save_ans(workspace, slug, out_path, title=None, handles="AGENTSCII", add_sig
 
 
 def metrics(workspace, slug):
-    """Real measured metrics for the CURRENT canvas, using the harness's
-    own _compute_piece_metrics -- the same function the gate and the
-    submit report use. Added 2026-09-22: raze was self-reporting
-    half_block numbers computed by ad-hoc scripts that came out ~3x off
-    the canonical value (claimed 15.9%/12.1% on watcher v2/v3, actually
-    4.7%/4.2%), so there is now one number and one source for it.
-    Renders to a temp .ans rather than reimplementing the metric."""
+    """Metrics for the current canvas via harness._compute_piece_metrics.
+
+    Same function the gate uses, so there is one source for these numbers.
+    Renders to a temp .ans rather than reimplementing the metric.
+    """
     import tempfile
     import harness
     data = load_canvas(workspace, slug)
@@ -984,17 +861,10 @@ def metrics(workspace, slug):
 
 def slab_px(workspace, slug, x, y, w, h, color, light_direction="top-left",
             shadow_color=None, hi_color=None, side=None, side_w=0):
-    """A lit BOX, not a flat fill. Flat-sided forms (torsos, limbs,
-    buildings, panels, frames) have no curvature, so shading comes from
-    each face's orientation vs the light plus a gradient across the face
-    from its lit edge to its far edge, with Bayer carrying the
-    transition and light-facing edges getting a brighter rim.
+    """Draw a lit box in PIXEL space, shaded per face.
 
-    side/side_w optionally draw a second visible face (the classic
-    two-face monolith): side is "left"/"right", side_w its width in
-    pixels. The two faces take DIFFERENT brightness bands from their
-    normals, which is what makes the form read as a solid volume rather
-    than a rectangle with noise in it.
+    side ("left"/"right") and side_w (pixels) add a second visible face.
+    Each face gets its own brightness band so the form reads as a volume.
     """
     data = load_canvas(workspace, slug)
     color = _check_color(color)
@@ -1041,11 +911,10 @@ def slab_px(workspace, slug, x, y, w, h, color, light_direction="top-left",
 
 def capsule_px(workspace, slug, ax, ay, bx, by, r, color,
                light_direction="top-left", shadow_color=None, hi_color=None):
-    """A lit capsule: rectangle with rounded ends, shaded as a CYLINDER
-    (normal curves across the short axis, constant along the length).
-    The most common figure element -- arms, legs, necks, pipes, tubes.
-    One call, because composing it from a rect plus two circles plus a
-    shade never produced a form that read as round."""
+    """Draw a capsule from (ax, ay) to (bx, by), shaded as a cylinder.
+
+    For limbs, necks, pipes and tubes.
+    """
     data = load_canvas(workspace, slug)
     color = _check_color(color)
     dark = _check_color(shadow_color if shadow_color is not None else 0)
@@ -1065,12 +934,8 @@ def capsule_px(workspace, slug, ax, ay, bx, by, r, color,
                 _hit.add((py >> 1, px))
 
     cyl = dict(mask)
-    # two bands, same reason as sphere_px: a single band ramps from a
-    # SOLID glyph at the lit end and renders the highlight as a flat cap
-    # Narrow highlight bands shatter into speckle: the specular lands
-    # thinner than a cell and Bayer scatters it (seen live -- the first
-    # capsule render was white dots, not a band). 0.30 keeps the bright
-    # band wide enough to read as a continuous stripe down the length.
+    # Two bands, as in sphere_px. The highlight band must be wide (0.30);
+    # narrower ones get scattered by Bayer into speckle.
     _drop_overrides(data, _hit)
     _shade_masked(data, mask, hi, color, light_direction, light_x=ax, light_y=ay,
                   cyl=cyl, t_lo=0.0, t_hi=0.30)
@@ -1082,23 +947,10 @@ def capsule_px(workspace, slug, ax, ay, bx, by, r, color,
 
 
 def crop(workspace, slug, x, y, w, h, scale=6):
-    """Magnified render of a w x h CELL region, plus that region's cell
-    data. Returns (png_b64, text_dump).
+    """Magnified render of a w x h CELL region plus its cell data.
 
-    The gap Opus named when asked what it needed (2026-09-25):
-
-      "I cannot see my own work at the scale where craft lives. The
-       preview rasterizes at 9x18 pixels per cell... I cannot
-       distinguish a light shade from a lighter one in a cheek shadow.
-       I cannot see whether two adjacent cells form a clean diagonal
-       edge or a staircase with a hole in it. What I can see is the
-       silhouette -- and the reviewer's verdict is that the silhouette
-       is doing all the work. That is not a coincidence; it is the only
-       channel my feedback loop has."
-
-    Hand-work needs the loop: place a few cells -> look -> adjust. That
-    loop cannot close at 9x18 per cell. scale=6 renders each cell at
-    54x108, where a glyph's ink shape and a cell seam are both visible.
+    Returns (png_b64, text_dump). scale=6 renders each cell at 54x108, large
+    enough to see glyph shape and cell seams, which the normal preview hides.
     """
     data = load_canvas(workspace, slug)
     rows_all = render_canvas_cells(data)
@@ -1125,9 +977,7 @@ def crop(workspace, slug, x, y, w, h, scale=6):
 
 
 def render_canvas_cells(data):
-    """render_canvas() as (char, fg, bg) tuples instead of SGR strings --
-    the same packing logic, without stringifying. crop() and the
-    self-checks need cells, not escape codes."""
+    """Like render_canvas(), but returns rows of (char, fg, bg) tuples."""
     w, h_cells = data["w"], data["h_cells"]
     pixels, go = data["pixels"], data["glyph_override"]
     out = []
@@ -1147,23 +997,14 @@ def render_canvas_cells(data):
 
 
 def self_check(workspace, slug):
-    """The reviewer's own two cheapest tests, run on yourself mid-build.
-
-    Opus, asked what it needed (2026-09-25): "I have never looked at my
-    own canvas under the conditions it is judged in. 'Strip the glyphs
-    and you lose nothing' and 'remove the color and nothing survives'
-    are both literally runnable tests over data I already hold... I get
-    a verdict on a finished piece instead of running the reviewer's two
-    cheapest tests on myself, mid-build, for free."
+    """Run the reviewer's glyph-only and colour-only tests on a canvas mid-build.
 
     Returns (glyphs_only_b64, colour_only_b64, density_report).
-      glyphs_only : every cell forced to one fg on black. If the picture
-                    survives, the GLYPHS are carrying it.
-      colour_only : every glyph forced to a full block. If the picture
-                    survives, COLOUR is carrying it and the glyph layer
-                    is doing nothing -- the exact rejection.
-    Plus per-row density variance, because "near-uniform row" is a
-    measurement, not an opinion.
+      glyphs_only: every cell one fg on black. If it still reads, the glyphs
+                   carry the picture.
+      colour_only: every glyph a full block. If it still reads, colour alone
+                   carries it and the glyph layer is doing nothing.
+    The report lists rows with near-uniform ink density.
     """
     import harness
     rows = render_canvas_cells(load_canvas(workspace, slug))

@@ -1,32 +1,13 @@
 #!/usr/bin/env python3
-"""corpus/bench_encoding.py -- benchmark 3 candidate cell encodings on
-the ACTUAL tokenizer, tokens-per-cell, to pick the cheapest before
-committing (user direction, 2026-09-19: "RLE at 0.89 chars/token
-suggests it's the wrong choice").
+"""Benchmark tokens per cell for three cell encodings on a real tokenizer.
 
-Encodings compared, all on the SAME real sample of windows:
-
-  (a) CURRENT RLE -- run-length merged runs, 2-hex color code,
-      literal glyph repetition, blank-background runs omitted
-      (corpus/windowing.py's rle_encode_row).
-
-  (b) PLAIN PER-CELL, single-char color code -- one token per cell,
-      "{col}{glyph}{colorchar}" with color packed into ONE character
-      (not 2 hex digits) by mapping the 256 possible (fg,bg) pairs to
-      a single printable ASCII-adjacent codepoint range. No run-length
-      compression at all -- the literal "raw per-cell dump" baseline
-      the user asked to measure against.
-
-  (c) PACKED SINGLE-CODEPOINT -- each (char, fg, bg) triple mapped to
-      ONE Unicode Private-Use-Area codepoint. 252 distinct glyphs (the
-      corpus's real full vocabulary, confirmed by direct enumeration)
-      x 16 fg x 16 bg = 64,512 possible combinations, comfortably
-      inside the ~131,068 Supplementary PUA-A+B codepoint space. One
-      codepoint per cell, background cells included (no RLE, no run
-      structure) -- the theoretical floor on cell-count-to-symbol
-      ratio, IF the tokenizer treats each codepoint as ~1 token (it
-      often doesn't for rare/unassigned codepoints -- this is exactly
-      what's being measured, not assumed).
+All three run on the same sample of windows:
+  (a) RLE: windowing.py's current row encoding (runs merged, 2-hex color,
+      blank background runs omitted).
+  (b) Plain per-cell: glyph plus one color character per cell, no RLE.
+  (c) Packed: each (char, fg, bg) as one Private Use Area codepoint.
+      Rare codepoints often cost more than one token; that is what this
+      measures.
 
 Usage:
     python3 corpus/bench_encoding.py [--windows corpus/windows.jsonl] [--sample N]
@@ -47,17 +28,15 @@ import windowing as w
 
 
 # --- encoding (b): plain per-cell, single-char color code -----------------
-# 256 possible (fg,bg) pairs (16x16) -> one printable codepoint each,
-# starting just above ASCII printable range to stay out of the way of
-# real glyph characters.
-_COLOR_CHAR_BASE = 0x2100  # arbitrary distinct block, not used by real CP437 art
+# Each of the 256 (fg, bg) pairs maps to one codepoint in a block CP437
+# art doesn't use.
+_COLOR_CHAR_BASE = 0x2100
 def _color_char(fg, bg):
     return chr(_COLOR_CHAR_BASE + fg * 16 + bg)
 
 
 def encode_plain_percell(chars, fg, bg):
-    """One line per row: every cell as glyph+colorchar, no RLE, no
-    omission of background cells -- the literal raw dump baseline."""
+    """One line per row, every cell as glyph + color char. No RLE, background included."""
     lines = []
     h, wd = chars.shape
     for r in range(h):
@@ -70,15 +49,9 @@ def encode_plain_percell(chars, fg, bg):
 
 
 # --- encoding (c): packed single-codepoint ---------------------------------
-# Build the real glyph vocabulary -> index map from the corpus's
-# actual distinct glyphs (252, confirmed by direct enumeration -- see
-# module docstring), not assumed/guessed.
 def build_glyph_vocab():
+    """Sorted list of distinct glyph codepoints in a 2000-file sample of parsed/."""
     manifest_glyphs = set()
-    # Reuse technique_manifest.jsonl's existing pass over the corpus
-    # would need re-parsing chars; instead do a real, direct pass over
-    # a sample of parsed files (matches the 252-glyph count already
-    # confirmed via a full-corpus enumeration this session).
     import glob
     files = glob.glob(str(CORPUS_DIR / "parsed" / "**" / "*.npz"), recursive=True)
     import random
@@ -97,10 +70,7 @@ _PUA_BASE = 0xF0000  # Supplementary Private Use Area-A start
 
 
 def encode_packed(chars, fg, bg, glyph_to_idx):
-    """One PUA codepoint per cell: index = glyph_idx*256 + fg*16 + bg.
-    No RLE, no background omission -- background cells get a real
-    distinct codepoint too (glyph_idx for space), since the whole
-    point of this scheme is "one symbol per cell," not a hybrid."""
+    """One PUA codepoint per cell: glyph_idx*256 + fg*16 + bg. Background cells included."""
     h, wd = chars.shape
     lines = []
     for r in range(h):
@@ -128,11 +98,8 @@ def main():
     glyph_to_idx = {cp: i for i, cp in enumerate(glyph_list)}
     print(f"Real glyph vocabulary size: {len(glyph_list)}\n")
 
-    # Sample real windows from windows.jsonl, but re-derive the RAW
-    # (chars,fg,bg) grid for each by re-slicing the parent piece at the
-    # stored (row_offset, col_offset) -- windows.jsonl only stores the
-    # already-RLE-encoded text, not the raw arrays, so encodings (b)
-    # and (c) need the real grid, not a re-decode of (a)'s text.
+    # windows.jsonl holds only RLE text, so re-slice each window's raw
+    # grid from its parent piece for encodings (b) and (c).
     parsed_dir = Path(args.parsed_dir)
     rows_meta = []
     with open(args.windows) as f:

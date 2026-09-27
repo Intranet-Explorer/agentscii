@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
-"""corpus/fetch.py -- download 16colo.rs ANSI artpacks by year, extract
-.ANS/.ASC files from each pack's zip.
+"""Download 16colo.rs artpacks by year and extract .ANS/.ASC files.
 
-Source: the sixteencolors/sixteencolors-archive GitHub repo, which mirrors
-16colo.rs's full pack archive as one zip per pack, organized by year
-(1990..present). Confirmed live via the GitHub Contents API before writing
-this: https://api.github.com/repos/sixteencolors/sixteencolors-archive/contents/<year>
-lists one .zip per pack in that year.
+Source: the sixteencolors/sixteencolors-archive GitHub repo, one zip per
+pack under a directory per year.
 
 Usage:
     python3 corpus/fetch.py --years 1996 1997 --limit-per-year 50
@@ -40,11 +36,7 @@ MANIFEST_PATH = DATA_DIR / "manifest.jsonl"
 
 ALL_YEARS = [str(y) for y in range(1990, 2027)]
 
-ANS_EXTS = {".ans", ".asc", ".ice", ".nfo"}  # .nfo sometimes contains ANSI too, but
-# we specifically only WANT .ans/.asc for this corpus per the user's request --
-# .ice/.nfo are recognized here only so they aren't silently mis-skipped as
-# "unknown extension" in log output; extract_pack() below still filters to
-# .ans/.asc only when deciding what to write out.
+ANS_EXTS = {".ans", ".asc", ".ice", ".nfo"}  # recognized
 WANTED_EXTS = {".ans", ".asc"}
 
 USER_AGENT = "agentscii-corpus-fetch/1.0 (research corpus build, contact via github.com/Intranet-Explorer/agentscii)"
@@ -55,10 +47,8 @@ def _session():
     s.headers.update({"User-Agent": USER_AGENT})
     token = os.environ.get("GITHUB_TOKEN")
     if not token:
-        # Fall back to the `gh` CLI's own stored token if the user is
-        # already logged in there -- avoids the unauthenticated GitHub API
-        # rate limit (60 req/hr, trivially exhausted by year-listing calls
-        # alone) without requiring a separate manual token setup step.
+        # Fall back to the gh CLI token. Unauthenticated API calls are
+        # limited to 60/hour.
         try:
             import subprocess
             out = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=10)
@@ -88,19 +78,15 @@ def _get_json(session, url, retries=3):
 def list_year_packs(session, year):
     """Return [(pack_zip_name, size_bytes, download_url), ...] for a year.
 
-    NOTE: GitHub's Contents API for a directory does NOT paginate --
-    per_page/page are silently ignored and the full directory listing is
-    returned in one response every time (confirmed live: a 778-item year
-    returned all 778 items regardless of page=1..10). The original version
-    of this function assumed standard List-endpoint pagination semantics
-    (stop when len(items) < per_page) and looped forever re-fetching the
-    same full page. Single request, no pagination loop."""
+    The Contents API ignores per_page/page for directories and returns the
+    whole listing in one response, so there is no pagination loop.
+    """
     url = f"{API_BASE}/{year}"
     try:
         items = _get_json(session, url)
     except requests.HTTPError as e:
         if e.response is not None and e.response.status_code == 404:
-            return []  # year directory doesn't exist (e.g. future year not populated yet)
+            return []  # no directory for this year
         raise
     packs = [
         (item["name"], item["size"], item["download_url"])
@@ -108,13 +94,8 @@ def list_year_packs(session, year):
         if item["type"] == "file" and item["name"].lower().endswith(".zip")
     ]
     if len(items) >= 1000:
-        # GitHub's Contents API silently truncates directory listings over
-        # 1000 entries with no error and no "truncated" flag on this
-        # endpoint (unlike the Git Trees API) -- if a year ever grows past
-        # this, packs would silently go missing with no warning. Checked
-        # live against every year in the archive at write time (1996's 778
-        # packs was the largest); this is a tripwire for the future, not a
-        # known current problem.
+        # The Contents API silently truncates listings at 1000 entries.
+        # No year is that large yet; this warns if one gets there.
         print(
             f"  [WARNING: {year} returned {len(items)} items -- at/over "
             f"GitHub's ~1000-entry directory listing limit, some packs may "
@@ -128,7 +109,7 @@ def list_year_packs(session, year):
 def download_pack(session, year, name, url, dest, retries=3):
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists() and dest.stat().st_size > 0:
-        return True  # already downloaded, resumable across runs
+        return True  # already downloaded
     for attempt in range(retries):
         try:
             r = session.get(url, timeout=60)
@@ -144,13 +125,11 @@ def download_pack(session, year, name, url, dest, retries=3):
 
 
 def extract_pack(zip_path, out_dir, manifest_fh):
-    """Extract only .ans/.asc members from a pack zip. Returns count
-    extracted. Handles the real messiness of a 30-year archive: mixed
-    case extensions, occasional nested directories inside the zip,
-    filenames with characters that need normalizing for the filesystem,
-    and zips using compression methods Python's zipfile can't read
-    (documented, real, ~50 packs across the whole archive use imploding/
-    shrinking -- skipped with a clear log line, not a silent failure)."""
+    """Extract .ans/.asc members from a pack zip. Returns the count extracted.
+
+    Flattens nested directories and logs and skips members zipfile can't
+    read (old implode/shrink methods, corrupt data).
+    """
     extracted = 0
     try:
         with zipfile.ZipFile(zip_path) as zf:
@@ -164,23 +143,14 @@ def extract_pack(zip_path, out_dir, manifest_fh):
                     data = zf.read(info)
                 except (NotImplementedError, zipfile.BadZipFile, RuntimeError,
                         zlib.error, EOFError) as e:
-                    # zlib.error found live: a real archive zip (1995
-                    # scene pack) has a member with corrupted deflate
-                    # stream data -- "invalid distance too far back" --
-                    # which zipfile.read() raises as a bare zlib.error,
-                    # not wrapped in BadZipFile. Uncaught, this killed a
-                    # full 37-year fetch run partway through 1995 with
-                    # zero packs processed afterward. EOFError is the
-                    # same class of real corruption (truncated member),
-                    # added defensively since it's the other documented
-                    # zipfile failure mode for a damaged member.
+                    # Corrupt deflate data raises a bare zlib.error, and a
+                    # truncated member raises EOFError; neither is BadZipFile.
                     print(f"    [skip member, unsupported: {info.filename}: {e}]", file=sys.stderr)
                     continue
-                safe_name = Path(info.filename).name  # drop any internal dir structure
+                safe_name = Path(info.filename).name  # drop internal dirs
                 out_dir.mkdir(parents=True, exist_ok=True)
                 out_path = out_dir / safe_name
-                # de-dup within a pack (two members normalizing to the same
-                # basename after stripping directories) by suffixing
+                # Suffix members that share a basename after flattening.
                 if out_path.exists():
                     stem, suf = out_path.stem, out_path.suffix
                     n = 2
@@ -249,25 +219,13 @@ def main():
                 total_packs += 1
                 out_dir = DATA_DIR / year / Path(name).stem
                 if out_dir.exists() and any(out_dir.iterdir()):
-                    # Already extracted in a prior (resumed) run -- skip
-                    # re-extraction. Without this guard, re-running after
-                    # an interrupted fetch would re-extract every
-                    # already-downloaded zip and hit extract_pack's
-                    # within-pack de-dup suffix logic against files that
-                    # are the SAME extraction, not a real duplicate,
-                    # silently doubling the file count with __2 copies.
+                    # Already extracted. Re-extracting would create __2
+                    # copies via the basename de-dup.
                     continue
                 try:
                     n = extract_pack(zip_dest, out_dir, manifest_fh)
                 except Exception as e:
-                    # Belt-and-suspenders on top of extract_pack's own
-                    # internal handling: a 30+ year, thousands-of-packs
-                    # archive WILL contain failure modes neither of us
-                    # anticipated. One pack's unexpected exception must
-                    # never discard however many hours of a full-archive
-                    # run already completed (found live: an uncaught
-                    # zlib.error from one corrupted 1995 pack killed a
-                    # run 1000 packs / ~13000 files in).
+                    # One bad pack must not end a long run.
                     print(f"  [unexpected error extracting {name}, skipping pack: {e}]", file=sys.stderr)
                     n = 0
                 total_files += n

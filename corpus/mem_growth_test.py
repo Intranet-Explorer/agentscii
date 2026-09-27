@@ -1,21 +1,12 @@
 #!/usr/bin/env python3
-"""corpus/mem_growth_test.py -- task 5 investigation: directly measure
-MLX's cache memory (mx.get_cache_memory()) alongside active memory
-(mx.get_active_memory()) and RSS/swap every iteration, for real
-training steps, to test whether mx's internal buffer cache grows
-unbounded across iterations (distinct from the already-logged
-mx.get_peak_memory(), which is an ACTIVE-memory high-water mark and
-does NOT report the separate cache pool that clear_cache()/
-set_cache_limit() target -- run 1's mem_logger.py/training_run.log
-never captured cache memory at all, only RSS+swap+active peak, so this
-is genuinely new data, not a re-read of something already known).
+"""Measure whether MLX's buffer cache grows across training steps.
 
-Runs real forward+backward+optimizer steps against the actual model
-and lora_config.yaml, WITHOUT touching train_launch.py's guarded
-train() loop (to keep this isolated and fast to iterate on), for
---iters steps, logging every iteration to --out. If --clear-every is
-set, calls mx.metal.clear_cache() every N iterations to test whether
-that caps the cache growth.
+Logs cache, active and peak memory plus RSS and swap every iteration.
+get_peak_memory() tracks active memory only, not the cache pool that
+clear_cache()/set_cache_limit() control.
+
+Runs real training steps from lora_config.yaml outside train_launch.py.
+--clear-every N calls mx.metal.clear_cache() every N iterations.
 
 Usage:
     python3 corpus/mem_growth_test.py --iters 60 --out corpus/mem_growth_no_clear.jsonl
@@ -23,6 +14,7 @@ Usage:
 """
 import argparse
 import json
+import os
 import subprocess
 import re
 import sys
@@ -53,7 +45,7 @@ def main():
     ap.add_argument("--out", default=str(CORPUS_DIR / "mem_growth.jsonl"))
     args = ap.parse_args()
 
-    sys.path.insert(0, "/Users/octo/Library/Python/3.9/lib/python/site-packages")
+    sys.path.insert(0, os.path.expanduser("~/Library/Python/3.9/lib/python/site-packages"))
     import yaml
     import mlx.core as mx
     import mlx.nn as nn

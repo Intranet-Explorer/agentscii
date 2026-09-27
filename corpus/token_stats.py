@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-"""corpus/token_stats.py -- token-length stats per window (context +
-target), using tiktoken (cl100k_base, a reasonable stand-in encoding
-for length-budgeting purposes -- the actual training tokenizer may
-differ, but relative comparisons across windows/formats hold either
-way).
+"""Token-length stats per window (context and target) with tiktoken cl100k_base.
+
+A stand-in for the training tokenizer; fine for relative comparisons.
 
 Usage:
     python3 corpus/token_stats.py [--windows corpus/windows.jsonl] [--sample N]
@@ -39,7 +37,7 @@ def main():
         tok = lambda s: len(enc.encode(s))
         enc_name = "tiktoken cl100k_base"
     except ImportError:
-        tok = lambda s: len(s) // 4  # rough chars/4 fallback, documented as approximate
+        tok = lambda s: len(s) // 4  # rough fallback
         enc_name = "approximate (chars/4 -- tiktoken not installed)"
 
     context_lens = []

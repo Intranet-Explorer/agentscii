@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
-"""corpus/scan_pathologies.py -- scan every training example for the
-pathologies that can cause NaN loss or degenerate training (user
-direction, 2026-09-19): empty/all-space window, zero-length FITM
-target, target that's pure padding, sequence over the token cap.
+"""Scan training examples for pathologies that cause NaN loss or degenerate training.
 
-Scans train_subsample.jsonl (the 40k pre-tokenization examples) AND
-the tokenized mlx_train_data/{train,valid,test}.jsonl (post-conversion,
-using the real tokenizer) so both the raw-content pathology and its
-tokenized consequence are counted precisely.
+Checks empty targets, empty context, single-run targets and sequences over
+the token cap. Scans both the raw train_subsample.jsonl and the tokenized
+mlx_train_data/{train,valid,test}.jsonl with the real tokenizer.
 
 Usage:
     python3 corpus/scan_pathologies.py
 """
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -25,8 +22,8 @@ def scan_raw_subsample(path):
     counts = {
         "total": 0,
         "empty_target": 0,          # target == ""
-        "empty_context": 0,         # context has no real 'rNN' content lines at all
-        "target_all_same_glyph": 0, # target is fully one repeated (char,color) run -- degenerate but not necessarily wrong
+        "empty_context": 0,         # no 'rNN' content lines
+        "target_all_same_glyph": 0, # one repeated run; degenerate, not necessarily wrong
     }
     bad_indices = {"empty_target": [], "empty_context": []}
     with open(path) as f:
@@ -39,13 +36,13 @@ def scan_raw_subsample(path):
                 counts["empty_target"] += 1
                 if len(bad_indices["empty_target"]) < 20:
                     bad_indices["empty_target"].append(i)
-            # context has no real content rows (only the MASK marker line survives)
+            # Only the MASK marker line, no content rows.
             content_lines = [l for l in context.splitlines() if l.startswith("r") and not l.startswith("MASK")]
             if not content_lines:
                 counts["empty_context"] += 1
                 if len(bad_indices["empty_context"]) < 20:
                     bad_indices["empty_context"].append(i)
-            # crude "all one repeated run" check: target has exactly 1 distinct run signature
+            # Every row of the target is the same single run.
             import re
             runs = re.findall(r"\d+,[0-9a-f]{2}:(\S+)", target)
             if runs and len(set(runs)) == 1 and len(runs) == target.count("\n") + 1:
@@ -54,12 +51,13 @@ def scan_raw_subsample(path):
 
 
 def scan_tokenized(mlx_data_dir, model_path, max_seq_length=3072):
-    """Pathologies only visible after real tokenization: empty completion
-    token span (ntoks=0 -> guaranteed NaN loss), sequences over the
-    token cap (silently truncated by mlx_lm, which can chop a target's
-    tail off entirely if the prompt alone already exceeds the cap)."""
+    """Pathologies visible only after tokenization.
+
+    An empty completion span gives ntoks=0 and NaN loss. Sequences over the
+    cap are silently truncated by mlx_lm, which can drop the whole target.
+    """
     sys.path.insert(0, str(CORPUS_DIR.parent))
-    sys.path.insert(0, "/Users/octo/Library/Python/3.9/lib/python/site-packages")
+    sys.path.insert(0, os.path.expanduser("~/Library/Python/3.9/lib/python/site-packages"))
     from mlx_lm.utils import load
     from mlx_lm.tuner.datasets import load_local_dataset, CacheDataset
     import types
@@ -84,12 +82,8 @@ def scan_tokenized(mlx_data_dir, model_path, max_seq_length=3072):
         for i in range(n):
             tokens, offset = ds[i]
             completion_len = len(tokens) - offset
-            # Real threshold, found live: even a genuinely EMPTY target
-            # string still tokenizes to exactly 2 tokens (a leading
-            # space + EOS, confirmed directly: tokens[offset:] ==
-            # [1032, 2] for a known real empty-target example) --
-            # completion_len<=0 alone NEVER fires. <=2 is the correct
-            # threshold for "the model is taught nothing here."
+            # An empty target still tokenizes to 2 tokens (space + EOS),
+            # so <=2 means nothing is taught.
             if completion_len <= 2:
                 empty_completion += 1
                 if len(empty_completion_indices) < 20:
@@ -112,7 +106,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--subsample", default=str(CORPUS_DIR / "train_subsample.jsonl"))
     ap.add_argument("--mlx-data-dir", default=str(CORPUS_DIR / "mlx_train_data"))
-    ap.add_argument("--model", default="/Users/octo/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c")
+    ap.add_argument("--model", default=os.path.expanduser("~/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c"))
     ap.add_argument("--out", default=str(CORPUS_DIR / "pathology_report.json"))
     ap.add_argument("--skip-tokenized", action="store_true", help="skip the slower tokenized scan (raw-text scan only)")
     args = ap.parse_args()

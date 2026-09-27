@@ -1,47 +1,23 @@
 #!/usr/bin/env python3
-"""corpus/windowing.py -- step 2: slice train-split pieces into 40x16
-windows with overlap, RLE-encode rows, and build fill-in-the-middle
-(FITM) examples. Conditioning is SAUCE year + group + per-window
-technique metrics (half_block_pct, shade_pct, shade_bucket) -- NOT a
-caption (dropped from v1, user direction 2026-09-19: "FIM doesn't need
-captions... captions return in a later phase if prompt-conditioning is
-needed").
+"""Slice train-split pieces into overlapping 40x16 windows and build fill-in-the-middle examples.
 
-Window size (user direction, 2026-09-19): "shrink the window, 40 cols
-x 16 rows, not 80x24." At 40 cols, a window covers only half the width
-of a typical 80-col real archive piece, so real column tiling is now
-used (COL_OVERLAP), not just row tiling with column pad/trim.
+Conditioning is SAUCE year and group plus per-window technique metrics
+(half_block_pct, shade_pct, shade_bucket). No captions.
 
-Selection (user direction, 2026-09-19): train on the H=30/S=15 subset
-(half_block_pct > 30 OR shade_pct > 15, AND alnum_pct < 15, AND
-distinct_colors >= 4), oversample the p90 tier (H=36.8/S=38.3, same
-filters) ~3x so the model sees more heavily shaded work. Only pieces on
-the TRAIN side of holdout_split.json are ever windowed -- holdout is
-never touched here.
+Selection: half_block_pct > 30 or shade_pct > 15, with alnum_pct < 15 and
+distinct_colors >= 4. The p90 tier (36.8 / 38.3) is oversampled 3x. Only
+train-split pieces are used; the holdout is never touched.
 
-RLE row encoding (user direction): "not raw cells... run-length
-(r00 4,0:###)". The user's example is illustrative shorthand, not a
-literal spec -- documented interpretation used here, shown against
-real output below so it's inspectable/correctable:
+Row encoding:
 
     r00 4,3a:▄▄▄ 12,07:██
 
-  - "r00"        row index within the window, zero-padded to 2 digits
-  - "4,3a:▄▄▄"   a RUN starting at column 4, color code "3a" (hex nibble
-                 pair: fg=3, bg=a=10), glyphs "▄▄▄" written LITERALLY
-                 (not count-compressed) so the model sees real glyph
-                 identity, not just a run length
-  - runs are space-separated; a run ends where (char,fg,bg) changes
-  - fully-blank runs (space, bg=0) are OMITTED entirely (not encoded
-    as an explicit "empty" run) -- most of a typical window's runs are
-    blank background, and skipping them is the actual compression this
-    format buys over raw cells
-  - "color code" packs BOTH fg and bg as two hex digits (fg then bg),
-    not a single index -- chosen over the literal 1-digit example
-    because a single index alone can't represent a colored glyph on a
-    colored background without silently dropping the background, which
-    is real information a training target needs. Consistent with using
-    the FULL cell tuple, just compactly.
+  - "r00": row index in the window
+  - "4,3a:▄▄▄": run starting at column 4, fg=3 bg=a (hex), glyphs written
+    literally so the model sees each glyph
+  - runs are space-separated and end where (char, fg, bg) changes
+  - true-background runs (space, bg 0) are omitted
+  - both fg and bg are encoded; a single index would drop the background
 
 Usage:
     python3 corpus/windowing.py [--limit-pieces N] [--out corpus/windows.jsonl]
@@ -59,9 +35,9 @@ CORPUS_DIR = Path(__file__).resolve().parent
 WINDOW_ROWS = 16
 WINDOW_COLS = 40
 ROW_OVERLAP = 8    # 50% overlap on rows
-COL_OVERLAP = 20   # 50% overlap on cols -- user direction, 2026-09-19: "shrink the window, 40 cols x 16 rows, not 80x24"
+COL_OVERLAP = 20   # 50% overlap on cols
 
-# Selection thresholds -- user direction, 2026-09-19
+# Selection thresholds
 H_THRESH = 30.0
 S_THRESH = 15.0
 H_P90 = 36.8
@@ -72,18 +48,11 @@ OVERSAMPLE_P90 = 3
 
 
 def rle_encode_row_runs(row_chars, row_fg, row_bg):
-    """One row -> list of (start_col, color_code, glyphs) run tuples.
-    Runs of identical (char,fg,bg) are merged; true-background runs
-    (space, bg=0) are omitted entirely. Structured form used both by
-    rle_encode_row (joins into the final string) and by
-    make_fitm_example's column-shift logic, which needs real
-    structured runs -- NOT a naive str.split(' ') re-parse of the
-    joined string, which is ambiguous and breaks: a run of literal
-    SPACE glyphs on a colored background (a real, valid case -- e.g.
-    a solid color block with no visible character) contains the same
-    ' ' character used as the inter-run separator, so splitting on
-    space silently shreds that run's glyph content into garbage
-    tokens. Caught live via a real crash, not by inspection."""
+    """One row to a list of (start_col, color_code, glyphs) runs, true background omitted.
+
+    Use these tuples rather than splitting the joined string: a run of
+    coloured spaces contains the separator character.
+    """
     runs = []
     n = len(row_chars)
     i = 0
@@ -102,17 +71,13 @@ def rle_encode_row_runs(row_chars, row_fg, row_bg):
 
 
 def rle_encode_row(row_chars, row_fg, row_bg):
-    """One row -> 'run run run...' string (row prefix added by caller).
-    Runs of identical (char,fg,bg) are merged; true-background runs
-    (space, bg=0) are omitted entirely."""
+    """One row to 'run run ...' text; the caller adds the row prefix."""
     runs = rle_encode_row_runs(row_chars, row_fg, row_bg)
     return " ".join(f"{col},{color}:{glyphs}" for col, color, glyphs in runs)
 
 
 def encode_window(chars_grid, fg_grid, bg_grid):
-    """A (rows, cols) window -> multi-line RLE text, one 'rNN ...' line
-    per row that has at least one non-blank run. Fully-blank rows are
-    omitted (same reasoning as blank runs within a row)."""
+    """Encode a window as 'rNN ...' lines. Blank rows are omitted."""
     lines = []
     for r in range(chars_grid.shape[0]):
         row_chars = [chr(cp) for cp in chars_grid[r].tolist()]
@@ -125,10 +90,10 @@ def encode_window(chars_grid, fg_grid, bg_grid):
 
 
 def select_pieces(train_paths_set):
-    """Apply the H=30/S=15 selection + p90 oversampling, restricted to
-    the train split. Returns a list of relative .npz paths, with p90
-    pieces appearing OVERSAMPLE_P90 times (so downstream windowing
-    naturally sees them more often)."""
+    """Select train-split pieces by threshold. Returns (paths, n_base, n_p90).
+
+    p90 pieces appear OVERSAMPLE_P90 times in paths.
+    """
     base = []
     p90 = []
     with open(CORPUS_DIR / "technique_manifest.jsonl") as f:
@@ -153,21 +118,10 @@ def select_pieces(train_paths_set):
 
 
 def make_windows(chars, fg, bg):
-    """Slide a WINDOW_ROWS x WINDOW_COLS window over a full piece grid
-    with ROW_OVERLAP/COL_OVERLAP overlap in each dimension. At the
-    smaller 40x16 window size (user direction, 2026-09-19: "shrink the
-    window, 40 cols x 16 rows, not 80x24"), a window only covers HALF
-    the width of a typical 80-col real archive piece -- real column
-    tiling is now required, not just row tiling with column pad/trim
-    like the original 80-col-window version used (a single window at
-    the old 80-col width WAS the whole canvas width, so no column
-    tiling was ever needed there). Pieces narrower than WINDOW_COLS or
-    shorter than WINDOW_ROWS are padded with true background rather
-    than skipped, since a real 40x16 window is small enough that many
-    genuinely valid narrow/short pieces would otherwise be discarded
-    entirely (unlike the old 80x24 case, where a piece shorter than the
-    window was almost always a near-empty banner not worth training on
-    anyway)."""
+    """Yield ((row, col), chars, fg, bg) for overlapping windows tiled over a piece.
+
+    Pieces smaller than a window are padded with true background, not skipped.
+    """
     n_rows, n_cols = chars.shape
 
     def _tile_starts(total, window, overlap):
@@ -180,9 +134,7 @@ def make_windows(chars, fg, bg):
         if not starts:
             starts = [0]
         elif starts[-1] + window < total:
-            # one final window flush against the far edge, so trailing
-            # content isn't always dropped just for not landing on a
-            # stride boundary
+            # Add a final window flush with the far edge.
             starts.append(total - window)
         return starts
 
@@ -206,39 +158,22 @@ def make_windows(chars, fg, bg):
 
 
 def make_fitm_example(chars, fg, bg, rng, area_frac_range=None, fixed_mask_size=None):
-    """Mask a random rectangle inside the window; context = the window
-    with that rectangle blanked to true background; target = the
-    rectangle's real original content, RLE-encoded on its own
-    coordinate system (row/col relative to the rectangle, not the
-    window) so the target is self-contained.
+    """Mask a random rectangle. Returns (context_text, target_text, (top, left, h, w)).
 
-    area_frac_range overrides the default mask-size range -- used by
-    eval_harness.py with a LARGER range than training (user direction,
-    2026-09-19: "use larger masks: roughly 14x8 cells or ~20% of the
-    subject area, so the fill requires real construction, not
-    interpolation" -- a harder eval than the ~300-token-tuned training
-    mask size, deliberately, since the training-size mask is easy
-    enough to interpolate from adjacent context rather than requiring
-    real construction).
+    Context marks the hole with [MASK w=N] on each masked row. The target
+    is the original content in the rectangle's own coordinates.
 
-    fixed_mask_size=(mask_h, mask_w) pins the mask to a specific shape
-    with +/-1 cell jitter per dimension, rather than deriving mask_h/
-    mask_w from area_frac via the WINDOW's own aspect ratio (40:16 =
-    2.5:1) -- the user's literal "14x8" target is a 1.75:1 rectangle,
-    a genuinely different shape than what area_frac alone would
-    produce at the same cell count (verified directly: 20% area_frac
-    on a 40x16 window naturally comes out ~7x18, not ~8x14)."""
+    area_frac_range overrides the default 12-25% of window area.
+    fixed_mask_size=(h, w) fixes the shape with +/-1 jitter; eval uses
+    larger masks so the fill has to be constructed, not interpolated.
+    """
     h, w = chars.shape
     if fixed_mask_size:
         base_h, base_w = fixed_mask_size
         mask_h = max(3, min(h - 1, base_h + rng.randint(-1, 1)))
         mask_w = max(3, min(w - 1, base_w + rng.randint(-1, 1)))
     else:
-        # mask rectangle: 12-25% of window area (tuned down from an initial
-        # 20-40%, user direction, 2026-09-19: "target under ~300 tokens" --
-        # 20-40% measured at a real mean of 461 target tokens on a 10k
-        # sample, well over the target; 12-25% is the range that actually
-        # lands near it, verified below), clamped to sane min size
+        # 12-25% of window area keeps targets near 300 tokens.
         lo, hi = area_frac_range if area_frac_range else (0.12, 0.25)
         area_frac = rng.uniform(lo, hi)
         target_area = area_frac * h * w
@@ -247,19 +182,8 @@ def make_fitm_example(chars, fg, bg, rng, area_frac_range=None, fixed_mask_size=
     top = rng.randint(0, h - mask_h)
     left = rng.randint(0, w - mask_w)
 
-    # For rows that intersect the masked band, encode the real content
-    # to the LEFT and RIGHT of the masked column range normally, with
-    # an explicit "[MASK]" token standing in for the masked span
-    # itself -- NOT a private-use sentinel glyph written into the grid
-    # and RLE-encoded like real content. Found live building this: an
-    # earlier version did exactly that (U+E000 written into the grid,
-    # encoded like any other glyph) -- it "worked" in the sense that
-    # nothing crashed, but wasted real tokens on runs of an invisible,
-    # rarely-trained-on codepoint, and an earlier version of THIS fix
-    # blanked the masked rows' ENTIRE width (not just the masked
-    # columns), silently discarding real, visible context on either
-    # side of the hole within those rows -- caught by inspecting a
-    # real example before trusting it, not assumed correct.
+    # On masked rows, encode content left and right of the hole normally
+    # with a [MASK] token between, so no context on those rows is lost.
     lines = []
     for r in range(h):
         row_chars = [chr(cp) for cp in chars[r].tolist()]
@@ -270,12 +194,7 @@ def make_fitm_example(chars, fg, bg, rng, area_frac_range=None, fixed_mask_size=
             right_runs = rle_encode_row_runs(
                 row_chars[left + mask_w:], row_fg[left + mask_w:], row_bg[left + mask_w:]
             )
-            # re-offset the right-hand run's column indices back to the
-            # window's real coordinate system (rle_encode_row_runs was
-            # given a slice starting at 0, not `left + mask_w`) --
-            # working with structured (col, color, glyphs) tuples here,
-            # not re-parsing a joined string (see rle_encode_row_runs's
-            # docstring for the real bug that caused).
+            # Shift right-hand runs back to window columns.
             right_body = " ".join(
                 f"{col + left + mask_w},{color}:{glyphs}" for col, color, glyphs in right_runs
             )
@@ -296,17 +215,16 @@ def make_fitm_example(chars, fg, bg, rng, area_frac_range=None, fixed_mask_size=
     return context_text, target_text, (top, left, mask_h, mask_w)
 
 
-_HALF_BLOCK_CP = {0x2580, 0x2584}  # ▀ ▄ -- matches technique_index.py/harness.py's corpus-aligned definition
+_HALF_BLOCK_CP = {0x2580, 0x2584}  # ▀ ▄, as in technique_index.py
 _SHADE_CP = {0x2591, 0x2592, 0x2593}  # ░ ▒ ▓
 
 
 def window_technique_metrics(chars, fg, bg):
-    """Subject-only half_block_pct/shade_pct for ONE window (not the
-    parent piece) -- user direction, 2026-09-19: 'condition each
-    example on SAUCE year + group + the technique metrics
-    (half_block_pct, shade_pct bucket).' Same glyph set/denominator as
-    corpus/technique_index.py and harness.py's _compute_piece_metrics
-    (kept in sync deliberately, see harness.py's own comment on this)."""
+    """Subject-only (half_block_pct, shade_pct) for one window.
+
+    Same definition as technique_index.py and harness._compute_piece_metrics;
+    keep them in sync.
+    """
     is_space = (chars == 0x20)
     is_true_bg = is_space & (bg == 0)
     subject_mask = ~is_true_bg
@@ -320,11 +238,7 @@ def window_technique_metrics(chars, fg, bg):
 
 
 def shade_bucket(half_pct, shade_pct):
-    """Coarse bucket label for conditioning, derived from the same
-    H=30/S=15 and p90=36.8/38.3 thresholds already used for selection
-    -- 'low' / 'mid' (base tier) / 'high' (p90 tier), so the model
-    (or a downstream classifier) has a categorical signal alongside
-    the raw percentages."""
+    """'high' (p90 tier), 'mid' (base tier) or 'low', from the selection thresholds."""
     if half_pct > H_P90 or shade_pct > S_P90:
         return "high"
     if half_pct > H_THRESH or shade_pct > S_THRESH:
@@ -351,9 +265,7 @@ def main():
     print(f"Total selected (with oversampling, includes duplicates by design): {len(selected)}")
 
     if args.limit_pieces:
-        # apply the limit to UNIQUE pieces, then let their oversample
-        # copies ride along, so a quick test run still exercises the
-        # oversampling logic instead of silently disabling it
+        # Limit unique pieces but keep their oversample copies.
         unique_order = []
         seen = set()
         for p in selected:
@@ -395,32 +307,13 @@ def main():
                 n_windows += 1
                 context_text, target_text, mask_box = make_fitm_example(c_win, f_win, b_win, rng)
 
-                # Real pathology found and fixed live, 2026-09-19: a
-                # mask that falls entirely within true-background cells
-                # produces a target with NO 'rNN' content lines at all
-                # (target_text == "") -- 2,201/40,000 (5.5%) of examples
-                # hit this before the fix. An empty target still
-                # tokenizes to a real 2-token span (space+EOS), so it
-                # doesn't crash training outright, but it teaches
-                # nothing useful and was the confirmed trigger example
-                # at the exact iteration training loss first went NaN
-                # (root-caused via fp16 cross_entropy overflow, not a
-                # literal div-by-zero -- but this is the class of
-                # example implicated, and it's real, low-value training
-                # signal regardless of the NaN mechanism, so dropping
-                # it is correct independent of that root cause). Skip
-                # writing this window rather than including a
-                # zero-information example.
+                # A mask entirely in true background gives an empty
+                # target. It teaches nothing and has been linked to NaN loss.
                 if target_text.strip() == "":
                     n_dropped_empty_target += 1
                     continue
 
-                # technique metrics + bucket, for direct conditioning
-                # (user direction, 2026-09-19: "condition each example
-                # on SAUCE year + group + the technique metrics" --
-                # computed per-WINDOW, not per-parent-piece, since a
-                # window can be much more/less shaded than its parent's
-                # overall average)
+                # Metrics per window, not per piece; windows vary widely.
                 half_pct, shade_pct = window_technique_metrics(c_win, f_win, b_win)
                 out_f.write(json.dumps({
                     "parent_path": rel_path,

@@ -1,33 +1,14 @@
 #!/usr/bin/env python3
-"""corpus/find_patches.py -- retrieval over the real corpus, parallel
-to (and independent of) the LoRA training track. User direction
-(2026-09-20): "Build retrieval in parallel -- patch index over the
-corpus, find_patches(description) returning real cell grids. Works
-with current Qwen, no training required."
+"""Retrieve cell-grid patches from the corpus. No training required.
 
 Two layers:
+  1. find_patches_by_technique(...): SQL over corpus/patch_index.db
+     (built by patch_index.py). No model call.
+  2. find_patches(description): the local Ollama model turns free text
+     into technique filters and a title keyword, then calls layer 1.
 
-  1. find_patches_by_technique(half_block_min=, shade_min=, ...) --
-     direct SQL over corpus/patch_index.db (built by patch_index.py
-     from windows.jsonl, 1.26M real 40x16 windows with technique
-     metrics already computed). No model call, near-instant.
-
-  2. find_patches(description, n=5) -- takes a free-text description
-     ("dense half-block dithered sky", "logo-style flat color text"),
-     asks qwen3.8:27b-mlx (via Ollama, same model used elsewhere in
-     this pipeline -- no training required) to translate it into
-     technique-filter terms (half_block target, shade target, a
-     keyword to match against SAUCE title/author in parent_meta), then
-     calls layer 1. This is a real model CALL per query (cheap, one
-     short completion) -- not embeddings/no vector index; matches
-     the corpus's existing "small local model does easy structured
-     work" pattern used elsewhere (caption.py) rather than adding a
-     new embedding dependency.
-
-Each hit returns REAL cell grids (chars/fg/bg numpy arrays), sliced
-directly from the parent piece's parsed .npz at the indexed
-row_offset/col_offset -- not synthesized, not the RLE text (that's
-available via encode_window() for prompt use if needed).
+Each hit carries chars/fg/bg arrays sliced from the parent .npz, plus
+RLE text and a patch_id.
 
 Usage as a library:
     from corpus.find_patches import find_patches, find_patches_by_technique
@@ -57,14 +38,11 @@ OLLAMA_MODEL = "qwen3.8:27b-mlx"
 
 
 def make_patch_id(parent_path, row_offset, col_offset, window_rows, window_cols):
-    """Opaque, self-describing patch identifier -- encodes everything
-    needed to re-fetch a patch's exact cell grid (no server-side cache
-    needed, works even across a harness restart). Attached to every
-    find_patches/find_patches_clip hit so a caller (canvas_stamp) can
-    place the SAME real cells the caller saw rendered, not a
-    re-description of them. User direction, 2026-09-22: "find_patches
-    returns cell data (compact RLE text plus a patch_id) alongside the
-    image, so raze can study or stamp it.\""""
+    """Encode a patch's location as an opaque id.
+
+    Self-contained, so it survives restarts with no cache. canvas_stamp uses
+    it to place the exact cells a hit returned.
+    """
     payload = json.dumps([parent_path, int(row_offset), int(col_offset),
                            int(window_rows), int(window_cols)])
     import base64
@@ -83,12 +61,11 @@ def decode_patch_id(patch_id):
 
 
 def _load_patch_grids(parent_path, row_offset, col_offset, window_rows, window_cols):
-    """Slice the real (chars, fg, bg) arrays for one indexed window out
-    of its parent piece's parsed .npz. Returns None if the parent file
-    is missing or the window no longer fits (shouldn't happen -- the
-    index was built from the same parsed dir -- but checked, not
-    assumed, since a stale index against a re-parsed corpus is a real
-    failure mode)."""
+    """Slice (chars, fg, bg) for one window from its parent .npz.
+
+    Returns None if the file is missing or the window no longer fits
+    (stale index after a re-parse).
+    """
     npz_path = PARSED_DIR / parent_path
     if not npz_path.exists():
         return None
@@ -113,11 +90,11 @@ def find_patches_by_technique(
     sauce_group=None, sauce_year=None,
     n=5, db_path=None, seed=None,
 ):
-    """Direct technique-metric query, no model call. Every *_min/*_max
-    is optional (None = unconstrained). title_like/author_like are
-    SQL LIKE patterns matched against parent_meta (case-insensitive
-    substring match via '%term%' -- caller doesn't need to add the
-    wildcards themselves, done here)."""
+    """Query patches by technique metrics. No model call.
+
+    Every filter is optional. title_like/author_like are case-insensitive
+    substring matches against parent_meta; wildcards are added here.
+    """
     db_path = Path(db_path) if db_path else DB_PATH
     if not db_path.exists():
         raise FileNotFoundError(
@@ -160,11 +137,10 @@ def find_patches_by_technique(
 
     where_sql = (" WHERE " + " AND ".join(where)) if where else ""
     order_sql = "ORDER BY RANDOM()" if seed is None else "ORDER BY RANDOM()"
-    # sample a wider candidate pool than n, then take n, so results
-    # aren't always the same handful of extreme-metric windows
+    # Pull 4n random candidates; some may fail to load.
     sql = f"SELECT p.* FROM patches p{joins}{where_sql} {order_sql} LIMIT ?"
     if seed is not None:
-        conn.execute("SELECT 1")  # sqlite has no per-connection seed API; RANDOM() reseeds from urandom each call
+        conn.execute("SELECT 1")  # no-op: sqlite's RANDOM() can't be seeded
     rows = conn.execute(sql, params + [max(n * 4, n)]).fetchall()
     conn.close()
 
@@ -225,7 +201,7 @@ def _translate_description(description, timeout=60):
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         r = json.loads(resp.read())
     text = r.get("message", {}).get("content", "").strip()
-    # tolerate a model that wraps the JSON in ```json ... ``` or prose
+    # Tolerate JSON wrapped in a code fence or prose.
     start, end = text.find("{"), text.rfind("}")
     if start == -1 or end == -1:
         return {}
@@ -236,13 +212,11 @@ def _translate_description(description, timeout=60):
 
 
 def find_patches(description, n=5, db_path=None):
-    """Free-text retrieval: translate `description` into technique
-    filters via qwen3.8:27b-mlx, then delegate to
-    find_patches_by_technique. Falls back to an unfiltered random
-    sample (still real corpus data, just not description-matched) if
-    the model call fails or returns nothing usable -- retrieval should
-    degrade gracefully, not raise, since it's meant to be a cheap
-    always-available fallback path."""
+    """Free-text retrieval via the local model, then find_patches_by_technique.
+
+    Falls back to an unfiltered sample if translation fails, and drops the
+    keyword if it matches nothing. Does not raise on model errors.
+    """
     query = {}
     try:
         query = _translate_description(description)
@@ -260,8 +234,7 @@ def find_patches(description, n=5, db_path=None):
 
     hits = find_patches_by_technique(**kwargs)
     if not hits and keyword:
-        # keyword matched nothing -- retry without it rather than
-        # returning empty (degrade gracefully, per docstring above)
+        # Keyword matched nothing; retry without it.
         kwargs.pop("title_like", None)
         hits = find_patches_by_technique(**kwargs)
     return hits

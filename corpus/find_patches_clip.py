@@ -1,21 +1,10 @@
 #!/usr/bin/env python3
-"""corpus/find_patches_clip.py -- CLIP-embedding retrieval over
-corpus/clip_index/ (built by build_clip_index.py), replacing
-find_patches()'s title-keyword matching as the PRIMARY match (user
-direction, 2026-09-20: "Replace title matching with visual embeddings.
-... Query = CLIP text embedding -> nearest patches. Title keywords
-become an optional filter, not the primary match.").
+"""CLIP retrieval over corpus/clip_index/ (built by build_clip_index.py).
 
-find_patches.py's keyword-matching path only works when a real
-content-bearing SAUCE title happens to exist for a piece, which is
-true for a small minority of the corpus. This module embeds the QUERY
-TEXT with the same CLIP text tower used nowhere else in this pipeline
-(open_clip ViT-B-32, openai weights -- matching build_clip_index.py's
-image tower exactly, since CLIP's image/text embeddings are only
-comparable when both come from the same trained pair) and does a
-cosine-similarity nearest-neighbor search over the embedding matrix --
-this works for ANY query, not just ones that happen to match a title
-substring.
+Embeds the query with the CLIP text tower and ranks patches by cosine
+similarity. Works for any query, unlike title matching. The model must be
+the same one build_clip_index.py used (open_clip ViT-B-32, openai), or the
+embeddings aren't comparable.
 
 Usage as a library:
     from corpus.find_patches_clip import find_patches_clip
@@ -71,22 +60,21 @@ def embed_text(query):
 
 
 def find_patches_clip(query, n=5, index_dir=None, half_block_min=None, shade_min=None):
-    """CLIP nearest-neighbor retrieval. Loads the full embedding matrix
-    into memory each call (a few hundred MB for ~800K x 512 float32 --
-    acceptable for an interactive/tool-call use pattern, not a hot
-    loop) -- optional half_block_min/shade_min filter the candidate
-    pool by technique metric BEFORE ranking by similarity, for a
-    "shaded AND about X" combined query."""
+    """Nearest patches to `query`, one per source file.
+
+    Loads the whole embedding matrix each call; fine for tool calls, not a
+    hot loop. half_block_min/shade_min filter candidates before ranking.
+    """
     index_dir = Path(index_dir) if index_dir else CLIP_INDEX_DIR
     emb_path = index_dir / "embeddings.npy"
     meta_path = index_dir / "meta.db"
     if not emb_path.exists() or not meta_path.exists():
         raise FileNotFoundError(f"{index_dir} missing embeddings.npy/meta.db -- run corpus/build_clip_index.py first")
 
-    embeddings = np.load(emb_path)  # (N, 512), already L2-normalized by build_clip_index.py
-    q = embed_text(query)  # (512,), already L2-normalized
+    embeddings = np.load(emb_path)  # (N, 512), L2-normalized
+    q = embed_text(query)  # (512,), L2-normalized
 
-    scores = embeddings @ q  # cosine similarity since both sides are unit-norm
+    scores = embeddings @ q  # cosine similarity
 
     conn = sqlite3.connect(str(meta_path))
     conn.row_factory = sqlite3.Row
@@ -107,11 +95,8 @@ def find_patches_clip(query, n=5, index_dir=None, half_block_min=None, shade_min
         order = np.argsort(-scores)
 
     hits = []
-    # Overlapping windows from the SAME file land in adjacent rows and
-    # score near-identically, so a 3-result set routinely came back with
-    # the same patch two or three times -- measured 2026-09-23 across the
-    # 5-query grid, in both the full and filtered indexes. Dedupe by
-    # source file so n results mean n distinct references.
+    # Overlapping windows from one file score almost identically, so
+    # dedupe by source file to return n distinct references.
     seen_sources = set()
     for idx in order:
         if len(hits) >= n:

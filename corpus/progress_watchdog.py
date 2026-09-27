@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
-"""corpus/progress_watchdog.py -- if the training log doesn't advance
-for 10 minutes, capture a `sample <pid> 10` diagnostic and report
-(user direction, 2026-09-19: "don't kill on this one, just capture").
+"""Capture a `sample <pid>` stack trace when the training log stops growing.
 
-Distinct from mem_watchdog.py (which kills on a memory threshold
-breach): this one only watches for STALLED progress (log file mtime /
-content unchanged) regardless of memory, and never kills -- it exists
-to leave forensic evidence (a real stack sample) for a hang that
-ISN'T caused by the memory pattern mem_watchdog.py catches, so a
-future hang of unknown cause has something to diagnose from instead
-of just "it stopped."
+Never kills. Leaves evidence for hangs that mem_watchdog.py's memory
+thresholds don't explain.
 
 Usage:
     python3 corpus/progress_watchdog.py --pid 17159 --log corpus/training_run.log
@@ -75,11 +68,8 @@ def main():
                     sample_path.write_text(f"sample command failed: {e}")
                     print(f"Sample capture FAILED: {e}")
                 already_sampled_this_stall = True
-                # Reset the stall clock after sampling so a hang that's
-                # STILL going stall_minutes later triggers a fresh
-                # sample rather than going silent after the first one
-                # -- a permanent hang should leave periodic evidence,
-                # not just a single snapshot from minute 10.
+                # Reset the stall clock. already_sampled_this_stall stays
+                # set until the log grows, so each stall is sampled once.
                 last_change_time = time.time()
 
         time.sleep(args.check_interval)

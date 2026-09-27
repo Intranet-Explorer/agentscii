@@ -1,28 +1,16 @@
 #!/usr/bin/env python3
-"""Opus in BOTH seats: artist and curator, separate contexts.
+"""Opus as both artist and curator, in separate contexts. No local model.
 
-The pipeline test answered its question -- Opus plans well, the local
-model destroys the composition during execution (block-in read as "a
-lighthouse on rocks at night"; after four Qwen shifts the same piece
-read as "a lit street lamp over snow"). This removes the local model
-entirely and asks whether the strongest available model, judging
-itself blind, converges.
+The curator is a fresh `claude -p` that sees only the render and cell dump
+(harness.opus_curate_review / opus_subject_check), never the artist's notes.
 
-Isolation: the curator is a fresh `claude -p` with NO access to the
-artist's reasoning, spec, or notes -- only the render and the cell
-dump, via the existing calibrated gate (harness.opus_curate_review /
-opus_subject_check).
+Defect count does not predict the verdict. The signals recorded are:
+  1. whether the blind read names the intended subject
+  2. whether the review treats the subject as constructed or as a placeholder
 
-Success is NOT falling defect count. Calibration proved that does not
-predict the verdict: a 9-defect archive piece was ACCEPTed and a
-7-defect one REJECTed. The discriminator is whether a subject is
-CONSTRUCTED with defects around it, versus the defects being the
-piece. So the measured signals are:
-  1. does the blind read name the intended subject
-  2. does the reviewer's language treat it as constructed or as a
-     placeholder/stand-in
-
-Usage: python3 opus_duo.py plan|draw|round <slug>
+Usage: python3 opus_duo.py plan <slug> <task...>
+       python3 opus_duo.py gates <slug> <path> [queries...]
+       python3 opus_duo.py judge <slug> <path> [label]
 """
 import json
 import re
@@ -35,8 +23,8 @@ import harness  # noqa: E402
 WORKSPACE = harness.WORKSPACE
 LEDGER = Path("corpus/opus_duo_ledger.json")
 
-# Language the reviewer uses for the two sides of the real discriminator,
-# taken verbatim from the calibration run's accepts and rejects.
+# Reviewer phrasing for constructed vs placeholder, taken from
+# calibration-run accepts and rejects.
 CONSTRUCTED = re.compile(
     r"real constructed piece|it is constructed|constructed structure"
     r"|defects of a finished piece|polish gaps in a finished work"
@@ -70,9 +58,10 @@ def _spend(led, add):
 
 
 def artist(slug, task, extra=""):
-    """One artist turn. Fresh context each call -- it sees the task and
-    the files on disk, never the curator's internal reasoning beyond the
-    critique text it is explicitly handed."""
+    """Run one artist turn in a fresh context. Returns cost in USD or None.
+
+    The artist sees the task, `extra` and files on disk, never the curator's reasoning.
+    """
     style = (WORKSPACE / "STYLE.md").read_text()
     prompt = f"""You are the artist in AGENTSCII, making real ANSI/textmode
 art with the canvas_* tools. Work in Python from the repo root:
@@ -107,23 +96,21 @@ Render and LOOK at your work before you finish:
 
 
 def gates(path, queries):
-    """Run the SAME requirements submit_piece runs. opus_duo drew four
-    rounds with zero retrieval because it bypassed them entirely."""
+    """Run the same gates submit_piece runs. Returns True if they pass."""
     ok, report = harness.check_piece_gates(path, retrieval_queries=queries)
     print(("GATES PASS" if ok else "GATES BLOCKED") + "\n" + report)
     return ok
 
 
 def judge(path, label):
-    """Blind subject read + full defect review, both in fresh contexts
-    with no access to the artist's side."""
+    """Blind subject read plus full defect review, both in fresh contexts."""
     sub = harness.opus_subject_check(path)
     rev = harness.opus_curate_review(path, "accept",
                                      "Submitted for review. Assess on its own merits.")
     text = rev.get("opus_reasoning") or rev.get("message") or ""
     verdict = rev.get("opus_verdict")
-    # A shelved/blocked review returns no verdict. Say so loudly instead of
-    # reporting defect_lines 0, which reads as a clean sheet.
+    # A blocked review has no verdict. Report that rather than
+    # defect_lines 0, which would read as a clean sheet.
     if verdict is None:
         print(json.dumps({"label": label, "path": str(path),
                           "REVIEW_DID_NOT_RUN": rev.get("status") or "no verdict",

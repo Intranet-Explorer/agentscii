@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-"""corpus/eval_harness.py -- FIM eval harness, run BEFORE any training
-so "better" has a real baseline (user direction, 2026-09-19): from the
-FROZEN HOLDOUT (never seen by windowing.py's selection, never to be
-trained on), mask a region, have a model fill it, render, score
-half_block_pct/shade_pct on the filled region, plus a blind pairwise
-Opus check against the real ground-truth original.
+"""Fill-in-the-middle eval on the frozen holdout.
 
-Run against the UNTRAINED base model first to establish what "better"
-means before any fine-tuning exists to compare against.
+Masks a region, has a model fill it, scores half_block_pct/shade_pct and
+copy detection on the fill, and optionally runs a blind pairwise judgment
+against the original. Run on the untrained base model first for a baseline.
 
 Usage:
     python3 corpus/eval_harness.py --model qwen3.8:27b-mlx --n 30
@@ -39,11 +35,11 @@ _RUN_RE = re.compile(r"(\d+),([0-9a-f]{2}):(.*?)(?=\s\d+,[0-9a-f]{2}:|\s\[MASK|$
 
 
 def decode_rle_row(body, width):
-    """Reverse of rle_encode_row: 'col,fgbg:glyphs col,fgbg:glyphs...'
-    -> a width-length list of (char, fg, bg), true-background elsewhere.
-    Real inverse of windowing.py's encoder, built and tested against
-    real encoder output (round-tripped) before trusting it on model
-    output, which will be noisier/possibly malformed."""
+    """Inverse of windowing.rle_encode_row.
+
+    Parses 'col,fgbg:glyphs ...' into a width-length list of (char, fg, bg);
+    unlisted cells are true background.
+    """
     row = [(" ", 7, 0)] * width
     for m in _RUN_RE.finditer(body):
         col = int(m.group(1))
@@ -58,19 +54,15 @@ def decode_rle_row(body, width):
 
 
 def decode_window_text(text, height, width):
-    """Reverse of encode_window -- parses 'rNN <body>' lines back into
-    (height, width) char/fg/bg arrays. Lines for rows with no content
-    are left as true background (never emitted by the encoder, so
-    absence is unambiguous)."""
+    """Inverse of encode_window: 'rNN <body>' lines to (height, width) char/fg/bg arrays.
+
+    Missing rows are true background.
+    """
     chars = np.full((height, width), 0x20, dtype=np.uint32)
     fg = np.full((height, width), 7, dtype=np.uint8)
     bg = np.zeros((height, width), dtype=np.uint8)
     for line in text.splitlines():
-        # lstrip only -- a plain rstrip()/strip() would silently drop
-        # a trailing literal SPACE glyph run (e.g. a colored-space cell
-        # at the very end of a row, a real and valid case), found live
-        # via the round-trip self-test failing on exactly this case
-        # before it was ever trusted on real model output.
+        # lstrip only: rstrip would drop a trailing run of coloured spaces.
         line = line.lstrip()
         m = re.match(r"^r(\d+)\s+(.*)$", line)
         if not m:
@@ -88,25 +80,21 @@ def decode_window_text(text, height, width):
 
 
 def _round_trip_self_test():
-    """Encode a real random grid, decode it, and confirm an EXACT
-    match before trusting either function on model output. This is a
-    hard requirement, not a nice-to-have: if the encoder/decoder don't
-    round-trip on the encoder's OWN output, no eval score computed
-    downstream means anything."""
+    """Encode and decode a random grid; True if visible cells match exactly.
+
+    Scores are meaningless if this fails.
+    """
     rng = np.random.default_rng(0)
     h, wd = w.WINDOW_ROWS, w.WINDOW_COLS
     chars = rng.choice([0x20, 0x2580, 0x2584, 0x2591, ord("X"), ord("#")], size=(h, wd))
     fg = rng.integers(0, 16, size=(h, wd), dtype=np.uint8)
     bg = rng.integers(0, 16, size=(h, wd), dtype=np.uint8)
-    # true-background cells must actually be (space, bg=0) for a fair
-    # round-trip test, matching the encoder's own omission rule
+    # Make some cells true background (space, bg=0), which the encoder omits.
     is_bg = (chars == 0x20) & (rng.random((h, wd)) < 0.3)
     bg = np.where(is_bg, 0, bg)
     text = w.encode_window(chars, fg, bg)
     d_chars, d_fg, d_bg = decode_window_text(text, h, wd)
-    # only compare cells the encoder actually emitted (true-background
-    # cells with fg!=7 are lossy by design -- the encoder never records
-    # fg for omitted background cells, since it's invisible)
+    # Compare emitted cells only; omitted background cells don't keep fg.
     visible_mask = ~((chars == 0x20) & (bg == 0))
     chars_match = np.array_equal(chars[visible_mask], d_chars[visible_mask])
     fg_match = np.array_equal(fg[visible_mask], d_fg[visible_mask])
@@ -115,27 +103,12 @@ def _round_trip_self_test():
 
 
 def call_ollama_fill(model, prompt, timeout=180, num_predict=800):
-    """Real, load-bearing fix found live via two separate bugs, in
-    order:
-    1. The first version omitted harness.py's own documented SAMPLING
-       settings and had no num_predict cap -- a single call ran 10+
-       minutes / 7,054 decode iterations (per Ollama's server.log) for
-       what should be a short structured answer.
-    2. After adding num_predict=800, the reply came back EMPTY with
-       done_reason="length" -- inspecting the raw Ollama response
-       directly (not just the parsed content field) revealed a
-       separate "thinking" field containing a full chain-of-thought
-       reasoning trace that consumed the entire num_predict budget
-       before the model ever got to write real content. qwen3.8:27b
-       is a Qwen3-family reasoning model; harness.py's SAMPLING
-       comment calling it "non-thinking mode" describes sampling
-       PARAMETERS, not an actual thinking-mode switch -- confirmed via
-       a direct curl test that Ollama's chat API has a separate
-       top-level "think": false field that actually disables it.
-    num_predict=800 is kept as a hard ceiling regardless (roughly 2.5x
-    the real p90 target-token count from token_stats.py) so a single
-    bad/repetitive generation still can't consume the whole eval run's
-    time budget even with thinking correctly disabled."""
+    """Ask an Ollama model to fill the mask. Returns the reply text.
+
+    "think": False is required: Qwen3 models otherwise spend the whole
+    num_predict budget on a hidden reasoning trace and return empty content.
+    num_predict caps a runaway generation (about 2.5x the p90 target length).
+    """
     payload = json.dumps({
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
@@ -152,24 +125,10 @@ def call_ollama_fill(model, prompt, timeout=180, num_predict=800):
 
 
 def build_eval_prompt(d, rel_path, c_win, f_win, b_win, context_text, mask_box):
-    """Build the eval prompt using training's OWN build_prompt() (user
-    direction, 2026-09-20: 'make_eval_prompt() should use training's
-    build_prompt() so the model is scored on the shape it trained on').
+    """Build the eval prompt with training's build_prompt(), so eval matches the training format.
 
-    Replaces the old make_eval_prompt(), which used a different,
-    untrimmed prose format than what prepare_training_data.py actually
-    trained on -- a trained checkpoint would have been evaluated on a
-    prompt shape it never saw during training, which could show up as
-    a real score difference attributable to the format mismatch, not
-    the model's learned capability.
-
-    Reconstructs the exact same conditioning fields windowing.py
-    computes for a training example, from the SAME npz-loaded piece
-    data eval already has in hand -- sauce_group/sauce_year via the
-    identical extraction windowing.py's main() uses, and
-    half_block_pct/shade_pct/shade_bucket via window_technique_metrics
-    on the WHOLE WINDOW (matching windowing.py's own per-window,
-    pre-mask computation -- NOT on the masked target alone).
+    Conditioning fields are computed as windowing.py does: SAUCE group/year
+    from the piece, technique metrics over the whole window before masking.
     """
     sauce_group = d["sauce_group"].item().decode("utf-8", "replace") if d["sauce_group"].size else ""
     sauce_date = d["sauce_date"].item().decode("utf-8", "replace") if d["sauce_date"].size else ""
@@ -185,15 +144,7 @@ def build_eval_prompt(d, rel_path, c_win, f_win, b_win, context_text, mask_box):
 
 
 def make_eval_prompt(context_text, mask_h, mask_w):
-    """DEPRECATED (2026-09-20): the old, untrimmed-prose eval prompt --
-    a different shape than what training actually used
-    (prepare_training_data.build_prompt()). Kept only so old code
-    calling this directly still runs; both real call sites in this
-    file and checkpoint_eval.py now use build_eval_prompt() instead,
-    which matches training's format exactly. Do not use this for new
-    eval runs -- it will score the model on an out-of-distribution
-    prompt shape and produce numbers that aren't comparable to
-    anything trained with build_prompt()."""
+    """Deprecated. Old prose prompt that doesn't match the training format. Use build_eval_prompt()."""
     return (
         "Below is a window of ANSI/textmode art, run-length encoded. "
         "Each line is 'r{row} col,FB:glyphs col,FB:glyphs ...' where F "
@@ -213,14 +164,11 @@ def make_eval_prompt(context_text, mask_h, mask_w):
 
 
 def render_grid_to_png(chars, fg, bg, out_path):
-    """Reuse harness.py's own cell-grid rasterizer by writing a
-    synthetic .ans-equivalent SGR stream and calling its renderer --
-    avoids reimplementing palette/font logic a third time. Wrapped in
-    try/except: model-generated grids are untrusted input and CAN
-    trigger a real PIL/rasterizer crash on malformed content (found
-    live: 'tile cannot extend outside image', a genuine PIL error on
-    some transient bad model output during a real eval run) -- a
-    single bad generation must not kill the whole eval batch."""
+    """Render a cell grid to PNG via harness.render_ans_to_png_b64. Returns True on success.
+
+    Model output can crash PIL, so any exception returns False instead of
+    killing the batch.
+    """
     try:
         lines = []
         for r in range(chars.shape[0]):
@@ -248,31 +196,15 @@ def render_grid_to_png(chars, fg, bg, out_path):
 
 def copy_detection_score(model_chars, model_fg, model_bg,
                           full_chars, full_fg, full_bg, top, left, mask_h, mask_w):
-    """User direction, 2026-09-19: 'how often the filled region
-    duplicates adjacent rows/columns from context.' A cheap, common
-    failure mode for a small/undertrained FIM model is literally
-    copying the nearest real row or column outward into the hole
-    instead of constructing new content -- this catches that directly,
-    rather than only via the (noisier, more expensive) blind pairwise
-    Opus judgment.
+    """Measure how much the fill copies its neighbouring context rows/columns.
 
-    Returns two numbers:
-    - exact_match_frac: fraction of the mask's edge rows/columns (up
-      to 4 checkable: row above, row below, col left, col right) that
-      are an EXACT full duplicate of their nearest real neighbor.
-    - cell_overlap_frac: a softer, continuous signal -- mean fraction
-      of individual cells (char,fg,bg all matching) between each edge
-      row/column and its neighbor, averaged over all checkable edges.
-      Included because exact-full-row equality is a blunt binary
-      signal that a model copying MOST but not all of a row (a
-      partial-copy failure mode, still real duplication) would score
-      0 on -- cell_overlap_frac catches the partial case exact_match
-      misses.
-
-    Cell equality is the full (char, fg, bg) triple -- a row that
-    happens to share glyphs but different colors with its neighbor is
-    NOT counted as copied, since that's a real (if suspicious)
-    coincidence, not literal duplication."""
+    Returns (exact_match_frac, cell_overlap_frac):
+      exact_match_frac: share of the fill's edge rows/columns (up to 4) that
+                        exactly duplicate the adjacent context row/column.
+      cell_overlap_frac: mean share of matching cells per edge; catches
+                         partial copies.
+    A cell matches only if char, fg and bg all match.
+    """
     h, wd = full_chars.shape
 
     def _row_pair(r):
@@ -309,8 +241,7 @@ def copy_detection_score(model_chars, model_fg, model_bg,
 
 
 def opus_pairwise_eval(model_png, truth_png):
-    """Blind pairwise: which region reads better, model's fill or the
-    real ground truth -- randomized A/B, no labels beyond A/B."""
+    """Blind pairwise judgment of the model fill vs ground truth, randomized A/B."""
     import random
     from PIL import Image, ImageDraw, ImageFont
 
@@ -452,13 +383,8 @@ def main():
         copy_exact, copy_overlap = copy_detection_score(
             model_chars, model_fg, model_bg, c_win, f_win, b_win, top, left, mask_h, mask_w
         )
-        # same check against the REAL ground-truth fill, as a baseline
-        # for how much "duplication" is normal in real art (a genuine
-        # repeating pattern -- a brick wall, a fence -- legitimately
-        # duplicates its neighbor row/column; copy_detection_score
-        # can't distinguish that from a lazy model copy on its own,
-        # so the ground-truth rate is the honest reference point for
-        # "how much of this is just real repeating texture").
+        # Same check on the ground truth. Repeating textures copy
+        # legitimately, so this is the baseline.
         truth_copy_exact, truth_copy_overlap = copy_detection_score(
             truth_chars, truth_fg, truth_bg, c_win, f_win, b_win, top, left, mask_h, mask_w
         )

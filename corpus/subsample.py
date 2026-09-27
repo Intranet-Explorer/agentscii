@@ -1,19 +1,9 @@
 #!/usr/bin/env python3
-"""corpus/subsample.py -- stratified subsample to ~40k training
-examples for the v1 run (user direction, 2026-09-19), keeping the p90
-("high") shading tier over-represented relative to the full window
-population (which is ALREADY oversampled 3x at the piece-selection
-stage in windowing.py -- this subsample step further concentrates it,
-it doesn't undo or replace that earlier oversampling).
+"""Stratified subsample of windows.jsonl to about 40k training examples.
 
-Strategy: since windowing.py already oversampled p90-tier PIECES 3x
-before windowing, the resulting windows.jsonl already has ~2x more
-"high"-bucket windows than "mid" (787,772 vs 381,342 in the full
-1,324,191-window set) -- this step samples a FIXED, EXPLICIT target
-ratio (default 50% high / 35% mid / 15% low) out of that pool, rather
-than just taking a uniform random 40k slice (which would already skew
-high-heavy from the earlier oversampling, but not to a controlled,
-reported ratio).
+Samples a fixed ratio by shade bucket (default 50% high, 35% mid, 15% low).
+windowing.py already oversamples high-tier pieces; this sets the final
+ratio explicitly.
 
 Usage:
     python3 corpus/subsample.py [--windows corpus/windows.jsonl]
@@ -41,11 +31,8 @@ def main():
 
     assert abs(args.high_frac + args.mid_frac + args.low_frac - 1.0) < 1e-6, "fractions must sum to 1.0"
 
-    # Reservoir-style bucket pass: read the file ONCE (1.3M lines is
-    # too large to hold every line in memory as parsed JSON), tracking
-    # byte offsets per bucket, then a second pass seeks to the sampled
-    # offsets -- avoids loading the whole 1.3M-line file into memory
-    # twice or holding it all as Python objects at once.
+    # First pass records byte offsets per bucket; second pass copies the
+    # chosen lines. Avoids holding the whole file as parsed JSON.
     offsets = {"high": [], "mid": [], "low": []}
     with open(args.windows, "rb") as f:
         offset = f.tell()

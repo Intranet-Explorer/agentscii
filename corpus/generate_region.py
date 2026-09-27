@@ -1,25 +1,9 @@
 #!/usr/bin/env python3
-"""corpus/generate_region.py -- take a real existing piece, mask a
-region, fill it with a trained LoRA checkpoint, splice the fill back
-into the original, and render. User direction (2026-09-20): "stop the
-training track regardless of outcome and build generate_region: take
-an existing piece, mask a region, call the best adapter, splice the
-fill back in, render. Test standalone on 3-4 real pieces. That answers
-whether any of this improves art, which no holdout metric can."
+"""Mask a region of a real piece, fill it with a LoRA checkpoint, splice, and render.
 
-This is deliberately NOT another holdout-metric script -- it produces
-one concrete, inspectable artifact per piece: a real .ans file (the
-original piece with the model's fill spliced in, everything else
-byte-identical to the source) plus a rendered PNG, so the actual
-visual result can be judged directly instead of through half_block_pct
-averages.
-
-Reuses the exact same mask/prompt/generate/decode pipeline as
-checkpoint_eval.py (make_fitm_example, build_eval_prompt,
-decode_window_text) so a "how does the real fill look" question and
-"what does checkpoint_eval.py measure" are answered by literally the
-same code path, not a second reimplementation that could silently
-diverge.
+Output per piece: the original with the fill spliced in (.ans and .png)
+plus the untouched original, for visual comparison. Uses the same prompt
+and decode path as checkpoint_eval.py.
 
 Usage:
     python3 corpus/generate_region.py --adapter-path /tmp/ckpt_dirs/iter200 \\
@@ -32,6 +16,7 @@ Usage:
 """
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -47,10 +32,7 @@ import eval_harness as eh
 
 
 def _write_ans(chars, fg, bg, out_path):
-    """Real standalone .ans, full SGR stream -- same encoding
-    eval_harness.render_grid_to_png uses internally for its own
-    intermediate file, but written out here as the actual deliverable,
-    not thrown away after rendering."""
+    """Write cell arrays as a UTF-8 .ans, same encoding as eval_harness.render_grid_to_png."""
     lines = []
     for r in range(chars.shape[0]):
         parts = []
@@ -72,18 +54,11 @@ def generate_region(
     model, tokenizer, piece_npz_path, out_dir, label,
     row0=None, col0=None, mask_h=8, mask_w=14, seed=1,
 ):
-    """Mask one region of `piece_npz_path`, fill it with the given
-    loaded (model, tokenizer), splice the fill back into a COPY of the
-    full original piece (not just the window -- the deliverable is the
-    whole piece with a real hole patched, matching what an actual
-    curation workflow would produce), write the spliced .ans + PNG,
-    and the untouched original's .ans + PNG for direct comparison.
+    """Fill one masked region and splice it into a copy of the whole piece.
 
-    Returns a dict with paths and technique metrics -- no holdout
-    ground truth here (this is a REAL piece being edited, not a
-    holdout FIM example with a known-correct answer), so there's
-    nothing to score against; that's the point per the user's framing
-    ('no holdout metric can' answer whether this improves art)."""
+    Writes spliced and original .ans/.png. Returns paths and technique
+    metrics; there is no ground truth to score against.
+    """
     d = np.load(piece_npz_path)
     chars_full, fg_full, bg_full = d["chars"], d["fg"], d["bg"]
     n_rows, n_cols = chars_full.shape
@@ -97,11 +72,8 @@ def generate_region(
     if col0 is None:
         col0 = rng.randint(0, n_cols - mask_w)
 
-    # Use a WINDOW_ROWS x WINDOW_COLS conditioning window around the
-    # mask (same shape the model trained on) rather than the whole
-    # piece as context -- matches training's actual input distribution.
-    # If the piece is bigger than one window, clip the window to fit
-    # around the chosen mask position.
+    # Context is one training-sized window around the mask, clamped to
+    # the piece, to match the training input.
     win_r0 = max(0, min(row0 - (w.WINDOW_ROWS - mask_h) // 2, n_rows - w.WINDOW_ROWS))
     win_c0 = max(0, min(col0 - (w.WINDOW_COLS - mask_w) // 2, n_cols - w.WINDOW_COLS))
     win_r0, win_c0 = max(0, win_r0), max(0, win_c0)
@@ -114,14 +86,8 @@ def generate_region(
 
     top, left = row0 - win_r0, col0 - win_c0
 
-    # Reuse make_fitm_example's exact RLE/[MASK] context format, but
-    # at a FIXED position (top, left) rather than a random one -- it
-    # doesn't expose a fixed-position API directly, so the mask
-    # rectangle is carved out manually here using the same row-based
-    # RLE encoding windowing.py uses, then context_text is built the
-    # same way make_fitm_example does internally (mirrors its logic
-    # exactly, kept in sync deliberately rather than hacking around a
-    # random-position-only function).
+    # Same context format as make_fitm_example, but at a fixed mask
+    # position, which that function doesn't support. Keep the two in sync.
     lines = []
     for r in range(w.WINDOW_ROWS):
         row_chars = [chr(cp) for cp in c_win[r].tolist()]
@@ -155,7 +121,7 @@ def generate_region(
     model_chars, model_fg, model_bg = eh.decode_window_text(raw_reply, mask_h, mask_w)
     model_half, model_shade = w.window_technique_metrics(model_chars, model_fg, model_bg)
 
-    # splice into a COPY of the FULL original piece (not just the window)
+    # Splice into a copy of the whole piece.
     spliced_chars = chars_full.copy()
     spliced_fg = fg_full.copy()
     spliced_bg = bg_full.copy()
@@ -187,7 +153,7 @@ def generate_region(
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--base-model", default="/Users/octo/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c")
+    ap.add_argument("--base-model", default=os.path.expanduser("~/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c"))
     ap.add_argument("--adapter-path", default=None, help="omit for the untrained base model")
     ap.add_argument("--piece", action="append", required=True, help="relative path under corpus/parsed, repeatable for multiple pieces")
     ap.add_argument("--parsed-dir", default=str(CORPUS_DIR / "parsed"))

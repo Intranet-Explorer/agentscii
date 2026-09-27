@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
-"""corpus/checkpoint_eval.py -- evaluate one LoRA checkpoint against
-the frozen holdout, using the SAME hardened eval methodology as
-eval_harness.py (mask+fill+score+copy-detection), but running
-inference directly via mlx_lm (base model + adapter checkpoint)
-instead of Ollama, and rendering real PNG samples for every checkpoint
-(user direction, 2026-09-19: "render samples at every checkpoint and
-keep them -- I want to see them as images, not just metrics").
+"""Evaluate one LoRA checkpoint against the frozen holdout.
 
-A FIXED set of holdout examples (same seed every call) is used across
-ALL checkpoints, so metrics and renders are directly comparable
-checkpoint to checkpoint -- not just comparable to the untrained
-baseline once.
+Same mask/fill/score/copy-detection method as eval_harness.py, but runs
+inference through mlx_lm (base model plus adapter) and saves PNG renders
+for every example. The seed fixes the examples and mask positions, so
+results compare directly across checkpoints.
 
 Usage:
     python3 corpus/checkpoint_eval.py --adapter-path corpus/lora_adapters/0000500_adapters.safetensors --n 15 --checkpoint-label iter500
@@ -18,6 +12,7 @@ Usage:
 """
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -32,7 +27,7 @@ import harness
 import windowing as w
 import eval_harness as eh
 
-BASE_MODEL = "/Users/octo/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c"
+BASE_MODEL = os.path.expanduser("~/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c")
 
 
 def generate_fill_mlx(model, tokenizer, prompt, max_tokens=800):
@@ -90,25 +85,8 @@ def main():
         chars_full, fg_full, bg_full = d["chars"], d["fg"], d["bg"]
         if chars_full.shape[0] < w.WINDOW_ROWS or chars_full.shape[1] < w.WINDOW_COLS:
             continue
-        # re-seed a LOCAL rng per example so mask position is identical
-        # across checkpoints for the SAME example (the shared `rng`
-        # above is only used to pick WHICH examples, consumed once;
-        # per-example mask placement uses its own derived seed so it's
-        # reproducible independent of how many examples were skipped
-        # before it in the candidate list)
-        # hash(rel) is Python's built-in str hash, randomized per-process
-        # by default (PYTHONHASHSEED) -- this made mask position differ
-        # across SEPARATE PROCESS INVOCATIONS even for the identical
-        # (rel, seed) pair, silently breaking the "same examples, same
-        # mask position, directly comparable checkpoint to checkpoint"
-        # claim this script's own docstring makes. Found live comparing
-        # iter200 vs iter500 results.json: same 15 piece paths (that part
-        # IS controlled by the outer `rng.sample(..., seed=args.seed)`
-        # above, which only picks WHICH pieces) but different (row0,
-        # col0) mask positions for 4/15 of them across the two runs --
-        # each checkpoint eval was silently scoring a DIFFERENT actual
-        # reconstruction task on those pieces, not the same one.
-        # hashlib.md5 is stable across runs/processes -- use that.
+        # Per-example rng seeded from md5(rel) so window and mask position
+        # are the same in every run. Built-in hash() is randomized per process.
         import hashlib
         local_seed = int(hashlib.md5(rel.encode()).hexdigest()[:8], 16)
         local_rng = random.Random(local_seed)
@@ -141,9 +119,7 @@ def main():
             model_chars, model_fg, model_bg, c_win, f_win, b_win, top, left, mask_h, mask_w
         )
 
-        # Render the FULL window with the model's fill spliced in, for
-        # a real, inspectable image -- not just the isolated patch --
-        # so a human can see the fill in its actual context.
+        # Render the full window with the fill spliced in, for viewing in context.
         full_with_fill_chars = c_win.copy()
         full_with_fill_fg = f_win.copy()
         full_with_fill_bg = b_win.copy()
@@ -166,13 +142,8 @@ def main():
         }
 
         if args.opus_pairwise:
-            # Isolated-PATCH pairwise (matches eval_harness.py's own
-            # methodology exactly, NOT the full-window render used
-            # above) -- the full-window PNG is for human inspection,
-            # the isolated patch is what Opus judges, same as the
-            # hardened baseline, so pairwise win rates are directly
-            # comparable checkpoint to checkpoint and against the
-            # baseline.
+            # The judge sees the isolated patch, as in eval_harness.py, so
+            # win rates compare with the baseline. The full window is for viewing.
             patch_model_png = out_dir / f"{n_done:03d}_{Path(rel).stem}_patch_model.png"
             patch_truth_png = out_dir / f"{n_done:03d}_{Path(rel).stem}_patch_truth.png"
             ok_m = eh.render_grid_to_png(model_chars, model_fg, model_bg, patch_model_png)
@@ -213,7 +184,7 @@ def main():
             summary["pairwise_ties"] = pairwise_ok.count("tie")
             summary["pairwise_n_judged"] = len(pairwise_ok)
         print(json.dumps(summary, indent=2))
-        # append to a running cross-checkpoint summary log
+        # Running cross-checkpoint summary.
         summary_log = Path(args.out_dir) / "checkpoint_summary.jsonl"
         with open(summary_log, "a") as f:
             f.write(json.dumps(summary) + "\n")

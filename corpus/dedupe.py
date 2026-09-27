@@ -1,24 +1,18 @@
 #!/usr/bin/env python3
 """Deduplicate the parsed corpus by content hash.
 
-The same piece frequently appears in more than one pack (re-releases,
-"best of" compilations, an artist's own pack plus a group pack that
-includes it, etc). This hashes each parsed piece's actual cell content
-(chars + fg + bg grids -- NOT the source path or SAUCE metadata, which
-can differ between two copies of the identical artwork) and reports
-which parsed files are exact duplicates of another.
+The same piece often appears in several packs (re-releases, compilations).
+Hashes cell content only (chars, fg, bg), not path or SAUCE, and reports
+exact duplicates.
 
 Usage:
     python3 corpus/dedupe.py [--parsed-dir corpus/parsed] [--report corpus/dedupe_report.json]
 
 Writes a report with:
   - total parsed files
-  - unique content hashes (the real distinct-piece count)
-  - duplicate groups (hash -> list of paths sharing that hash)
-  - a canonical/duplicate split so downstream steps can pick one
-    representative path per hash (canonical = shortest path, i.e.
-    prefer the file in the "primary" pack over a copy nested in a
-    compilation, then alphabetical as a tiebreak for determinism)
+  - unique content hashes
+  - duplicate groups (hash -> paths)
+  - one canonical path per hash (shortest, then alphabetical)
 """
 import argparse
 import hashlib
@@ -32,10 +26,7 @@ CORPUS_DIR = Path(__file__).resolve().parent
 
 
 def content_hash(npz_path):
-    """Hash the actual visual content of a parsed piece: chars+fg+bg
-    grids only. Source path and SAUCE metadata are deliberately
-    excluded -- two exact re-releases of the same artwork under a
-    different filename/author-comment must hash identically."""
+    """SHA-256 of a parsed piece's chars, fg and bg grids. Path and SAUCE are excluded."""
     d = np.load(npz_path)
     h = hashlib.sha256()
     h.update(d["chars"].tobytes())
@@ -78,8 +69,7 @@ def main():
     canonical = {}
     duplicates = {}
     for h, paths in hash_to_paths.items():
-        # canonical: shortest path (prefer being in a "primary" pack over
-        # a deep compilation), alphabetical as a deterministic tiebreak
+        # Shortest path favours the original pack over a nested compilation.
         chosen = sorted(paths, key=lambda p: (len(p), p))[0]
         canonical[h] = chosen
         for p in paths:

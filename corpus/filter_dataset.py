@@ -1,35 +1,22 @@
 #!/usr/bin/env python3
-"""corpus/filter_dataset.py -- drop pathological examples from
-train_subsample.jsonl and rebuild the training data (user direction,
-2026-09-20, task 2): "Drop all over-cap, empty-target, and
-single-glyph examples. Rebuild the dataset; report new counts."
+"""Drop pathological examples from train_subsample.jsonl.
 
-Three drop conditions, checked in this order (an example counts once,
-under whichever condition it hits first):
-  1. empty_target       -- target.strip() == ""
-  2. single_glyph_target -- target is one repeated (char,color) run
-     (same regex-based check as scan_pathologies.py's raw-text scan,
-     kept identical so the two reports are directly comparable)
-  3. over_cap           -- REAL tokenized length (via
-     prepare_training_data.build_prompt + tokenizer.apply_chat_template
-     on the full {"messages": [user, assistant]} pair, the exact same
-     path mlx_lm's ChatDataset.process uses and the exact same path
-     scan_pathologies.py's tokenized_scan measured) exceeds
-     max_seq_length. This is NOT a token-count estimate -- it's the
-     real tokenizer, so a kept example is guaranteed to fit.
+Drop conditions, first match wins:
+  1. empty_target: target is blank
+  2. single_glyph_target: target is one repeated run (same check as
+     scan_pathologies.py)
+  3. over_cap: tokenized chat length exceeds max_seq_length, measured
+     with the real tokenizer the way mlx_lm's ChatDataset does
 
-Writes the filtered set back to --subsample-out (default: overwrites
-train_subsample.jsonl, after saving the untouched original to
-train_subsample_pre_filter.jsonl.bak), then re-runs
-prepare_training_data.main()-equivalent logic is left to the caller
-(run prepare_training_data.py separately) so this script does exactly
-one job.
+Backs up the original to train_subsample_pre_filter.jsonl.bak, then
+overwrites --subsample-out. Run prepare_training_data.py afterwards.
 
 Usage:
     python3 corpus/filter_dataset.py
 """
 import argparse
 import json
+import os
 import re
 import shutil
 import sys
@@ -55,7 +42,7 @@ def main():
     ap.add_argument("--subsample-out", default=str(CORPUS_DIR / "train_subsample.jsonl"))
     ap.add_argument("--backup", default=str(CORPUS_DIR / "train_subsample_pre_filter.jsonl.bak"))
     ap.add_argument("--max-seq-length", type=int, default=4096)
-    ap.add_argument("--model", default="/Users/octo/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c")
+    ap.add_argument("--model", default=os.path.expanduser("~/.cache/huggingface/hub/models--mlx-community--Mistral-Nemo-Instruct-2407-4bit/snapshots/647ca0751669b21a364c86ccc5df54c4d7e4e91c"))
     ap.add_argument("--report", default=str(CORPUS_DIR / "filter_report.json"))
     args = ap.parse_args()
 
@@ -66,7 +53,7 @@ def main():
     else:
         print(f"Backup already exists at {args.backup}, not overwriting it.")
 
-    sys.path.insert(0, "/Users/octo/Library/Python/3.9/lib/python/site-packages")
+    sys.path.insert(0, os.path.expanduser("~/Library/Python/3.9/lib/python/site-packages"))
     from mlx_lm.utils import load
     print("Loading tokenizer (loads full model weights too)...")
     _, tokenizer = load(args.model)

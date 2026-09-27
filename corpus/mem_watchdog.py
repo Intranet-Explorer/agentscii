@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
-"""corpus/mem_watchdog.py -- kill-switch watchdog for the LoRA training
-run (user direction, 2026-09-19, "rule 3... the one that prevents
-another lockup"): poll every 15s; if swap used > 1GB or system free
-memory < 4GB, kill the training pid and record the last logged
-iteration to a file.
+"""Kill the training process before memory pressure locks up the machine.
 
-This is a HARD safety net against the exact Metal OOM crash pattern
-seen repeatedly while tuning this training run (val_batches=25 +
-batch_size=2 both individually crashed with "Insufficient Memory") --
-kills the process BEFORE the OS/Metal driver gets into the "stuck"
-state that required manual intervention to recover from last time,
-rather than waiting for an actual crash.
+Polls every 15s. If swap used > 1GB or available memory < 4GB, sends
+SIGKILL and writes a report with the last logged iteration. Metal OOM can
+leave the machine stuck, so this acts before the crash.
 
 Usage:
     python3 corpus/mem_watchdog.py --pid 17159 --log corpus/training_run.log
@@ -34,22 +27,11 @@ def get_swap_used_mb():
 
 
 def get_free_mem_mb():
-    """macOS-appropriate 'available' memory estimate.
+    """Available memory in MB on macOS: free + inactive + speculative + purgeable pages.
 
-    Real bug found and fixed before ever trusting this: raw 'Pages
-    free' from vm_stat massively UNDERCOUNTS real available memory on
-    macOS, since the OS deliberately keeps free RAM low by using it
-    for reclaimable disk/file cache (inactive pages) rather than
-    leaving it idle -- confirmed directly: 'Pages free' alone measured
-    ~807MB on this machine at a moment when the system was genuinely
-    healthy (memory_pressure reported 15% free, ~5.6GB reclaimable),
-    which would have caused this watchdog to fire an immediate false-
-    positive kill the moment it started, before the training run ever
-    got anywhere near real memory pressure. Fixed to sum free +
-    inactive + speculative + purgeable pages (all reclaimable near-
-    instantly without swapping), matching what `top`'s PhysMem
-    'unused' and `memory_pressure`'s free-percentage actually reflect,
-    rather than the raw (and misleading) 'Pages free' alone."""
+    'Pages free' alone badly undercounts, since macOS fills idle RAM with
+    reclaimable cache.
+    """
     out = subprocess.run(["vm_stat"], capture_output=True, text=True).stdout
     m = re.search(r"page size of (\d+) bytes", out)
     page_size = int(m.group(1)) if m else 16384
@@ -78,12 +60,7 @@ def last_logged_iteration(log_path):
 
 
 def pid_alive(pid):
-    """kill -0 alone is NOT sufficient -- found live: a zombie process
-    (parent hasn't reaped it yet, e.g. train_launch.py after sys.exit
-    on the NaN halt) still answers kill -0 successfully even though
-    its real work is done, which left this watchdog running
-    indefinitely watching a dead process. Checks the process STATE via
-    `ps` and treats 'Z' (zombie) the same as not-alive."""
+    """True if pid exists and is not a zombie. kill -0 alone succeeds on zombies."""
     try:
         subprocess.run(["kill", "-0", str(pid)], check=True, capture_output=True)
     except subprocess.CalledProcessError:

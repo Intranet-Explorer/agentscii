@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""corpus/patch_meta.py -- add a parent_meta table (SAUCE title/author/
-group/year per unique parsed piece) to patch_index.db, for
-find_patches()'s text-match path. Scans corpus/parsed directly (86,093
-files) rather than corpus/windows.jsonl (1.26M rows, no title/author
-field) since SAUCE title/author isn't carried through windowing.
+"""Add a parent_meta table (SAUCE title, author, group, date per piece) to patch_index.db.
+
+Used by find_patches() title/author matching. Reads corpus/parsed, since
+windows.jsonl doesn't carry title or author.
 
 Usage:
     python3 corpus/patch_meta.py [--parsed-dir corpus/parsed] [--db corpus/patch_index.db]

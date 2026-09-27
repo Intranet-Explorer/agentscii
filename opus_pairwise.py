@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Blind pairwise: Opus-artist pieces vs the Qwen-artist baseline.
+"""Blind pairwise comparison: Opus-artist pieces vs the Qwen-artist baseline.
 
-Blind in the ways that matter, per the design the human asked for
-earlier: titles/credits redacted from both renders, order randomized
-per comparison, neutral A/B labels, and the judge is told nothing about
-which model made what. Prints the mapping only after the verdict.
+Titles and credits are redacted, order is randomized, labels are A/B, and
+the judge is told nothing about authorship. The mapping prints after the verdict.
 """
 import json
 import random

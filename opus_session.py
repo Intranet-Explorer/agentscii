@@ -1,26 +1,15 @@
 #!/usr/bin/env python3
-"""Multi-session piece: Opus works one canvas across sessions.
+"""Run one session of a multi-session piece: the Opus artist works one canvas.
 
-Granted after Opus, asked what it needed, ranked this first:
+Guardrails against unbounded revision:
+  * the best-reading version is pinned; a session that ends worse reverts
+    (operator decision)
+  * a blind read is recorded every session; stopping after two worse reads
+    is the operator's call
+  * $40 per session, $120 total
+  * each session ends with a NEXT: line so intent carries over
 
-  "The honest ask -- the thing nobody has offered -- is permission to
-   spend many sessions on one piece, with no obligation to produce
-   something finished at the end of any single one. The canvas already
-   persists. The process doesn't let me use that."
-
-Guardrails exist because unbounded revision is how _orb reached 59
-versions and _lastlight went v3 -> v10 downhill:
-
-  * the best-READING version is pinned after each session; a session
-    that ends worse reverts to the pin
-  * blind read every session, recorded
-  * two consecutive worse reads -> stop and report
-  * $40/session, $120 total
-  * Opus declares done, not a round count, but every session ends with
-    one line on what it intends next, so continuity survives the
-    boundary
-
-Usage: python3 opus_session.py <slug> ["optional extra direction"]
+Usage: python3 opus_session.py <slug> "session brief"
 """
 import json
 import os
@@ -138,17 +127,9 @@ def main():
     if led["total_usd"] >= TOTAL_CAP:
         print(f"TOTAL CAP reached: ${led['total_usd']:.2f}"); return 2
 
-    # One artist per canvas. Killing this process does NOT kill the `claude`
-    # child it spawned -- the child reparents to init and keeps writing. A
-    # second run then races it on the same .ans file, which is how session 6
-    # got two artists and an uncounted bill. Lock covers the child's lifetime.
-    #
-    # Fixed 2026-09-26: the lock used to record only this Python pid, so
-    # after a kill the next run saw a dead pid, took the lock, and raced
-    # the orphaned `claude` child that was still drawing. (It also crashed
-    # with ProcessLookupError on a dead pid.) Now: orphans of dead runs
-    # are killed first, and a live `claude` tagged with this slug refuses
-    # the run regardless of what the lock file says.
+    # One artist per canvas. Killing this process leaves its `claude` child
+    # running, so kill orphans first and refuse if a tagged child for this
+    # slug is still alive, whatever the lock file says.
     for pg, tag in harness.sweep_orphaned_claude():
         print(f"killed orphaned claude process group {pg} ({tag})")
     tag = f"session:{slug}"
@@ -184,8 +165,7 @@ def _run(slug, extra, led):
     r = harness._run_claude_p(
         ["claude", "-p", brief(slug, led, extra), "--model", harness.OPUS_MODEL,
          "--allowedTools", "Bash,Read,Write", "--output-format", "json",
-         # Enforced cap (was only printed after the money was spent). The
-         # CLI stops the run when its own cost estimate crosses this.
+         # The CLI stops the run when its cost estimate crosses this.
          "--max-budget-usd", str(SESSION_CAP)],
         timeout=3000, retries=0, cwd=str(Path(__file__).parent), tag=f"session:{slug}")
     if r is None or r.returncode != 0:
@@ -200,11 +180,9 @@ def _run(slug, extra, led):
     sub = harness.opus_subject_check(str(path))
     read = sub.get("blind_subject")
 
-    # Archive every session's canvas and both self-check renders. Cheap
-    # now, impossible to reconstruct later -- and the blind read has
-    # SATURATED as a progress signal ("a human face" is the correct read
-    # at session 1 and at session 10), so it is kept only as a
-    # destruction tripwire. The colour-only render is the live measure.
+    # Archive each session's canvas and self-check renders; they can't be
+    # rebuilt later. The blind read stops changing after the first session,
+    # so it only catches regressions. The colour-only render tracks progress.
     import canvas_tools as ct
     arch = WORKSPACE / "scratch" / f"{slug}_sessions"
     arch.mkdir(parents=True, exist_ok=True)
@@ -241,8 +219,8 @@ def _run(slug, extra, led):
 
 
 METHOD_WORD_CAP = 400
-# Text that means the model wrote to the operator instead of writing the
-# section. All of these reached METHOD.md verbatim before 2026-09-26.
+# Phrases that mean the model addressed the operator instead of writing
+# the section. Such replies are rejected, not written to METHOD.md.
 _CHATTER = re.compile(r"write (access|permission)|not approved|wasn't granted|"
                       r"say the word|grant write|i'll stop reproducing|"
                       r"here is the replacement|should i|would you like", re.I)
@@ -280,9 +258,8 @@ the section text only; the harness writes it into the file.
 def _method_pass(slug, sess_id, n, led, session_cost=0.0):
     """Append this session's method to METHOD.md.
 
-    Separate `claude -p` call, resumed in the session's own context so it
-    can cite the cells it just placed. Cost tracked as method_usd and NOT
-    added to the drawing budget -- documenting the work is not the work.
+    Resumes the session's context so the reply can cite specific cells.
+    Cost goes to method_usd, not the drawing budget.
     """
     if not sess_id:
         print("\n(no session_id returned; METHOD.md pass skipped)"); return
@@ -323,9 +300,8 @@ def _method_pass(slug, sess_id, n, led, session_cost=0.0):
     else:
         text = text.rstrip() + "\n\n\n" + body + "\n"
     mp.write_text(text)
-    # A resumed run reports the WHOLE conversation's cost, drawing included,
-    # so the method pass's own cost is the difference (was double-counted:
-    # method_usd $43.49 was ~$39.76 of drawing plus ~$3.70 of method).
+    # A resumed run reports the whole conversation's cost, drawing included,
+    # so the method pass's own cost is the difference.
     c = max(0.0, (d.get("total_cost_usd") or 0) - (session_cost or 0))
     led["method_usd"] = round(led.get("method_usd", 0) + c, 4)
     _save(led)
