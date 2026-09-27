@@ -883,9 +883,6 @@ def _rebuild_catalog():
         "note, and improve on the archived version. Starting a subject",
         "that is already here without saying so is thrashing, not work.",
         "",
-        f"House bar: `_orb.v59` — {HOUSE_BAR['half_block']}% half_block / "
-        f"{HOUSE_BAR['shade']}% shade.",
-        "",
         "| subject | date | status | half_block | shade | note |",
         "|---|---|---|---|---|---|",
     ]
@@ -995,7 +992,14 @@ def _check_regression_tripwire(conn, n_back=3):
 
 
 def _tripwire_halted(conn):
-    """True when an uncleared two-strike halt is in force."""
+    """True when an uncleared two-strike halt is in force.
+
+    2026-09-26: off unless AGENTSCII_METRIC_HALT=1. The tripwire compares
+    half_block/shade to recent accepts, and those metrics were shown not to
+    track quality; halting the artist on them is a metric gate. Strikes are
+    still recorded and printed to the harness log for the operator."""
+    if os.environ.get("AGENTSCII_METRIC_HALT") != "1":
+        return False
     try:
         return conn.execute(
             "SELECT COUNT(*) FROM tripwire_strikes WHERE cleared=0"
@@ -1187,7 +1191,6 @@ TOOLS = [
                 "properties": {
                     "description": {"type": "string", "description": "What you're looking for, in plain language — subject, technique, mood, whatever's relevant."},
                     "n": {"type": "integer", "description": "How many patches to return, rendered side by side. Default 3, max 6."},
-                    "half_block_min": {"type": "number", "description": "Optional: only patches with at least this much half-block usage (0-100)."},
                     "shade_min": {"type": "number", "description": "Optional: only patches with at least this much shade-glyph usage (0-100)."},
                 },
                 "required": ["description"],
@@ -1435,7 +1438,7 @@ TOOLS = [
                 "Measure the CURRENT canvas with the same function the gate and "
                 "the submit report use — half_block %, shade-of-ink %, distinct "
                 "colors, separate forms (connected subject regions), and ink "
-                "share of canvas, next to the house bar's numbers. Use this "
+                "share of canvas. Detectors of absence, not targets. Use this "
                 "instead of computing your own numbers with a script: "
                 "self-computed metrics have come out ~3x off the real value. "
                 "'separate forms' is the signal that distinguishes a real "
@@ -2721,15 +2724,9 @@ def _figurative_precheck(path):
     n_brightness_steps = len(brightness_values)
 
     failures = []
-    if half_block_frac < 0.10:
-        failures.append(
-            f"only {half_block_frac*100:.1f}% of drawn cells use half-block "
-            f"characters (upper/lower/full block) -- figurative work needs "
-            f"half-block resolution (workspace/scratch/halfblock.py's "
-            f"HalfBlockCanvas) to read as constructed anatomy instead of "
-            f"whole-cell blocks; under 10% means this is essentially "
-            f"whole-cell-only construction"
-        )
+    # 2026-09-26: the 10% half-block floor is gone. It was a metric the
+    # artist could satisfy by distortion, against the stated "never
+    # enforced" policy; half_block_frac is still computed for the log.
     if n_brightness_steps < 3:
         failures.append(
             f"only {n_brightness_steps} distinct brightness step(s) found "
@@ -3694,7 +3691,11 @@ def run_tool(name, args, agent, shift_id=None):
             soft_signal = ""
             _sm = _compute_piece_metrics(src)
             if _sm is not None:
-                soft_signal = (
+                # Operator log only (2026-09-26): shown to the artist, these
+                # numbers and "match or beat" were a target, and every metric
+                # target in this project has been met by distortion.
+                print(f"[metrics] {src.name}: {_fmt_metrics(_sm)}", flush=True)
+                _operator_only = (
                     f"\n\ntechnique (SOFT SIGNAL — not a gate, nothing is "
                     f"enforced): {_fmt_metrics(_sm)}. "
                     f"House bar {HOUSE_BAR['name']}: "
@@ -3722,7 +3723,7 @@ def run_tool(name, args, agent, shift_id=None):
                 seen_ref = db_cmp.execute(
                     "SELECT COUNT(*) FROM events WHERE shift_id=? "
                     "AND tool_name='compare_to_reference' "
-                    "AND tool_args LIKE '%_opus_%'", (shift_id,)
+                    "AND tool_args LIKE '%\\_opus\\_%' ESCAPE '\\'", (shift_id,)
                 ).fetchone()[0]
             finally:
                 db_cmp.close()
@@ -4353,7 +4354,9 @@ def curate_piece_opus_gated(src, decision, critique):
             _db_tw.commit()
             tw = _check_regression_tripwire(_db_tw)
             if tw:
-                halt = f"\n\n{tw}"
+                print(f"[tripwire] {tw}", flush=True)  # operator log, not the agents
+                if os.environ.get("AGENTSCII_METRIC_HALT") == "1":
+                    halt = f"\n\n{tw}"
         except Exception:
             pass
         finally:
@@ -5921,9 +5924,8 @@ def run_shift(conn, agent):
                     m = ct.metrics(str(WORKSPACE), fargs.get("slug", ""))
                     result = (
                         f"canvas '{fargs.get('slug')}': {_fmt_metrics(m)}. "
-                        f"House bar {HOUSE_BAR['name']}: {HOUSE_BAR['half_block']}% / "
-                        f"{HOUSE_BAR['shade']}%, {HOUSE_BAR['colors']} colors, "
-                        f"{HOUSE_BAR['regions']} masses."
+                        "These detect absence (no half-blocks, one flat mass); "
+                        "they are not targets and nothing compares them to a bar."
                     )
                 except Exception as e:
                     result = f"(error: {e})"

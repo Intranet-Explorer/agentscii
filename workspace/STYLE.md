@@ -17,15 +17,14 @@ glyphs (█▓▒░), not by having more colors — a piece that's flat single-
 color fills hasn't used the medium, it's colored ASCII. canvas_shade
 does this.
 
-## Technique targets
+## Technique (not targets)
 
-Real numbers from the actual corpus (86,093 pieces,
-corpus/technique_manifest.jsonl): half_block median ≈ 15%, p90 ≈ 37%;
-shade median ≈ 10%. A finished figurative piece should reach at least
-the corpus median on both — check with `python3 corpus/score_shipped.py`
-before considering a piece done. Below median on both means the piece
-hasn't really used half-block/dither technique yet, whatever it looks
-like in preview.
+Corpus numbers (half_block median about 15%, shade about 10%) describe
+real work; they are not goals. Every threshold this project set was met
+by distortion: a flat-region gate by 78% dither, a glyph-carried share
+by re-encoding. A piece is done when a subject resolves and each region
+is drawn, not when a number is reached. The measurements only detect
+absence.
 
 **The glyph layer must carry the form, not the background colour.**
 A cell whose two pixels match renders as space+background — correct
@@ -242,9 +241,8 @@ the accept if it flatly contradicts.
 
 ## Ambition tier: collaborative scroll pieces (gated)
 
-**Not attempted until three consecutive pieces are accepted at or
-above corpus-median technique (half_block ≥ 15%, shade ≥ 10% per
-score_shipped.py).** Checked directly: _departure.v9 was 168 rows,
+**Not attempted until three consecutive pieces are accepted by the
+Opus gate.** Checked directly: _departure.v9 was 168 rows,
 mostly empty, 0% half-block — reaching for scale before the base
 technique lands produces volume, not craft. Once that bar is cleared
 three times running, the real ceiling for this medium is worth

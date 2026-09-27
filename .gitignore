@@ -78,3 +78,6 @@ corpus/region_gen/
 
 # Live claude child-process registry (harness._run_claude_p)
 .claude_children/
+# House reference pieces (underscore-prefixed) are ours and must be tracked:
+# the submit gate requires them, and a fresh clone could not pass without them.
+!workspace/references/study/_*
