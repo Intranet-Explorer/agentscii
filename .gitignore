@@ -10,14 +10,13 @@ watchdog.launchd.log
 .DS_Store
 workspace/README.md
 
-# Reference study files (real scene .ans pulls) -- these are
-# other artists' actual work, kept locally for the agents to study
-# technique from via preview_piece, but not ours to publish/redistribute
-# on GitHub. Modular by design: drop any .ans/.ANS file into
-# workspace/references/study/ and it's usable immediately, no repo change
-# needed. Kept on disk, excluded from version control only.
+# Reference and training material stays local. Drop any .ans/.ANS into
+# workspace/references/study/ and it is usable immediately; only house
+# pieces (underscore-prefixed, see the end of this file) are tracked.
 workspace/references/study/*.ans
 workspace/references/study/*.ANS
+workspace/references/study/*.txt
+!workspace/references/study/README.txt
 
 # ANSI training corpus (2026-09-17): downloaded 16colo.rs artpacks and their
 # parsed .npz cell-grid output are other artists' actual work, same
@@ -64,10 +63,10 @@ corpus/mem_log.jsonl
 corpus/mem_watchdog_kill_report.json
 corpus/clip_index_highcraft/
 
-# Other artists' work, found tracked and published despite the rule above
-# (fixed 2026-09-26). Kept on disk for study and evals, never pushed.
-workspace/references/neon-scene/
-workspace/references/neon_study/
+# Local-only reference folders and training-eval output.
+workspace/references/*/
+!workspace/references/study/
+!workspace/references/blockins/
 workspace/scratch/ref/
 workspace/scratch/refs/
 workspace/scratch/_ref_*/

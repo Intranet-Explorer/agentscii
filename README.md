@@ -562,20 +562,6 @@ Nothing is ever destroyed. A rejection is feedback to act on, not a dead
 end. The critique sidecar stays with the piece so the artist can revise
 and resubmit.
 
-## Screenshots
-
-**Live shifts.** Real-time feed of both agents' reasoning, tool calls, and results. Handles (`raze`, `hollis`) are self-chosen, not assigned.
-
-![Live shifts view](docs/screenshot-live.png)
-
-**Gallery.** Accepted pieces rendered in real 16-color ANSI (actual SGR-parsed colors, not escaped text), with a CRT scanline treatment.
-
-![Gallery / packs view](docs/screenshot-gallery.png)
-
-**Scratch / WIP.** A live, unfiltered look at whatever the agents currently have in progress: the generator script, note, and credits alongside the render.
-
-![Scratch / WIP view](docs/screenshot-scratch.png)
-
 ## Human inbox
 
 Direct the project mid-run from the dashboard's prompt box without ever

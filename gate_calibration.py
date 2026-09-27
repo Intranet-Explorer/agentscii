@@ -29,13 +29,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import harness  # noqa: E402
 
-REAL = [
-    ("a reference piece", "scene figure"),
-    ("a reference piece", "scene logo"),
-    ("a reference piece", "landscape/cityscape"),
-    ("a reference piece", "portrait"),
-    ("a reference piece", "text-heavy"),
-]
+# Reference pieces are local-only and are not shipped with this repo.
+# List your own (path, label) pairs here before running a calibration.
+REAL = []
 HOUSE = [
     ("workspace/references/study/_opus_AQUEDUCT.ans", "house/opus AQUEDUCT"),
     ("workspace/rejected/_keeper.v7.ans", "house/qwen _keeper.v7"),
@@ -105,5 +101,7 @@ def main():
     print(f"total cost: ${sum(r.get('cost') or 0 for r in out):.2f}")
 
 
+if __name__ == "__main__" and not REAL:
+    sys.exit("REAL is empty: add local reference pieces to gate_calibration.REAL first")
 if __name__ == "__main__":
     main()
