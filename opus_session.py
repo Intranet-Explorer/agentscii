@@ -11,6 +11,7 @@ Guardrails against unbounded revision:
 
 Usage: python3 opus_session.py <slug> "session brief"
 """
+import hashlib
 import json
 import os
 import re
@@ -293,6 +294,7 @@ def _method_pass(slug, sess_id, n, led, session_cost=0.0):
                       "words. Replaces the region-pass build sequence in "
                       "STYLE.md.\n\n")
     # Replace this session's section if it already exists, else append.
+    before = hashlib.sha256(mp.read_bytes()).hexdigest()
     text = mp.read_text()
     pat = re.compile(r"^" + re.escape(head) + r"\b.*?(?=^## Session \d|\Z)", re.M | re.S)
     if pat.search(text):
@@ -304,6 +306,18 @@ def _method_pass(slug, sess_id, n, led, session_cost=0.0):
     # so the method pass's own cost is the difference.
     c = max(0.0, (d.get("total_cost_usd") or 0) - (session_cost or 0))
     led["method_usd"] = round(led.get("method_usd", 0) + c, 4)
+    # A pass that did not change the file must not report as one that did.
+    # Session 7 billed $16.61 to append 1,399 chars of "the write was not
+    # approved, say the word and I'll redo it" -- the CLI refused the write
+    # and the refusal text was filed as the deliverable.
+    if hashlib.sha256(mp.read_bytes()).hexdigest() == before:
+        led.setdefault("method_no_write", []).append(
+            {"session": n, "usd": round(c, 4), "reason": "METHOD.md unchanged after write"})
+        _save(led)
+        print(f"\nMETHOD_PASS_DID_NOT_WRITE session {n}: METHOD.md is byte-identical "
+              f"after the pass. ${c:.2f} spent without effect (method total "
+              f"${led['method_usd']:.2f}).")
+        return
     _save(led)
     print(f"\nMETHOD.md += {len(body)} chars | method ${c:.2f} "
           f"(separate from the ${TOTAL_CAP} drawing budget; "
