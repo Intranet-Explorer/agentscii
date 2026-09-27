@@ -186,7 +186,9 @@ def _run(slug, extra, led):
     import canvas_tools as ct
     arch = WORKSPACE / "scratch" / f"{slug}_sessions"
     arch.mkdir(parents=True, exist_ok=True)
-    n = len(led["sessions"]) + 1
+    n = 1 + max([s.get("session", 0) for s in led["sessions"]]
+                + [c.get("session", 0) for c in led.get("reverted", [])]
+                + [c.get("session", 0) for c in led.get("controls", [])] + [0])
     shutil.copy2(path, arch / f"{slug}.s{n}.ans")
     try:
         g_b64, c_b64, density = ct.self_check(str(WORKSPACE), slug)
@@ -197,7 +199,7 @@ def _run(slug, extra, led):
     except Exception as e:
         flat = f"(self_check failed: {e})"
 
-    rec = {"session": len(led["sessions"]) + 1, "cost_usd": round(cost, 4),
+    rec = {"session": n, "cost_usd": round(cost, 4),
            "blind_read": read, "next_intent": nxt,
            "flat_rows": flat,
            "metrics": harness._fmt_metrics(harness._compute_piece_metrics(path)),
