@@ -5221,6 +5221,22 @@ def opus_pairwise_regression_check(pinned_path, candidate_path, intended_title):
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+def _looks_like_title_line(line):
+    """Same test as render_ans_to_png_b64's redact_title_rows, on plain text."""
+    vis = [ch for ch in line if ch != " "]
+    if len(vis) < 8:
+        return False
+    letters = sum(1 for ch in vis if ch.isascii() and ch.isalpha())
+    run = best = 0
+    for ch in line:
+        if ch.isascii() and (ch.isalpha() or ch in "/-.,!'"):
+            run += 1
+            best = max(best, run)
+        else:
+            run = 0
+    return letters / len(vis) > 0.5 or best >= 6
+
+
 def opus_curate_review(path, qwen_decision, qwen_critique):
     """The real accept/reject authority for curate_piece, per the user's
     explicit 2026-09-16 direction: 'Only curate_piece. Opus gets render +
@@ -5282,7 +5298,12 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
         # --- condition 1: Opus sees ONLY the render + cell dump, nothing
         # else -- no note, no generator script, no title, no path. Fresh
         # isolated temp dir with generic filenames.
-        b64, note = render_ans_to_png_b64(path, offset=0, max_rows=140)
+        # Fixed 2026-09-26: this render was NOT redacted and cells.txt
+        # carried the title plate, so the reviewer read the piece's title
+        # while the prompt told it there was none. Both now drop title/credit
+        # rows with the same test the blind subject check uses. Debug text
+        # is still caught before this point by inspect_piece's gate.
+        b64, note = render_ans_to_png_b64(path, offset=0, max_rows=140, redact_title_rows=True)
         if b64 is None:
             return {"status": "error", "message": f"(render failed: {note})", "opus_verdict": None}
 
@@ -5292,11 +5313,27 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
             render_path.write_bytes(base64.b64decode(b64))
             raw = Path(path).read_bytes()
             text = _decode_ans_bytes(raw).replace("\r\n", "\n").replace("\r", "\n")
-            cells_text = "\n".join(_SGR_RE.sub("", l) for l in text.split("\n")[:140])
+            cells_text = "\n".join(("" if _looks_like_title_line(l2) else l2)
+                                   for l2 in (_SGR_RE.sub("", l) for l in text.split("\n")[:140]))
             (Path(tmpdir) / "cells.txt").write_text(cells_text)
+            # The reviewer tried to crop and zoom and was blocked (it has
+            # only Read). Give it the four quarters at 2x instead.
+            try:
+                from PIL import Image
+                im = Image.open(render_path)
+                W, H = im.size
+                for qi, (x0, y0) in enumerate(((0, 0), (W // 2, 0), (0, H // 2), (W // 2, H // 2)), 1):
+                    q = im.crop((x0, y0, x0 + W // 2, y0 + H // 2))
+                    q.resize((q.width * 2, q.height * 2), Image.NEAREST).save(Path(tmpdir) / f"zoom_{qi}.png")
+            except Exception:
+                pass
 
             prompt = (
-                "Read render.png and cells.txt in this directory. You have NO "
+                "Read render.png and cells.txt in this directory. zoom_1.png to "
+                "zoom_4.png are the four quarters (top-left, top-right, "
+                "bottom-left, bottom-right) at 2x; Read them when you need "
+                "cell-level detail. Title and credit rows have been blanked. "
+                "You have NO "
                 "other context about this image — no title, no artist's "
                 "description, no intent. Look only at what is actually there.\n\n"
                 "Answer plainly and skeptically:\n"
