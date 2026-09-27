@@ -5760,6 +5760,9 @@ def run_shift(conn, agent):
             except Exception as e:
                 print(f"[error] ollama call failed: {e}")
                 log_event(conn, agent, shift_id, "error", str(e))
+                # Was a silent clean end (note=""), which made the next shift
+                # skip this one and resume from an older note.
+                note = f"(shift cut short: model call failed: {str(e)[:200]})"
                 break
 
         choice = resp.get("choices", [{}])[0]
@@ -5781,6 +5784,9 @@ def run_shift(conn, agent):
 
         if not tool_calls:
             if content.strip():
+                # A text-only reply ends the shift. Record it so the next
+                # shift picks up from here, not from an older note.
+                note = "(ended with a text reply, no end_shift): " + content.strip()[:600]
                 break
             empty_turns += 1
             if empty_turns >= 3:
@@ -6288,7 +6294,14 @@ def run_shift(conn, agent):
         # half-written debris.
         try:
             import canvas_tools as _ct
-            for _slug in _ct.list_canvases(str(WORKSPACE)):
+            # Only canvases changed during THIS shift (tool calls or the
+            # agent's own scripts). Saving every canvas ever made revived
+            # closed subjects into scratch/ as fresh-looking autosaves.
+            _touched = [
+                s_ for s_ in _ct.list_canvases(str(WORKSPACE))
+                if _ct._canvas_path(str(WORKSPACE), s_).stat().st_mtime >= started_at
+            ]
+            for _slug in _touched:
                 try:
                     # NO extra underscore: the canvas slug already
                     # carries the house prefix when there is one, and
@@ -6318,7 +6331,7 @@ def run_shift(conn, agent):
         "UPDATE shifts SET ended_at=?, note=?, had_pending_peer_message=?, "
         "replied_to_peer=?, last_reasoning=? WHERE id=?",
         (ended_at, note, had_pending_final, replied_final,
-         last_reasoning if note else None, shift_id),
+         (last_reasoning[-2000:] if last_reasoning else last_reasoning) if note else None, shift_id),
     )
     conn.commit()
     _record_shift_tool_summary(conn, shift_id)

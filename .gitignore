@@ -81,3 +81,6 @@ corpus/region_gen/
 # House reference pieces (underscore-prefixed) are ours and must be tracked:
 # the submit gate requires them, and a fresh clone could not pass without them.
 !workspace/references/study/_*
+
+# Harness autosaves are recovery copies, not work (the archive repo keeps them)
+workspace/scratch/*.autosave.ans
