@@ -79,6 +79,18 @@ MODEL = "qwen3.8:27b-mlx"  # stock (non-obliterated) Qwen3.8-27B, MLX-quantized 
 # compatible endpoint doesn't accept top_k/repeat_penalty/min_p as request
 # fields — any unset field falls through to the Modelfile's PARAMETER value.
 SAMPLING = {"temperature": 0.7, "top_p": 0.80, "presence_penalty": 1.5}
+# 2026-09-26: the loop reads msg.reasoning, so thinking is ON, and the
+# values above are Qwen's non-thinking ones. presence_penalty 1.5 also
+# penalises the repeated keys, slugs and coordinates that tool-call JSON
+# is made of. Qwen's thinking-mode guidance: temp 0.6, top_p 0.95, no
+# presence penalty. max_tokens caps a runaway thinking turn, which was
+# bounded only by the 900 s HTTP timeout.
+SAMPLING = {"temperature": 0.6, "top_p": 0.95, "presence_penalty": 0.0, "max_tokens": 16384}
+# Only the newest KEEP_IMAGES images stay in the request; older ones are
+# replaced by a one-line stub. Every preview/crop/patch image used to stay
+# in context for the whole shift (up to 100 calls), which can overflow the
+# model's context, and Ollama truncates silently from the front.
+KEEP_IMAGES = 2
 
 REFERENCE_NOTE = (
     "Real reference archives are reachable via bash/curl. Don't guess at URL "
@@ -2027,10 +2039,31 @@ def get_handle(conn, seat):
     return row[0] if row else None
 
 
+def _prune_old_images(messages, keep=KEEP_IMAGES):
+    """Copy of messages with all but the newest `keep` images stubbed out."""
+    seen, out = 0, []
+    for m in reversed(messages):
+        c = m.get("content")
+        if isinstance(c, list) and any(p.get("type") == "image_url" for p in c if isinstance(p, dict)):
+            parts = []
+            for p in c:
+                if isinstance(p, dict) and p.get("type") == "image_url":
+                    if seen < keep:
+                        parts.append(p)
+                    else:
+                        parts.append({"type": "text", "text": "[older image removed to save context; re-render if you need it]"})
+                    seen += 1
+                else:
+                    parts.append(p)
+            m = {**m, "content": parts}
+        out.append(m)
+    return list(reversed(out))
+
+
 def call_ollama(model, messages, tools):
     payload = json.dumps({
         "model": model,
-        "messages": messages,
+        "messages": _prune_old_images(messages),
         "tools": tools,
         **SAMPLING,
     }).encode()
@@ -2038,7 +2071,15 @@ def call_ollama(model, messages, tools):
         OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"}, method="POST"
     )
     with urllib.request.urlopen(req, timeout=900) as resp:
-        return json.loads(resp.read())
+        out = json.loads(resp.read())
+    # Log context use so overflow is measured, not guessed. If prompt_tokens
+    # sits at a flat ceiling across calls, Ollama is truncating: raise the
+    # server's context (OLLAMA_CONTEXT_LENGTH or the app's context setting).
+    u = out.get("usage") or {}
+    if u:
+        print(f"[ollama] prompt_tokens={u.get('prompt_tokens')} "
+              f"completion_tokens={u.get('completion_tokens')}", flush=True)
+    return out
 
 
 def unload_model(model):
