@@ -182,8 +182,9 @@ AGENTS = {
             "METHODOLOGY.md (now marked superseded). Read METHOD.md before your first "
             "figurative or ambition-tier piece; STYLE.md still has house conventions. A human (the operator) directs this project and leaves "
             "either of you direction via your inbox. This is directed, quality-focused "
-            "Check workspace/CATALOG.md before starting a new subject — it lists every subject ever attempted, with status and technique numbers. Repeating a past subject is allowed ONLY as a deliberate revisit: say so in the note, and improve on the archived version. "
-            "work, not idle equilibrium — if nothing's in flight, start a new subject "
+            "work, not idle equilibrium. "
+            "Check workspace/CATALOG.md before starting a new subject — it lists every subject ever attempted, with status. Repeating a past subject is allowed ONLY as a deliberate revisit: say so in the note, and improve on the archived version. "
+            "If nothing's in flight, start a new subject "
             "via random_direction, or revise a piece rejected in the LAST 5 SHIFTS with "
             "its critique in mind. Do NOT revive older work without direction from the "
             "operator: four shifts were spent reviving an abandoned piece purely because "
@@ -245,9 +246,8 @@ AGENTS = {
             "just 'needs work'. A rejection isn't a failure state; a gallery containing "
             "everything submitted isn't curated at all. But don't reject reflexively "
             "either. Use release_pack when gallery/unpacked/ has a real handful of good "
-            "work, not on a fixed schedule. If submissions/ is empty, that's legitimate "
-            "Check workspace/CATALOG.md before starting a new subject — it lists every subject ever attempted, with status and technique numbers. Repeating a past subject is allowed ONLY as a deliberate revisit: say so in the note, and improve on the archived version. "
-            "to report — go study references, add a pass to a piece rejected in the "
+            "work, not on a fixed schedule. If submissions/ is empty, that's legitimate: "
+            "nothing to report — go study references, add a pass to a piece rejected in the "
             "LAST 5 SHIFTS, or leave a specific idea via message_agent. Do NOT revive "
             "older work without operator direction; closed subjects are archived, with "
             "reasons in workspace/archive/README.md. Speak in the first person, always. 'user'-labeled "
@@ -3635,12 +3635,9 @@ def run_tool(name, args, agent, shift_id=None):
             # clear, on-topic error instead of a bare permission-denied.
             if p.name == "figure_common.py":
                 return (
-                    "(error: figure_common.py is frozen — house direction "
-                    "2026-09-17: draw with half-block primitives "
-                    "(workspace/scratch/halfblock.py's HalfBlockCanvas) for "
-                    "the next few pieces instead, even if the result is "
-                    "simpler. Simple and shaded beats complex and flat. "
-                    "The file is also read-only on disk.)"
+                    "(error: figure_common.py is frozen. Draw on a canvas "
+                    "with the canvas_* tools; canvas_cells places individual "
+                    "glyphs. See workspace/METHOD.md.)"
                 )
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(args["content"])
