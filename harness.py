@@ -1590,6 +1590,31 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "canvas_cells",
+            "description": (
+                "The per-cell tool: write chosen glyphs into chosen cells. Each item is "
+                "[x, y, char, fg, bg] in CELL coordinates; char is one CP437 character "
+                "(e.g. '\u2580' '\u2584' '\u258c' '\u2590' '\u2591' '\u2592' '\u2593' '\u2588', "
+                "letters, punctuation); fg and bg are colour indices 0-15. Later items "
+                "win; up to 400 cells per call. Look at the result with canvas_crop."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to draw on."},
+                    "cells": {
+                        "type": "array",
+                        "description": "List of [x, y, char, fg, bg].",
+                        "items": {"type": "array", "items": {}},
+                    },
+                },
+                "required": ["slug", "cells"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "canvas_stamp",
             "description": (
                 "Place a real patch retrieved via find_patches directly onto a canvas "
@@ -5752,6 +5777,15 @@ def run_shift(conn, agent):
                             fargs.get("y", 0), fargs.get("text", ""), fargs.get("fg", 7),
                             fargs.get("bg", 0))
                     result = f"placed text {fargs.get('text')!r} at ({fargs.get('x')},{fargs.get('y')}) on '{fargs.get('slug')}'."
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_cells":
+                try:
+                    import canvas_tools as ct
+                    placed, errs = ct.cells(str(WORKSPACE), fargs.get("slug", ""), fargs.get("cells") or [])
+                    result = f"wrote {placed} cell(s) on '{fargs.get('slug')}'."
+                    if errs:
+                        result += f" {len(errs)} rejected: " + "; ".join(errs[:5])
                 except Exception as e:
                     result = f"(error: {e})"
             elif name == "canvas_stamp":

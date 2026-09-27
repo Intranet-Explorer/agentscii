@@ -607,6 +607,9 @@ def text(workspace, slug, x, y, text_str, fg, bg):
     row = int(y)
     if not (0 <= row < H):
         raise CanvasError(f"y={row} out of bounds (canvas is {H} cells tall)")
+    bad = sorted({ch for ch in text_str if not _cp437_ok(ch)})
+    if bad:
+        raise CanvasError(f"not in CP437, would save as '?': {''.join(bad)!r}")
     go = data["glyph_override"]
     col = int(x)
     for ch in text_str:
@@ -809,6 +812,49 @@ def decode_patch_id(patch_id):
         raise CanvasError(f"invalid patch_id {patch_id!r}: {e}")
 
 
+def _cp437_ok(ch):
+    try:
+        return len(ch) == 1 and len(ch.encode("cp437")) == 1
+    except UnicodeEncodeError:
+        return False
+
+
+MAX_CELLS_PER_CALL = 400
+
+
+def cells(workspace, slug, items):
+    """Write individual cells. items: [[x, y, ch, fg, bg], ...] in CELL
+    coordinates; ch is one CP437 character (or an int codepoint). Later
+    items win. Returns (placed, errors). Added 2026-09-26: the only
+    per-cell path before this was stamp(), which the canvas_stamp tool
+    only reaches through a find_patches patch_id, so the agents had no
+    way to place one chosen glyph in one chosen cell."""
+    data = load_canvas(workspace, slug)
+    W, H = data["w"], data["h_cells"]
+    go = data["glyph_override"]
+    items = list(items or [])
+    if len(items) > MAX_CELLS_PER_CALL:
+        raise CanvasError(f"{len(items)} cells in one call; max is {MAX_CELLS_PER_CALL}")
+    placed, errors = 0, []
+    for i, it in enumerate(items):
+        try:
+            x, y, ch, fg, bg = it
+            x, y = int(x), int(y)
+            if not isinstance(ch, str):
+                ch = chr(int(ch))
+            if not _cp437_ok(ch):
+                raise CanvasError(f"{ch!r} is not a single CP437 character")
+            fg, bg = _check_color(fg), _check_color(bg)
+            if not (0 <= x < W and 0 <= y < H):
+                raise CanvasError(f"({x},{y}) is off the {W}x{H} canvas")
+            go[f"{y},{x}"] = [ch, fg, bg]
+            placed += 1
+        except Exception as e:
+            errors.append(f"item {i}: {e}")
+    save_canvas(workspace, slug, data)
+    return placed, errors
+
+
 def stamp(workspace, slug, x, y, chars, fg, bg):
     """Place a retrieved patch's real (chars, fg, bg) cell grids onto
     the canvas with top-left corner at cell (x, y). Caller (the
@@ -830,7 +876,9 @@ def stamp(workspace, slug, x, y, chars, fg, bg):
             col_idx = x0 + c
             if not (0 <= col_idx < W):
                 continue
-            go[f"{row_idx},{col_idx}"] = [chr(int(chars[r][c])), int(fg[r][c]), int(bg[r][c])]
+            ch = chars[r][c]
+            ch = ch if isinstance(ch, str) else chr(int(ch))
+            go[f"{row_idx},{col_idx}"] = [ch, int(fg[r][c]), int(bg[r][c])]
             placed += 1
     save_canvas(workspace, slug, data)
     return data, placed
