@@ -97,7 +97,7 @@ Render and LOOK at your work before you finish:
 {style}
 """
     r = harness._run_claude_p(
-        ["claude", "-p", prompt, "--model", "claude-opus-5",
+        ["claude", "-p", prompt, "--model", harness.OPUS_MODEL,
          "--allowedTools", "Bash,Read,Write", "--output-format", "json"],
         timeout=1500, retries=0, cwd=str(Path(__file__).parent))
     if r is None or r.returncode != 0:

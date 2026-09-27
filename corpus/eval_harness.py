@@ -352,7 +352,7 @@ def opus_pairwise_eval(model_png, truth_png):
             "REASON: <1-2 sentences>"
         )
         result = harness._run_claude_p(
-            ["claude", "-p", prompt, "--model", "claude-opus-5",
+            ["claude", "-p", prompt, "--model", harness.OPUS_MODEL,
              "--allowedTools", "Read", "--output-format", "json"],
             cwd=tmpdir,
         )

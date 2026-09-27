@@ -24,6 +24,7 @@ Usage: python3 opus_session.py <slug> ["optional extra direction"]
 """
 import json
 import os
+import re
 import shutil
 import sys
 from datetime import datetime
@@ -141,14 +142,32 @@ def main():
     # child it spawned -- the child reparents to init and keeps writing. A
     # second run then races it on the same .ans file, which is how session 6
     # got two artists and an uncounted bill. Lock covers the child's lifetime.
+    #
+    # Fixed 2026-09-26: the lock used to record only this Python pid, so
+    # after a kill the next run saw a dead pid, took the lock, and raced
+    # the orphaned `claude` child that was still drawing. (It also crashed
+    # with ProcessLookupError on a dead pid.) Now: orphans of dead runs
+    # are killed first, and a live `claude` tagged with this slug refuses
+    # the run regardless of what the lock file says.
+    for pg, tag in harness.sweep_orphaned_claude():
+        print(f"killed orphaned claude process group {pg} ({tag})")
+    tag = f"session:{slug}"
+    if tag in harness.live_claude_tags():
+        print(f"REFUSING: a claude process for {slug} is still running."); return 2
     lock = WORKSPACE / "scratch" / f".{slug}.session.lock"
     if lock.exists():
         old = lock.read_text().strip()
-        pid = int(old.split()[0]) if old.split()[0].isdigit() else 0
-        alive = pid and (os.kill(pid, 0) is None or True)
-        try: os.kill(pid, 0)
-        except (ProcessLookupError, ValueError): alive = False
-        except PermissionError: alive = True
+        first = old.split()[0] if old.split() else ""
+        pid = int(first) if first.isdigit() else 0
+        alive = False
+        if pid:
+            try:
+                os.kill(pid, 0)
+                alive = True
+            except ProcessLookupError:
+                alive = False
+            except PermissionError:
+                alive = True
         if alive:
             print(f"REFUSING: session already running for {slug} ({old}). "
                   f"Kill it and its `claude` child, or rm {lock}"); return 2
@@ -163,9 +182,12 @@ def main():
 
 def _run(slug, extra, led):
     r = harness._run_claude_p(
-        ["claude", "-p", brief(slug, led, extra), "--model", "claude-opus-5",
-         "--allowedTools", "Bash,Read,Write", "--output-format", "json"],
-        timeout=3000, retries=0, cwd=str(Path(__file__).parent))
+        ["claude", "-p", brief(slug, led, extra), "--model", harness.OPUS_MODEL,
+         "--allowedTools", "Bash,Read,Write", "--output-format", "json",
+         # Enforced cap (was only printed after the money was spent). The
+         # CLI stops the run when its own cost estimate crosses this.
+         "--max-budget-usd", str(SESSION_CAP)],
+        timeout=3000, retries=0, cwd=str(Path(__file__).parent), tag=f"session:{slug}")
     if r is None or r.returncode != 0:
         print("SESSION FAILED:", r.stderr[:300] if r else "no result"); return 1
     d = json.loads(r.stdout)
@@ -214,9 +236,16 @@ def _run(slug, extra, led):
         print(f"!! session exceeded ${SESSION_CAP} cap")
     print(f"\nPIN: currently \"{led.get('pin_read')}\" -- "
           f"operator decides whether this session's read is better.")
-    _method_pass(slug, d.get("session_id"), n, led)
+    _method_pass(slug, d.get("session_id"), n, led, session_cost=cost)
     return 0
 
+
+METHOD_WORD_CAP = 400
+# Text that means the model wrote to the operator instead of writing the
+# section. All of these reached METHOD.md verbatim before 2026-09-26.
+_CHATTER = re.compile(r"write (access|permission)|not approved|wasn't granted|"
+                      r"say the word|grant write|i'll stop reproducing|"
+                      r"here is the replacement|should i|would you like", re.I)
 
 METHOD_Q = """You just finished a session on the AGENTSCII canvas '{slug}'.
 
@@ -242,10 +271,13 @@ Instructions someone else could follow, not a report. Concrete beats
 general: "a half-block goes where two brightness bands meet inside one
 cell" beats "use half-blocks for detail". Markdown, no preamble, start
 with '## Session {n}'.
+
+Do NOT use any tools and do NOT try to edit METHOD.md yourself. Reply with
+the section text only; the harness writes it into the file.
 """
 
 
-def _method_pass(slug, sess_id, n, led):
+def _method_pass(slug, sess_id, n, led, session_cost=0.0):
     """Append this session's method to METHOD.md.
 
     Separate `claude -p` call, resumed in the session's own context so it
@@ -256,23 +288,45 @@ def _method_pass(slug, sess_id, n, led):
         print("\n(no session_id returned; METHOD.md pass skipped)"); return
     r = harness._run_claude_p(
         ["claude", "-p", "--resume", sess_id, METHOD_Q.format(slug=slug, n=n),
-         "--model", "claude-opus-5", "--output-format", "json"],
-        timeout=900, retries=0, cwd=str(Path(__file__).parent))
+         "--model", harness.OPUS_MODEL, "--output-format", "json",
+         "--disallowedTools", "Bash,Write,Edit,Read,Glob,Grep,WebFetch,WebSearch,Task,NotebookEdit"],
+        timeout=900, retries=0, cwd=str(Path(__file__).parent), tag=f"method:{slug}")
     if r is None or r.returncode != 0:
         print("\n(METHOD.md pass failed:", (r.stderr[:200] if r else "no result"), ")"); return
     d = json.loads(r.stdout)
     body = (d.get("result") or "").strip()
     if not body:
         print("\n(METHOD.md pass returned nothing)"); return
+    head = f"## Session {n}"
+    i = body.find(head)
+    body = body[i:].strip() if i >= 0 else ""
+    words = len(body.split())
+    problem = ("no '" + head + "' header" if not body else
+               f"{words} words, cap is {METHOD_WORD_CAP}" if words > METHOD_WORD_CAP + 40 else
+               "contains a message to the operator" if _CHATTER.search(body) else None)
+    if problem:
+        rej = WORKSPACE / "scratch" / f"{slug}_sessions" / f"METHOD.s{n}.rejected.md"
+        rej.parent.mkdir(parents=True, exist_ok=True)
+        rej.write_text((d.get("result") or "") + "\n")
+        print(f"\n(METHOD.md NOT updated: {problem}. Raw reply saved to {rej})"); return
     mp = WORKSPACE / "METHOD.md"
     if not mp.exists():
         mp.write_text("# AGENTSCII house method\n\nWritten by the artist "
                       "that produced the work, session by session, in its own\n"
                       "words. Replaces the region-pass build sequence in "
                       "STYLE.md.\n\n")
-    with mp.open("a") as f:
-        f.write("\n\n" + body + "\n")
-    c = d.get("total_cost_usd") or 0
+    # Replace this session's section if it already exists, else append.
+    text = mp.read_text()
+    pat = re.compile(r"^" + re.escape(head) + r"\b.*?(?=^## Session \d|\Z)", re.M | re.S)
+    if pat.search(text):
+        text = pat.sub(lambda _m: body + "\n\n", text, count=1)
+    else:
+        text = text.rstrip() + "\n\n\n" + body + "\n"
+    mp.write_text(text)
+    # A resumed run reports the WHOLE conversation's cost, drawing included,
+    # so the method pass's own cost is the difference (was double-counted:
+    # method_usd $43.49 was ~$39.76 of drawing plus ~$3.70 of method).
+    c = max(0.0, (d.get("total_cost_usd") or 0) - (session_cost or 0))
     led["method_usd"] = round(led.get("method_usd", 0) + c, 4)
     _save(led)
     print(f"\nMETHOD.md += {len(body)} chars | method ${c:.2f} "

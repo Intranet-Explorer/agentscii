@@ -65,6 +65,11 @@ def stop_requested():
     return _stop_requested or STOP_FLAG.exists()
 
 
+# One place for the Opus model id (was hardcoded at 14 call sites).
+# claude-opus-5-5 needs Claude Code >= v2.1.280 (`claude update`).
+# Override with AGENTSCII_OPUS_MODEL to pin something else.
+OPUS_MODEL = os.environ.get("AGENTSCII_OPUS_MODEL", "claude-opus-5-5")
+
 MODEL = "qwen3.8:27b-mlx"  # stock (non-obliterated) Qwen3.8-27B, MLX-quantized build.
 # We don't need uncensored output for ANSI art, and the obliterated variant's own
 # model card documents temperature=0 (greedy) + no system prompt as the settings
@@ -4442,7 +4447,135 @@ OPUS_MAX_REVIEWS_PER_PIECE = 3  # condition 3 (user): one re-review per
 # revision, shelved (not resubmitted indefinitely) after 3 total.
 
 
-def _run_claude_p(args_list, timeout=120, retries=1, **run_kwargs):
+# --- claude child-process bookkeeping (fix, 2026-09-26) -------------------
+# `claude` runs in its own process group so a timeout can kill the whole
+# tree. The cost: when the PYTHON parent dies (SIGTERM from a supervising
+# agent, SIGKILL, a crash), the child keeps running -- that is how duo3
+# session 6 got two artists on one canvas and an uncounted bill. Now:
+#   * every live group is recorded in .claude_children/<our pid>,
+#   * atexit and (where no handler exists) SIGTERM/SIGHUP kill our groups,
+#   * a KeyboardInterrupt or any other BaseException mid-call kills it,
+#   * sweep_orphaned_claude() kills groups whose recording process is dead
+#     (the SIGKILL case, which nothing can intercept).
+_CLAUDE_REG_DIR = PROJECT_DIR / ".claude_children"
+_ACTIVE_CLAUDE = {}
+_CLAUDE_CLEANUP_INSTALLED = False
+
+
+def _claude_reg_save():
+    try:
+        _CLAUDE_REG_DIR.mkdir(exist_ok=True)
+        p = _CLAUDE_REG_DIR / str(os.getpid())
+        if _ACTIVE_CLAUDE:
+            p.write_text("".join(f"{pg} {tag}\n" for pg, tag in _ACTIVE_CLAUDE.items()))
+        elif p.exists():
+            p.unlink()
+    except OSError:
+        pass
+
+
+def _pg_alive(pg):
+    try:
+        os.killpg(pg, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+def _kill_pg(pg):
+    import signal as _signal
+    for sig, wait in ((_signal.SIGINT, 3.0), (_signal.SIGTERM, 3.0), (_signal.SIGKILL, 0.0)):
+        try:
+            os.killpg(pg, sig)
+        except (ProcessLookupError, PermissionError):
+            return
+        t0 = time.time()
+        while wait and time.time() - t0 < wait:
+            if not _pg_alive(pg):
+                return
+            time.sleep(0.1)
+
+
+def _kill_active_claude():
+    for pg in list(_ACTIVE_CLAUDE):
+        _kill_pg(pg)
+        _ACTIVE_CLAUDE.pop(pg, None)
+    _claude_reg_save()
+
+
+def _install_claude_cleanup():
+    global _CLAUDE_CLEANUP_INSTALLED
+    if _CLAUDE_CLEANUP_INSTALLED:
+        return
+    _CLAUDE_CLEANUP_INSTALLED = True
+    import atexit
+    import signal as _signal
+    atexit.register(_kill_active_claude)
+    for sig in (_signal.SIGTERM, _signal.SIGHUP):
+        prev = _signal.getsignal(sig)
+        if prev not in (_signal.SIG_DFL, None):
+            continue  # the harness's own graceful-stop handler stays in charge
+
+        def _h(signum, frame, _sig=sig):
+            _kill_active_claude()
+            _signal.signal(_sig, _signal.SIG_DFL)
+            os.kill(os.getpid(), _sig)
+        try:
+            _signal.signal(sig, _h)
+        except ValueError:
+            pass  # not the main thread
+
+
+def sweep_orphaned_claude():
+    """Kill claude groups recorded by agentscii processes that have died.
+    Returns [(pgid, tag), ...] killed."""
+    killed = []
+    if not _CLAUDE_REG_DIR.exists():
+        return killed
+    for f in _CLAUDE_REG_DIR.iterdir():
+        try:
+            owner = int(f.name)
+        except ValueError:
+            continue
+        if owner == os.getpid():
+            continue
+        try:
+            os.kill(owner, 0)
+            continue  # owner still running; its children are not orphans
+        except ProcessLookupError:
+            pass
+        except PermissionError:
+            continue
+        for line in f.read_text().splitlines():
+            pg, _, tag = line.partition(" ")
+            if pg.isdigit() and _pg_alive(int(pg)):
+                _kill_pg(int(pg))
+                killed.append((int(pg), tag))
+        try:
+            f.unlink()
+        except OSError:
+            pass
+    return killed
+
+
+def live_claude_tags():
+    """Tags of recorded claude groups that are alive, from any process."""
+    tags = set()
+    if _CLAUDE_REG_DIR.exists():
+        for f in _CLAUDE_REG_DIR.iterdir():
+            try:
+                for line in f.read_text().splitlines():
+                    pg, _, tag = line.partition(" ")
+                    if pg.isdigit() and _pg_alive(int(pg)):
+                        tags.add(tag)
+            except OSError:
+                pass
+    return tags
+
+
+def _run_claude_p(args_list, timeout=120, retries=1, tag="claude", **run_kwargs):
     # NOTE (2026-09-23): 120s is fine for short calls but NOT for the
     # defect review, which writes a 14-item table with cell coordinates
     # and routinely needs 3-7 minutes. Measured: the CLI itself answers
@@ -4509,6 +4642,13 @@ def _run_claude_p(args_list, timeout=120, retries=1, **run_kwargs):
             )
         except Exception as e:
             return _fail(f"spawn failed: {type(e).__name__}: {e}")
+        _install_claude_cleanup()
+        try:
+            _pg = _os.getpgid(proc.pid)
+            _ACTIVE_CLAUDE[_pg] = tag
+            _claude_reg_save()
+        except OSError:
+            _pg = None
         try:
             stdout, stderr = proc.communicate(timeout=timeout)
             return _sp.CompletedProcess(args_list, proc.returncode, stdout, stderr)
@@ -4527,12 +4667,20 @@ def _run_claude_p(args_list, timeout=120, retries=1, **run_kwargs):
                 f"timed out after {retries + 1} attempt(s) x {timeout}s "
                 "(process group killed)"
             )
-        except Exception as e:
+        except BaseException as e:
+            # BaseException, not Exception: a KeyboardInterrupt here used to
+            # leave the child running after the parent exited.
             try:
                 _os.killpg(_os.getpgid(proc.pid), _signal.SIGKILL)
             except Exception:
                 pass
+            if not isinstance(e, Exception):
+                raise
             return _fail(f"{type(e).__name__}: {e}")
+        finally:
+            if _pg is not None:
+                _ACTIVE_CLAUDE.pop(_pg, None)
+                _claude_reg_save()
     return _fail("exhausted retries with no result")
 
 
@@ -4731,7 +4879,7 @@ def opus_subject_check(path, title=None):
         )
 
         result = _run_claude_p(
-            ["claude", "-p", prompt, "--model", "claude-opus-5",
+            ["claude", "-p", prompt, "--model", OPUS_MODEL,
              "--allowedTools", "Read", "--output-format", "json"],
             cwd=tmpdir,
         )
@@ -4742,7 +4890,7 @@ def opus_subject_check(path, title=None):
             # same stuck-login auto-heal as opus_curate_review
             if _kill_stale_claude_login(max_age_s=300):
                 result = _run_claude_p(
-                    ["claude", "-p", prompt, "--model", "claude-opus-5",
+                    ["claude", "-p", prompt, "--model", OPUS_MODEL,
                      "--allowedTools", "Read", "--output-format", "json"],
                     cwd=tmpdir,
                 )
@@ -4815,7 +4963,7 @@ def opus_subject_check(path, title=None):
             "REASON: <one sentence>"
         )
         match_result = _run_claude_p(
-            ["claude", "-p", match_prompt, "--model", "claude-opus-5",
+            ["claude", "-p", match_prompt, "--model", OPUS_MODEL,
              "--output-format", "json"],
         )
         if match_result is None:
@@ -4993,7 +5141,7 @@ def opus_pairwise_regression_check(pinned_path, candidate_path, intended_title):
         )
 
         result = _run_claude_p(
-            ["claude", "-p", prompt, "--model", "claude-opus-5",
+            ["claude", "-p", prompt, "--model", OPUS_MODEL,
              "--allowedTools", "Read", "--output-format", "json"],
             cwd=tmpdir,
         )
@@ -5002,7 +5150,7 @@ def opus_pairwise_regression_check(pinned_path, candidate_path, intended_title):
         if result.returncode != 0 and result.returncode == 1 and not result.stderr.strip():
             if _kill_stale_claude_login(max_age_s=300):
                 result = _run_claude_p(
-                    ["claude", "-p", prompt, "--model", "claude-opus-5",
+                    ["claude", "-p", prompt, "--model", OPUS_MODEL,
                      "--allowedTools", "Read", "--output-format", "json"],
                     cwd=tmpdir,
                 )
@@ -5183,7 +5331,7 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
             )
 
             result = _run_claude_p(
-                ["claude", "-p", prompt, "--model", "claude-opus-5",
+                ["claude", "-p", prompt, "--model", OPUS_MODEL,
                  "--allowedTools", "Read", "--output-format", "json"],
                 cwd=tmpdir, timeout=420,
             )
@@ -5203,7 +5351,7 @@ def opus_curate_review(path, qwen_decision, qwen_critique):
                     )
                     if stale_login_killed:
                         result = _run_claude_p(
-                            ["claude", "-p", prompt, "--model", "claude-opus-5",
+                            ["claude", "-p", prompt, "--model", OPUS_MODEL,
                              "--allowedTools", "Read", "--output-format", "json"],
                             cwd=tmpdir, timeout=420,
                         )
@@ -6161,6 +6309,8 @@ def main():
             ref_note.write_text(src.read_text())
 
     STOP_FLAG.unlink(missing_ok=True)
+    for pg, tag in sweep_orphaned_claude():
+        print(f"[harness] killed orphaned claude process group {pg} ({tag})", flush=True)
     signal.signal(signal.SIGINT, _request_stop)
     signal.signal(signal.SIGTERM, _request_stop)
 

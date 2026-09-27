@@ -75,3 +75,6 @@ corpus/archive_run1_nan_corrupted/
 corpus/checkpoint_evals/
 corpus/flat_shaded_examples*/
 corpus/region_gen/
+
+# Live claude child-process registry (harness._run_claude_p)
+.claude_children/

@@ -57,7 +57,7 @@ def compare(p1, l1, p2, l2, rng):
     if not (render(pa, Path(d) / "a.png") and render(pb, Path(d) / "b.png")):
         return None
     r = harness._run_claude_p(
-        ["claude", "-p", PROMPT, "--model", "claude-opus-5",
+        ["claude", "-p", PROMPT, "--model", harness.OPUS_MODEL,
          "--allowedTools", "Read", "--output-format", "json"],
         timeout=600, retries=0, cwd=d)
     if r is None or r.returncode != 0:
