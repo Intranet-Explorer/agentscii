@@ -159,10 +159,11 @@ AGENTS = {
             "produces collage, not a composition. Real archives are reachable via "
             "bash/curl — 16colo.rs/group/<name> and /year/<YYYY> list packs; a pack's "
             "/raw/ path gets real bytes. references/study/ has curated examples on disk "
-            "already. STYLE.md has house conventions AND the actual build sequence "
-            "(block-in, light-source shading, detail texture, background texture, frame, "
-            "verify against a reference) — required reading before your first figurative "
-            "or ambition-tier piece. A human (the operator) directs this project and leaves "
+            "already. METHOD.md is the house "
+            "method — written by the artist that made gallery/pack55 by placing cells "
+            "individually, and it REPLACES the old region-pass sequence in "
+            "METHODOLOGY.md (now marked superseded). Read METHOD.md before your first "
+            "figurative or ambition-tier piece; STYLE.md still has house conventions. A human (the operator) directs this project and leaves "
             "either of you direction via your inbox. This is directed, quality-focused "
             "Check workspace/CATALOG.md before starting a new subject — it lists every subject ever attempted, with status and technique numbers. Repeating a past subject is allowed ONLY as a deliberate revisit: say so in the note, and improve on the archived version. "
             "work, not idle equilibrium — if nothing's in flight, start a new subject "
@@ -213,10 +214,11 @@ AGENTS = {
             "several patches from different pieces produces collage, not a composition. "
             "Real archives are reachable via bash/curl — 16colo.rs/group/<name> and "
             "/year/<YYYY> list packs; a pack's /raw/ path gets real bytes. "
-            "references/study/ has curated examples on disk already. STYLE.md has house "
-            "conventions AND the actual build sequence (block-in, light-source shading, "
-            "detail texture, background texture, frame, verify against a reference) — "
-            "required reading before your first figurative or ambition-tier piece. A "
+            "references/study/ has curated examples on disk already. METHOD.md is the house "
+            "method — written by the artist that made gallery/pack55 by placing cells "
+            "individually, and it REPLACES the old region-pass sequence in "
+            "METHODOLOGY.md (now marked superseded). Read METHOD.md before your first "
+            "figurative or ambition-tier piece; STYLE.md still has house conventions. A "
             "human (the operator) directs this project and leaves either of you direction via "
             "your inbox. Ground every judgment in something real: look at actual "
             "reference pieces before accepting or rejecting, not memory or vibes, and "
@@ -1426,6 +1428,58 @@ TOOLS = [
                 "type": "object",
                 "properties": {
                     "slug": {"type": "string", "description": "Canvas to measure."},
+                },
+                "required": ["slug"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_crop",
+            "description": (
+                "MAGNIFIED view of a small CELL region — the zoom. Returns a big "
+                "render of just those cells plus a per-cell dump of glyph, fg and "
+                "bg. This is how you see your own work at the scale craft lives "
+                "at: place a few cells, crop them, look, adjust. canvas_preview "
+                "shows the whole canvas at a size where a wrong cell is invisible; "
+                "this shows 12x10 cells big enough to judge. Use it constantly "
+                "while doing per-cell work, and before deciding a region is done."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to crop."},
+                    "x": {"type": "integer", "description": "Left CELL column."},
+                    "y": {"type": "integer", "description": "Top CELL row."},
+                    "w": {"type": "integer", "description": "Width in cells (keep small, 8-16)."},
+                    "h": {"type": "integer", "description": "Height in cells (keep small, 6-12)."},
+                    "scale": {"type": "integer", "description": "Magnification, default 6."},
+                },
+                "required": ["slug", "x", "y", "w", "h"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "canvas_self_check",
+            "description": (
+                "Run the REVIEWER'S OWN two cheapest tests on yourself, mid-build, "
+                "for free. Returns (1) a GLYPHS-ONLY render — every cell forced to "
+                "one colour, so only glyph density remains; (2) a COLOUR-ONLY "
+                "render — every glyph replaced by a solid block, so only colour "
+                "remains; (3) per-row ink density, which flags near-uniform rows. "
+                "The two rejections that have killed pieces here are literally "
+                "these tests: 'remove the color and nothing survives' (colour-only "
+                "still reads = colour is carrying it, glyphs are decoration) and "
+                "'strip the glyphs and you lose nothing'. Run this BEFORE you "
+                "submit and act on what it shows."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Canvas to check."},
                 },
                 "required": ["slug"],
             },
@@ -5527,6 +5581,46 @@ def run_shift(conn, agent):
                         f"{HOUSE_BAR['shade']}%, {HOUSE_BAR['colors']} colors, "
                         f"{HOUSE_BAR['regions']} masses."
                     )
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_crop":
+                try:
+                    import canvas_tools as ct
+                    b64, dump = ct.crop(str(WORKSPACE), fargs.get("slug", ""),
+                                        int(fargs.get("x", 0)), int(fargs.get("y", 0)),
+                                        int(fargs.get("w", 12)), int(fargs.get("h", 10)),
+                                        scale=int(fargs.get("scale", 6) or 6))
+                    log_event(conn, agent, shift_id, "tool", dump[:400], tool_name=name, tool_call_id=tc.get("id"))
+                    messages.append({
+                        "role": "tool", "tool_call_id": tc.get("id"),
+                        "content": [
+                            {"type": "text", "text": dump},
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                        ],
+                    })
+                    continue
+                except Exception as e:
+                    result = f"(error: {e})"
+            elif name == "canvas_self_check":
+                try:
+                    import canvas_tools as ct
+                    g_b64, c_b64, density = ct.self_check(str(WORKSPACE), fargs.get("slug", ""))
+                    txt = ("GLYPHS-ONLY (all one colour) first, then COLOUR-ONLY (every glyph a "
+                           "solid block). If the colour-only render still reads as your subject, "
+                           "the colour is carrying the picture and the glyphs are decoration -- "
+                           "that is the rejection 'remove the color and nothing survives'. If the "
+                           "glyphs-only render still reads, the density is doing real work.\n\n"
+                           + density)
+                    log_event(conn, agent, shift_id, "tool", txt[:400], tool_name=name, tool_call_id=tc.get("id"))
+                    messages.append({
+                        "role": "tool", "tool_call_id": tc.get("id"),
+                        "content": [
+                            {"type": "text", "text": txt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{g_b64}"}},
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{c_b64}"}},
+                        ],
+                    })
+                    continue
                 except Exception as e:
                     result = f"(error: {e})"
             elif name == "canvas_wordmark":
