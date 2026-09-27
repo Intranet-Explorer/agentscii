@@ -83,3 +83,28 @@ corpus/region_gen/
 
 # Harness autosaves are recovery copies, not work (the archive repo keeps them)
 workspace/scratch/*.autosave.ans
+
+# Local-only: lab notebook, run logs, experiment scripts and output.
+/briefs/
+/logs/
+/launchd/
+/docs/*
+!/docs/finding-contact.png
+!/docs/finding-lighthouse-drift.png
+/opus1_build.py
+/opus2_build.py
+/opus3_build.py
+/opus_artist_experiment.py
+/pipeline_test.py
+/test_gate.py
+/corpus/*
+!/corpus/*.py
+!/corpus/README.md
+/workspace/*
+!/workspace/STYLE.md
+!/workspace/references/
+/workspace/references/*
+!/workspace/references/study/
+/workspace/references/study/*
+!/workspace/references/study/_*.ans
+!/workspace/references/study/README.txt
