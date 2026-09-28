@@ -3004,6 +3004,19 @@ def run_tool(name, args, agent, shift_id=None):
                     f"actual image, not real content. Fix before submitting."
                 )
 
+            # --- provenance ------------------------------------------------------
+            # Whether the cells came from the agent's canvas_* tools or from a
+            # script it wrote. Not a gate: the curator decides what it means.
+            try:
+                import canvas_tools as _ct
+                _slug = p.stem.lstrip("_").split(".")[0]
+                for _cand in (p.stem, _slug):
+                    if _ct.canvas_exists(str(WORKSPACE), _cand):
+                        out.append(_ct.provenance_line(str(WORKSPACE), _cand))
+                        break
+            except Exception:
+                pass
+
             return "\n".join(out)
         except Exception as e:
             return f"(error inspecting piece: {e})"
@@ -4935,6 +4948,14 @@ def run_shift(conn, agent):
             log_event(conn, agent, shift_id, "assistant", None, tool_name=name,
                       tool_args=json.dumps(fargs), tool_call_id=tc.get("id"))
             print(f"[{agent}] tool: {name}({fargs})")
+
+            # Mark canvas writes made through the agent's own tools, so
+            # save_canvas can separate them from a script writing the canvas.
+            try:
+                import canvas_tools as _ct
+                _ct.WRITER = "tool" if str(name).startswith("canvas_") else None
+            except Exception:
+                pass
 
             if name == "message_agent":
                 other = "curator" if agent == "artist" else "artist"

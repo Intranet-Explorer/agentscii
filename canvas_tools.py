@@ -75,6 +75,12 @@ def list_canvases(workspace):
     return sorted(p.stem for p in d.glob("*.json"))
 
 
+# Set by harness to "tool" while it dispatches a canvas_* tool call, so
+# save_canvas can tell agent tool work from a script writing the canvas
+# directly. None means "script".
+WRITER = None
+
+
 def load_canvas(workspace, slug):
     path = _canvas_path(workspace, slug)
     if not path.exists():
@@ -86,6 +92,20 @@ def load_canvas(workspace, slug):
 
 
 def save_canvas(workspace, slug, data):
+    # Provenance: count cells written by the agent's canvas_* tools vs by a
+    # script or direct file write. _mask shipped 422/422 generated cells while
+    # 1,852 tool-written cells were overwritten, and nothing in the record said
+    # so. WRITER is set by harness while it dispatches a canvas_* tool; a bare
+    # `python3 some_generator.py` never sets it, so it lands in "script".
+    prov = data.setdefault("provenance", {"tool": 0, "script": 0, "saves": 0})
+    try:
+        prev = load_canvas(workspace, slug)
+        before = len(prev.get("glyph_override") or {})
+    except Exception:
+        before = 0
+    delta = max(0, len(data.get("glyph_override") or {}) - before)
+    prov[WRITER or "script"] = prov.get(WRITER or "script", 0) + delta
+    prov["saves"] = prov.get("saves", 0) + 1
     _canvas_path(workspace, slug).write_text(json.dumps(data))
 
 
@@ -1071,4 +1091,25 @@ def self_check(workspace, slug):
     lines.append(f"COLOUR-ONLY CHECK: {len(hues)} distinct hue(s) over inked cells. "
                  "Look at the second image: if the subject still reads there, "
                  "colour is carrying the picture and the glyphs are decoration.")
+    lines.append("")
+    lines.append(provenance_line(workspace, slug))
     return g_b64, c_b64, "\n".join(lines)
+
+
+def provenance_line(workspace, slug):
+    """One line: how many of this canvas's cells came from the agent's tools
+    vs from a script. Not a gate -- visibility."""
+    try:
+        data = load_canvas(workspace, slug)
+    except Exception:
+        return "PROVENANCE: unavailable."
+    prov = data.get("provenance") or {}
+    tool, script = prov.get("tool", 0), prov.get("script", 0)
+    total = tool + script
+    if not total:
+        return ("PROVENANCE: not recorded for this canvas (predates tracking, "
+                "or every cell came from pixel painting rather than glyph writes).")
+    return (f"PROVENANCE: {tool} cell-writes via canvas_* tools, {script} via "
+            f"script/direct write ({script * 100 // total}% script) over "
+            f"{prov.get('saves', 0)} saves. A canvas written entirely by a "
+            "generator is a rule applied over a region, whatever the metrics say.")
