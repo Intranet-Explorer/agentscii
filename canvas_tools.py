@@ -1028,4 +1028,47 @@ def self_check(workspace, slug):
             flat += 1
             lines.append(f"  row {ry:2d}: mean {mean:.2f} var {var:.4f}  <-- FLAT")
     lines.append(f"{flat} of {len(rows)} rows are near-uniform.")
+
+    # --- repeated rows -------------------------------------------------
+    # Within-row variance cannot see a row that is a copy of the row above
+    # it: _mask scored 0 near-uniform rows while ten of its twenty-one grid
+    # rows were the same string. Compare each row to the previous one on ink
+    # value per column, so two rows differing only in colour still count as
+    # repeated -- the glyph layer is what carries form.
+    # 0.90 separates the known-bad from the known-good set: worst run 9 rows
+    # on _mask and _mask.v1, <=4 on duo3.s7 and five accepted gallery pieces.
+    profs = [[INK.get(ch, .6) for ch, fg, bg in row] for row in rows]
+    runs, start = [], None
+    for i in range(1, len(rows)):
+        a, b = profs[i - 1], profs[i]
+        if max(sum(a) / len(a), sum(b) / len(b)) <= 0.03:
+            same = False                      # two blank rows are not a defect
+        else:
+            same = sum(1 for x, y in zip(a, b) if abs(x - y) < 1e-9) / len(a) >= 0.90
+        if same and start is None:
+            start = i - 1
+        elif not same and start is not None:
+            runs.append((start, i - 1)); start = None
+    if start is not None:
+        runs.append((start, len(rows) - 1))
+    runs = [(a, b) for a, b in runs if b > a]
+    longest = max((b - a + 1 for a, b in runs), default=0)
+    if runs:
+        lines.append("")
+        lines.append(f"REPEATED ROWS: {len(runs)} run(s), longest {longest} rows. "
+                     "A row that repeats the row above it is a rule applied down "
+                     "the canvas, not drawing.")
+        for a, b in runs:
+            lines.append(f"  rows {a}-{b} ({b - a + 1} rows) are >=90% identical")
+    else:
+        lines.append("")
+        lines.append("REPEATED ROWS: none (no run of 2+ rows is >=90% identical).")
+
+    # --- colour-only, stated explicitly --------------------------------
+    hues = {(fg if ch != " " else bg)
+            for row in rows for ch, fg, bg in row if INK.get(ch, .6) > 0}
+    lines.append("")
+    lines.append(f"COLOUR-ONLY CHECK: {len(hues)} distinct hue(s) over inked cells. "
+                 "Look at the second image: if the subject still reads there, "
+                 "colour is carrying the picture and the glyphs are decoration.")
     return g_b64, c_b64, "\n".join(lines)
