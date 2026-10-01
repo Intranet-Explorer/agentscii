@@ -4991,9 +4991,22 @@ def run_shift(conn, agent):
                 out = run_tool(name, fargs, agent, shift_id=shift_id)
                 result, dest = out if isinstance(out, tuple) else (out, None)
                 if dest is not None:
+                    # The logged action must match where the file actually
+                    # went. An accept that the blind subject check or the
+                    # pairwise gate overturns lands in rejected/ while
+                    # fargs["decision"] still says "accept" -- that mismatch
+                    # made curation_events unreadable against disk.
+                    decision = fargs.get("decision", "")
+                    action = decision
+                    if decision == "accept" and dest.parent.name == "rejected":
+                        action = "override_reject"
                     conn.execute(
                         "INSERT INTO curation_events (shift_id, action, path, dest_path, note, timestamp) VALUES (?,?,?,?,?,?)",
-                        (shift_id, fargs.get("decision", ""), fargs.get("path", ""), str(dest.relative_to(WORKSPACE)), fargs.get("critique", ""), time.time()),
+                        (shift_id, action, fargs.get("path", ""), str(dest.relative_to(WORKSPACE)),
+                         (f"[override_reject: curator said accept; gate moved it to "
+                          f"rejected/] {result}\n\n{fargs.get('critique', '')}"
+                          if action == "override_reject" else fargs.get("critique", "")),
+                         time.time()),
                     )
                     conn.commit()
             elif name == "canvas_new":

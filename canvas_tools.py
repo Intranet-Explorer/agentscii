@@ -103,19 +103,31 @@ def load_canvas(workspace, slug):
 
 
 def save_canvas(workspace, slug, data):
-    # Provenance: count cells written by the agent's canvas_* tools vs by a
-    # script or direct file write. _mask shipped 422/422 generated cells while
-    # 1,852 tool-written cells were overwritten, and nothing in the record said
-    # so. WRITER is set by harness while it dispatches a canvas_* tool; a bare
-    # `python3 some_generator.py` never sets it, so it lands in "script".
-    prov = data.setdefault("provenance", {"tool": 0, "script": 0, "saves": 0})
+    # Provenance, per cell: a cell's source is whatever wrote it LAST. The
+    # first version counted only net-new cells, so a generator that overwrote
+    # 422 existing cells without adding any scored script=0 -- exactly _mask's
+    # failure mode, invisible. WRITER is set by harness while it dispatches a
+    # canvas_* tool; a bare `python3 generator.py` never sets it -> "script".
+    writer = WRITER or "script"
     try:
         prev = load_canvas(workspace, slug)
-        before = len(prev.get("glyph_override") or {})
+        prev_go = prev.get("glyph_override") or {}
+        cell_src = dict(prev.get("cell_src") or {})
     except Exception:
-        before = 0
-    delta = max(0, len(data.get("glyph_override") or {}) - before)
-    prov[WRITER or "script"] = prov.get(WRITER or "script", 0) + delta
+        prev_go, cell_src = {}, {}
+    now_go = data.get("glyph_override") or {}
+    for key, cell in now_go.items():
+        if key not in prev_go or prev_go[key] != cell:
+            cell_src[key] = writer          # last writer wins
+    for key in list(cell_src):
+        if key not in now_go:
+            del cell_src[key]               # cell erased; drop its attribution
+    data["cell_src"] = cell_src
+    counts = {"tool": 0, "script": 0}
+    for src in cell_src.values():
+        counts[src] = counts.get(src, 0) + 1
+    prov = data.setdefault("provenance", {})
+    prov.update(counts)
     prov["saves"] = prov.get("saves", 0) + 1
     _canvas_path(workspace, slug).write_text(json.dumps(data))
 
