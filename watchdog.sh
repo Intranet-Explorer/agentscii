@@ -69,6 +69,9 @@ start_harness() {
     ( python3 "$DIR/harness.py" 2>&1 | tee -a "$LOG" ) &
 }
 
+LAST_START=0
+FAST_FAILS=0
+
 log "watchdog started (checking every ${CHECK_INTERVAL}s)"
 
 if [ -f "$STOP_FLAG" ]; then
@@ -91,7 +94,23 @@ while true; do
     kill_stale_claude_login
 
     if ! is_harness_running; then
+        # Back off when the harness keeps dying fast. launchd's
+        # ThrottleInterval cannot help here: launchd supervises THIS script,
+        # not harness.py, so a harness that exits immediately (dead ollama)
+        # would otherwise be restarted every CHECK_INTERVAL forever.
+        now=$(date +%s)
+        if [ $((now - LAST_START)) -lt 60 ]; then
+            FAST_FAILS=$((FAST_FAILS + 1))
+        else
+            FAST_FAILS=0
+        fi
+        if [ "$FAST_FAILS" -ge 3 ]; then
+            log "harness died within 60s, $FAST_FAILS times running - backing off 60s"
+            sleep 60
+            FAST_FAILS=0
+        fi
         log "harness.py not running - restarting"
+        LAST_START=$(date +%s)
         start_harness
     fi
 done

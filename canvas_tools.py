@@ -88,7 +88,18 @@ def load_canvas(workspace, slug):
             f"no canvas named '{slug}' (call canvas_new first). "
             f"Open canvases: {list_canvases(workspace)}"
         )
-    return json.loads(path.read_text())
+    data = json.loads(path.read_text())
+    # A script that redirects stdout over the canvas file leaves valid JSON
+    # that is not a canvas (found 2026-10-01: keyhole4.json held the bare
+    # float 55.15432893255071). Fail here rather than handing a float to
+    # every caller that expects a dict.
+    if not isinstance(data, dict) or "glyph_override" not in data:
+        raise CanvasError(
+            f"canvas '{slug}' is corrupt: {path} holds "
+            f"{type(data).__name__}, not a canvas. A script probably wrote "
+            f"over it. Delete it and canvas_new, or restore from the .ans."
+        )
+    return data
 
 
 def save_canvas(workspace, slug, data):

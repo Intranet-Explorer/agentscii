@@ -4874,6 +4874,7 @@ def run_shift(conn, agent):
     log_event(conn, agent, shift_id, "system", cfg["soul"] + msg_note)
 
     note = ""
+    shift_failed = False
     last_reasoning = ""
     had_pending_final = None
     replied_final = None
@@ -4904,6 +4905,7 @@ def run_shift(conn, agent):
                 # Record the failure so the next shift doesn't resume from an
                 # older note.
                 note = f"(shift cut short: model call failed: {str(e)[:200]})"
+                shift_failed = True
                 break
 
         choice = resp.get("choices", [{}])[0]
@@ -5450,7 +5452,7 @@ def run_shift(conn, agent):
     conn.commit()
     _record_shift_tool_summary(conn, shift_id)
     print(f"=== {agent} shift {shift_id} ended ({ended_at - started_at:.1f}s): {note} ===")
-    return wants_continue
+    return wants_continue, shift_failed
 
 
 def main():
@@ -5485,13 +5487,22 @@ def main():
     consecutive = 0
     print("AGENTSCII harness starting. Ctrl+C, SIGTERM, or "
           f"'touch {STOP_FLAG}' to stop cleanly after the current turn.")
+    failed = False
     try:
         while not stop_requested():
             if consecutive == 0:
                 other_model = AGENTS["curator" if current == "artist" else "artist"]["model"]
                 if other_model != MODEL:
                     unload_model(other_model)
-            wants_continue = run_shift(conn, current)
+            wants_continue, shift_failed = run_shift(conn, current)
+            if shift_failed:
+                # A shift that died on an unhandled error must NOT look
+                # like a clean stop: the watchdog plist uses
+                # SuccessfulExit=false, so exiting 0 here left the agents
+                # down until the next reboot. Exit nonzero and let launchd
+                # restart us (ThrottleInterval caps the retry rate).
+                failed = True
+                break
             consecutive += 1
             if wants_continue and consecutive < MAX_CONSECUTIVE_SHIFTS:
                 pass
@@ -5505,7 +5516,10 @@ def main():
         conn.close()
         # Don't unlink STOP_FLAG: the watchdog reads it to exit instead of
         # restarting. Whoever set the flag (the dashboard) clears it.
-        print("[harness] Stopped cleanly.")
+        print("[harness] Stopped cleanly." if not failed else
+              "[harness] Exiting nonzero after a failed shift so launchd restarts us.")
+    if failed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
