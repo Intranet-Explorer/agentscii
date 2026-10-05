@@ -2623,12 +2623,16 @@ def _inside(p, root):
 # --- Agent shell sandbox --------------------------------------------------
 # Agent bash runs under macOS sandbox-exec: writes confined to workspace/,
 # temp and caches; credential stores and the keychain unreachable; the
-# claude CLI blocked; secrets stripped from the env. Network stays open
-# (agents curl 16colo.rs). Fails closed: if the sandbox can't be verified
+# claude CLI blocked; secrets stripped from the env. Internet stays open
+# (agents curl 16colo.rs); loopback is denied, so no local service (the
+# dashboards, ollama) is reachable from the shell. Fails closed: if the sandbox can't be verified
 # on first use, the bash tool is refused.
 _SANDBOX_EXEC = "/usr/bin/sandbox-exec"
 _SECRET_ENV = re.compile(r"KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|COOKIE|SESSION", re.I)
 _SANDBOX_STATE = {"ok": None, "why": ""}
+
+# Sandbox "localhost" = loopback; blocks 127.0.0.1 and ::1 (test_agent_loopback.py).
+LOOPBACK_DENY = '(deny network-outbound (remote ip "localhost:*"))'
 
 
 def _sandbox_profile():
@@ -2661,6 +2665,7 @@ def _sandbox_profile():
         "(deny process-exec " + " ".join(claude_bins) + ")",
         '(deny mach-lookup (global-name "com.apple.SecurityServer")'
         ' (global-name "com.apple.securityd"))',
+        LOOPBACK_DENY,
     ])
 
 
