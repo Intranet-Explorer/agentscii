@@ -8,6 +8,7 @@ publish. Answers land in workspace/reviews/<date>.json.
   python3 review_sheet.py --apply F               # publish + tell the agents
   python3 review_sheet.py --apply F --no-deliver  # publish, don't message
   python3 review_sheet.py --apply F --force-small-baseline  # first delivery under 8
+  python3 review_sheet.py --apply-set NAME F      # record (and maybe deliver) a review set
   python3 review_sheet.py --deliver-baseline      # send what --no-deliver kept
 
 Approved pieces land in gallery/unpacked/, which release_pack already reads,
@@ -17,6 +18,7 @@ import datetime
 import glob
 import json
 import os
+import re
 import shutil
 import sqlite3
 import sys
@@ -57,10 +59,92 @@ def page_html():
         })
     if not cards:
         return None, 0
-    first = {"pending": first_delivery_pending(), "min": BASELINE_MIN}
+    return _page(cards, {"pending": first_delivery_pending(), "min": BASELINE_MIN},
+                 "/api/review/apply", PAGE_SUB_PENDING), len(cards)
+
+
+PAGE_SUB_PENDING = ("Pieces the curator accepted, waiting in <code>workspace/pending/</code>. "
+                    "Nothing is published until you mark <b>publish</b>.")
+PAGE_SUB_SET = ("Review set <b>{name}</b>: {n} pieces. Applying this set moves and publishes "
+                "nothing; it records your answers{deliver}.")
+
+
+def _page(cards, first, apply_url, sub):
     return (TEMPLATE.replace("__CARDS__", json.dumps(cards))
                     .replace("__FIRST__", json.dumps(first))
-                    .replace("__DATE__", datetime.date.today().isoformat()), len(cards))
+                    .replace("__APPLY__", json.dumps(apply_url))
+                    .replace("__SUB__", sub)
+                    .replace("__DATE__", datetime.date.today().isoformat()))
+
+
+# --- review sets: fixed lists of existing pieces, kept in PRIVATE ----------
+# A set file holds each card's path and any hidden fields (provenance).
+# The page gets only {id, title, img}; answers come back keyed by id.
+
+def _set_path(name):
+    if not re.fullmatch(r"[a-z0-9_-]{1,40}", name or ""):
+        raise ValueError(f"bad review set name: {name!r}")
+    return os.path.join(SETS_DIR, f"{name}.json")
+
+
+def load_set(name):
+    with open(_set_path(name)) as f:
+        return json.load(f)
+
+
+def list_sets():
+    if not os.path.isdir(SETS_DIR):
+        return []
+    return sorted(os.path.basename(f)[:-5] for f in glob.glob(os.path.join(SETS_DIR, "*.json"))
+                  if not f.endswith(".answers.json"))
+
+
+def set_page_html(name):
+    st = load_set(name)
+    cards = []
+    for c in st["cards"]:
+        path = os.path.join(ROOT, c["path"]) if not os.path.isabs(c["path"]) else c["path"]
+        b64, _n = harness.render_ans_to_png_b64(path, offset=0, max_rows=c.get("rows") or 4000)
+        if not b64:
+            raise ValueError(f"render failed for card {c['id']}")
+        title = (c.get("label") or harness._extract_intended_title(path)
+                 or c["slug"].lstrip("_").replace("_", " ").upper())
+        cards.append({"id": c["id"], "title": title, "img": b64})
+    first = {"pending": bool(st.get("deliver")) and first_delivery_pending(), "min": BASELINE_MIN}
+    sub = PAGE_SUB_SET.format(name=name, n=len(cards), deliver=(
+        " and delivers the verdicts to both agents" if st.get("deliver")
+        else ". Nothing is sent to the agents"))
+    if st.get("applied"):
+        sub += f" <b>Already applied {st['applied']}.</b>"
+    return _page(cards, first, f"/api/review/apply?set={name}", sub)
+
+
+def apply_set(name, answers, force=False):
+    """Record answers for a review set; deliver them if the set says so.
+    Moves and publishes nothing. Refuses a second apply of the same set."""
+    st = load_set(name)
+    if st.get("applied"):
+        raise ValueError(f"set {name} was already applied {st['applied']}")
+    if not isinstance(answers, list) or not all(isinstance(a, dict) for a in answers):
+        raise ValueError("expected a JSON list of answer objects")
+    by_id = {c["id"]: c for c in st["cards"]}
+    bad = [a.get("id") for a in answers if a.get("id") not in by_id]
+    if bad:
+        raise ValueError(f"answers name cards not in set {name}: {bad}")
+    # Same shape _batch_body reads, named by the piece's own file.
+    named = [{**a, "file": os.path.basename(by_id[a["id"]]["path"])} for a in answers]
+    if st.get("deliver"):
+        check_baseline(named, force=force)
+    out = os.path.join(SETS_DIR, f"{name}.answers.json")
+    with open(out, "w") as f:
+        json.dump([{**a, **by_id[a["id"]]} for a in answers], f, indent=2)
+    n = _deliver(named) if st.get("deliver") else sum(1 for a in answers if _answered(a))
+    st["applied"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    with open(_set_path(name), "w") as f:
+        json.dump(st, f, indent=1)
+    print(f"  set {name}: {n} answered, answers in {out}"
+          + ("" if st.get("deliver") else "; nothing delivered"))
+    return n
 
 
 def build():
@@ -88,6 +172,7 @@ REVIEWS_MD = os.path.join(ROOT, "workspace", "REVIEWS.md")
 PRIVATE = os.path.expanduser("~/agentscii-private")
 BASELINE_MD = os.path.join(PRIVATE, "baseline_reviews.md")
 DESIGN_TXT = os.path.join(PRIVATE, "EXPERIMENT_DESIGN.txt")
+SETS_DIR = os.path.join(PRIVATE, "review_sets")
 
 REVIEWS_HEAD = ("# Operator reviews\n\nTyler's own verdicts on finished pieces "
                 "-- the only judgement that decides publishing. Newest first.\n")
@@ -346,9 +431,7 @@ TEMPLATE = r"""<!doctype html>
   .save { background:#1e3a5f; border-color:#2f5d94; color:#cfe3ff; }
 </style>
 <h1>Publication review — __DATE__</h1>
-<p class="sub">Pieces the curator accepted, waiting in <code>workspace/pending/</code>.
-Nothing is published until you mark <b>publish</b>. Titles are shown; this is the
-publish decision, not a blind test.</p>
+<p class="sub">__SUB__</p>
 <div id="cards"></div>
 <div class="bar">
   <span>publish-decided <b id="count">0</b>/<b id="total">0</b></span>
@@ -360,7 +443,8 @@ publish decision, not a blind test.</p>
 <script>
 const CARDS = __CARDS__;
 const FIRST = __FIRST__;   // {pending: no delivery recorded yet, min: pieces needed}
-const KEY = 'agentscii_review___DATE__';
+const APPLY = __APPLY__;
+const KEY = 'agentscii_review___DATE__' + APPLY;   // pending and each set keep separate drafts
 let A = JSON.parse(localStorage.getItem(KEY) || '{}');
 const QS = [['reads','reads as subject'],['good','well made'],['publish','publish']];
 
@@ -379,7 +463,7 @@ function render() {
     el.innerHTML = `
       <div class="head"><span class="n">${c.id}/${CARDS.length}</span>
         <span class="title">${c.title.replace(/</g,'&lt;')}</span>
-        <span class="fn">${c.file}</span></div>
+        <span class="fn">${c.file || ''}</span></div>
       <div class="imgwrap"><img src="data:image/png;base64,${c.img}" alt=""></div>
       ${c.critique ? `<div class="crit">${c.critique.replace(/</g,'&lt;')}</div>` : ''}
       <div class="qs">${qs}
@@ -416,7 +500,7 @@ function guard() {
 }
 function answers() {
   return CARDS.map(c => Object.assign(
-    {file: c.file, title: c.title, reads: null, good: null, publish: null, note: ''},
+    {id: c.id, file: c.file, title: c.title, reads: null, good: null, publish: null, note: ''},
     A[c.id] || {}));
 }
 if (location.protocol.startsWith('http')) document.getElementById('apply').hidden = false;
@@ -424,12 +508,13 @@ async function saveApply() {
   const st = document.getElementById('status');
   const msg = FIRST.pending
     ? `This is the first delivery. It ends the baseline with ${nAnswered()} pieces. Continue?`
+    : APPLY.includes('?set=') ? 'Record these answers for this review set?'
     : 'Publish approved pieces and send every verdict to both agents?';
   if (!confirm(msg)) return;
   document.getElementById('apply').disabled = true;
   st.textContent = 'applying…';
   try {
-    const r = await fetch('/api/review/apply', {method: 'POST',
+    const r = await fetch(APPLY, {method: 'POST',
       headers: {'Content-Type': 'application/json', 'X-Agentscii': '1'},
       body: JSON.stringify(answers())});
     const d = await r.json();
@@ -455,6 +540,9 @@ render();
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--deliver-baseline":
         deliver_baseline()
+    elif len(sys.argv) > 3 and sys.argv[1] == "--apply-set":
+        apply_set(sys.argv[2], json.load(open(sys.argv[3])),
+                  force="--force-small-baseline" in sys.argv[4:])
     elif len(sys.argv) > 2 and sys.argv[1] == "--apply":
         apply(sys.argv[2], no_deliver="--no-deliver" in sys.argv[3:],
               force="--force-small-baseline" in sys.argv[3:])
