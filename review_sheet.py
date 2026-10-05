@@ -11,10 +11,9 @@ workspace/reviews/<date>.json.
   python3 review_sheet.py --apply F --no-deliver  # publish, HOLD the verdicts
   python3 review_sheet.py --deliver-baseline      # release the held batch
 
---no-deliver is for batch 1, the no-feedback baseline: it publishes and
-records the verdicts in ~/agentscii-private/baseline_reviews.md -- outside
-the repo and outside agent-browsable workspace/ -- without messaging the
-agents and without touching REVIEWS.md, which the seat prompts point at.
+--no-deliver publishes and records the verdicts privately without messaging
+the agents. Rationale is operator-only: ~/agentscii-private/EXPERIMENT_DESIGN.txt
+(this file is in the repo, which the agents can read).
 
 Approved pieces land in gallery/unpacked/, which release_pack already reads,
 so packing and syncing are unchanged.
@@ -81,22 +80,18 @@ def _yn(v):
 
 REVIEWS_MD = os.path.join(ROOT, "workspace", "REVIEWS.md")
 
-# Held batch lives OUTSIDE the repo and outside workspace/, because workspace/
-# is agent-browsable: the seats have run `ls workspace/` 339 times and three
-# shifts cat'd a workspace .md wholesale. workspace/reviews/baseline.md would
-# sit one `cat` away from the agents it is meant to be hidden from.
+# Held batch lives outside the repo and outside workspace/: both are
+# agent-readable, and a sandbox deny rule covers this path (see
+# test_private_denied.py).
 PRIVATE = os.path.expanduser("~/agentscii-private")
 BASELINE_MD = os.path.join(PRIVATE, "baseline_reviews.md")
 
 REVIEWS_HEAD = ("# Operator reviews\n\nTyler's own verdicts on finished pieces "
                 "-- the only judgement that decides publishing. Newest first.\n")
 BASELINE_HEAD = (
-    "# HELD baseline reviews -- NOT delivered to the agents\n\n"
-    "Batch 1 is the no-feedback baseline: the agents work under the new seat "
-    "prompts but have not seen a single verdict. Delivering these would "
-    "destroy the before/after. Release with:\n"
-    "    python3 review_sheet.py --deliver-baseline\n"
-    "which messages both seats and moves these entries into REVIEWS.md.\n")
+    "# HELD reviews -- not delivered\n\n"
+    "Release with: python3 review_sheet.py --deliver-baseline\n"
+    "Rationale: ~/agentscii-private/EXPERIMENT_DESIGN.txt\n")
 
 BATCH_MARK = " -- BASELINE (not delivered)"
 HOLD_NOTE = "held, not delivered"

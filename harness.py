@@ -2641,8 +2641,14 @@ def _sandbox_profile():
     def q(x):
         return '"' + x.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
+    # agentscii-private holds the operator's own judgements: the blind
+    # calibration answers and the HELD baseline review batch. The agents are
+    # the subject of that experiment, so they must not be able to read it --
+    # file-read* denies metadata as well as data, so `ls` fails too, not just
+    # `cat`.
     secret_dirs = [".ssh", ".claude", ".config/gh", ".hermes", ".aws", ".gnupg",
-                   ".docker", ".kube", "Library/Keychains", ".local/share/claude"]
+                   ".docker", ".kube", "Library/Keychains", ".local/share/claude",
+                   "agentscii-private"]
     secret_files = [".claude.json", ".netrc", ".git-credentials", ".npmrc",
                     ".pypirc", ".local/bin/claude"]
     deny = ([f"(subpath {q(h + '/' + d)})" for d in secret_dirs]
@@ -3881,7 +3887,8 @@ def _opus_sandbox_profile():
                 h + "/.claude", h + "/.local/share/claude", h + "/.local/state/claude",
                 h + "/.cache", h + "/Library/Caches", h + "/Library/Logs",
                 "/private/tmp", "/private/var/folders"]
-    secrets = [".ssh", ".hermes", ".config/gh", ".aws", ".gnupg", ".docker", ".kube"]
+    secrets = [".ssh", ".hermes", ".config/gh", ".aws", ".gnupg", ".docker",
+               ".kube", "agentscii-private"]
     secret_files = [".netrc", ".git-credentials", ".npmrc", ".pypirc"]
     return "\n".join([
         "(version 1)",
