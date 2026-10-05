@@ -32,6 +32,9 @@ PROJECT_DIR = HOME / "agentscii"
 WORKSPACE = PROJECT_DIR / "workspace"
 GALLERY = WORKSPACE / "gallery"
 GALLERY_UNPACKED = GALLERY / "unpacked"
+# Curator accepts land here and wait for manual review (review_sheet.py).
+# Nothing reaches the public gallery without Tyler approving it.
+PENDING = WORKSPACE / "pending"
 SUBMISSIONS = WORKSPACE / "submissions"
 SCRATCH = WORKSPACE / "scratch"
 REJECTED = WORKSPACE / "rejected"
@@ -632,6 +635,7 @@ def _rebuild_catalog():
     areas = [
         ("in-review", SUBMISSIONS),
         ("shipped", WORKSPACE / "gallery"),
+        ("accepted-pending-review", PENDING),
         ("accepted-unpacked", GALLERY_UNPACKED),
         ("rejected", REJECTED),
         ("shelved", SHELVED),
@@ -3516,9 +3520,9 @@ def run_tool(name, args, agent, shift_id=None):
                         ), None
                 # Opus is the sole accept/reject authority; Qwen's verdict is passed
                 # through for logging only.
-                return curate_piece_opus_gated(src, decision, critique)
+                return curate_piece_opus_gated(src, decision, critique, shift_id)
             elif decision == "reject":
-                return curate_piece_opus_gated(src, decision, critique)
+                return curate_piece_opus_gated(src, decision, critique, shift_id)
             else:
                 return f"(error: decision must be 'accept' or 'reject', got {decision!r})", None
         except Exception as e:
@@ -3533,30 +3537,42 @@ def run_tool(name, args, agent, shift_id=None):
     return f"(unknown tool: {name})"
 
 
-def curate_piece_opus_gated(src, decision, critique):
+def _log_curation_event(shift_id, action, path, dest_path, note):
+    """One row in curation_events. Used for advisory verdicts that move
+    nothing, so the DB records what the check thought without the file
+    location implying a decision."""
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        conn.execute(
+            "INSERT INTO curation_events (shift_id, action, path, dest_path, note, timestamp) "
+            "VALUES (?,?,?,?,?,?)",
+            (shift_id, action, str(path), dest_path, note, time.time()))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def curate_piece_opus_gated(src, decision, critique, shift_id=None):
     """Hand the accept/reject decision to Opus, the only authority. Qwen's
     decision and critique are logged, not used.
 
     Keeps the subjects table in sync: accept/shelve close the subject;
     reject leaves it open and forces a higher version next time. Returns
     (message, dest_path_or_None), the same shape as curate_piece."""
-    # --- blind subject-recognition gate -------------------------------
-    # Runs first. A piece can pass every mechanical gate and still not read
-    # as its intended subject.
+    # --- blind subject-recognition gate -> ADVISORY ONLY ---------------
+    # Was a hard gate that moved the file to rejected/ and overrode the
+    # curator's accept. Calibration against Tyler's own blind reads (20
+    # pieces, 2026-10-05) put it at 7/20 agreement, kappa -0.30 -- below
+    # chance, i.e. it overturned pieces that read fine and passed pieces
+    # that didn't. It now records its verdict and changes nothing.
     subject_result = opus_subject_check(src)
-    if subject_result["status"] == "mismatch":
-        dest = _move_with_sidecars(src, REJECTED, new_critique=subject_result["message"])
-        slug0 = core_slug(Path(src).stem)
-        version0 = _extract_version(Path(src).stem)
-        db0 = sqlite3.connect(DB_PATH)
-        try:
-            _touch_subject(db0, slug0, version0, src, status="rejected")
-        finally:
-            db0.close()
-        return (
-            f"rejected: moved to rejected/{dest.name} — "
-            f"{subject_result['message']}"
-        ), dest
+    _status = subject_result.get("status")
+    if _status in ("match", "mismatch"):
+        _note = f"[{_status}] {subject_result.get('message', '')}"
+    else:
+        # A refused/failed check must not read as a pass. (standing rule)
+        _note = f"SUBJECT_CHECK_DID_NOT_RUN [{_status}]: {subject_result.get('message', '')}"
+    _log_curation_event(shift_id, "subject_advisory", src, None, _note)
 
     # --- pairwise regression gate -------------------------------------
     # Runs second. Catches a revision that improves the metrics but reads
@@ -3612,7 +3628,7 @@ def curate_piece_opus_gated(src, decision, critique):
     if status == "error":
         return result["message"], None
     if status == "accept":
-        dest = _move_with_sidecars(src, GALLERY_UNPACKED, new_critique=critique)
+        dest = _move_with_sidecars(src, PENDING, new_critique=critique)
         _sync_subject("accepted")
         agree = "" if decision == "accept" else " (Qwen's own read was REJECT — Opus overrode it)"
         halt = ""
@@ -3634,15 +3650,15 @@ def curate_piece_opus_gated(src, decision, critique):
         finally:
             _db_tw.close()
         return (
-            f"accepted: moved to gallery/unpacked/{dest.name}, pending next "
-            f"pack release. Opus verdict: ACCEPT{agree}.\n\n{result['message']}{halt}"
+            f"accepted: moved to pending/{dest.name}, awaiting manual "
+            f"review before publication. Opus verdict: ACCEPT{agree}.\n\n{result['message']}{halt}"
         ), dest
     if status == "reject":
         # Two tiers: a piece can miss the scene bar and still clear the house
         # bar. Those ship labelled house-standard with the scene critique
         # attached. The scene bar is not lowered.
         if result.get("house_verdict") == "pass":
-            dest = _move_with_sidecars(src, GALLERY_UNPACKED, new_critique=(
+            dest = _move_with_sidecars(src, PENDING, new_critique=(
                 "TIER: house-standard (shipped) / scene-standard: REJECT\n\n"
                 "This piece clears the house bar -- a subject resolves, it is "
                 "constructed rather than composited, and it carries no debug "
@@ -3653,8 +3669,9 @@ def curate_piece_opus_gated(src, decision, critique):
                 + (critique or "")))
             _sync_subject("accepted")
             return (
-                f"shipped HOUSE-STANDARD: moved to gallery/unpacked/{dest.name}. "
-                f"Scene-standard verdict: REJECT, critique attached and public."
+                f"accepted HOUSE-STANDARD: moved to pending/{dest.name}, "
+                f"awaiting manual review. Scene-standard verdict: REJECT, "
+                f"critique attached."
                 f"\n\n{result['message']}"
             ), dest
         dest = _move_with_sidecars(src, REJECTED, new_critique=critique)
@@ -5470,7 +5487,7 @@ def run_shift(conn, agent):
 
 def main():
     conn = init_db()
-    for d in (WORKSPACE, GALLERY, GALLERY_UNPACKED, SUBMISSIONS, SCRATCH, REJECTED, REFERENCES):
+    for d in (WORKSPACE, GALLERY, GALLERY_UNPACKED, PENDING, SUBMISSIONS, SCRATCH, REJECTED, REFERENCES):
         d.mkdir(parents=True, exist_ok=True)
     if not (WORKSPACE / "README.md").exists():
         (WORKSPACE / "README.md").write_text(
