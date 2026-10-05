@@ -62,6 +62,14 @@ def stop_requested():
 # Override with AGENTSCII_OPUS_MODEL.
 OPUS_MODEL = os.environ.get("AGENTSCII_OPUS_MODEL", "claude-opus-5-5")
 
+# Blind subject check: OFF by default, and not worth Opus spend.
+# Calibrated against Tyler's own reads on 20 pieces (2026-10-05): blind
+# 7/20 (kappa -0.30), primed with the title 9/20 (kappa -0.15, p=0.82).
+# No model judge tracks him on legibility either way, so the operator is
+# the judge. Code and tests kept; set AGENTSCII_SUBJECT_CHECK=1 to re-run
+# the experiment.
+SUBJECT_CHECK_ENABLED = os.environ.get("AGENTSCII_SUBJECT_CHECK", "0") == "1"
+
 MODEL = "qwen3.8:27b-mlx"  # stock Qwen3.8-27B, MLX build
 # Not the abliterated variant, which expects temperature=0 and no system
 # prompt. top_k/repeat_penalty/min_p aren't accepted by
@@ -3567,12 +3575,14 @@ def curate_piece_opus_gated(src, decision, critique, shift_id=None):
     # that didn't. It now records its verdict and changes nothing.
     subject_result = opus_subject_check(src)
     _status = subject_result.get("status")
-    if _status in ("match", "mismatch"):
-        _note = f"[{_status}] {subject_result.get('message', '')}"
-    else:
-        # A refused/failed check must not read as a pass. (standing rule)
-        _note = f"SUBJECT_CHECK_DID_NOT_RUN [{_status}]: {subject_result.get('message', '')}"
-    _log_curation_event(shift_id, "subject_advisory", src, None, _note)
+    if _status != "disabled":     # off by config = neither a pass nor a refusal
+        if _status in ("match", "mismatch"):
+            _note = f"[{_status}] {subject_result.get('message', '')}"
+        else:
+            # A refused/failed check must not read as a pass. (standing rule)
+            _note = (f"SUBJECT_CHECK_DID_NOT_RUN [{_status}]: "
+                     f"{subject_result.get('message', '')}")
+        _log_curation_event(shift_id, "subject_advisory", src, None, _note)
 
     # --- pairwise regression gate -------------------------------------
     # Runs second. Catches a revision that improves the metrics but reads
@@ -4065,10 +4075,20 @@ def opus_subject_check(path, title=None):
     ask what it depicts, then whether that matches the intended title.
 
     Separate from the defect review so the answer isn't primed by it.
-    Returns {"status": "ok"|"mismatch"|"error", "message", "blind_subject",
-    "intended_title"}. No title to compare against counts as "ok"; only a
-    confirmed mismatch rejects.
+    Returns {"status": "ok"|"mismatch"|"error"|"disabled", "message",
+    "blind_subject", "intended_title"}. No title to compare against counts
+    as "ok"; only a confirmed mismatch rejects.
+
+    Off unless AGENTSCII_SUBJECT_CHECK=1. Gated here rather than at the call
+    site so no caller (harness, opus_duo, opus_session, pipeline_test) can
+    spend Opus money on a check that does not track the operator's eye.
+    "disabled" is its own status: a deliberately-off check is neither a pass
+    nor a refusal.
     """
+    if not SUBJECT_CHECK_ENABLED:
+        return {"status": "disabled",
+                "message": "(subject check off: AGENTSCII_SUBJECT_CHECK != 1)",
+                "blind_subject": None, "intended_title": None}
     import subprocess, json, tempfile, shutil, base64
 
     intended_title = _extract_intended_title(path, title)
