@@ -18,7 +18,10 @@ PRIVATE = os.path.expanduser("~/agentscii-private")
 
 # Strings that exist ONLY inside the private files. Denial messages quote the
 # path, so matching on the path would false-positive on a successful block.
-SECRETS = ("reads as subject", "BASELINE (not delivered)", "HELD baseline",
+# A file the test writes and removes, so the probes always have a real target.
+FIXTURE = os.path.join(PRIVATE, "_sbprobe_fixture.txt")
+CANARY = "SBPROBE-CANARY-7f3a9c"
+SECRETS = (CANARY, "reads as subject", "BASELINE (not delivered)", "HELD baseline",
            "reads_as_subject", "well made", "intended")
 
 
@@ -31,26 +34,49 @@ def seat_bash(cmd):
         capture_output=True, text=True, timeout=30)
 
 
-def test_denied():
+def opus_bash(cmd):
+    """The Opus artist's shell: harness._maybe_sandbox_claude's wrapper."""
+    return subprocess.run(
+        ["/usr/bin/sandbox-exec", "-p", harness._opus_sandbox_profile(),
+         "/bin/bash", "-c", cmd],
+        cwd=str(harness.PROJECT_DIR), capture_output=True, text=True, timeout=30)
+
+
+def bare_bash(cmd):
+    return subprocess.run(["/bin/bash", "-c", cmd], capture_output=True,
+                          text=True, timeout=30)
+
+
+def test_denied(run, name):
     assert harness._sandbox_ok(), f"sandbox not active: {harness._SANDBOX_STATE['why']}"
     probes = [
+        ("cat the fixture", f"cat {FIXTURE}"),
         ("cat the held batch", f"cat {PRIVATE}/baseline_reviews.md"),
         ("ls the directory", f"ls {PRIVATE}/"),
         ("cat the answers", f"cat {PRIVATE}/calibration/calibration_tyler.json"),
         ("stat metadata", f"stat {PRIVATE}/"),
         ("find from home", f"find {PRIVATE} -type f"),
-        ("python open()", f"python3 -c \"print(open('{PRIVATE}/baseline_reviews.md').read())\""),
-        ("symlink hop", f"ln -sf {PRIVATE} /tmp/_pv_probe 2>/dev/null; "
-                        f"cat /tmp_pv_probe/baseline_reviews.md 2>/dev/null; "
-                        f"cat /tmp/_pv_probe/baseline_reviews.md"),
+        ("grep -r", f"grep -r {CANARY} {PRIVATE}"),
+        ("python open()", f"python3 -c \"print(open('{FIXTURE}').read())\""),
+        ("symlink hop", f"ln -sfn {PRIVATE} /tmp/_pv_probe && "
+                        f"cat /tmp/_pv_probe/{os.path.basename(FIXTURE)}"),
     ]
     for label, cmd in probes:
-        r = seat_bash(cmd)
+        r = run(cmd)
         blob = r.stdout + r.stderr
         leaked = [s for s in SECRETS if s in blob]
-        assert not leaked, f"LEAKED via {label}: {leaked}"
-        assert r.returncode != 0, f"NOT BLOCKED via {label}: {blob[:200]}"
-    print(f"  ok  {len(probes)} read paths into agentscii-private all blocked")
+        assert not leaked, f"[{name}] LEAKED via {label}: {leaked}"
+        assert r.returncode != 0, f"[{name}] NOT BLOCKED via {label}: {blob[:200]}"
+    print(f"  ok  [{name}] {len(probes)} read paths into agentscii-private all blocked")
+
+
+def test_fixture_readable_unsandboxed():
+    """Positive control: the fixture probes would leak without the sandbox."""
+    for cmd in (f"cat {FIXTURE}", f"grep -r {CANARY} {PRIVATE}",
+                f"ln -sfn {PRIVATE} /tmp/_pv_probe && cat /tmp/_pv_probe/{os.path.basename(FIXTURE)}"):
+        r = bare_bash(cmd)
+        assert CANARY in r.stdout, f"control failed, probe is vacuous: {cmd}"
+    print("  ok  fixture probes leak without the sandbox (control)")
 
 
 def test_agents_still_work():
@@ -68,6 +94,16 @@ if __name__ == "__main__":
     if not os.path.exists(PRIVATE):
         # An absent directory is not a passing test. (standing rule)
         sys.exit(f"PRIVATE_DIR_MISSING: {PRIVATE} -- nothing was verified")
-    test_denied()
-    test_agents_still_work()
+    with open(FIXTURE, "w") as f:
+        f.write(CANARY + "\n")
+    try:
+        test_fixture_readable_unsandboxed()
+        test_denied(seat_bash, "seat")
+        test_denied(opus_bash, "opus")
+        test_agents_still_work()
+    finally:
+        os.remove(FIXTURE)
+        if os.path.islink("/tmp/_pv_probe"):
+            os.remove("/tmp/_pv_probe")
+    assert not os.path.exists(FIXTURE), f"fixture left behind: {FIXTURE}"
     print("  all checks passed")
