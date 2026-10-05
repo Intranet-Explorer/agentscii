@@ -36,18 +36,15 @@ def pieces():
                   if not f.endswith(SIDECARS))
 
 
-def build():
-    os.makedirs(OUT, exist_ok=True)
-    today = datetime.date.today().isoformat()
-    answers_path = os.path.join(OUT, f"{today}.json")
-
+def page_html():
+    """(html, n_pieces) for everything in pending/; html is None if empty."""
     cards = []
     for i, f in enumerate(pieces(), 1):
         b64, _n = harness.render_ans_to_png_b64(f, offset=0, max_rows=4000)
         if not b64:
             print(f"  skip {os.path.basename(f)}: render failed")
             continue
-        crit = f.replace(".ans", ".critique.txt")
+        crit = f + ".critique.txt"
         cards.append({
             "id": i,
             "file": os.path.basename(f),
@@ -56,14 +53,23 @@ def build():
             "img": b64,
         })
     if not cards:
+        return None, 0
+    return (TEMPLATE.replace("__CARDS__", json.dumps(cards))
+                    .replace("__DATE__", datetime.date.today().isoformat()), len(cards))
+
+
+def build():
+    os.makedirs(OUT, exist_ok=True)
+    today = datetime.date.today().isoformat()
+    answers_path = os.path.join(OUT, f"{today}.json")
+    html, n = page_html()
+    if html is None:
         print(f"  nothing to review in {PENDING}")
         return
-
     page = os.path.join(OUT, f"{today}.html")
     with open(page, "w") as fh:
-        fh.write(TEMPLATE.replace("__CARDS__", json.dumps(cards))
-                         .replace("__DATE__", today))
-    print(f"  wrote {page} ({os.path.getsize(page)//1024} KB, {len(cards)} pieces)")
+        fh.write(html)
+    print(f"  wrote {page} ({os.path.getsize(page)//1024} KB, {n} pieces)")
     print(f"  answers download as {today}.json -> put it in {OUT}/")
     print(f"  then: python3 review_sheet.py --apply {answers_path}")
 
@@ -76,6 +82,7 @@ REVIEWS_MD = os.path.join(ROOT, "workspace", "REVIEWS.md")
 
 PRIVATE = os.path.expanduser("~/agentscii-private")
 BASELINE_MD = os.path.join(PRIVATE, "baseline_reviews.md")
+DESIGN_TXT = os.path.join(PRIVATE, "EXPERIMENT_DESIGN.txt")
 
 REVIEWS_HEAD = ("# Operator reviews\n\nTyler's own verdicts on finished pieces "
                 "-- the only judgement that decides publishing. Newest first.\n")
@@ -114,15 +121,38 @@ def _msg(body):
             "several batches. See workspace/REVIEWS.md for the full history.")
 
 
+FIRST_DELIVERY_UNSET = "FIRST DELIVERY: <not yet>"
+
+
 def _send(body):
+    ts = time.time()
     conn = sqlite3.connect(os.path.join(ROOT, "state.db"))
     try:
         for seat in ("artist", "curator"):
             conn.execute("INSERT INTO human_messages (to_agent, text, timestamp, delivered) "
-                         "VALUES (?,?,?,0)", (seat, _msg(body), time.time()))
+                         "VALUES (?,?,?,0)", (seat, _msg(body), ts))
         conn.commit()
     finally:
         conn.close()
+    _record_first_delivery(ts)
+
+
+def _record_first_delivery(ts):
+    """Fill in DESIGN_TXT's FIRST DELIVERY line the first time a batch is sent."""
+    try:
+        text = open(DESIGN_TXT).read()
+    except OSError as e:
+        print(f"  FIRST_DELIVERY_NOT_RECORDED: {e}")
+        return False
+    if FIRST_DELIVERY_UNSET not in text:
+        if "FIRST DELIVERY: " not in text:
+            print(f"  FIRST_DELIVERY_NOT_RECORDED: no FIRST DELIVERY line in {DESIGN_TXT}")
+        return False                               # already recorded
+    stamp = datetime.datetime.fromtimestamp(ts).astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+    with open(DESIGN_TXT, "w") as f:
+        f.write(text.replace(FIRST_DELIVERY_UNSET, f"FIRST DELIVERY: {ts:.6f} ({stamp})", 1))
+    print(f"  recorded first delivery {ts:.6f} in {DESIGN_TXT}")
+    return True
 
 
 def _prepend(path, default_head, section):
@@ -179,12 +209,36 @@ def deliver_baseline():
     return n
 
 
+def check_answers(answers):
+    """Raise unless every answer names a bare .ans filename (no paths)."""
+    if not isinstance(answers, list) or not all(isinstance(a, dict) for a in answers):
+        raise ValueError("expected a JSON list of answer objects")
+    bad = [a.get("file") for a in answers
+           if not isinstance(a.get("file"), str) or os.path.basename(a["file"]) != a["file"]
+           or not a["file"].endswith(".ans")]
+    if bad:
+        raise ValueError(f"answers name files outside pending/: {bad}")
+    return answers
+
+
+def save_answers(answers):
+    """Write answers to OUT/<date>.json, never over an earlier file."""
+    os.makedirs(OUT, exist_ok=True)
+    today = datetime.date.today().isoformat()
+    path, i = os.path.join(OUT, f"{today}.json"), 2
+    while os.path.exists(path):
+        path, i = os.path.join(OUT, f"{today}-{i}.json"), i + 1
+    with open(path, "w") as f:
+        json.dump(answers, f, indent=2)
+    return path
+
+
 def apply(answers_file, no_deliver=False):
     """Publish approved pieces, then feed every verdict back to the agents.
 
     no_deliver writes the verdicts to BASELINE_MD instead of sending them.
     """
-    answers = json.load(open(answers_file))
+    answers = check_answers(json.load(open(answers_file)))
     os.makedirs(UNPACKED, exist_ok=True)
     moved = held = 0
     for a in answers:
@@ -197,7 +251,7 @@ def apply(answers_file, no_deliver=False):
             continue
         shutil.move(src, os.path.join(UNPACKED, a["file"]))
         for ext in SIDECARS:                      # keep critique/note with it
-            s = src.replace(".ans", ext)
+            s = src + ext
             if os.path.exists(s):
                 shutil.move(s, os.path.join(UNPACKED, os.path.basename(s)))
         harness._log_curation_event(None, "publish_approved", a["file"],
@@ -210,6 +264,7 @@ def apply(answers_file, no_deliver=False):
     _deliver(answers, hold=no_deliver)
     if moved:
         print("  run release_pack (curator tool) to pack and sync as usual")
+    return moved
 
 
 TEMPLATE = r"""<!doctype html>
@@ -253,6 +308,7 @@ publish decision, not a blind test.</p>
 <div class="bar">
   <span>publish-decided <b id="count">0</b>/<b id="total">0</b></span>
   <button class="save" onclick="save()">Download decisions</button>
+  <button class="save" id="apply" onclick="saveApply()" hidden>Save &amp; apply</button>
   <span id="status" style="color:#8a8a92">autosaved in this browser</span>
 </div>
 <script>
@@ -299,10 +355,32 @@ document.addEventListener('input', e => {
   A[t.dataset.note] = Object.assign({}, A[t.dataset.note], {note: t.value});
   localStorage.setItem(KEY, JSON.stringify(A));
 });
-function save() {
-  const out = CARDS.map(c => Object.assign(
+function answers() {
+  return CARDS.map(c => Object.assign(
     {file: c.file, title: c.title, reads: null, good: null, publish: null, note: ''},
     A[c.id] || {}));
+}
+if (location.protocol.startsWith('http')) document.getElementById('apply').hidden = false;
+async function saveApply() {
+  const st = document.getElementById('status');
+  if (!confirm('Publish approved pieces and send every verdict to both agents?')) return;
+  document.getElementById('apply').disabled = true;
+  st.textContent = 'applying…';
+  try {
+    const r = await fetch('/api/review/apply', {method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Agentscii': '1'},
+      body: JSON.stringify(answers())});
+    const d = await r.json();
+    st.textContent = (d.ok ? 'applied: ' : 'FAILED: ') + d.message;
+    if (d.ok) localStorage.removeItem(KEY);
+    else document.getElementById('apply').disabled = false;
+  } catch (e) {
+    st.textContent = 'FAILED: ' + e;
+    document.getElementById('apply').disabled = false;
+  }
+}
+function save() {
+  const out = answers();
   const blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = '__DATE__.json'; a.click();

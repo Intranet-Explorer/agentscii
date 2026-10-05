@@ -28,7 +28,7 @@ def _piece(d, name="_probe.ans", title="PROBE"):
     p = os.path.join(d, name)
     with open(p, "w") as f:
         f.write(f"\x1b[0m{title}\n" + ANS)
-    open(p.replace(".ans", ".critique.txt"), "w").write("crit")
+    open(p + ".critique.txt", "w").write("crit")
     return p
 
 
@@ -92,7 +92,7 @@ def test_apply_publishes_only_approved():
         finally:
             review_sheet._deliver = real_deliver
         assert os.path.exists(os.path.join(unp, "_yes.ans")), "approved piece not published"
-        assert os.path.exists(os.path.join(unp, "_yes.critique.txt")), "sidecar left behind"
+        assert os.path.exists(os.path.join(unp, "_yes.ans.critique.txt")), "sidecar left behind"
         assert os.path.exists(os.path.join(pend, "_no.ans")), "held piece was published anyway"
         assert not os.path.exists(os.path.join(unp, "_no.ans")), "unapproved piece published"
     print("  ok  --apply publishes only publish=true, sidecars follow")
@@ -118,13 +118,17 @@ def test_deliver_reaches_both_seats():
         os.makedirs(os.path.join(d, "workspace"))
         # REVIEWS_MD is a module constant, so redirect it too -- patching
         # ROOT alone silently wrote to the live workspace/REVIEWS.md.
-        saved = (rs.ROOT, rs.REVIEWS_MD)
+        # DESIGN_TXT too: _send records the first delivery there.
+        saved = (rs.ROOT, rs.REVIEWS_MD, rs.DESIGN_TXT)
         rs.ROOT = d
         rs.REVIEWS_MD = os.path.join(d, "workspace", "REVIEWS.md")
+        rs.DESIGN_TXT = os.path.join(d, "EXPERIMENT_DESIGN.txt")
+        open(rs.DESIGN_TXT, "w").write("FIRST DELIVERY: <not yet>\n")
         try:
             n = rs._deliver(answers)
+            assert "<not yet>" not in open(rs.DESIGN_TXT).read(), "first delivery not recorded"
         finally:
-            rs.ROOT, rs.REVIEWS_MD = saved
+            rs.ROOT, rs.REVIEWS_MD, rs.DESIGN_TXT = saved
         assert n == 1, f"skipped-piece handling wrong: {n}"
         conn = sqlite3.connect(db)
         rows = conn.execute("SELECT to_agent, text FROM human_messages").fetchall()
@@ -154,8 +158,9 @@ def test_baseline_held_then_released():
                      "delivered INTEGER DEFAULT 0)")
         conn.commit(); conn.close()
         os.makedirs(os.path.join(d, "workspace"))
-        saved = (rs.ROOT, rs.BASELINE_MD, rs.REVIEWS_MD)
+        saved = (rs.ROOT, rs.BASELINE_MD, rs.REVIEWS_MD, rs.DESIGN_TXT)
         rs.ROOT = d
+        rs.DESIGN_TXT = os.path.join(d, "EXPERIMENT_DESIGN.txt")
         rs.BASELINE_MD = os.path.join(d, "private", "baseline_reviews.md")
         rs.REVIEWS_MD = os.path.join(d, "workspace", "REVIEWS.md")
         try:
@@ -187,7 +192,7 @@ def test_baseline_held_then_released():
             assert rs.deliver_baseline() == 0
             assert len(sent()) == before, "released the baseline twice"
         finally:
-            rs.ROOT, rs.BASELINE_MD, rs.REVIEWS_MD = saved
+            rs.ROOT, rs.BASELINE_MD, rs.REVIEWS_MD, rs.DESIGN_TXT = saved
     print("  ok  baseline held (0 msgs), released once verbatim, not twice")
 
 
