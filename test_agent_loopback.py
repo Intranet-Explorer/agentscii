@@ -62,6 +62,16 @@ def main():
             f"REACHED loopback via {label}: exit={r.returncode} out={r.stdout[:80]!r}"
     print(f"  ok  {len(PROBES)} loopback probes to :{DASH} refused from the seat sandbox")
 
+    opus = harness._opus_sandbox_profile()
+    assert harness.LOOPBACK_DENY in opus, "LOOPBACK_DENY missing from the Opus profile"
+    for label, cmd in PROBES:
+        r = bash(cmd, opus)
+        assert r.returncode != 0 and r.stdout.strip() in ("", "000"), \
+            f"REACHED loopback from the Opus sandbox via {label}: exit={r.returncode}"
+    r = bash(f"curl -s -m 20 -o /dev/null -w '%{{http_code}}' https://api.anthropic.com/", opus)
+    assert r.returncode == 0 and r.stdout[:1] in "2345", f"Opus sandbox lost the API: {r.stdout!r}"
+    print(f"  ok  same probes refused from the Opus sandbox; api.anthropic.com reachable (HTTP {r.stdout})")
+
     r = bash(f"curl -s -m 20 -o /dev/null -w '%{{http_code}}' {EXTERNAL}", live)
     assert r.returncode == 0 and r.stdout.startswith(("2", "3")), \
         f"internet broken: exit={r.returncode} code={r.stdout!r} {r.stderr[:120]}"

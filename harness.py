@@ -3894,6 +3894,7 @@ def _opus_sandbox_profile():
         "(deny file-read* file-write* "
         + " ".join(f"(subpath {q(h + '/' + d)})" for d in secrets)
         + " " + " ".join(f"(literal {q(h + '/' + f)})" for f in secret_files) + ")",
+        LOOPBACK_DENY,
     ])
 
 
