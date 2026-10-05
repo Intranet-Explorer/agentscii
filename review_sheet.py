@@ -104,7 +104,8 @@ def set_page_html(name):
     cards = []
     for c in st["cards"]:
         path = os.path.join(ROOT, c["path"]) if not os.path.isabs(c["path"]) else c["path"]
-        b64, _n = harness.render_ans_to_png_b64(path, offset=0, max_rows=c.get("rows") or 4000)
+        b64, _n = harness.render_ans_to_png_b64(path, offset=c.get("offset", 0),
+                                                max_rows=c.get("rows") or 4000)
         if not b64:
             raise ValueError(f"render failed for card {c['id']}")
         title = (c.get("label") or harness._extract_intended_title(path)
