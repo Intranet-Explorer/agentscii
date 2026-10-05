@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 """The agents must not be able to read ~/agentscii-private/.
 
-It holds the operator's own judgements: the blind calibration answers and the
-HELD batch-1 baseline reviews. The agents are the subject of that experiment,
-so a read would both destroy the baseline and hand them labels they never
-earned.
-
 Runs the seat's bash exactly as harness.py does -- same profile, same cwd,
 same stripped env -- rather than approximating it, so this test fails if the
 real invocation ever diverges from the profile.

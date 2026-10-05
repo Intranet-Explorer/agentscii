@@ -62,12 +62,7 @@ def stop_requested():
 # Override with AGENTSCII_OPUS_MODEL.
 OPUS_MODEL = os.environ.get("AGENTSCII_OPUS_MODEL", "claude-opus-5-5")
 
-# Blind subject check: OFF by default, and not worth Opus spend.
-# Calibrated against Tyler's own reads on 20 pieces (2026-10-05): blind
-# 7/20 (kappa -0.30), primed with the title 9/20 (kappa -0.15, p=0.82).
-# No model judge tracks him on legibility either way, so the operator is
-# the judge. Code and tests kept; set AGENTSCII_SUBJECT_CHECK=1 to re-run
-# the experiment.
+# Blind subject check: off unless AGENTSCII_SUBJECT_CHECK=1.
 SUBJECT_CHECK_ENABLED = os.environ.get("AGENTSCII_SUBJECT_CHECK", "0") == "1"
 
 MODEL = "qwen3.8:27b-mlx"  # stock Qwen3.8-27B, MLX build
@@ -2641,11 +2636,8 @@ def _sandbox_profile():
     def q(x):
         return '"' + x.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
-    # agentscii-private holds the operator's own judgements: the blind
-    # calibration answers and the HELD baseline review batch. The agents are
-    # the subject of that experiment, so they must not be able to read it --
-    # file-read* denies metadata as well as data, so `ls` fails too, not just
-    # `cat`.
+    # file-read* on a denied subpath blocks metadata as well as data, so
+    # `ls` and `stat` fail too, not just `cat`.
     secret_dirs = [".ssh", ".claude", ".config/gh", ".hermes", ".aws", ".gnupg",
                    ".docker", ".kube", "Library/Keychains", ".local/share/claude",
                    "agentscii-private"]
@@ -3579,12 +3571,8 @@ def curate_piece_opus_gated(src, decision, critique, shift_id=None):
     Keeps the subjects table in sync: accept/shelve close the subject;
     reject leaves it open and forces a higher version next time. Returns
     (message, dest_path_or_None), the same shape as curate_piece."""
-    # --- blind subject-recognition gate -> ADVISORY ONLY ---------------
-    # Was a hard gate that moved the file to rejected/ and overrode the
-    # curator's accept. Calibration against Tyler's own blind reads (20
-    # pieces, 2026-10-05) put it at 7/20 agreement, kappa -0.30 -- below
-    # chance, i.e. it overturned pieces that read fine and passed pieces
-    # that didn't. It now records its verdict and changes nothing.
+    # --- blind subject-recognition check: advisory only ---------------
+    # Records its verdict as an event; moves no file, overrides nothing.
     subject_result = opus_subject_check(src)
     _status = subject_result.get("status")
     if _status != "disabled":     # off by config = neither a pass nor a refusal
@@ -4092,9 +4080,8 @@ def opus_subject_check(path, title=None):
     "blind_subject", "intended_title"}. No title to compare against counts
     as "ok"; only a confirmed mismatch rejects.
 
-    Off unless AGENTSCII_SUBJECT_CHECK=1. Gated here rather than at the call
-    site so no caller (harness, opus_duo, opus_session, pipeline_test) can
-    spend Opus money on a check that does not track the operator's eye.
+    Off unless AGENTSCII_SUBJECT_CHECK=1, gated here so every caller
+    (harness, opus_duo, opus_session, pipeline_test) gets the same answer.
     "disabled" is its own status: a deliberately-off check is neither a pass
     nor a refusal.
     """

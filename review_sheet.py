@@ -1,19 +1,13 @@
 #!/usr/bin/env python3
 """Manual publication review for pieces waiting in workspace/pending/.
 
-Same shape as the calibration sheet, but titles are SHOWN (this is the
-publish decision, not a blind test) and there are three answers per piece:
-reads as subject, well made, publish. Answers land in
-workspace/reviews/<date>.json.
+Titles are shown. Three answers per piece: reads as subject, well made,
+publish. Answers land in workspace/reviews/<date>.json.
 
   python3 review_sheet.py                         # build the sheet
   python3 review_sheet.py --apply F               # publish + tell the agents
-  python3 review_sheet.py --apply F --no-deliver  # publish, HOLD the verdicts
-  python3 review_sheet.py --deliver-baseline      # release the held batch
-
---no-deliver publishes and records the verdicts privately without messaging
-the agents. Rationale is operator-only: ~/agentscii-private/EXPERIMENT_DESIGN.txt
-(this file is in the repo, which the agents can read).
+  python3 review_sheet.py --apply F --no-deliver  # publish, don't message
+  python3 review_sheet.py --deliver-baseline      # send what --no-deliver kept
 
 Approved pieces land in gallery/unpacked/, which release_pack already reads,
 so packing and syncing are unchanged.
@@ -80,9 +74,6 @@ def _yn(v):
 
 REVIEWS_MD = os.path.join(ROOT, "workspace", "REVIEWS.md")
 
-# Held batch lives outside the repo and outside workspace/: both are
-# agent-readable, and a sandbox deny rule covers this path (see
-# test_private_denied.py).
 PRIVATE = os.path.expanduser("~/agentscii-private")
 BASELINE_MD = os.path.join(PRIVATE, "baseline_reviews.md")
 
@@ -90,8 +81,7 @@ REVIEWS_HEAD = ("# Operator reviews\n\nTyler's own verdicts on finished pieces "
                 "-- the only judgement that decides publishing. Newest first.\n")
 BASELINE_HEAD = (
     "# HELD reviews -- not delivered\n\n"
-    "Release with: python3 review_sheet.py --deliver-baseline\n"
-    "Rationale: ~/agentscii-private/EXPERIMENT_DESIGN.txt\n")
+    "Release with: python3 review_sheet.py --deliver-baseline\n")
 
 BATCH_MARK = " -- BASELINE (not delivered)"
 HOLD_NOTE = "held, not delivered"
@@ -113,13 +103,11 @@ def _batch_body(answers):
 
 
 def _msg(body):
-    """The agent-facing wrapper. Same text for a live batch and a released
-    baseline, so the agents cannot tell held verdicts from fresh ones."""
+    """The message both seats receive for a batch."""
     return ("OPERATOR REVIEW -- these are Tyler's own verdicts on your work, "
             "the only judgement that decides publishing.\n\n" + body +
-            "\n\nThese are his words, not a model's. The blind subject check "
-            "is off: it did not track his eye (7/20 blind, 9/20 told the "
-            "title). Note that 'reads as subject' and 'well made' are "
+            "\n\nThese are his words, not a model's. Note that "
+            "'reads as subject' and 'well made' are "
             "SEPARATE questions -- a piece can read and still be weak.\n\n"
             "You may draw lessons from this. Do NOT edit METHOD.md or "
             "STYLE.md off a single review; a rule needs a pattern across "
@@ -147,11 +135,8 @@ def _prepend(path, default_head, section):
 
 
 def _deliver(answers, hold=False):
-    """Feed a reviewed batch back to both agents, or hold it as baseline.
-
-    hold=True writes to workspace/reviews/baseline.md and sends NOTHING: the
-    agents must not see batch 1, or the before/after has no before.
-    """
+    """Send a reviewed batch to both seats and REVIEWS.md, or with
+    hold=True write it to BASELINE_MD and send nothing."""
     body, n = _batch_body(answers)
     if not n:
         return 0
@@ -168,7 +153,7 @@ def _deliver(answers, hold=False):
 
 
 def deliver_baseline():
-    """Release the held batch: message both seats, move it into REVIEWS.md.
+    """Send the batch in BASELINE_MD to both seats and move it into REVIEWS.md.
 
     Moves the rendered text wholesale rather than re-deriving it from the
     answer files, so what the agents receive is byte-identical to what was
@@ -197,7 +182,7 @@ def deliver_baseline():
 def apply(answers_file, no_deliver=False):
     """Publish approved pieces, then feed every verdict back to the agents.
 
-    no_deliver holds the verdicts as baseline instead of sending them.
+    no_deliver writes the verdicts to BASELINE_MD instead of sending them.
     """
     answers = json.load(open(answers_file))
     os.makedirs(UNPACKED, exist_ok=True)
