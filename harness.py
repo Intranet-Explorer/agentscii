@@ -30,6 +30,8 @@ from pathlib import Path
 HOME = Path.home()
 PROJECT_DIR = HOME / "agentscii"
 WORKSPACE = PROJECT_DIR / "workspace"
+# Operator lab: Opus runs may write here; the seats' shell can't read it.
+LAB_DIR = HOME / "agentscii-lab"
 GALLERY = WORKSPACE / "gallery"
 GALLERY_UNPACKED = GALLERY / "unpacked"
 # Curator accepts land here and wait for manual review (review_sheet.py).
@@ -2646,7 +2648,7 @@ def _sandbox_profile():
     # `ls` and `stat` fail too, not just `cat`.
     secret_dirs = [".ssh", ".claude", ".config/gh", ".hermes", ".aws", ".gnupg",
                    ".docker", ".kube", "Library/Keychains", ".local/share/claude",
-                   "agentscii-private"]
+                   "agentscii-private", "agentscii-lab"]
     secret_files = [".claude.json", ".netrc", ".git-credentials", ".npmrc",
                     ".pypirc", ".local/bin/claude"]
     deny = ([f"(subpath {q(h + '/' + d)})" for d in secret_dirs]
@@ -3881,7 +3883,7 @@ def _opus_sandbox_profile():
     writable = [str(WORKSPACE.resolve()), str((PROJECT_DIR / ".claude").resolve()),
                 h + "/.claude", h + "/.local/share/claude", h + "/.local/state/claude",
                 h + "/.cache", h + "/Library/Caches", h + "/Library/Logs",
-                "/private/tmp", "/private/var/folders"]
+                "/private/tmp", "/private/var/folders", str(LAB_DIR)]
     secrets = [".ssh", ".hermes", ".config/gh", ".aws", ".gnupg", ".docker",
                ".kube", "agentscii-private"]
     secret_files = [".netrc", ".git-credentials", ".npmrc", ".pypirc"]

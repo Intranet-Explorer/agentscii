@@ -90,6 +90,25 @@ def test_agents_still_work():
     print("  ok  workspace read/write and repo read still work")
 
 
+def test_lab_dir():
+    """Seats can't read the lab dir; Opus runs can write and read it."""
+    lab = str(harness.LAB_DIR)
+    os.makedirs(lab, exist_ok=True)
+    probe = os.path.join(lab, "_sbprobe_lab.txt")
+    with open(probe, "w") as f:
+        f.write(CANARY + "\n")
+    try:
+        r = seat_bash(f"cat {probe}; ls {lab}")
+        assert CANARY not in r.stdout + r.stderr and r.returncode != 0, "seat read the lab dir"
+        w = os.path.join(lab, "_sbprobe_opus.txt")
+        r = opus_bash(f"echo ok > {w} && cat {probe}")
+        assert r.returncode == 0 and CANARY in r.stdout, f"Opus can't use the lab dir: {r.stderr[:200]}"
+        os.remove(w)
+    finally:
+        os.remove(probe)
+    print("  ok  lab dir: seat denied, Opus read+write allowed")
+
+
 if __name__ == "__main__":
     if not os.path.exists(PRIVATE):
         # An absent directory is not a passing test. (standing rule)
@@ -101,6 +120,7 @@ if __name__ == "__main__":
         test_denied(seat_bash, "seat")
         test_denied(opus_bash, "opus")
         test_agents_still_work()
+        test_lab_dir()
     finally:
         os.remove(FIXTURE)
         if os.path.islink("/tmp/_pv_probe"):
