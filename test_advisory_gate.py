@@ -78,16 +78,63 @@ def test_apply_publishes_only_approved():
         yes, no = _piece(pend, "_yes.ans"), _piece(pend, "_no.ans")
         review_sheet.PENDING, review_sheet.UNPACKED = pend, unp
         harness._log_curation_event = lambda *a: None
+        # _deliver writes to state.db and REVIEWS.md; it has its own test.
+        # Stub it so this test can never touch the live DB, and PUT IT BACK
+        # afterwards -- a leaked stub silently voided the delivery test.
+        real_deliver = review_sheet._deliver
+        review_sheet._deliver = lambda answers: 0
         af = os.path.join(d, "a.json")
         json.dump([{"file": "_yes.ans", "publish": True, "reads": True, "good": True, "note": ""},
                    {"file": "_no.ans", "publish": False, "reads": True, "good": False, "note": "weak"}],
                   open(af, "w"))
-        review_sheet.apply(af)
+        try:
+            review_sheet.apply(af)
+        finally:
+            review_sheet._deliver = real_deliver
         assert os.path.exists(os.path.join(unp, "_yes.ans")), "approved piece not published"
         assert os.path.exists(os.path.join(unp, "_yes.critique.txt")), "sidecar left behind"
         assert os.path.exists(os.path.join(pend, "_no.ans")), "held piece was published anyway"
         assert not os.path.exists(os.path.join(unp, "_no.ans")), "unapproved piece published"
     print("  ok  --apply publishes only publish=true, sidecars follow")
+
+
+def test_deliver_reaches_both_seats():
+    """A review batch must reach both seats and land in REVIEWS.md verbatim."""
+    import sqlite3
+    import review_sheet as rs
+    answers = [
+        {"file": "_probe.ans", "title": "PROBE", "reads": True, "good": False,
+         "publish": False, "note": "reads but the shading is mush"},
+        {"file": "_other.ans", "title": "OTHER", "reads": None, "good": None,
+         "publish": None, "note": ""},          # never looked at -> skipped
+    ]
+    with tempfile.TemporaryDirectory() as d:
+        db = os.path.join(d, "state.db")
+        conn = sqlite3.connect(db)
+        conn.execute("CREATE TABLE human_messages (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                     "to_agent TEXT NOT NULL, text TEXT NOT NULL, timestamp REAL NOT NULL,"
+                     "delivered INTEGER DEFAULT 0)")
+        conn.commit(); conn.close()
+        os.makedirs(os.path.join(d, "workspace"))
+        saved_root = rs.ROOT
+        rs.ROOT = d
+        try:
+            n = rs._deliver(answers)
+        finally:
+            rs.ROOT = saved_root
+        assert n == 1, f"skipped-piece handling wrong: {n}"
+        conn = sqlite3.connect(db)
+        rows = conn.execute("SELECT to_agent, text FROM human_messages").fetchall()
+        conn.close()
+        assert {r[0] for r in rows} == {"artist", "curator"}, rows
+        for _seat, txt in rows:
+            assert "reads but the shading is mush" in txt, "note not verbatim"
+            assert "_probe" in txt and "_other" not in txt
+            assert "SEPARATE" in txt, "reads/good separation not stated"
+            assert "Do NOT edit METHOD.md" in txt, "no-auto-edit rule missing"
+        md = open(os.path.join(d, "workspace", "REVIEWS.md")).read()
+        assert "reads but the shading is mush" in md and "_probe" in md
+    print("  ok  verdicts reach both seats verbatim + REVIEWS.md, blanks skipped")
 
 
 def main():
@@ -104,6 +151,7 @@ def main():
         for k, v in saved.items():
             setattr(harness, k, v)
     test_apply_publishes_only_approved()
+    test_deliver_reaches_both_seats()
     print("  all checks passed")
 
 

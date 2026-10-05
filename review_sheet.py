@@ -17,7 +17,9 @@ import glob
 import json
 import os
 import shutil
+import sqlite3
 import sys
+import time
 
 sys.path.insert(0, os.path.expanduser("~/agentscii"))
 import harness  # noqa: E402
@@ -66,8 +68,64 @@ def build():
     print(f"  then: python3 review_sheet.py --apply {answers_path}")
 
 
+def _yn(v):
+    return "yes" if v is True else ("no" if v is False else "—")
+
+
+def _deliver(answers):
+    """Every reviewed piece goes to both agents verbatim, and to REVIEWS.md.
+
+    This is the feedback loop: the agents never saw why a piece shipped or
+    didn't. One message carries the whole batch so a 10-piece review is one
+    message per seat, not ten.
+    """
+    lines = []
+    for a in answers:
+        if a.get("reads") is None and a.get("good") is None and a.get("publish") is None:
+            continue                                   # never looked at
+        slug = harness.core_slug(os.path.splitext(a["file"])[0])
+        note = (a.get("note") or "").strip()
+        lines.append(f"- {slug}: reads as subject {_yn(a.get('reads'))}, "
+                     f"well made {_yn(a.get('good'))}, "
+                     f"publish {_yn(a.get('publish'))}"
+                     + (f'\n  operator note, verbatim: "{note}"' if note else ""))
+    if not lines:
+        return 0
+    body = "\n".join(lines)
+    msg = ("OPERATOR REVIEW -- these are Tyler's own verdicts on your work, "
+           "the only judgement that decides publishing.\n\n" + body +
+           "\n\nThese are his words, not a model's. The blind subject check "
+           "is off: it did not track his eye (7/20 blind, 9/20 told the "
+           "title). Note that 'reads as subject' and 'well made' are "
+           "SEPARATE questions -- a piece can read and still be weak.\n\n"
+           "You may draw lessons from this. Do NOT edit METHOD.md or "
+           "STYLE.md off a single review; a rule needs a pattern across "
+           "several batches. See workspace/REVIEWS.md for the full history.")
+
+    conn = sqlite3.connect(os.path.join(ROOT, "state.db"))
+    try:
+        for seat in ("artist", "curator"):
+            conn.execute("INSERT INTO human_messages (to_agent, text, timestamp, delivered) "
+                         "VALUES (?,?,?,0)", (seat, msg, time.time()))
+        conn.commit()
+    finally:
+        conn.close()
+
+    # REVIEWS.md, newest batch first.
+    md = os.path.join(ROOT, "workspace", "REVIEWS.md")
+    old = open(md).read() if os.path.exists(md) else (
+        "# Operator reviews\n\nTyler's own verdicts on finished pieces -- the "
+        "only judgement that decides publishing. Newest first.\n")
+    head, _, rest = old.partition("\n\n")
+    stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    with open(md, "w") as f:
+        f.write(f"{head}\n\n## {stamp}\n\n{body}\n\n{rest.lstrip()}")
+    print(f"  delivered {len(lines)} verdicts to both seats, appended to {md}")
+    return len(lines)
+
+
 def apply(answers_file):
-    """Move pieces marked publish=true into gallery/unpacked/, with sidecars."""
+    """Publish approved pieces, then feed every verdict back to the agents."""
     answers = json.load(open(answers_file))
     os.makedirs(UNPACKED, exist_ok=True)
     moved = held = 0
@@ -91,6 +149,7 @@ def apply(answers_file):
         moved += 1
         print(f"  published {a['file']}")
     print(f"  {moved} moved to gallery/unpacked/, {held} held in pending/")
+    _deliver(answers)
     if moved:
         print("  run release_pack (curator tool) to pack and sync as usual")
 
