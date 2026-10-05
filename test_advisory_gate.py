@@ -70,32 +70,51 @@ def test_refusal_is_loud(monkey):
     print("  ok  a refused check logs DID_NOT_RUN, not a silent pass")
 
 
-def test_apply_publishes_only_approved():
-    """--apply moves publish=true (with sidecars) and holds the rest."""
+def test_apply_routes_every_answered_piece():
+    """publish=yes -> unpacked/, answered no -> reviewed/ with answers,
+    unanswered -> stays in pending/. Sidecars follow. First delivery under
+    BASELINE_MIN is refused unless forced."""
+    rs = review_sheet
     with tempfile.TemporaryDirectory() as d:
-        pend, unp = os.path.join(d, "pending"), os.path.join(d, "unpacked")
-        os.makedirs(pend); os.makedirs(unp)
-        yes, no = _piece(pend, "_yes.ans"), _piece(pend, "_no.ans")
-        review_sheet.PENDING, review_sheet.UNPACKED = pend, unp
+        pend, unp, rev = (os.path.join(d, x) for x in ("pending", "unpacked", "reviewed"))
+        os.makedirs(pend)
+        for n in ("_yes.ans", "_no.ans", "_skip.ans"):
+            _piece(pend, n)
+        design = os.path.join(d, "EXPERIMENT_DESIGN.txt")
+        open(design, "w").write("FIRST DELIVERY: <not yet>\n")
+        saved = (rs.PENDING, rs.UNPACKED, rs.REVIEWED, rs.DESIGN_TXT,
+                 rs._deliver, harness._log_curation_event)
+        rs.PENDING, rs.UNPACKED, rs.REVIEWED, rs.DESIGN_TXT = pend, unp, rev, design
         harness._log_curation_event = lambda *a: None
         # _deliver writes to state.db and REVIEWS.md; it has its own test.
-        # Stub it so this test can never touch the live DB, and PUT IT BACK
-        # afterwards -- a leaked stub silently voided the delivery test.
-        real_deliver = review_sheet._deliver
-        review_sheet._deliver = lambda answers, hold=False: 0
+        rs._deliver = lambda answers, hold=False: 0
         af = os.path.join(d, "a.json")
-        json.dump([{"file": "_yes.ans", "publish": True, "reads": True, "good": True, "note": ""},
-                   {"file": "_no.ans", "publish": False, "reads": True, "good": False, "note": "weak"}],
+        no = {"file": "_no.ans", "publish": False, "reads": True, "good": False, "note": "weak"}
+        json.dump([{"file": "_yes.ans", "publish": True, "reads": True, "good": True, "note": ""}, no,
+                   {"file": "_skip.ans", "publish": None, "reads": None, "good": None, "note": ""}],
                   open(af, "w"))
         try:
-            review_sheet.apply(af)
+            try:
+                rs.apply(af)
+                raise AssertionError("first delivery of 2 pieces was not refused")
+            except ValueError as e:
+                assert "BASELINE_TOO_SMALL" in str(e) and "with 2 reviewed" in str(e), e
+            assert len(os.listdir(pend)) == 6, "a refused apply moved files"
+            rs.apply(af, no_deliver=True)          # held batch: guard does not apply
+            for n in ("_yes.ans", "_no.ans"):      # put them back for the forced run
+                for f in os.listdir(unp if n == "_yes.ans" else rev):
+                    os.rename(os.path.join(unp if n == "_yes.ans" else rev, f), os.path.join(pend, f))
+            os.remove(os.path.join(pend, "_no.ans.review.json"))
+            rs.apply(af, force=True)
         finally:
-            review_sheet._deliver = real_deliver
-        assert os.path.exists(os.path.join(unp, "_yes.ans")), "approved piece not published"
-        assert os.path.exists(os.path.join(unp, "_yes.ans.critique.txt")), "sidecar left behind"
-        assert os.path.exists(os.path.join(pend, "_no.ans")), "held piece was published anyway"
-        assert not os.path.exists(os.path.join(unp, "_no.ans")), "unapproved piece published"
-    print("  ok  --apply publishes only publish=true, sidecars follow")
+            (rs.PENDING, rs.UNPACKED, rs.REVIEWED, rs.DESIGN_TXT,
+             rs._deliver, harness._log_curation_event) = saved
+        assert sorted(os.listdir(unp)) == ["_yes.ans", "_yes.ans.critique.txt"], os.listdir(unp)
+        assert sorted(os.listdir(rev)) == ["_no.ans", "_no.ans.critique.txt", "_no.ans.review.json"]
+        assert json.load(open(os.path.join(rev, "_no.ans.review.json"))) == no
+        assert sorted(os.listdir(pend)) == ["_skip.ans", "_skip.ans.critique.txt"], os.listdir(pend)
+    print("  ok  yes -> unpacked, no -> reviewed + answers, unanswered stays; "
+          "small first delivery refused unless forced")
 
 
 def test_deliver_reaches_both_seats():
@@ -209,7 +228,7 @@ def main():
     finally:
         for k, v in saved.items():
             setattr(harness, k, v)
-    test_apply_publishes_only_approved()
+    test_apply_routes_every_answered_piece()
     test_deliver_reaches_both_seats()
     test_baseline_held_then_released()
     print("  all checks passed")

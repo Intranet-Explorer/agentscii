@@ -7,6 +7,7 @@ publish. Answers land in workspace/reviews/<date>.json.
   python3 review_sheet.py                         # build the sheet
   python3 review_sheet.py --apply F               # publish + tell the agents
   python3 review_sheet.py --apply F --no-deliver  # publish, don't message
+  python3 review_sheet.py --apply F --force-small-baseline  # first delivery under 8
   python3 review_sheet.py --deliver-baseline      # send what --no-deliver kept
 
 Approved pieces land in gallery/unpacked/, which release_pack already reads,
@@ -28,6 +29,8 @@ ROOT = os.path.expanduser("~/agentscii")
 PENDING = os.path.join(ROOT, "workspace", "pending")
 UNPACKED = os.path.join(ROOT, "workspace", "gallery", "unpacked")
 OUT = os.path.join(ROOT, "workspace", "reviews")
+REVIEWED = os.path.join(ROOT, "workspace", "reviewed")   # reviewed, not published
+BASELINE_MIN = 8   # first delivery refused below this many reviewed pieces
 SIDECARS = (".note.txt", ".critique.txt", ".credits.txt")
 
 
@@ -54,7 +57,9 @@ def page_html():
         })
     if not cards:
         return None, 0
+    first = {"pending": first_delivery_pending(), "min": BASELINE_MIN}
     return (TEMPLATE.replace("__CARDS__", json.dumps(cards))
+                    .replace("__FIRST__", json.dumps(first))
                     .replace("__DATE__", datetime.date.today().isoformat()), len(cards))
 
 
@@ -94,11 +99,15 @@ BATCH_MARK = " -- BASELINE (not delivered)"
 HOLD_NOTE = "held, not delivered"
 
 
+def _answered(a):
+    return any(a.get(k) is not None for k in ("reads", "good", "publish"))
+
+
 def _batch_body(answers):
     """One markdown block for a reviewed batch. Blank rows are skipped."""
     lines = []
     for a in answers:
-        if a.get("reads") is None and a.get("good") is None and a.get("publish") is None:
+        if not _answered(a):
             continue                                   # never looked at
         slug = harness.core_slug(os.path.splitext(a["file"])[0])
         note = (a.get("note") or "").strip()
@@ -135,6 +144,26 @@ def _send(body):
     finally:
         conn.close()
     _record_first_delivery(ts)
+
+
+def first_delivery_pending():
+    """True until DESIGN_TXT records a first delivery. Unreadable counts as
+    pending, so a missing file keeps the baseline guard on."""
+    try:
+        return FIRST_DELIVERY_UNSET in open(DESIGN_TXT).read()
+    except OSError:
+        return True
+
+
+def check_baseline(answers, force=False):
+    """Refuse a first delivery that would end the baseline under BASELINE_MIN."""
+    n = sum(1 for a in answers if _answered(a))
+    if not force and n < BASELINE_MIN and first_delivery_pending():
+        raise ValueError(
+            f"BASELINE_TOO_SMALL: this is the first delivery and would end the "
+            f"baseline with {n} reviewed pieces (minimum {BASELINE_MIN}). Wait for "
+            f"more pieces; CLI override: --force-small-baseline")
+    return n
 
 
 def _record_first_delivery(ts):
@@ -233,34 +262,50 @@ def save_answers(answers):
     return path
 
 
-def apply(answers_file, no_deliver=False):
-    """Publish approved pieces, then feed every verdict back to the agents.
+def apply(answers_file, no_deliver=False, force=False):
+    """Move every answered piece out of pending/ -- publish=yes to
+    gallery/unpacked/, otherwise to reviewed/ with a .review.json of the
+    answers -- then feed the verdicts back to the agents. Unanswered pieces
+    stay in pending/.
 
     no_deliver writes the verdicts to BASELINE_MD instead of sending them.
+    force skips the first-delivery BASELINE_MIN check.
     """
     answers = check_answers(json.load(open(answers_file)))
+    if not no_deliver:
+        check_baseline(answers, force=force)
     os.makedirs(UNPACKED, exist_ok=True)
-    moved = held = 0
+    os.makedirs(REVIEWED, exist_ok=True)
+    moved = reviewed = skipped = 0
     for a in answers:
+        if not _answered(a):
+            skipped += 1
+            continue
         src = os.path.join(PENDING, a["file"])
         if not os.path.exists(src):
             print(f"  MISSING {a['file']} (already moved?)")
             continue
-        if not a.get("publish"):
-            held += 1
-            continue
-        shutil.move(src, os.path.join(UNPACKED, a["file"]))
+        pub = bool(a.get("publish"))
+        dest, rel = (UNPACKED, "gallery/unpacked") if pub else (REVIEWED, "reviewed")
+        shutil.move(src, os.path.join(dest, a["file"]))
         for ext in SIDECARS:                      # keep critique/note with it
             s = src + ext
             if os.path.exists(s):
-                shutil.move(s, os.path.join(UNPACKED, os.path.basename(s)))
-        harness._log_curation_event(None, "publish_approved", a["file"],
-                                    f"gallery/unpacked/{a['file']}",
+                shutil.move(s, os.path.join(dest, os.path.basename(s)))
+        if not pub:
+            with open(os.path.join(dest, a["file"] + ".review.json"), "w") as f:
+                json.dump(a, f, indent=2)
+        harness._log_curation_event(None, "publish_approved" if pub else "review_not_published",
+                                    a["file"], f"{rel}/{a['file']}",
                                     f"reads={a.get('reads')} good={a.get('good')} "
-                                    f"note={a.get('note', '')[:200]}")
-        moved += 1
-        print(f"  published {a['file']}")
-    print(f"  {moved} moved to gallery/unpacked/, {held} held in pending/")
+                                    f"note={(a.get('note') or '')[:200]}")
+        if pub:
+            moved += 1
+        else:
+            reviewed += 1
+        print(f"  {'published' if pub else 'reviewed '} {a['file']} -> {rel}/")
+    print(f"  {moved} to gallery/unpacked/, {reviewed} to reviewed/, "
+          f"{skipped} unanswered left in pending/")
     _deliver(answers, hold=no_deliver)
     if moved:
         print("  run release_pack (curator tool) to pack and sync as usual")
@@ -309,10 +354,12 @@ publish decision, not a blind test.</p>
   <span>publish-decided <b id="count">0</b>/<b id="total">0</b></span>
   <button class="save" onclick="save()">Download decisions</button>
   <button class="save" id="apply" onclick="saveApply()" hidden>Save &amp; apply</button>
+  <span id="guard" style="color:#e0a33a"></span>
   <span id="status" style="color:#8a8a92">autosaved in this browser</span>
 </div>
 <script>
 const CARDS = __CARDS__;
+const FIRST = __FIRST__;   // {pending: no delivery recorded yet, min: pieces needed}
 const KEY = 'agentscii_review___DATE__';
 let A = JSON.parse(localStorage.getItem(KEY) || '{}');
 const QS = [['reads','reads as subject'],['good','well made'],['publish','publish']];
@@ -341,6 +388,7 @@ function render() {
     root.appendChild(el);
   }
   document.getElementById('total').textContent = CARDS.length;
+  guard();
   document.getElementById('count').textContent =
     Object.values(A).filter(a => a.publish === true || a.publish === false).length;
 }
@@ -355,6 +403,17 @@ document.addEventListener('input', e => {
   A[t.dataset.note] = Object.assign({}, A[t.dataset.note], {note: t.value});
   localStorage.setItem(KEY, JSON.stringify(A));
 });
+function nAnswered() {
+  return CARDS.filter(c => { const a = A[c.id] || {};
+    return ['reads', 'good', 'publish'].some(k => a[k] === true || a[k] === false); }).length;
+}
+function guard() {
+  const b = document.getElementById('apply'), g = document.getElementById('guard');
+  const n = nAnswered(), short = FIRST.pending && n < FIRST.min;
+  b.disabled = short;
+  g.textContent = short ? `First delivery ends the baseline: ${n} reviewed, needs ` +
+    `${FIRST.min}. Wait for more pieces.` : '';
+}
 function answers() {
   return CARDS.map(c => Object.assign(
     {file: c.file, title: c.title, reads: null, good: null, publish: null, note: ''},
@@ -363,7 +422,10 @@ function answers() {
 if (location.protocol.startsWith('http')) document.getElementById('apply').hidden = false;
 async function saveApply() {
   const st = document.getElementById('status');
-  if (!confirm('Publish approved pieces and send every verdict to both agents?')) return;
+  const msg = FIRST.pending
+    ? `This is the first delivery. It ends the baseline with ${nAnswered()} pieces. Continue?`
+    : 'Publish approved pieces and send every verdict to both agents?';
+  if (!confirm(msg)) return;
   document.getElementById('apply').disabled = true;
   st.textContent = 'applying…';
   try {
@@ -373,10 +435,10 @@ async function saveApply() {
     const d = await r.json();
     st.textContent = (d.ok ? 'applied: ' : 'FAILED: ') + d.message;
     if (d.ok) localStorage.removeItem(KEY);
-    else document.getElementById('apply').disabled = false;
+    else guard();
   } catch (e) {
     st.textContent = 'FAILED: ' + e;
-    document.getElementById('apply').disabled = false;
+    guard();
   }
 }
 function save() {
@@ -394,6 +456,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--deliver-baseline":
         deliver_baseline()
     elif len(sys.argv) > 2 and sys.argv[1] == "--apply":
-        apply(sys.argv[2], no_deliver="--no-deliver" in sys.argv[3:])
+        apply(sys.argv[2], no_deliver="--no-deliver" in sys.argv[3:],
+              force="--force-small-baseline" in sys.argv[3:])
     else:
         build()
