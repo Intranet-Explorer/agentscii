@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.expanduser("~/agentscii"))
 import harness  # noqa: E402
 
 ROOT = os.path.expanduser("~/agentscii")
-OUT = os.path.join(ROOT, "workspace", "primed_read.json")
+OUT = os.path.expanduser("~/agentscii-private/calibration/primed_read.json")
 
 # FIXED PROMPT -- do not edit after the first run.
 PROMPT = (
@@ -65,7 +65,8 @@ def ask(ans_path, title):
 
 def main():
     man = {m["id"]: m for m in json.load(
-        open(os.path.join(ROOT, "workspace", "calibration", "manifest.json")))}
+        open(os.path.expanduser(
+            "~/agentscii-private/calibration/sheet/manifest.json")))}
     done = {}
     if os.path.exists(OUT):
         done = {r["id"]: r for r in json.load(open(OUT))}

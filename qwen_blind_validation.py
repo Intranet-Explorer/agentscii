@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.expanduser("~/agentscii"))
 import harness  # noqa: E402
 
 ROOT = os.path.expanduser("~/agentscii")
-OUT = os.path.join(ROOT, "workspace", "qwen_blind_validation.json")
+OUT = os.path.expanduser("~/agentscii-private/calibration/qwen_blind_validation.json")
 
 PROMPT = ("What does this depict? One line, then confidence 1-5.\n\n"
           "Answer in this exact format:\n"

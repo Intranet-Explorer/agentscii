@@ -24,7 +24,10 @@ import harness  # noqa: E402
 
 ROOT = os.path.expanduser("~/agentscii")
 WS = os.path.join(ROOT, "workspace")
-OUT = os.path.join(WS, "calibration")
+# Outside workspace/: the seats browse workspace/ and have cat'd .md files
+# there wholesale. Tyler's answers must not be readable by the agents they
+# judge.
+OUT = os.path.expanduser("~/agentscii-private/calibration/sheet")
 N_PER_SIDE = 10
 SEED = 20261001        # fixed so a rebuild keeps the same sheet
 
@@ -146,7 +149,8 @@ TEMPLATE = r"""<!doctype html>
 <h1>Calibration — does the piece read as its intended subject?</h1>
 <p class="sub">20 pieces, mixed order. Judge the render on its own; the intended subject is
 the only context. Gate and curator verdicts are hidden. Answers download as
-<code>calibration_tyler.json</code> — save it into <code>workspace/</code>.</p>
+<code>calibration_tyler.json</code> — keep it out of <code>workspace/</code>
+(the agents browse there); <code>~/agentscii-private/calibration/</code>.</p>
 <div id="cards"></div>
 <div class="bar">
   <span>answered <b id="count">0</b>/<b id="total">0</b></span>

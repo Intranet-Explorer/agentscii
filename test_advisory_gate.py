@@ -82,7 +82,7 @@ def test_apply_publishes_only_approved():
         # Stub it so this test can never touch the live DB, and PUT IT BACK
         # afterwards -- a leaked stub silently voided the delivery test.
         real_deliver = review_sheet._deliver
-        review_sheet._deliver = lambda answers: 0
+        review_sheet._deliver = lambda answers, hold=False: 0
         af = os.path.join(d, "a.json")
         json.dump([{"file": "_yes.ans", "publish": True, "reads": True, "good": True, "note": ""},
                    {"file": "_no.ans", "publish": False, "reads": True, "good": False, "note": "weak"}],
@@ -116,12 +116,15 @@ def test_deliver_reaches_both_seats():
                      "delivered INTEGER DEFAULT 0)")
         conn.commit(); conn.close()
         os.makedirs(os.path.join(d, "workspace"))
-        saved_root = rs.ROOT
+        # REVIEWS_MD is a module constant, so redirect it too -- patching
+        # ROOT alone silently wrote to the live workspace/REVIEWS.md.
+        saved = (rs.ROOT, rs.REVIEWS_MD)
         rs.ROOT = d
+        rs.REVIEWS_MD = os.path.join(d, "workspace", "REVIEWS.md")
         try:
             n = rs._deliver(answers)
         finally:
-            rs.ROOT = saved_root
+            rs.ROOT, rs.REVIEWS_MD = saved
         assert n == 1, f"skipped-piece handling wrong: {n}"
         conn = sqlite3.connect(db)
         rows = conn.execute("SELECT to_agent, text FROM human_messages").fetchall()
@@ -135,6 +138,57 @@ def test_deliver_reaches_both_seats():
         md = open(os.path.join(d, "workspace", "REVIEWS.md")).read()
         assert "reads but the shading is mush" in md and "_probe" in md
     print("  ok  verdicts reach both seats verbatim + REVIEWS.md, blanks skipped")
+
+
+def test_baseline_held_then_released():
+    """Batch 1 must reach the agents NEVER, then exactly once on release."""
+    import sqlite3
+    import review_sheet as rs
+    answers = [{"file": "_base.ans", "title": "BASE", "reads": True,
+                "good": False, "publish": True, "note": "reads, shading flat"}]
+    with tempfile.TemporaryDirectory() as d:
+        db = os.path.join(d, "state.db")
+        conn = sqlite3.connect(db)
+        conn.execute("CREATE TABLE human_messages (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                     "to_agent TEXT NOT NULL, text TEXT NOT NULL, timestamp REAL NOT NULL,"
+                     "delivered INTEGER DEFAULT 0)")
+        conn.commit(); conn.close()
+        os.makedirs(os.path.join(d, "workspace"))
+        saved = (rs.ROOT, rs.BASELINE_MD, rs.REVIEWS_MD)
+        rs.ROOT = d
+        rs.BASELINE_MD = os.path.join(d, "private", "baseline_reviews.md")
+        rs.REVIEWS_MD = os.path.join(d, "workspace", "REVIEWS.md")
+        try:
+            def sent():
+                c = sqlite3.connect(db)
+                rows = c.execute("SELECT to_agent, text FROM human_messages").fetchall()
+                c.close(); return rows
+
+            assert rs._deliver(answers, hold=True) == 1
+            assert sent() == [], "HELD BATCH WAS SENT -- baseline destroyed"
+            assert not os.path.exists(rs.REVIEWS_MD), "held batch leaked into REVIEWS.md"
+            held = open(rs.BASELINE_MD).read()
+            assert "BASELINE (not delivered)" in held and "shading flat" in held
+
+            # outside workspace/, where the agents browse
+            assert "workspace" not in os.path.relpath(rs.BASELINE_MD, d).split(os.sep)[0]
+
+            assert rs.deliver_baseline() == 1
+            rows = sent()
+            assert {r[0] for r in rows} == {"artist", "curator"}, rows
+            for _seat, txt in rows:
+                assert "shading flat" in txt, "note not verbatim on release"
+                assert "BASELINE" not in txt, "release still marked as held"
+            assert "shading flat" in open(rs.REVIEWS_MD).read()
+            assert not os.path.exists(rs.BASELINE_MD), "held file not consumed"
+
+            # second release must not re-send
+            before = len(sent())
+            assert rs.deliver_baseline() == 0
+            assert len(sent()) == before, "released the baseline twice"
+        finally:
+            rs.ROOT, rs.BASELINE_MD, rs.REVIEWS_MD = saved
+    print("  ok  baseline held (0 msgs), released once verbatim, not twice")
 
 
 def main():
@@ -152,6 +206,7 @@ def main():
             setattr(harness, k, v)
     test_apply_publishes_only_approved()
     test_deliver_reaches_both_seats()
+    test_baseline_held_then_released()
     print("  all checks passed")
 
 
