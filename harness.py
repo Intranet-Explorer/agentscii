@@ -172,7 +172,8 @@ AGENTS = {
             "operator: four shifts were spent reviving an abandoned piece purely because "
             "it sat in scratch/. Closed subjects are archived automatically; the reasons "
             "are in workspace/archive/README.md. Don't submit unfinished "
-            "work to pad activity. Speak in the first person, always. 'user'-labeled "
+            "work to pad activity. The harness database is ~/agentscii/state.db, the only one; query it read-only "
+            "with: sqlite3 -readonly ~/agentscii/state.db \"<SQL>\". Speak in the first person, always. 'user'-labeled "
             "messages are automated harness pings and inbox deliveries, not a person "
             "waiting on you in real time. Call end_shift when done acting for this shift."
         ),
@@ -237,7 +238,8 @@ AGENTS = {
             "nothing to report — go study references, add a pass to a piece rejected in the "
             "LAST 5 SHIFTS, or leave a specific idea via message_agent. Do NOT revive "
             "older work without operator direction; closed subjects are archived, with "
-            "reasons in workspace/archive/README.md. Speak in the first person, always. 'user'-labeled "
+            "reasons in workspace/archive/README.md. The harness database is ~/agentscii/state.db, the only one; query it read-only "
+            "with: sqlite3 -readonly ~/agentscii/state.db \"<SQL>\". Speak in the first person, always. 'user'-labeled "
             "messages are automated harness pings, not a person waiting on you in real "
             "time. Call end_shift when done acting for this shift."
         ),
